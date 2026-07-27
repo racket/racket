@@ -85,6 +85,22 @@ static int get_iconv_errno(void)
 # define RKTIO_CHK_PROC(x) x
 static int iconv_is_ready = 0;
 
+/* `PRIMARY_ICONV_DLL` is the name of the bundled iconv currently,
+   but support the old bundled name as `SECONDARY_ICONV_DLL` */
+#if defined(_M_IX86)
+# define PRIMARY_ICONV_DLL L"libiconv-2.dll"
+# define SECONDARY_ICONV_DLL L"iconv-2.dll"
+# define A_PRIMARY_ICONV_DLL "libiconv-2.dll"
+# define A_SECONDARY_ICONV_DLL "iconv-2.dll"
+#else
+# define PRIMARY_ICONV_DLL L"iconv-2.dll"
+# define SECONDARY_ICONV_DLL L"libiconv-2.dll"
+# define A_PRIMARY_ICONV_DLL "iconv-2.dll"
+# define A_SECONDARY_ICONV_DLL "libiconv-2.dll"
+#endif
+# define FALLBACK1_ICONV_DLL L"iconv.dll"
+# define FALLBACK2_ICONV_DLL L"libiconv.dll"
+
 static void init_iconv()
 {
   HMODULE m = NULL;
@@ -98,45 +114,71 @@ static void init_iconv()
     return;
   }
 
-  /* Try embedded "libiconv-2.dll", first: */
-  m = rktio_load_library("libiconv-2.dll");
+  /* bundled iconv may depend on vcruntime140 as also bundled, so try
+     loading that as bundled, just in case */
+  if (!rktio_load_library("vcruntime140.dll")) {
+    p = rktio_get_dll_path(L"vcruntime140.dll");
+    if (p) {
+      (void)LoadLibraryW(p);
+      free(p);
+    }
+  }
+
+  /* Try potentially embedded, first: */
+  m = rktio_load_library(A_PRIMARY_ICONV_DLL);
   if (m)
     hook_handle = 1;
-
   if (!m) {
-    p = rktio_get_dll_path(L"iconv.dll");
-    if (p) {
-      m = LoadLibraryW(p);
-      free(p);
-    } else
-      m = NULL;
+    m = rktio_load_library(A_SECONDARY_ICONV_DLL);
+    if (m)
+      hook_handle = 1;
   }
 
   if (!m) {
-    p = rktio_get_dll_path(L"libiconv.dll");
+    p = rktio_get_dll_path(PRIMARY_ICONV_DLL);
     if (p) {
       m = LoadLibraryW(p);
       free(p);
     } else
       m = NULL;
   }
-  
+
   if (!m) {
-    p = rktio_get_dll_path(L"libiconv-2.dll");
+    p = rktio_get_dll_path(SECONDARY_ICONV_DLL);
     if (p) {
       m = LoadLibraryW(p);
       free(p);
     } else
       m = NULL;
   }
-  
+
+  if (!m) {
+    p = rktio_get_dll_path(FALLBACK1_ICONV_DLL);
+    if (p) {
+      m = LoadLibraryW(p);
+      free(p);
+    } else
+      m = NULL;
+  }
+
+  if (!m) {
+    p = rktio_get_dll_path(FALLBACK2_ICONV_DLL);
+    if (p) {
+      m = LoadLibraryW(p);
+      free(p);
+    } else
+      m = NULL;
+  }
+
   if (!m)
-    m = LoadLibraryW(L"iconv.dll");
+    m = LoadLibraryW(PRIMARY_ICONV_DLL);
   if (!m)
-    m = LoadLibraryW(L"libiconv.dll");
+    m = LoadLibraryW(SECONDARY_ICONV_DLL);
   if (!m)
-    m = LoadLibraryW(L"libiconv-2.dll");
-  
+    m = LoadLibraryW(FALLBACK1_ICONV_DLL);
+  if (!m)
+    m = LoadLibraryW(FALLBACK2_ICONV_DLL);
+
   if (m) {
     if (hook_handle) {
       iconv = (iconv_proc_t)rktio_get_proc_address(m, "libiconv");
@@ -164,13 +206,13 @@ static void init_iconv()
       iconv_errno = (errno_proc_t)GetProcAddress(m, "_errno");
     if (!iconv_errno) {
       /* The iconv.dll distributed with Racket links to "msvcrt.dll"
-	 on x86 and x86_64, and to "ucrtbase.dll"
-	 for Arm64. It's a slightly dangerous assumption that whatever
+	 on x86, and to "ucrtbase.dll" otherwise.
+	 It's a slightly dangerous assumption that whatever
 	 iconv we found also uses that DLL. */
-# if defined(_M_ARM64)
-      m = LoadLibraryW(L"ucrtbase.dll");
-# else
+# if defined(_M_IX86)
       m = LoadLibraryW(L"msvcrt.dll");
+# else
+      m = LoadLibraryW(L"ucrtbase.dll");
 # endif
       if (m) {
 	iconv_errno = (errno_proc_t)GetProcAddress(m, "_errno");

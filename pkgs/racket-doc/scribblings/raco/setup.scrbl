@@ -204,11 +204,18 @@ flags:
    documentation.}
 
  @item{@DFlag{only-extra-docs} --- disable actions other than
-   rendering for @DFlag{doc-pdf} or @DFlag{doc-markdown}.}
+   rendering for @DFlag{doc-pdf}, @DFlag{doc-xelatex},
+   @DFlag{doc-typst-pdf}, or @DFlag{doc-markdown}.}
 
  @item{@DFlag{doc-pdf} @nonterm{dir} --- in addition to building HTML
    documentation, render documentation to PDF and place files in
-   @nonterm{dir}.}
+   @nonterm{dir} via Latex rendering and @exec{pdflatex}.}
+
+ @item{@DFlag{doc-xelatex} @nonterm{dir} --- like @DFlag{doc-pdf}, but
+   using @exec{xelatex}.}
+
+ @item{@DFlag{doc-typst-pdf} @nonterm{dir} --- like @DFlag{doc-pdf},
+   but via Typst rendering and @exec{typst compile}.}
 
  @item{@DFlag{doc-markdown} @nonterm{dir} --- in addition to building
    HTML documentation, render documentation to Markdown (using
@@ -404,7 +411,9 @@ debugging:
                                    and @DFlag{sync-docs-only}.}
          #:changed "8.17.0.2" @elem{Added the @DFlag{recompile-cache} flag.}
          #:changed "9.2.0.4" @elem{Added the @DFlag{doc-markdown} and
-                                   @DFlag{only-extra-docs} flags.}]
+                                   @DFlag{only-extra-docs} flags.}
+         #:changed "9.3.0.1" @elem{Added the @DFlag{doc-xelatex} and
+                                   @DFlag{doc-typst-pdf} flags.}]
 
 @; ------------------------------------------------------------------------
 

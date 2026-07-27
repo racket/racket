@@ -1,5 +1,4 @@
 #lang racket/base
-(require (for-syntax racket/base))
 
 (define rx:version
   ;; (this restricts the last component to be below 999 too, which is
@@ -11,12 +10,10 @@
 (define (valid-version? s)
   (and (string? s) (regexp-match? rx:version s)))
 
-(define-syntax (define/version-inputs stx)
-  (syntax-case stx ()
-    [(_ (f x ...) body ...)
-     #'(define (f x ...)
-         (check-version-inputs 'f (list x ...))
-         body ...)]))
+(define-syntax-rule (define/version-inputs (f x ...) body ...)
+  (define (f x ...)
+    (check-version-inputs 'f (list x ...))
+    body ...))
 (define (check-version-inputs fn args)
   (for ([arg (in-list args)]
         [i (in-naturals)])

@@ -193,6 +193,7 @@
             pbchunk-objs))
 
   (define MemoryModule.o (at-dir (.c->.o "MemoryModule.c")))
+  (define dll_via_temp.o (at-dir (.c->.o "dll_via_temp.c")))
 
   (define framework-dir (build-path "Racket.framework/Versions" (~a version "_CS")))
   (define framework (at-dir framework-dir "Racket"))
@@ -521,7 +522,7 @@
                                         ,(input-data-target 'mac-fw mac-fw?)
                                         ,@entitlements
                                         ,@(if windows?
-                                              (list MemoryModule.o res.o)
+                                              (list MemoryModule.o dll_via_temp.o res.o)
                                               '())
                                         ,link-config)
                       ,(lambda (path token)
@@ -534,7 +535,7 @@
                                        (append
                                         (if mac-fw? (list framework) '())
                                         (cond
-                                          [windows? `(,MemoryModule.o ,res.o ,@(if msvc? windows-libs '()))]
+                                          [windows? `(,MemoryModule.o ,dll_via_temp.o ,res.o ,@(if msvc? windows-libs '()))]
                                           [mac-fw? '()]
                                           [else (map target->path boot-objs)])))
                                  (let ([config (adjust-linking-config config)])
@@ -691,6 +692,12 @@
                               (at-source "../../start/MemoryModule.c")
                               config))]
 
+       [:target ,dll_via_temp.o (,(at-source "../../start/dll_via_temp.c"))
+                ,(lambda (path token)
+                   (c-compile dll_via_temp.o
+                              (at-source "../../start/dll_via_temp.c")
+                              config))]
+
        [:target ,racket.boot (,(find-target "racket.so" cs-targets))
                 ,(lambda (path token)
                    (scheme "--script" (at-source "convert-to-boot.ss")
@@ -795,7 +802,8 @@
                                                                              (add-scheme-kernel-config
                                                                               (adjust-linking-config config)))
                                                                             'm "pb"
-                                                                            'defaultm m))))
+                                                                            'defaultm m
+                                                                            'flagsm m))))
                           (build (find-target "reset" pb-targets) token)
                           (build (command-target->target (find-target "bootquick" pb-targets)
                                                          (list m))

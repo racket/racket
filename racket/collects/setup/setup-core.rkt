@@ -1520,20 +1520,21 @@
     (copy-directory/files (build-path tmp-dir src) target
                           #:keep-modify-seconds? #t))
 
-  (define (doc-pdf-dest-step)
-    (doc-with-temp-step
-     "--- building PDF documentation (via pdflatex) ---"
-     "pltpdfdoc"
-     (doc-pdf-dest)
-     'latex
-     (lambda (tmp-dir dest-dir)
-       (parameterize ([current-directory tmp-dir])
-         (for ([f (in-list (directory-list))]
-               #:when (path-has-extension? f #".tex"))
-           (define pdf (scr:call 'run-pdflatex f
-                                 (lambda (fmt . xs)
-                                   (apply setup-printf #f fmt xs))))
-           (replace-output! tmp-dir dest-dir pdf pdf))))))
+  (define (doc-pdf-dest-step dest kind via tmp-dir extension run)
+    (when dest
+      (doc-with-temp-step
+       (format "--- building PDF documentation (via ~a) ---" via)
+       tmp-dir
+       dest
+       kind
+       (lambda (tmp-dir dest-dir)
+         (parameterize ([current-directory tmp-dir])
+           (for ([f (in-list (directory-list))]
+                 #:when (path-has-extension? f extension))
+             (define pdf (scr:call run f
+                                   (lambda (fmt . xs)
+                                     (apply setup-printf #f fmt xs))))
+             (replace-output! tmp-dir dest-dir pdf pdf)))))))
 
   (define (doc-markdown-dest-step)
     (define (aux? p)
@@ -2261,7 +2262,9 @@
 
   (when make-docs?
     (make-docs-step))
-  (when (doc-pdf-dest) (doc-pdf-dest-step))
+  (doc-pdf-dest-step (doc-pdf-dest) 'latex "pdflatex" "pltpdfdoc" #".tex" 'run-pdflatex)
+  (doc-pdf-dest-step (doc-xelatex-dest) 'latex "xelatex" "pltxelatexdoc" #".tex" 'run-xelatex)
+  (doc-pdf-dest-step (doc-typst-pdf-dest) 'typst "typst" "plttypstpdfdoc" #".typ" 'run-typst)
   (when (doc-markdown-dest) (doc-markdown-dest-step))
   
   (do-install-part 'general)

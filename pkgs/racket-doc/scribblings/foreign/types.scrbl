@@ -1397,9 +1397,9 @@ structs must be allocated using @racket[malloc] with @racket[malloc-mode]; the c
 the allocated space, so it is inefficient. Use @racket[define-cstruct]
 below for a more efficient approach.
 
-@history[#:changed "6.0.0.6" @elem{Added @racket[#:malloc-mode].}]
+@history[#:changed "6.0.0.6" @elem{Added @racket[#:malloc-mode].}
          #:changed "8.14.0.4" @elem{Added the @racket['zeroed-atomic]
-                                    @racket['zeroed-atomic-interior] allocation modes.}}
+                                    @racket['zeroed-atomic-interior] allocation modes.}]}
 
 
 @defform[(define-cstruct id/sup ([field-id type-expr field-option ...] ...)

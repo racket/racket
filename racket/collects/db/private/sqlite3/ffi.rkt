@@ -5,6 +5,7 @@
          racket/string
          ffi/unsafe
          ffi/unsafe/define
+         ffi/vcruntime
          setup/cross-system)
 (require "ffi-constants.rkt")
 (provide (all-from-out "ffi-constants.rkt")

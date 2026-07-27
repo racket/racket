@@ -18,6 +18,9 @@
 #ifdef USE_ITIMER
 # include <sys/time.h>
 #endif
+#ifndef MZ_PRECISE_GC
+# include "schgc.h"
+#endif
 
 #define mzAssert(x) /* if (!(x)) abort() */
 

@@ -37,6 +37,7 @@
 #ifdef DEBUG_OUTPUT
 #include <stdio.h>
 #endif
+#include "dll_via_temp.h"
 
 #if _MSC_VER
 // Disable warning about data -> function pointer conversion
@@ -82,6 +83,7 @@ typedef struct POINTER_LIST {
 #endif
 
 typedef struct {
+    HMODULE alt_handle;
     PIMAGE_NT_HEADERS headers;
     unsigned char *codeBase;
     HCUSTOMMODULE *modules;
@@ -390,7 +392,7 @@ static BOOL
 PerformBaseRelocation(PMEMORYMODULE module, ptrdiff_t delta)
 {
     unsigned char *codeBase = module->codeBase;
-    PIMAGE_BASE_RELOCATION relocation;
+    PIMAGE_BASE_RELOCATION relocation, relocationEnd;
 
     PIMAGE_DATA_DIRECTORY directory = GET_HEADER_DICTIONARY(module, IMAGE_DIRECTORY_ENTRY_BASERELOC);
     if (directory->Size == 0) {
@@ -398,7 +400,11 @@ PerformBaseRelocation(PMEMORYMODULE module, ptrdiff_t delta)
     }
 
     relocation = (PIMAGE_BASE_RELOCATION) (codeBase + directory->VirtualAddress);
-    for (; relocation->VirtualAddress > 0; ) {
+
+    /* RACKET: fix termination condition to use directory size, and
+       use an extra `relocation->SizeOfBlock` guard as a sanity check */
+    relocationEnd = (PIMAGE_BASE_RELOCATION) OffsetPointer(relocation, directory->Size);
+    while (relocation < relocationEnd && relocation->SizeOfBlock > 0) {
         DWORD i;
         unsigned char *dest = codeBase + relocation->VirtualAddress;
         unsigned short *relInfo = (unsigned short*) OffsetPointer(relocation, IMAGE_SIZEOF_BASE_RELOCATION);
@@ -449,7 +455,7 @@ RegisterExceptionHandling(PMEMORYMODULE module)
 {
     PIMAGE_DATA_DIRECTORY pDir = GET_HEADER_DICTIONARY(module, IMAGE_DIRECTORY_ENTRY_EXCEPTION);
     PRUNTIME_FUNCTION pEntry = (PRUNTIME_FUNCTION)(module->codeBase + pDir->VirtualAddress);
-    UINT count = (pDir->Size / sizeof(IMAGE_RUNTIME_FUNCTION_ENTRY)) - 1;
+    UINT count = (pDir->Size / sizeof(IMAGE_RUNTIME_FUNCTION_ENTRY));
     return RtlAddFunctionTable(pEntry, count, (DWORD64)module->codeBase);
 }
 #endif
@@ -549,7 +555,7 @@ FARPROC MemoryDefaultGetProcAddress(HCUSTOMMODULE module, LPCSTR name, void *use
 
     FARPROC result = GetProcAddress((HMODULE) module, name);
 
-    if (result == &GetModuleHandleExW)
+    if (result == (FARPROC)&GetModuleHandleExW)
       return (FARPROC)GetModuleHandleExW_redirect;
 
     return result;
@@ -561,12 +567,12 @@ void MemoryDefaultFreeLibrary(HCUSTOMMODULE module, void *userdata)
     FreeLibrary((HMODULE) module);
 }
 
-HMEMORYMODULE MemoryLoadLibrary(const void *data, size_t size)
+HMEMORYMODULE MemoryLoadLibrary(const char *name, int mode, const void *data, size_t size)
 {
-    return MemoryLoadLibraryEx(data, size, MemoryDefaultAlloc, MemoryDefaultFree, MemoryDefaultLoadLibrary, MemoryDefaultGetProcAddress, MemoryDefaultFreeLibrary, NULL);
+    return MemoryLoadLibraryEx(name, mode, data, size, MemoryDefaultAlloc, MemoryDefaultFree, MemoryDefaultLoadLibrary, MemoryDefaultGetProcAddress, MemoryDefaultFreeLibrary, NULL);
 }
 
-HMEMORYMODULE MemoryLoadLibraryEx(const void *data, size_t size,
+HMEMORYMODULE MemoryLoadLibraryEx(const char *name, int mode, const void *data, size_t size,
     CustomAllocFunc allocMemory,
     CustomFreeFunc freeMemory,
     CustomLoadLibraryFunc loadLibrary,
@@ -639,6 +645,15 @@ HMEMORYMODULE MemoryLoadLibraryEx(const void *data, size_t size,
     if (alignedImageSize != AlignValueUp(lastSectionEnd, sysInfo.dwPageSize)) {
         SetLastError(ERROR_BAD_EXE_FORMAT);
         return NULL;
+    }
+
+    // RACKET: give up on in-memory approach unless forced by mode == 1;
+    // note that any dependencies of a DLL loaded via a temp file must
+    // also be loaded via a temp file or through normal DLL resolution
+    if (mode != 1) {
+      result = (PMEMORYMODULE)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(MEMORYMODULE));
+      result->alt_handle = TempLoadLibrary(name, data, size);
+      return result;
     }
 
     // reserve memory for image of library
@@ -765,6 +780,17 @@ HMEMORYMODULE MemoryLoadLibraryEx(const void *data, size_t size,
         goto error;
     }
 
+    // RACKET: here's the main reason to give up...
+    // If the DLL has static TLS entries, then they should be
+    // initialized here. That's not too difficult to to do for the
+    // current thread by and setting the content referenced by
+    // `tls->AddressOfIndex` to a newly chosen index and adding to the
+    // TEB's `ThreadLocalStoragePointer` field --- but futher system
+    // loading of DLLs will not know about the new index, and it will
+    // mangle the allocation. Also, handling other threads is tricky
+    // at best. Modern DLLs more often use static TLS unless they are
+    // compiled specifically to avoid it.
+
     // TLS callbacks are executed BEFORE the main loading
     if (!ExecuteTLS(result)) {
         goto error;
@@ -824,6 +850,10 @@ static int _find(const void *a, const void *b)
 FARPROC MemoryGetProcAddress(HMEMORYMODULE mod, LPCSTR name)
 {
     PMEMORYMODULE module = (PMEMORYMODULE)mod;
+
+    if (module->alt_handle)
+      return GetProcAddress(module->alt_handle, name);
+
     unsigned char *codeBase = module->codeBase;
     DWORD idx = 0;
     PIMAGE_EXPORT_DIRECTORY exports;
@@ -906,6 +936,11 @@ void MemoryFreeLibrary(HMEMORYMODULE mod)
     if (module == NULL) {
         return;
     }
+    if (module->alt_handle) {
+      FreeLibrary(module->alt_handle);
+      return;
+    }
+
     if (module->initialized) {
         // notify library about detaching from process
         DllEntryProc DllEntry = (DllEntryProc)(LPVOID)(module->codeBase + module->headers->OptionalHeader.AddressOfEntryPoint);

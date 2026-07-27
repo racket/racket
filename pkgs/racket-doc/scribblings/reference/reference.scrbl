@@ -1,6 +1,9 @@
 #lang scribble/manual
 @(require "mz.rkt"
-          scribble/core scribble/html-properties scribble/latex-properties
+          scribble/core
+          scribble/html-properties
+          scribble/latex-properties
+          scribble/typst-properties
           racket/list)
 
 @(define (racket-extra-libs)
@@ -20,7 +23,8 @@
 @(define (extras)
    (make-style #f (list
                    (make-css-addition "extras.css")
-                   (make-tex-addition "extras.tex"))))
+                   (make-tex-addition "extras.tex")
+                   (make-typ-addition "extras.typ"))))
 
 @title[#:style (extras)]{The Racket Reference}
 

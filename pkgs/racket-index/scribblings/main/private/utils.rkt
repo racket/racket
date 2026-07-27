@@ -4,7 +4,10 @@
          scribble/manual
          scribble/core
          scribble/html-properties
+         scribble/latex-properties
+         scribble/typst-properties
          scribble/decode
+         scriblib/render-cond
          scheme/list
          setup/dirs)
 
@@ -35,7 +38,9 @@
 ;; but for the web version the css is extended with this class as
 ;; something that is not displayed)
 (define (not-on-the-web . body)
-  (make-element "hide_when_on_the_web" (decode-content body)))
+  (cond-element
+   [html (make-element "hide_when_on_the_web" (decode-content body))]
+   [else ""]))
 
 ;; the second argument specifies installation/user specific, and if
 ;; it's missing, then it's a page with a single version
@@ -86,7 +91,9 @@
                                      null
                                      (list
                                       (make-css-addition (collection-file-path "root-info.css" "scribblings/main/private"))
-                                      (make-js-addition (collection-file-path "root-info.js" "scribblings/main/private"))))
+                                      (make-js-addition (collection-file-path "root-info.js" "scribblings/main/private"))
+                                      (make-tex-addition (collection-file-path "root-info.tex" "scribblings/main/private"))
+                                      (make-typ-addition (collection-file-path "root-info.typ" "scribblings/main/private"))))
                                  extra-additions)))
            title-content
            #:tag-prefix (let* ([ht #hasheq()]

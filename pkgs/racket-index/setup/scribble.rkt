@@ -25,6 +25,7 @@
          scribble/tag
          scribble/private/manual-class-struct ; really shouldn't be here... see make-isolated-namespace
          scribble/private/run-pdflatex
+         scribble/private/run-typst
          setup/xref
          scribble/xref
          syntax/modcollapse
@@ -36,12 +37,15 @@
          (prefix-in u: net/url)
          (prefix-in html: scribble/html-render)
          (prefix-in latex: scribble/latex-render)
+         (prefix-in typst: scribble/typst-render)
          (prefix-in markdown: scribble/markdown-render)
          (prefix-in contract: scribble/contract-render))
 
 (provide setup-scribblings
          verbose
-         run-pdflatex)
+         run-pdflatex
+         run-xelatex
+         run-typst)
 
 (module+ docs-to-destdir
   (provide move-rendered-docs-to-destdir))
@@ -889,6 +893,15 @@
           [helper-file-prefix (let-values ([(base name dir?) (split-path
                                                               (doc-dest-dir doc))])
                                 (path-element->string name))])]
+    [(typst)
+     (define dest-dir (doc-dest-path latex-dest))
+     (new (typst:render-mixin render%)
+          [dest-dir dest-dir]
+          ;; All .typ files go to the same directory, so prefix
+          ;; generated/copied file names to keep them separate:
+          [helper-file-prefix (let-values ([(base name dir?) (split-path
+                                                              (doc-dest-dir doc))])
+                                (path-element->string name))])]
     [(markdown)
      (define dest-dir (doc-dest-path latex-dest))
      (new (markdown:render-mixin render%)
@@ -1018,6 +1031,10 @@
      (let-values ([(base name dir?) (split-path (doc-dest-dir doc))])
        (build-path (doc-dest-path latex-dest)
                    (path-replace-suffix name #".tex")))]
+    [(typst)
+     (let-values ([(base name dir?) (split-path (doc-dest-dir doc))])
+       (build-path (doc-dest-path latex-dest)
+                   (path-replace-suffix name #".typ")))]
     [(markdown)
      (let-values ([(base name dir?) (split-path (doc-dest-dir doc))])
        (build-path (doc-dest-path latex-dest)
@@ -1029,7 +1046,7 @@
 
 (define (sxref-path latex-dest doc file)
   (case (doc-dest-kind latex-dest)
-    [(latex markdown)
+    [(latex typst markdown)
      (let-values ([(base name dir?) (split-path (doc-dest-dir doc))])
        (build-path (doc-dest-path latex-dest)
                    (path-replace-suffix name (string-append "." file))))]
@@ -1192,7 +1209,8 @@
   ;; First, move pre-rendered documentation, if any, into place
   (let ([rendered-dir (let-values ([(base name dir?) (split-path (doc-dest-dir doc))])
                         (build-path (doc-src-dir doc) "doc" name))])
-    (when (and (can-build? only-dirs avoid-main? doc)
+    (when (and (not (doc-dest? latex-dest))
+               (can-build? only-dirs avoid-main? doc)
                (or (and (directory-exists? rendered-dir)
                         (not (file-exists? (build-path rendered-dir "synced.rktd")))
                         (or (not (directory-exists? (doc-dest-dir doc)))
@@ -1231,6 +1249,7 @@
                                   #:check-compiled? #t
                                   (case (doc-dest-kind latex-dest)
                                     [(latex) "latex-render.rkt"]
+                                    [(typst) "typst-render.rkt"]
                                     [(markdown) "markdown-render.rkt"]
                                     [else "html-render.rkt"])
                                   "scribble")])
@@ -1325,7 +1344,8 @@
            (let ([v-in  (load-sxref info-in-file)])
              (unless (equal? (car v-in) (list vers (doc-flags doc)))
                (error "old info has wrong version or flags" (car v-in)))
-             (when (and (or (not provides-time)
+             (when (and (not (doc-dest? latex-dest))
+                        (or (not provides-time)
                             (provides-time . < . info-out-time))
                         (can-build? only-dirs avoid-main? doc))
                ;; Database is out of sync, and we don't need to build
@@ -1370,6 +1390,7 @@
                         [v (load-doc/ensure-prefix doc)]
                         [dest-dir (pick-dest latex-dest doc)]
                         [fp (send renderer traverse (list v) (list dest-dir))]
+                        [v (car (send renderer traversed-parts (list v) fp))]
                         [ci (send renderer collect (list v) (list dest-dir) fp)]
                         ;; It's ok if cross-reference information isn't available
                         ;; at this point, but we can sometimes save another iteration
@@ -1746,6 +1767,7 @@
     (namespace-attach-module ns 'scribble/base-render p)
     (namespace-attach-module ns 'scribble/html-render p)
     (namespace-attach-module ns 'scribble/latex-render p)
+    (namespace-attach-module ns 'scribble/typst-render p)
     ;; This is here for de-serialization; we need a better repair than
     ;;  hard-wiring the "manual.rkt" library:
     (namespace-attach-module ns 'scribble/private/manual-class-struct p)

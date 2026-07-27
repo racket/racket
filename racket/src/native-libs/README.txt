@@ -11,10 +11,13 @@ on those packages. The "x86_64-linux-natipkg" and
 OS, expecting packages to supply native libraries for Linux.
 
 This directory contains scripts and patches to build Windows, Mac OS,
-and Linux libraries in a consistent and portable way. Naturally, the
-script and patches are fragile, so we upgrade libraries infrequently.
-Currently, we use the following external packages and versions for
-actively supported platforms:
+and Linux libraries in a consistent and portable way, but Windows
+builds for x86_64 and AArch64 now use a separate process:
+ https://github.com/ndykman/racket-native-libs
+
+The scripts and patches here are fragile, so we upgrade libraries
+infrequently. Currently, we use the following external packages and
+versions for actively supported platforms:
 
  pkg-config-0.28
  sed-4.2 (Windows only, to avoid non-GNU `sed`)

@@ -104,8 +104,12 @@
       (add-flags '((make-docs #f)))]
      [("--only-extra-docs") "Only build requested PDF/Markdown docs"
       (add-flags disable-action-flags)]
-     [("--doc-pdf") dir "Build documentation PDFs, write to <dir>"
+     [("--doc-pdf") dir "Build documentation PDFs via LaTeX, write to <dir>"
       (add-flags `((doc-pdf-dest ,dir)))]
+     [("--doc-xelatex") dir "Build documentation PDFs via XeLaTeX, write to <dir>"
+      (add-flags `((doc-xelatex-dest ,dir)))]
+     [("--doc-typst-pdf") dir "Build documentation PDFs via Typst, write to <dir>"
+      (add-flags `((doc-typst-pdf-dest ,dir)))]
      [("--doc-markdown") dir "Build documentation Markdown, write to <dir>"
       (add-flags `((doc-markdown-dest ,dir)))]
      [("-K" "--no-pkg-deps") "Do not check package dependencies"

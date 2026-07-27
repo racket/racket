@@ -1,5 +1,6 @@
 #lang racket/base
 (require ffi/unsafe
+         ffi/vcruntime
          racket/runtime-path
          setup/cross-system
          (for-syntax racket/base
@@ -16,7 +17,14 @@
 (define-runtime-path libssl-so
   #:runtime?-id runtime?
   (case (if runtime? (system-type) (cross-system-type))
-    [(windows) '(so "ssleay32")]
+    [(windows)
+     (case (if runtime? (system-type 'arch) (cross-system-type 'arch))
+       [(aarch64)
+	'(so "libssl-3-arm64")]
+       [(x86_64)
+	'(so "libssl-3-x64")]
+       [else
+	'(so "ssleay32")])]
     [(macosx)
      (case (if runtime? (system-type 'arch) (cross-system-type 'arch))
        [(i386 ppc)

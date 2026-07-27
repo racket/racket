@@ -138,7 +138,8 @@
                     queued-flags)
                 (if (member (car flags)
                             ;; Flags that take 1 argument:
-                            '("--mode" "--doc-pdf" "--doc-markdown"
+                            '("--mode" "--doc-pdf" "--doc-xelatex"
+                              "--doc-typst-pdf" "--doc-markdown"
                               "-j" "--jobs" "--workers"
                               "--error-in" "--error-out"
                               "--recompile-cache"))

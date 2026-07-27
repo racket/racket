@@ -1,3 +1,17 @@
+Version 9.3, July 2026
+raco pkg install: Add `--adjacent-deps`, `--destdir`, and `--attach`,
+  refine `--skip-installed`
+raco setup: Add `--doc-markdown`
+Add `ffi/unsafe/runtime-lib`
+Change `prompt-tag/c` so that no checking is performed on `call/cc`
+  when the `#:call/cc` option is not present
+Add composable-continuation interposition in `impersonate-prompt-tag`
+Add `error-syntax->srcloc-handler`
+Change `(tcp-listen 0)` to retry when it fails with "address in use"
+Simplify `racket/base` to fewer internal modules and instantiations
+Complete internal support for `ffi2`
+file/zip: Add configurable directory and compression level
+
 Version 9.2, April 2026
 Allow more types of `quote`d data in cross-phase persistent modules
 Change `match` to reject non-linear patterns with mismatched ellipsis

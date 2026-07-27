@@ -102,7 +102,7 @@ do correspond to a Racket character. The Racket representation of a
 @racket[wchar_t] is constrained to characters that fit in the C
 representation, and values from C that are are not representable as
 Racket characters are converted to the Unicode replacement character,
-@racket[#\uFFFD].
+@racketvalfont{#\uFFFD}.
 
 }
 
