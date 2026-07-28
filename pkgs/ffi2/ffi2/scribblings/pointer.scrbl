@@ -1,7 +1,11 @@
 #lang scribble/manual
-@(require "common.rkt"
+@(require scribble/example
+          "common.rkt"
           (for-label (only-in ffi/unsafe cpointer?)
                      (only-in racket/contract/base any/c)))
+
+@(define ffi2-eval (make-base-eval))
+@examples[#:eval ffi2-eval #:hidden (require ffi2)]
 
 @title[#:tag "pointer"]{Foreign Pointers}
 
@@ -118,10 +122,33 @@ By default, allocation uses @racket[#:gcable] mode, but a
 
 }
 
+@defform[(ffi2-new maybe-mode
+                   type
+                   val-expr ...)]{
+
+Similar to @racket[ffi2-malloc], but initializes the allocated memory
+with the result of each @racket[val-expr]. The allocated memory
+corresponds to the size of @racket[type] times the number of
+@racket[val-expr]s, and it is initialized in the same way as using
+@racket[ffi2-set!] on the allocated pointer, @racket[type], a suitable
+offset, and the result of each @racket[val-expr].
+
+@examples[
+#:eval ffi2-eval
+(define ns (ffi2-new double_t 1.0 20.0 300.0))
+ns
+(ffi2-ref ns double_t 2)
+(ffi2-ref ns double_t 0)
+]
+
+@history[#:added "1.1"]
+
+}
+
 @defproc[(ffi2-free [ptr void_t*?]) void?]{
 
-Deallocates memory that was allocated with @racket[ffi2-malloc] in
-@racket[#:manual] mode.
+Deallocates memory that was allocated with @racket[ffi2-malloc]
+or @racket[ffi2-new] in @racket[#:manual] mode.
 
 }
 
@@ -254,3 +281,5 @@ collector can become immediately invalid, unless an object at the
 address was allocated as immobile.
 
 }
+
+@close-eval[ffi2-eval]
