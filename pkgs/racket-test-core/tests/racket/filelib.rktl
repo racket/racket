@@ -254,6 +254,19 @@
   (parameterize ([current-directory addon-dir])
     (try-atomic-output (format "atomic-output-~a" (current-inexact-milliseconds)))))
 
+;; Test atomic output file names match the format <outfile>-<random>-atomic-tmp
+(let ([fn (make-temporary-file)])
+  (call-with-atomic-output-file
+   fn
+   (lambda (o tmp-path)
+     (test #t
+           regexp-match?
+           (regexp (format "^~a-.*-atomic-tmp$"
+                            (regexp-quote (path->string (file-name-from-path fn)))))
+           (path->string (file-name-from-path tmp-path)))
+     (display "test" o)))
+  (delete-file fn))
+
 ;; ----------------------------------------
 
 (let ([dir (make-temporary-file "pathlist~a" 'directory)])
