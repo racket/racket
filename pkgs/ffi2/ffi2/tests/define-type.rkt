@@ -50,7 +50,13 @@
     (ffi2-set! p percentage_box_t/gcable (box 50.5))
     (check-true (percentage_box_t/gcable? (ffi2-ref p percentage_box_t/gcable)))
     (check-equal? (ffi2-ref p percentage_box_t/gcable) (box 50.5))
-    (check-equal? (ffi2-ref (ffi2-ref p ptr_t/gcable) double_t) 0.505)))
+    (check-equal? (ffi2-ref (ffi2-ref p ptr_t/gcable) double_t) 0.505))
+  (let ()
+    (define ps (ffi2-new #:gcable-traced percentage_box_t/gcable (box 50.0) (box 75.0)))
+    (check-true (percentage_box_t/gcable? (ffi2-ref ps percentage_box_t/gcable 0)))
+    (check-true (percentage_box_t/gcable? (ffi2-ref ps percentage_box_t/gcable 1)))
+    (check-equal? (ffi2-ref ps percentage_box_t/gcable 0) (box 50.0))
+    (check-equal? (ffi2-ref ps percentage_box_t/gcable 1) (box 75.0))))
 
 (for ([i (in-range 10)])
   (define-ffi2-type percentage_box_t ptr_t

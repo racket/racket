@@ -32,6 +32,7 @@
           ffi2-cast
           ffi2-add
           ffi2-malloc
+          ffi2-new
           ffi2-free
           ffi2-sizeof
           ffi2-offsetof
@@ -65,6 +66,7 @@
            unsafe-ffi2-procedure
            unsafe-ffi2-callback
            unsafe-ffi2-malloc
+           unsafe-ffi2-new
            unsafe-ffi2-cast
            unsafe-ffi2-add
            unsafe-ffi2-memcpy
@@ -841,6 +843,53 @@
 (define (ffi2-free v)
   (unless (ffi2-ptr? v) (raise-argument-error 'ffi2-free "ptr_t?" v))
   (ffi2-free* v))
+
+(define-for-syntax (parse-ffi2-new stx unsafe?)
+  (define (build form-id kind-stx t vals)
+    (define kind-sym (string->symbol (keyword->string (syntax-e kind-stx))))
+    (define size-vm-type (ffi2-type-vm-type t))
+    (define ptr-vm-type (let ([vm-type (ffi2-type-pointer-vm-type t)])
+                          (if (eq? kind-sym 'manual)
+                              vm-type
+                              (pointer-vm-type->gcable vm-type))))
+    (with-syntax ([(val ...) vals]
+                  [(idx ...) (for/list ([val (in-list vals)]
+                                        [i (in-naturals)])
+                               i)]
+                  [vm-type (ffi2-type-vm-type t)]
+                  [compound? (ffi2-type-compound? t)])
+      #`(let ([n #,(length vals)])
+          (let ([ptr ((#%foreign-inline (ffi2-malloc-maker #,size-vm-type #,ptr-vm-type #,kind-sym) #:copy) n)])
+            #,@(ffi2-type-defns t)
+            (define t-racket->c #,(ffi2-type-racket->c t))
+            (define t-release #,(ffi2-type-release t))
+            (define (guard v)
+              (unless (variable-reference-from-unsafe? (#%variable-reference))
+                (unless (#,(ffi2-type-predicate t) v) (bad-assign-value '#,form-id '#,(ffi2-type-name t) v)))
+              v)
+            (do-ffi2-ptr-set! compound?
+                              t-racket->c vm-type
+                              ptr
+                              (* idx (#%foreign-inline (ffi2-sizeof vm-type) #:copy))
+                              (guard val)
+                              t-release)
+            ...
+            ptr))))
+  (syntax-parse stx
+    [(form-id (~optional kind::malloc-kind)
+              (~var type (:type stx))
+              val-expr
+              ...)
+     (build #'form-id
+            #'(~? kind #:gcable)
+            (attribute type.t)
+            (attribute val-expr))]))
+
+(define-syntax (ffi2-new stx)
+  (parse-ffi2-new stx #f))
+
+(define-syntax (unsafe-ffi2-new stx)
+  (parse-ffi2-new stx #t))
 
 (define (ffi2-memcpy dest src len
                      #:dest-offset [dest-offset 0]

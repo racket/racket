@@ -69,6 +69,16 @@
   (check-true (point_t*? (point_t*-ref pts 1))))
 
 (let ()
+  (define pt2 (ffi2-malloc point_t))
+  (check-equal? (set-point_t-x! pt2 100) (void))
+  (check-equal? (set-point_t-y! pt2 101) (void))
+  (define pts (ffi2-new point_t pt2 pt))
+  (check-equal? (point_t-x pt2) (point_t-x (point_t*-ref pts 0)))
+  (check-equal? (point_t-y pt2) (point_t-y (point_t*-ref pts 0)))
+  (check-equal? (point_t-x pt) (point_t-x (point_t*-ref pts 1)))
+  (check-equal? (point_t-y pt) (point_t-y (point_t*-ref pts 1))))
+
+(let ()
   (define p (ffi2-malloc 1))
   (check-exn exn:fail:contract? (lambda () (point_t-x p)))
   (check-exn exn:fail:contract? (lambda () (set-point_t-x! p 0))))
