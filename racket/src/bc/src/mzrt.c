@@ -546,37 +546,37 @@ int mzrt_rwlock_create(mzrt_rwlock **lock) {
   (*lock)->readers = 0;
   /* CreateEvent(LPSECURITY_ATTRIBUTES, manualReset, initiallySignaled, LPCSTR name) */
   if (! ((*lock)->readEvent = CreateEvent(NULL, TRUE, FALSE, NULL)))
-    return 0;
+    return 1;
   if (! ((*lock)->writeMutex = CreateMutex(NULL, FALSE, NULL)))
-    return 0;
+    return 1;
 
-  return 1;
+  return 0;
 }
 
 static int get_win32_os_error() {
-  return 0;
+  return GetLastError();
 }
 
 static int mzrt_rwlock_rdlock_worker(mzrt_rwlock *lock, DWORD millis) {
   DWORD rc = WaitForSingleObject(lock->writeMutex, millis);
-  if (rc == WAIT_FAILED || rc == WAIT_TIMEOUT )
-    return 0;
+  if (rc == WAIT_FAILED || rc == WAIT_TIMEOUT)
+    return 1;
 
   InterlockedIncrement(&lock->readers);
 
-  if (! ResetEvent(lock->readEvent))
-    return 0;
+  if (!ResetEvent(lock->readEvent))
+    return 1;
 
   if (!ReleaseMutex(lock->writeMutex))
-    return 0;
+    return 1;
 
-  return 1;
+  return 0;
 }
 
 static int mzrt_rwlock_wrlock_worker(mzrt_rwlock *lock, DWORD millis) {
   DWORD rc = WaitForSingleObject(lock->writeMutex, millis);
-  if (rc == WAIT_FAILED || rc == WAIT_TIMEOUT )
-    return 0;
+  if (rc == WAIT_FAILED || rc == WAIT_TIMEOUT)
+    return 1;
 
   if (lock->readers) {
     if (millis) {
@@ -586,11 +586,13 @@ static int mzrt_rwlock_wrlock_worker(mzrt_rwlock *lock, DWORD millis) {
       rc = WAIT_TIMEOUT;
     }
 
-    if (rc == WAIT_FAILED || rc == WAIT_TIMEOUT );
-      return 0;
+    if (rc == WAIT_FAILED || rc == WAIT_TIMEOUT) {
+      ReleaseMutex(lock->writeMutex);
+      return 1;
+    }
   }
 
-  return 1;
+  return 0;
 }
 
 int mzrt_rwlock_rdlock(mzrt_rwlock *lock) {
@@ -624,7 +626,7 @@ int mzrt_rwlock_unlock(mzrt_rwlock *lock) {
     }
   }
 
-  return !rc;
+  return rc;
 }
 
 int mzrt_rwlock_destroy(mzrt_rwlock *lock) {
@@ -651,9 +653,8 @@ int mzrt_mutex_lock(mzrt_mutex *mutex) {
 }
 
 int mzrt_mutex_trylock(mzrt_mutex *mutex) {
-  /* FIXME: TryEnterCriticalSection() requires NT:
-     if (!TryEnterCriticalSection(&mutex->critical_section))
-       return 1; */
+  if (!TryEnterCriticalSection(&mutex->critical_section))
+    return 1;
   return 0;
 }
 
