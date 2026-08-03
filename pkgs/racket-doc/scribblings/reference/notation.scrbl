@@ -89,10 +89,8 @@ names have implicit grammar productions:
 
  @item{A metavariable that ends with @racket[_body] stands for any
        @tech{form}; the form will be parsed as either a local definition or
-       an expression. A @racket[_body] can parse as a definition only
-       if it is not preceded by any expression, and the last
-       @racket[_body] must be an expression; see also
-       @secref["intdef-body"].}
+       an expression. The last @racket[_body] must be an expression;
+       see also @secref["intdef-body"].}
 
  @item{A metavariable that ends with @racket[_datum] stands for any
        @tech{form}, and the form is normally uninterpreted (e.g.,
