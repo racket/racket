@@ -253,11 +253,11 @@
   (racket:void))
 
 (define (rktio_process_result_stdin_fd r)
-  (Rrktio_process_result_t-stdin_fd (cast r _pointer _Rrktio_process_result_t-pointer)))
+  (Rrktio_process_result_t-stdin_rfd (cast r _pointer _Rrktio_process_result_t-pointer)))
 (define (rktio_process_result_stdout_fd r)
-  (Rrktio_process_result_t-stdout_fd (cast r _pointer _Rrktio_process_result_t-pointer)))
+  (Rrktio_process_result_t-stdout_rfd (cast r _pointer _Rrktio_process_result_t-pointer)))
 (define (rktio_process_result_stderr_fd r)
-  (Rrktio_process_result_t-stderr_fd (cast r _pointer _Rrktio_process_result_t-pointer)))
+  (Rrktio_process_result_t-stderr_rfd (cast r _pointer _Rrktio_process_result_t-pointer)))
 (define (rktio_process_result_process r)
   (Rrktio_process_result_t-process (cast r _pointer _Rrktio_process_result_t-pointer)))
 
