@@ -1177,20 +1177,16 @@ typedef void (*rktio_DeleteProcThreadAttributeList_t)(void *lpAttributeList);
 static rktio_DeleteProcThreadAttributeList_t rktio_DeleteProcThreadAttributeList;
 static void init_thread_attr_procs()
 {
-  WaitForSingleObject(rktio_global_lock, INFINITE);
+  EnterCriticalSection(&rktio_global_cs);
   if (!rktio_InitializeProcThreadAttributeList
       || !rktio_UpdateProcThreadAttribute) {
-    HMODULE hm;
+    
+    rktio_InitializeProcThreadAttributeList = (rktio_InitializeProcThreadAttributeList_t) &InitializeProcThreadAttributeList;
+    rktio_UpdateProcThreadAttribute = (rktio_UpdateProcThreadAttribute_t) &UpdateProcThreadAttribute;
+    rktio_DeleteProcThreadAttributeList = (rktio_DeleteProcThreadAttributeList_t) &DeleteProcThreadAttributeList;
 
-    hm = LoadLibraryW(L"kernel32.dll");
-
-    rktio_InitializeProcThreadAttributeList = (rktio_InitializeProcThreadAttributeList_t)GetProcAddress(hm, "InitializeProcThreadAttributeList");
-    rktio_UpdateProcThreadAttribute = (rktio_UpdateProcThreadAttribute_t)GetProcAddress(hm, "UpdateProcThreadAttribute");
-    rktio_DeleteProcThreadAttributeList = (rktio_DeleteProcThreadAttributeList_t)GetProcAddress(hm, "DeleteProcThreadAttributeList");
-
-    FreeLibrary(hm);
   }
-  ReleaseSemaphore(rktio_global_lock, 1, NULL);
+  LeaveCriticalSection(&rktio_global_cs);
 }
 
 static intptr_t do_spawnv(rktio_t *rktio,

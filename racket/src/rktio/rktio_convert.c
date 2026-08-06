@@ -107,12 +107,10 @@ static void init_iconv()
   wchar_t *p;
   int hook_handle = 0;
 
-  WaitForSingleObject(rktio_global_lock, INFINITE);
-
-  if (iconv_is_ready) {
-    ReleaseSemaphore(rktio_global_lock, 1, NULL);
+  if (iconv_is_ready)
     return;
-  }
+
+  EnterCriticalSection(&rktio_global_cs);
 
   /* bundled iconv may depend on vcruntime140 as also bundled, so try
      loading that as bundled, just in case */
@@ -127,106 +125,98 @@ static void init_iconv()
   /* Try potentially embedded, first: */
   m = rktio_load_library(A_PRIMARY_ICONV_DLL);
   if (m)
-    hook_handle = 1;
-  if (!m) {
-    m = rktio_load_library(A_SECONDARY_ICONV_DLL);
-    if (m)
-      hook_handle = 1;
-  }
+    goto iconv_loaded;
 
-  if (!m) {
-    p = rktio_get_dll_path(PRIMARY_ICONV_DLL);
-    if (p) {
+  m = rktio_load_library(A_SECONDARY_ICONV_DLL);
+  if (m)
+    goto iconv_loaded;
+
+  m = rktio_load_library(A_SECONDARY_ICONV_DLL);
+  if (m)
+    goto iconv_loaded;
+
+  p = rktio_get_dll_path(PRIMARY_ICONV_DLL);
+  if (p) {
       m = LoadLibraryW(p);
       free(p);
-    } else
-      m = NULL;
+      goto iconv_loaded;
   }
 
-  if (!m) {
-    p = rktio_get_dll_path(SECONDARY_ICONV_DLL);
-    if (p) {
+  p = rktio_get_dll_path(SECONDARY_ICONV_DLL);
+  if (p) {
       m = LoadLibraryW(p);
       free(p);
-    } else
-      m = NULL;
-  }
+      goto iconv_loaded;
+  } 
 
-  if (!m) {
-    p = rktio_get_dll_path(FALLBACK1_ICONV_DLL);
-    if (p) {
+  p = rktio_get_dll_path(FALLBACK1_ICONV_DLL);
+  if (p) {
       m = LoadLibraryW(p);
       free(p);
-    } else
-      m = NULL;
+      goto iconv_loaded;
   }
 
-  if (!m) {
-    p = rktio_get_dll_path(FALLBACK2_ICONV_DLL);
-    if (p) {
+  p = rktio_get_dll_path(FALLBACK2_ICONV_DLL);
+  if (p) {
       m = LoadLibraryW(p);
       free(p);
-    } else
-      m = NULL;
+      goto iconv_loaded;
   }
 
-  if (!m)
-    m = LoadLibraryW(PRIMARY_ICONV_DLL);
-  if (!m)
-    m = LoadLibraryW(SECONDARY_ICONV_DLL);
-  if (!m)
-    m = LoadLibraryW(FALLBACK1_ICONV_DLL);
-  if (!m)
-    m = LoadLibraryW(FALLBACK2_ICONV_DLL);
+  m = LoadLibraryW(PRIMARY_ICONV_DLL);
+  if (m)
+    goto iconv_loaded;
+    
+  m = LoadLibraryW(SECONDARY_ICONV_DLL);
+  if (m)
+    goto iconv_loaded;
+  
+  m = LoadLibraryW(FALLBACK1_ICONV_DLL);
+  if (m)
+    goto iconv_loaded;
+  
+  m = LoadLibraryW(FALLBACK2_ICONV_DLL);
+  if (m)
+    goto iconv_loaded;
 
-  if (m) {
-    if (hook_handle) {
+  /*
+   * We failed to load the iconv library.
+   * set all the procs to null, leave the 
+   * critical section and return;
+   */
+
+  iconv = NULL;
+  iconv_open = NULL;
+  iconv_close = NULL;
+  locale_charset = NULL;
+  iconv_errno = NULL;
+  LeaveCriticalSection(&rktio_global_cs);
+  return;
+
+  iconv_loaded:
+  
+  if (hook_handle) {
       iconv = (iconv_proc_t)rktio_get_proc_address(m, "libiconv");
       iconv_open = (iconv_open_proc_t)rktio_get_proc_address(m, "libiconv_open");
       iconv_close = (iconv_close_proc_t)rktio_get_proc_address(m, "libiconv_close");
       locale_charset = (locale_charset_proc_t)rktio_get_proc_address(m, "locale_charset");
-    } else {
+  } else {
       iconv = (iconv_proc_t)GetProcAddress(m, "libiconv");
       iconv_open = (iconv_open_proc_t)GetProcAddress(m, "libiconv_open");
       iconv_close = (iconv_close_proc_t)GetProcAddress(m, "libiconv_close");
       locale_charset = (locale_charset_proc_t)GetProcAddress(m, "locale_charset");
-    }
-    /* Make sure we have all of them or none: */
-    if (!iconv || !iconv_open || !iconv_close) {
-      iconv = NULL;
-      iconv_open = NULL;
-      iconv_close = NULL;
-    }
   }
   
-  if (iconv) {
-    if (hook_handle)
+  if (hook_handle)
       iconv_errno = (errno_proc_t)rktio_get_proc_address(m, "_errno");
-    else
+  else
       iconv_errno = (errno_proc_t)GetProcAddress(m, "_errno");
-    if (!iconv_errno) {
-      /* The iconv.dll distributed with Racket links to "msvcrt.dll"
-	 on x86, and to "ucrtbase.dll" otherwise.
-	 It's a slightly dangerous assumption that whatever
-	 iconv we found also uses that DLL. */
-# if defined(_M_IX86)
-      m = LoadLibraryW(L"msvcrt.dll");
-# else
-      m = LoadLibraryW(L"ucrtbase.dll");
-# endif
-      if (m) {
-	iconv_errno = (errno_proc_t)GetProcAddress(m, "_errno");
-	if (!iconv_errno) {
-	  iconv = NULL;
-	  iconv_open = NULL;
-	  iconv_close = NULL;
-	}
-      }
-    }
-  }
-
+    
+  if (!iconv_errno)
+    iconv_errno = &_errno;
+	
   iconv_is_ready = 1;
-  ReleaseSemaphore(rktio_global_lock, 1, NULL);
+  LeaveCriticalSection(&rktio_global_cs);
 }
 
 rktio_char16_t *rktio_get_dll_path(rktio_char16_t *s)
