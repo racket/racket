@@ -100,7 +100,7 @@ its own source to access the @filepath{db/barcodes.rkt} and
 @racketmod[
 #:file "db/lookup.rkt"
 racket
-(require "barcode.rkt" "makers.rkt")
+(require "barcodes.rkt" "makers.rkt")
 ....]
 
 Ditto for @filepath{machine/control.rkt}:
