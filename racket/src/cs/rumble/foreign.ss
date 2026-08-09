@@ -921,7 +921,10 @@
     (raise
      (|#%app|
       exn:fail:filesystem
-      (format "~a: not yet ready\n  name: ~a" who name)
+      (error-message->adjusted-string
+       who primitive-realm
+       (format "not yet ready\n  name: ~a" name)
+       primitive-realm)
       (current-continuation-marks)))))
 
 (define ffi-ptr->address
