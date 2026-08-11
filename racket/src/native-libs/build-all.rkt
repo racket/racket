@@ -24,12 +24,8 @@
        "zlib")]
     [else
      null])
-   (cond
-     [(and mac? (or m32? ppc?))
-      '("openssl-1")]
-     [else
-      '("openssl-3")])
-   '("expat"
+   '("openssl-3"
+     "expat"
      "gettext")
    (cond
     [linux?
@@ -49,7 +45,7 @@
        "freefont")]
     [else null])
    (cond
-     [win? null]
+     [(or win? mac?) null]
      [else '("libuuid")])
    '("libffi"
      "glib"
@@ -61,15 +57,13 @@
      "harfbuzz"
      "fribidi"
      "pango"
-     "gmp")
-   (cond
-     [aarch64?
-      '("mpfr-4")]
-     [else
-      '("mpfr-3")])
-   '("jpeg"
-     "atk"
-     "poppler")
+     "gmp"
+     "mpfr"
+     "jpeg"
+     "atk")
+   (if linux?
+       '()
+       '("poppler"))
    (cond
     [mac?
      '("libedit")]
@@ -97,10 +91,17 @@
                    [current-command-line-arguments
                     (list->vector
                      (append
-                      (list (if win? "--win" (if linux? "--linux" "--mac"))
-                            (if m32?
-                                (if ppc? "--mppc" "--m32")
-                                (if aarch64? "--maarch64" "--mx86_64")))
+                      (list (cond
+                              [win? "--win"]
+                              [mac? "--mac"]
+                              [linux? "--linux"]
+                              [else (error "missing OS")])
+                            (cond
+                              [i386? "--i386"]
+                              [x86_64? "--x86_64"]
+                              [ppc? "--ppc"]
+                              [aarch64? "--aarch64"]
+                              [else (error "missing arch")]))
                       (cons "--archives"
                             (add-between (map ~a archives-dirs)
                                          "--archives"))

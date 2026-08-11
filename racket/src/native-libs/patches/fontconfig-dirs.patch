@@ -1,8 +1,8 @@
-diff -u -r orig/fontconfig-2.13.0/fontconfig/fontconfig.h next/fontconfig-2.13.0/fontconfig/fontconfig.h
---- orig/fontconfig-2.13.0/fontconfig/fontconfig.h	2018-03-05 20:31:12.000000000 -0700
-+++ next/fontconfig-2.13.0/fontconfig/fontconfig.h	2018-03-28 20:11:52.000000000 -0600
-@@ -377,6 +377,9 @@
- 		      FcConfig *config);
+diff -r -u old/fontconfig-2.14.2/fontconfig/fontconfig.h new/fontconfig-2.14.2/fontconfig/fontconfig.h
+--- old/fontconfig-2.14.2/fontconfig/fontconfig.h	2023-01-26 23:46:22
++++ new/fontconfig-2.14.2/fontconfig/fontconfig.h	2023-08-18 18:35:31
+@@ -389,6 +389,9 @@
+ 		      FcConfig       *config);
  
  /* fccfg.c */
 +FcPublic void
@@ -11,21 +11,20 @@ diff -u -r orig/fontconfig-2.13.0/fontconfig/fontconfig.h next/fontconfig-2.13.0
  FcPublic FcChar8 *
  FcConfigHome (void);
  
-@@ -635,6 +638,9 @@
+@@ -650,6 +653,9 @@
+ 
  FcPublic void
  FcFini (void);
- 
++
 +FcPublic void
 +FcSetFallbackDirs (const FcChar8 *font_dir,  const FcChar8 *cache_dir);
-+
+ 
  FcPublic int
  FcGetVersion (void);
- 
-Only in next/fontconfig-2.13.0/fontconfig: fontconfig.h.orig
-diff -u -r orig/fontconfig-2.13.0/src/fccfg.c next/fontconfig-2.13.0/src/fccfg.c
---- orig/fontconfig-2.13.0/src/fccfg.c	2018-02-04 04:01:46.000000000 -0700
-+++ next/fontconfig-2.13.0/src/fccfg.c	2018-03-28 20:11:52.000000000 -0600
-@@ -1914,6 +1914,22 @@
+diff -r -u old/fontconfig-2.14.2/src/fccfg.c new/fontconfig-2.14.2/src/fccfg.c
+--- old/fontconfig-2.14.2/src/fccfg.c	2023-01-24 23:37:45
++++ new/fontconfig-2.14.2/src/fccfg.c	2023-08-18 18:36:41
+@@ -2364,6 +2364,22 @@
  #define FONTCONFIG_FILE	"fonts.conf"
  #endif
  
@@ -48,20 +47,19 @@ diff -u -r orig/fontconfig-2.13.0/src/fccfg.c next/fontconfig-2.13.0/src/fccfg.c
  static FcChar8 *
  FcConfigFileExists (const FcChar8 *dir, const FcChar8 *file)
  {
-@@ -2015,7 +2031,7 @@
+@@ -2465,7 +2481,7 @@
  		strcat ((char *) fontconfig_path, "\\fonts");
  	}
  #endif
 -    dir = (FcChar8 *) FONTCONFIG_PATH;
-+        dir = (fc_config_dir ? (FcChar8 *)fc_config_dir : (FcChar8 *)FONTCONFIG_PATH);
++    dir = (fc_config_dir ? (FcChar8 *)fc_config_dir : (FcChar8 *)FONTCONFIG_PATH);
      path[i] = malloc (strlen ((char *) dir) + 1);
      if (!path[i])
  	goto bail1;
-Only in next/fontconfig-2.13.0/src: fccfg.c.orig
-diff -u -r orig/fontconfig-2.13.0/src/fcinit.c next/fontconfig-2.13.0/src/fcinit.c
---- orig/fontconfig-2.13.0/src/fcinit.c	2018-02-04 21:28:01.000000000 -0700
-+++ next/fontconfig-2.13.0/src/fcinit.c	2018-03-28 20:15:42.000000000 -0600
-@@ -35,25 +35,52 @@
+diff -r -u old/fontconfig-2.14.2/src/fcinit.c new/fontconfig-2.14.2/src/fcinit.c
+--- old/fontconfig-2.14.2/src/fcinit.c	2020-12-03 05:45:00
++++ new/fontconfig-2.14.2/src/fcinit.c	2023-08-18 18:38:38
+@@ -35,26 +35,54 @@
  #pragma message("To suppress these warnings, define FC_NO_MT.")
  #endif
  
@@ -91,15 +89,17 @@ diff -u -r orig/fontconfig-2.13.0/src/fcinit.c next/fontconfig-2.13.0/src/fcinit
      FcConfig	*config;
      const FcChar8 *fallback = (const FcChar8 *) ""	\
  	"<fontconfig>" \
--	"  <dir>" FC_DEFAULT_FONTS "</dir>" \
-+	"  <dir>" "%s" "</dir>" \
+-	FC_DEFAULT_FONTS \
++	"%s" \
  	"  <dir prefix=\"xdg\">fonts</dir>" \
 -	"  <cachedir>" FC_CACHEDIR "</cachedir>" \
 +	"  <cachedir>" "%s" "</cachedir>" \
  	"  <cachedir prefix=\"xdg\">fontconfig</cachedir>" \
+ 	"  <include ignore_missing=\"yes\">" CONFIGDIR "</include>" \
  	"  <include ignore_missing=\"yes\" prefix=\"xdg\">fontconfig/conf.d</include>" \
  	"  <include ignore_missing=\"yes\" prefix=\"xdg\">fontconfig/fonts.conf</include>" \
  	"</fontconfig>";
+ 
 +    const char *default_fonts, *cache_dir, *fallback_s;
 +
 +    default_fonts = (fc_default_fonts ? fc_default_fonts : (const FcChar8 *)FC_DEFAULT_FONTS);
@@ -107,7 +107,7 @@ diff -u -r orig/fontconfig-2.13.0/src/fcinit.c next/fontconfig-2.13.0/src/fcinit
 +
 +    fallback_s = malloc(strlen(fallback) + strlen(default_fonts) + strlen(cache_dir) + 1);
 +    sprintf(fallback_s, fallback, default_fonts, cache_dir);
- 
++ 
      config = FcConfigCreate ();
      if (!config)
  	goto bail0;
@@ -117,14 +117,12 @@ diff -u -r orig/fontconfig-2.13.0/src/fcinit.c next/fontconfig-2.13.0/src/fcinit
  	goto bail1;
  
      return config;
-Only in next/fontconfig-2.13.0/src: fcinit.c.orig
-Only in next/fontconfig-2.13.0/src: fcinit.c.rej
-diff -u -r orig/fontconfig-2.13.0/src/fcint.h next/fontconfig-2.13.0/src/fcint.h
---- orig/fontconfig-2.13.0/src/fcint.h	2018-02-04 03:20:56.000000000 -0700
-+++ next/fontconfig-2.13.0/src/fcint.h	2018-03-28 20:11:52.000000000 -0600
-@@ -647,6 +647,9 @@
- FcPrivate FcChar8 *
- FcConfigXdgDataHome (void);
+diff -r -u old/fontconfig-2.14.2/src/fcint.h new/fontconfig-2.14.2/src/fcint.h
+--- old/fontconfig-2.14.2/src/fcint.h	2022-11-26 00:10:36
++++ new/fontconfig-2.14.2/src/fcint.h	2023-08-18 18:39:10
+@@ -668,6 +668,9 @@
+ FcPrivate FcStrSet *
+ FcConfigXdgDataDirs (void);
  
 +FcPrivate FcChar8 *
 +FcConfigDir (void);
@@ -132,24 +130,39 @@ diff -u -r orig/fontconfig-2.13.0/src/fcint.h next/fontconfig-2.13.0/src/fcint.h
  FcPrivate FcExpr *
  FcConfigAllocExpr (FcConfig *config);
  
-@@ -878,6 +881,9 @@
+@@ -914,6 +917,9 @@
+ 
  FcPrivate void
  FcDefaultFini (void);
- 
++
 +FcPrivate FcChar8 *
 +FcFallbackCacheDir (void);
-+
+ 
  /* fcdir.c */
  
- FcPrivate FcBool
-Only in next/fontconfig-2.13.0/src: fcint.h.orig
-diff -u -r orig/fontconfig-2.13.0/src/fcxml.c next/fontconfig-2.13.0/src/fcxml.c
---- orig/fontconfig-2.13.0/src/fcxml.c	2018-02-04 04:01:55.000000000 -0700
-+++ next/fontconfig-2.13.0/src/fcxml.c	2018-03-28 20:16:52.000000000 -0600
-@@ -2080,6 +2080,14 @@
+diff -r -u old/fontconfig-2.14.2/src/fcxml.c new/fontconfig-2.14.2/src/fcxml.c
+--- old/fontconfig-2.14.2/src/fcxml.c	2023-01-24 23:37:45
++++ new/fontconfig-2.14.2/src/fcxml.c	2023-08-19 06:24:33
+@@ -1315,6 +1315,14 @@
+ 		return NULL;
+ 	    }
+ 	}
++        else if (FcStrCmp (prefix, (const FcChar8 *)"cfg") == 0) {
++          parent = FcConfigDir ();
++          if (!parent) return NULL;
++        }
++        else if (FcStrCmp (prefix, (const FcChar8 *)"cache") == 0) {
++          parent = FcFallbackCacheDir ();
++          if (!parent) return NULL;
++        }
+ 	else if (FcStrCmp (prefix, (const FcChar8 *) "default") == 0 ||
+ 		 FcStrCmp (prefix, (const FcChar8 *) "cwd") == 0)
+ 	{
+@@ -2361,6 +2369,14 @@
+ 	 */
  	if (!prefix)
  	    goto bail;
-     }
++    }
 +    if (attr && FcStrCmp (attr, (const FcChar8 *)"cfg") == 0) {
 +      prefix = FcConfigDir ();
 +      if (!prefix) goto bail;
@@ -157,9 +170,6 @@ diff -u -r orig/fontconfig-2.13.0/src/fcxml.c next/fontconfig-2.13.0/src/fcxml.c
 +    if (attr && FcStrCmp (attr, (const FcChar8 *)"cache") == 0) {
 +      prefix = FcFallbackCacheDir ();
 +      if (!prefix) goto bail;
-+    }
-     data = FcStrBufDoneStatic (&parse->pstack->str);
+     }
+     data = FcStrBufDone (&parse->pstack->str);
      if (!data)
-     {
-Only in next/fontconfig-2.13.0/src: fcxml.c.orig
-Only in next/fontconfig-2.13.0/src: fcxml.c.rej

@@ -10,41 +10,44 @@ on those packages. The "x86_64-linux-natipkg" and
 "aarch64-linux-natipkg" variants of Racket are like Windows and Mac
 OS, expecting packages to supply native libraries for Linux.
 
-This directory contains scripts and patches to build Windows, Mac OS,
-and Linux libraries in a consistent and portable way, but Windows
-builds for x86_64 and AArch64 now use a separate process:
+This directory contains scripts and patches to build Mac OS and Linux
+libraries in a consistent and portable way. Windows builds for
+x86_64 and AArch64 now use a separate process:
+
  https://github.com/ndykman/racket-native-libs
 
 The scripts and patches here are fragile, so we upgrade libraries
 infrequently. Currently, we use the following external packages and
-versions for actively supported platforms:
+versions for actively supported platforms: Mac OS x86_64, Mac OS
+AArch64, Linux x86_64, and Linux AArch64 (where some older
+platforms are also supported, but pinned to older builds):
 
- pkg-config-0.28
- sed-4.2 (Windows only, to avoid non-GNU `sed`)
- sqlite[-autoconf]-3360000 (Windows and Linux)
- libedit-20191231-3.1 (Mac OS only)
- openssl-3.4.1 (Mac OS i386 and PowerPC, Linux x86_64: openssl-1.1.1o)
- libiconv-1.15 (Windows only)
- zlib-1.2.12 (Windows and Linux only)
- libffi-3.2.1 (Mac OS AArch64, Windows AArch64: libffi-3.3)
+ pkg-config-0.29.2
+ openssl-3.5.7
+ libffi-3.8.9
  expat-2.4.8
- gettext-0.19.8
- glib-2.72.2
- libpng-1.6.37
- pixman-0.44.2 (Mac OS i386 and PowerPC, Linux x86_64: pixman-0.38.4)
- cairo-1.18.2 (Mac OS i386 and PowerPC, Linux x86_64: cairo-1.16.0)
+ gettext-0.26.0
+ glib-2.89.3
+ libpng-1.6.58
+ pixman-0.44.2
+ cairo-1.18.2
  jpegsrc.v9e
- harfbuzz-1.7.6
- fribidi-1.0.2
- fontconfig-2.13.0
- freetype-2.12.1
- pango-1.42.0
- poppler-0.24.5
- mpfr-3.1.6 (Mac OS AArch64, Windows AArch64: mpfr-4.2.0)
- gmp-6.2.1
+ harfbuzz-14.3.0
+ fribidi-1.0.16
+ fontconfig-2.16.0
+ freetype-2.14.3
+ pango-1.58.0
+ poppler-26.08.0
+ mpfr-4.2.0
+ gmp-6.3.0
  atk-2.28.1
 
-(Linux only:)
+Mac OS only:
+ libedit-20191231-3.1
+
+Linux only:
+ sqlite[-autoconf]-3360000
+ zlib-1.3.2
  xtrans-1.3.5
  inputproto-2.3.1
  xextproto-7.3.0
@@ -68,7 +71,8 @@ library on Mac OS.
 Preliminiaries
 --------------
 
-For Windows (cross-compile from Mac OS or Linux):
+For Windows cross-compile from Mac OS or Linux, the build scripts
+still contain support, although it may no longer work.
 
 The build scripts assume a MinGW cross compiler installed as
 "x86_64-w64-mingw32-gcc", "i686-w64-mingw32-gcc", and
@@ -82,10 +86,11 @@ Beware that the "libdir" configuration in old MinGW installations at
   ..../{i686,x86_64}-w64-mingw32/lib/libstdc++.la
 may be wrong, in which case you'll need to fix it by hand.
 
-For Mac OS (i386 and x86_64 on Intel, ppc on PowerPC):
+For Mac OS cross-compile for i386 and ppc on PowerPC are similarly
+histrociall supported, but might not work anymore.
 
-The script assumes that "/Developer/SDKs/MacOSX10.6.sdk" (for 32-bit
-builds) and "/Developer/SDKs/MacOSX10.9.sdk" (for 64-bit builds) are
+The script assumes that
+"/Library/Developer/CommandLineTools/SDKs/MacOSX10.6.sdk" is
 available.
 
 The build used to use the 10.5 SDK, which you can get it out out of
@@ -98,10 +103,8 @@ Clang, then note that you'll need gcc-4.0 --- but the Pango version
 listed above relies on CoreText, which is available only with 10.5 and
 later.
 
-For Linux:
-
-The script assumes that `gcc`, `g++`, `m4`, and `chrpath` are
-installed, as well as X11 header files.
+For Linux, the build script assumes typicall build utilties are
+included, and also `python3.14`.
 
 Build Steps (assuming no version changes)
 -----------
@@ -116,18 +119,17 @@ Build Steps (assuming no version changes)
 
      racket <here-dir>/build-all.rkt \
         --{win,mac,linux} \
-        --m{32,64}|--mppc|--maarch64 \
+        --{ppc,i386,x86_64,aarch64} \
         --archives <archive-dir>
 
-    where <here-dir> is the deirectory containing this file,
-    `--win` versus `--mac` selects a Windows versus Mac OS build,
-    and `--m32` versus `--m64` selects a 32-bit versus 64-bit build.
+    where <here-dir> is the deirectory containing this file, `--win`,
+    etc., selects n OS, and `--i386`, etc., selects an architecture.
 
  * Run
 
      racket <here-dir>/install.rkt \
         --{win,mac,linux} \
-        --m{32,64}|--mppc|--maarch64 \
+        --{ppc,i386,x86_64,aarch64} \
         <native-pkgs-dir>
 
    where <native-pkgs-dir> contains the package "source" directories,
@@ -167,7 +169,7 @@ More details for Windows:
 More details for Mac OS:
 
  * 32-bit binaries are built for 10.6 and up. 64-bit binaries are
-   built for 10.9 and up.
+   built for 10.9 and up, except that Poppler requires 10.15.
 
  * The generated ".dylib"s go to "dest/lib".
 
