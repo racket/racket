@@ -42,6 +42,10 @@
 struct background_sleep_t;
 #endif
 
+/* Marks an intentionally-retained allocation so LeakSanitizer does not
+   report it (see rktio_main.c). No-op without ASan/LSan. */
+void rktio_lsan_ignore_object(void *o);
+
 /*========================================================================*/
 /* File-descriptor actions without a rktio_t                              */
 /*========================================================================*/
