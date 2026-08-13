@@ -961,6 +961,37 @@
           [(seq ,e1 ,e2) `(seq ,e1 ,body)]
           [else body])))
 
+    ; Like `result-exp`, but also looks through the wrappers cp0 introduces
+    ; to sequence evaluation of non-atomic subexpressions before combining
+    ; them, e.g. the `(add1 x)` in `(values (add1 x) (sub1 x))` gets bound
+    ; to a temp first. cp0 represents that binding not as `letrec`, but as
+    ; an immediate call to a single-clause `case-lambda` (i.e., `let`'s
+    ; actual internal Lsrc shape). Used to recognize a producer that
+    ; tail-calls `values` even after that sequencing.
+    (define (find-values-in-tail e)
+      (nanopass-case (Lsrc Expr) e
+        [(seq ,e1 ,e2) (find-values-in-tail e2)]
+        [(letrec ([,x* ,e*] ...) ,body) (find-values-in-tail body)]
+        [(letrec* ([,x* ,e*] ...) ,body) (find-values-in-tail body)]
+        [(call ,preinfo (case-lambda ,preinfo2 (clause (,x* ...) ,interface ,body)) ,e* ...)
+         (find-values-in-tail body)]
+        [(call ,preinfo ,pr ,e* ...)
+         (guard (eq? (primref-name pr) 'values))
+         e*]
+        [else #f]))
+
+    ; The `non-result-exp` counterpart to `find-values-in-tail`: rebuilds
+    ; the same chain of wrappers found by `find-values-in-tail`, with
+    ; `new-body` spliced in as the new tail.
+    (define (rewrap-tail e new-body)
+      (nanopass-case (Lsrc Expr) e
+        [(seq ,e1 ,e2) `(seq ,e1 ,(rewrap-tail e2 new-body))]
+        [(letrec ([,x* ,e*] ...) ,body) `(letrec ([,x* ,e*] ...) ,(rewrap-tail body new-body))]
+        [(letrec* ([,x* ,e*] ...) ,body) `(letrec* ([,x* ,e*] ...) ,(rewrap-tail body new-body))]
+        [(call ,preinfo (case-lambda ,preinfo2 (clause (,x* ...) ,interface ,body)) ,e* ...)
+         `(call ,preinfo (case-lambda ,preinfo2 (clause (,x* ...) ,interface ,(rewrap-tail body new-body))) ,e* ...)]
+        [else new-body]))
+
     (define (arity-okay? arity n)
       (or (not arity) ; presumably system routine w/no recorded arity
           (ormap
@@ -2558,15 +2589,20 @@
                (let ((*p-val (cp0 (build-ref p-temp) ctxt1 env sc wd #f moi)))
                  (cond
                    [(and (app-used ctxt1)
-                         (let ([e (result-exp *p-val)])
-                           (nanopass-case (Lsrc Expr) e
-                             [(call ,preinfo ,pr ,e* ...)
-                              (guard (eq? (primref-name pr) 'values))
-                              e*]
-                             [else (and (single-valued/inspect-ok? e)
-                                        (list e))]))) =>
+                         (find-values-in-tail *p-val)) =>
                     (lambda (args)
                       ; (with-values (values arg ...) c-temp) => (c-temp arg ...)
+                      (letify (make-preinfo-lambda) ids ctxt
+                        (rewrap-tail *p-val
+                          (cp0-call (app-preinfo ctxt) (build-ref c-temp)
+                            (map build-cooked-opnd args)
+                            (app-ctxt ctxt) env sc wd (app-name ctxt) moi))))]
+                   [(and (app-used ctxt1)
+                         (let ([e (result-exp *p-val)])
+                           (and (single-valued/inspect-ok? e)
+                                (list e)))) =>
+                    (lambda (args)
+                      ; (with-values (single-valued-e) c-temp) => (c-temp (single-valued-e))
                       (letify (make-preinfo-lambda) ids ctxt
                         (non-result-exp *p-val
                           (cp0-call (app-preinfo ctxt) (build-ref c-temp)

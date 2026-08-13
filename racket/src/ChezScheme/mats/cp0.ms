@@ -382,6 +382,31 @@
           (lambda () (div-and-mod 7 3))
           (lambda (x y) (#2%cons (* x 10) (/ y 10)))))
      '(#2%cons 20 1/10))
+  ; verify call-with-values still fuses producer and consumer when a
+  ; non-atomic `values` argument forces cp0 to bind it to a temp before
+  ; constructing the tuple, instead of leaving a residual call-with-values
+  ; (github issue #4634)
+   (equivalent-expansion?
+     (expand/optimize
+       '(lambda (x)
+          (call-with-values
+            (lambda () (values (add1 x) (sub1 x)))
+            (lambda (a b) (+ a b)))))
+     '(lambda (x) (#3%+ (#2%add1 x) (#2%sub1 x))))
+   (equivalent-expansion?
+     (expand/optimize
+       '(lambda (x)
+          (call-with-values
+            (lambda () (values (add1 x) x))
+            (lambda (a b) (+ a b)))))
+     '(lambda (x) (#2%+ (#2%add1 x) x)))
+   (equivalent-expansion?
+     (expand/optimize
+       '(lambda (x)
+          (call-with-values
+            (lambda () (values (add1 x) (sub1 x) (* x 2)))
+            (lambda (a b c) (+ a b c)))))
+     '(lambda (x) (#3%+ (#2%add1 x) (#2%sub1 x) (#2%* 2 x))))
 
   (equivalent-expansion?
    (expand/optimize '(lambda (t) (#3%$value (if t 1 (values 3 3 3))) #t))
