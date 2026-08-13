@@ -479,8 +479,8 @@
      (begin (disappeared! stx)
             (pat:any))]
     [~!
-     (disappeared! stx)
      (begin
+       (disappeared! stx)
        (unless (cut-allowed?)
          (wrong-syntax stx
                        "cut (~~!) not allowed within ~~not pattern"))
@@ -497,89 +497,112 @@
      (atomic-datum-stx? #'datum)
      (pat:datum (syntax->datum #'datum))]
     [(~var . rest)
-     (disappeared! stx)
-     (parse-pat:var stx decls allow-head?)]
+     (begin
+       (disappeared! stx)
+       (parse-pat:var stx decls allow-head?))]
     [(~datum . rest)
-     (disappeared! stx)
-     (syntax-case stx (~datum)
-       [(~datum d)
-        (pat:datum (syntax->datum #'d))]
-       [_ (wrong-syntax stx "bad ~~datum form")])]
+     (begin
+       (disappeared! stx)
+       (syntax-case stx (~datum)
+         [(~datum d)
+          (pat:datum (syntax->datum #'d))]
+         [_ (wrong-syntax stx "bad ~~datum form")]))]
     [(~literal . rest)
-     (disappeared! stx)
-     (parse-pat:literal stx decls)]
+     (begin
+       (disappeared! stx)
+       (parse-pat:literal stx decls))]
     [(~and . rest)
-     (disappeared! stx)
-     (parse-pat:and stx decls allow-head? allow-action?)]
+     (begin
+       (disappeared! stx)
+       (parse-pat:and stx decls allow-head? allow-action?))]
     [(~or . rest)
-     (disappeared! stx)
-     (parse-pat:or stx decls allow-head?)]
+     (begin
+       (disappeared! stx)
+       (parse-pat:or stx decls allow-head?))]
     [(~or* . rest)
-     (disappeared! stx)
-     (parse-pat:or stx decls allow-head?)]
+     (begin
+       (disappeared! stx)
+       (parse-pat:or stx decls allow-head?))]
     [(~alt . rest)
      (wrong-syntax stx "ellipsis-head pattern allowed only before ellipsis")]
     [(~not . rest)
-     (disappeared! stx)
-     (parse-pat:not stx decls)]
+     (begin
+       (disappeared! stx)
+       (parse-pat:not stx decls))]
     [(~rest . rest)
-     (disappeared! stx)
-     (parse-pat:rest stx decls)]
+     (begin
+       (disappeared! stx)
+       (parse-pat:rest stx decls))]
     [(~describe . rest)
-     (disappeared! stx)
-     (parse-pat:describe stx decls allow-head?)]
+     (begin
+       (disappeared! stx)
+       (parse-pat:describe stx decls allow-head?))]
     [(~delimit-cut . rest)
-     (disappeared! stx)
-     (parse-pat:delimit stx decls allow-head?)]
+     (begin
+       (disappeared! stx)
+       (parse-pat:delimit stx decls allow-head?))]
     [(~commit . rest)
-     (disappeared! stx)
-     (parse-pat:commit stx decls allow-head?)]
+     (begin
+       (disappeared! stx)
+       (parse-pat:commit stx decls allow-head?))]
     [(~reflect . rest)
-     (disappeared! stx)
-     (parse-pat:reflect stx decls #f)]
+     (begin
+       (disappeared! stx)
+       (parse-pat:reflect stx decls #f))]
     [(~seq . rest)
-     (disappeared! stx)
-     (check-head!
-      (parse-hpat:seq stx #'rest decls))]
+     (begin
+       (disappeared! stx)
+       (check-head!
+        (parse-hpat:seq stx #'rest decls)))]
     [(~optional . rest)
-     (disappeared! stx)
-     (check-head!
-      (parse-hpat:optional stx decls))]
+     (begin
+       (disappeared! stx)
+       (check-head!
+        (parse-hpat:optional stx decls)))]
     [(~splicing-reflect . rest)
-     (disappeared! stx)
-     (check-head!
-      (parse-pat:reflect stx decls #t))]
+     (begin
+       (disappeared! stx)
+       (check-head!
+        (parse-pat:reflect stx decls #t)))]
     [(~bind . rest)
-     (disappeared! stx)
-     (check-action!
-      (parse-pat:bind stx decls))]
+     (begin
+       (disappeared! stx)
+       (check-action!
+        (parse-pat:bind stx decls)))]
     [(~fail . rest)
-     (disappeared! stx)
-     (check-action!
-      (parse-pat:fail stx decls))]
+     (begin
+       (disappeared! stx)
+       (check-action!
+        (parse-pat:fail stx decls)))]
     [(~post . rest)
-     (disappeared! stx)
-     (parse-pat:post stx decls allow-head? allow-action?)]
+     (begin
+       (disappeared! stx)
+       (parse-pat:post stx decls allow-head? allow-action?))]
     [(~peek . rest)
-     (disappeared! stx)
-     (check-head!
-      (parse-pat:peek stx decls))]
+     (begin
+       (disappeared! stx)
+       (check-head!
+        (parse-pat:peek stx decls)))]
     [(~peek-not . rest)
-     (disappeared! stx)
-     (check-head!
-      (parse-pat:peek-not stx decls))]
+     (begin
+       (disappeared! stx)
+       (check-head!
+        (parse-pat:peek-not stx decls)))]
     [(~parse . rest)
-     (disappeared! stx)
-     (check-action!
-      (parse-pat:parse stx decls))]
+     (begin
+       (disappeared! stx)
+       (check-action!
+        (parse-pat:parse stx decls)))]
     [(~do . rest)
-     (disappeared! stx)
-     (check-action!
-      (parse-pat:do stx decls))]
+     (begin
+       (disappeared! stx)
+       (check-action!
+        (parse-pat:do stx decls)))]
     [(~undo . rest)
-     (disappeared! stx)
-     (check-action!
-      (parse-pat:undo stx decls))]
+     (begin
+       (disappeared! stx)
+       (check-action!
+        (parse-pat:undo stx decls)))]
     [(head dots . tail)
      (and (dots? #'dots) (not-shadowed? #'dots))
      (begin (disappeared! #'dots)
@@ -644,8 +667,8 @@
      (begin (disappeared! #'id)
             (recur (expand-pattern (syntax-local-value #'id) #'id stx)))]
     [(~eh-var name eh-alt-set-id)
-     (disappeared! stx)
      (let ()
+       (disappeared! stx)
        (define prefix (name->prefix #'name "."))
        (define eh-alt-set (get-eh-alternative-set #'eh-alt-set-id))
        (for/list ([alt (in-list (eh-alternative-set-alts eh-alt-set))])
@@ -659,20 +682,25 @@
                  (replace-eh-alternative-attrs
                   alt (iattrs->sattrs iattrs))))))]
     [(~or . _)
-     (disappeared! stx)
-     (recur-cdr-list stx)]
+     (begin
+       (disappeared! stx)
+       (recur-cdr-list stx))]
     [(~alt . _)
-     (disappeared! stx)
-     (recur-cdr-list stx)]
+     (begin
+       (disappeared! stx)
+       (recur-cdr-list stx))]
     [(~optional . _)
-     (disappeared! stx)
-     (list (parse*-ehpat/optional stx decls))]
+     (begin
+       (disappeared! stx)
+       (list (parse*-ehpat/optional stx decls)))]
     [(~once . _)
-     (disappeared! stx)
-     (list (parse*-ehpat/once stx decls))]
+     (begin
+       (disappeared! stx)
+       (list (parse*-ehpat/once stx decls)))]
     [(~between . _)
-     (disappeared! stx)
-     (list (parse*-ehpat/bounds stx decls))]
+     (begin
+       (disappeared! stx)
+       (list (parse*-ehpat/bounds stx decls)))]
     [_
      (let ([head (parse-head-pattern stx decls)])
        (list (list (create-ehpat head #f stx) stx)))]))
@@ -752,9 +780,10 @@
   (define name0
     (syntax-case stx ()
       [(_ name . _)
-       (unless (identifier? #'name)
-         (wrong-syntax #'name "expected identifier"))
-       #'name]
+       (begin
+         (unless (identifier? #'name)
+           (wrong-syntax #'name "expected identifier"))
+         #'name)]
       [_
        (wrong-syntax stx "bad ~~var form")]))
   (define-values (scname sc+args-stx argu pfx role)
@@ -870,14 +899,15 @@
 (define (parse-pat:literal stx decls)
   (syntax-case stx ()
     [(_ lit . more)
-     (unless (identifier? #'lit)
-       (wrong-syntax #'lit "expected identifier"))
-     (let* ([chunks (parse-keyword-options/eol #'more phase-directive-table
-                                               #:no-duplicates? #t
-                                               #:context stx)]
-            [phase (options-select-value chunks '#:phase #:default #f)]
-            [phase (if phase (txlift phase) slpl-expr)])
-       (pat:literal #'lit phase phase))]
+     (begin
+       (unless (identifier? #'lit)
+         (wrong-syntax #'lit "expected identifier"))
+       (let* ([chunks (parse-keyword-options/eol #'more phase-directive-table
+                                                 #:no-duplicates? #t
+                                                 #:context stx)]
+              [phase (options-select-value chunks '#:phase #:default #f)]
+              [phase (if phase (txlift phase) slpl-expr)])
+         (pat:literal #'lit phase phase)))]
     [_
      (wrong-syntax stx "bad ~~literal pattern")]))
 
