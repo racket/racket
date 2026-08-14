@@ -207,8 +207,13 @@
 		 [lit-comp-is-mod? (and (identifier? lit-comp)
 					(free-identifier=? 
 					 lit-comp
-					 (quote-syntax free-identifier=?)))])
-            (syntax-arm
+					 (quote-syntax free-identifier=?)))]
+                 [track-use (lambda (stx)
+                              (if s-exp?
+                                  stx
+                                  (let ([kws (map syntax-local-introduce (stx->list kws))])
+                                    (syntax-property stx 'disappeared-use kws))))])
+            (track-use
              (datum->syntax
               (quote-syntax here)
               (list (quote-syntax let) (list (list arg (if (or s-exp? (syntax-e arg-is-stx?))
