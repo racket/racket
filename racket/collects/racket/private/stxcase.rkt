@@ -307,10 +307,15 @@
                                            (list rslt
                                                  (if cant-fail?
                                                      arg
-                                                     (list* (datum->syntax
-                                                             (quote-syntax here)
-                                                             mtch
-                                                             pattern)
+                                                     (list* (let ([mtch (datum->syntax
+                                                                         (quote-syntax here)
+                                                                         mtch
+                                                                         pattern)])
+                                                              (if (and (not interp?) lit-comp-is-mod?)
+                                                                  (syntax-property mtch
+                                                                                   'disappeared-use
+                                                                                   (syntax-local-introduce lit-comp))
+                                                                  mtch))
                                                             arg
                                                             (if (or interp? lit-comp-is-mod?)
                                                                 null
