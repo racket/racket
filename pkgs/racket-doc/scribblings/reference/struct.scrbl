@@ -772,7 +772,7 @@ struct instance from being considered quotable. For example:
 (print (list (point2 1 2) (point2 3 4)))
 ]
 
-Keyword arguments can be simulated with @racket[unquoted-printing-string]:
+Keyword arguments can be printed with @racket[keyword-prefixed-field]:
 
 @examples[#:eval struct-eval #:label #f
 (code:comment "Private implementation")
@@ -782,10 +782,8 @@ Keyword arguments can be simulated with @racket[unquoted-printing-string]:
      (make-constructor-style-printer
       (lambda (obj) 'kwpoint)
       (lambda (obj)
-        (list (unquoted-printing-string "#:x")
-              (kwpoint-impl-x obj)
-              (unquoted-printing-string "#:y")
-              (kwpoint-impl-y obj)))))])
+        (list (keyword-prefixed-field '#:x (kwpoint-impl-x obj))
+              (keyword-prefixed-field '#:y (kwpoint-impl-y obj))))))])
 (code:comment "Public ``constructor''")
 (define (kwpoint #:x x #:y y)
   (kwpoint-impl x y))
@@ -795,6 +793,21 @@ Keyword arguments can be simulated with @racket[unquoted-printing-string]:
 ]
 
 @history[#:added "6.3"]{}
+}
+
+@defstruct*[keyword-prefixed-field ([keyword keyword?] [value any/c])]{
+ A @deftech{keyword prefixed field} wraps @racket[value] and @racket[print]s, @racket[write]s, and
+ @racket[display]s the same way that @racket[value] does, except that @racket[keyword] is printed
+ before it as a prefix. This printing cooperates with the pretty printer --- if the keyword and
+ @racket[value] are too large to fit on a single line (including the single space separating them)
+ then @racket[value] will be printed on the following line, indented by two spaces. This behavior is
+ useful in combination with @racket[make-constructor-style-printer] for printing "named fields" that
+ are meant to correspond to keyword arguments of a smart constructor.
+
+ This is intended to replace the previously recommended solution to this problem, which was to use
+ @racket[unquoted-printing-string]. Unlike @racket[unquoted-printing-string],
+ using @racket[keyword-prefixed-field] keeps the keyword and corresponding value on the same line in
+ most cases.
 }
 
 @defproc[(struct->list [v any/c]

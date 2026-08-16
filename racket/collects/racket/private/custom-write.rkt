@@ -1,6 +1,13 @@
 #lang racket/base
-(require racket/pretty)
-(provide make-constructor-style-printer)
+
+
+(provide make-constructor-style-printer
+         (struct-out keyword-prefixed-field))
+
+
+(require racket/contract
+         racket/pretty)
+
 
 ;; make-constructor-style-printer : (Any -> (U String Symbol))
 ;;                                  (Any -> (Sequenceof Any))
@@ -73,3 +80,56 @@
           [else
            (print/one-line port)])
     (void)))
+
+
+(struct keyword-prefixed-field (keyword value)
+
+  #:transparent
+
+  #:guard (struct-guard/c keyword? any/c)
+
+  #:methods gen:custom-write
+  [(define (write-proc this port mode)
+     (define keyword (keyword-prefixed-field-keyword this))
+     (define field-value (keyword-prefixed-field-value this))
+
+     (define (recur x p)
+       (case mode
+         ((#t) (write x p))
+         ((#f) (display x p))
+         ((0 1) (print x p mode))))
+
+     (define (print-field p leading-space)
+       (write-string "#:" p)
+       (write-string (keyword->string keyword) p)
+       (define lead (make-string (+ (or leading-space 0) 2) #\space))
+       (when leading-space
+         (pretty-print-newline p (pretty-print-columns)))
+       (write-string lead p)
+       (recur field-value p))
+
+     (define (print/one-line p)
+       (print-field p #f))
+
+     (define (print/multi-line p)
+       (define-values (unused-line col unused-pos) (port-next-location p))
+       (print-field p col))
+
+     (cond
+       [(and (pretty-printing)
+             (integer? (pretty-print-columns)))
+        ((let/ec esc
+           (define tport
+             (make-tentative-pretty-print-output-port
+              port
+              (- (pretty-print-columns) 1)
+              (λ () 
+                (esc
+                 (λ ()
+                   (tentative-pretty-print-port-cancel tport)
+                   (print/multi-line port))))))
+           (print/one-line tport)
+           (tentative-pretty-print-port-transfer tport port)
+           void))]
+       [else (print/one-line port)])
+     (void))])
