@@ -245,8 +245,14 @@
       [`(begin-unsafe ,exps ...)
        (find-mutated!* exps ids)]
       [`(begin0 ,exp ,exps ...)
-       (find-mutated! exp ids)
-       (find-mutated!* exps #f)]
+       ;; visit `exps` before `exp`, which matters if `ids` is
+       ;; provided; the `ids` will not be assigned the results of
+       ;; `exp` until after `exps` are evaluated, so we need to visit
+       ;; `exps` first; meanwhile, the relative order of visiting
+       ;; sibling expressions (which cannot add bindings for each
+       ;; other) does not matter
+       (find-mutated!* exps #f)
+       (find-mutated! exp ids)]
       [`(set! ,id ,rhs)
        (let ([id (unwrap id)])
          (define old-state (hash-ref mutated id #f))

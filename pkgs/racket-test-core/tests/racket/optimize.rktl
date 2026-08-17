@@ -7832,4 +7832,37 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(module variable-x-is-used-too-early racket/base
+  (define (f)
+    x)
+  (define x
+    (begin0
+      f
+      (f))))
+
+(err/rt-test/once (dynamic-require ''variable-x-is-used-too-early #f)
+                  exn:fail:contract:variable?)
+
+(err/rt-test/once (let ()
+                    (define (f)
+                      x)
+                    (define x
+                      (begin0
+                        f
+                        (f)))
+                    'ok)
+                  exn:fail:contract:variable?)
+
+(err/rt-test/once (let ()
+                    (define (guard v st-info)
+                      (prop? 0))
+                    (define-values (prop prop? prop-ref)
+                      (begin0
+                        (make-struct-type-property 'name guard)
+                        (guard 1 2)))
+                    (values prop prop? prop-ref))
+                  exn:fail:contract:variable?)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)
