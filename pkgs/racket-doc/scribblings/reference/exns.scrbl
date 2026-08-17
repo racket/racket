@@ -1277,7 +1277,8 @@ kind of error on different platforms converts to the same symbol. The
 result is @racket[#f] if a normalization is unknown. Currently, the
 result will be @racket[#false] unless @racket[exn/errno] is an
 @racket[exn:fail:filesystem:errno] instance, an
-@racket[exn:fail:network:errno] instance, or a value that might be
+@racket[exn:fail:network:errno] instance, an
+@racket[exn:fail:filesystem:exists] instance, or a value that might be
 produced by @racket[exn:fail:filesystem:errno-errno] or
 @racket[exn:fail:network:errno-errno].
 
@@ -1286,7 +1287,8 @@ result symbols include @racket['ENOENT] as ``file not found,''
 @racket['EEXIST] as ``file exists already,'' and @racket['EACCESS] as
 ``permission denied.''
 
-@history[#:added "9.0.0.7"]}
+@history[#:added "9.0.0.7"
+         #:changed "9.3.0.2" @elem{Added support for @racket[exn:fail:filesystem:exists].}]}
 
 @;------------------------------------------------------------------------
 @section{Additional Exception Functions}

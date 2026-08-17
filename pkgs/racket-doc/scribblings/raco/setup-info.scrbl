@@ -74,10 +74,10 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    @racketgrammar*[
      #:literals (list)
      [entry (list note ...)]
-     [doc (list label-string note-path)
-          (list label-string note-path order-integer)
-          (list label-string note-path order-integer
-                (list sub-note ...))]
+     [note (list label-string note-path)
+           (list label-string note-path order-integer)
+           (list label-string note-path order-integer
+                 (list sub-note ...))]
      [sub-note (list label-string note-path)]
    ]
 

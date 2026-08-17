@@ -419,11 +419,16 @@
              radix))
     (when (and (not (eq? radix 10)) (inexact? n))
       (raise
-       (exn:fail:contract (string-append
-                           "number->string: inexact numbers can only be printed in base 10\n"
-                           "  number: " (number->string n) "\n"
-                           "  requested base: " (number->string radix))
-                          (current-continuation-marks))))
+       (|#%app|
+        exn:fail:contract
+        (error-message->adjusted-string
+         'number->string primitive-realm
+         (string-append
+          "inexact numbers can only be printed in base 10\n"
+          "  number: " (number->string n) "\n"
+          "  requested base: " (number->string radix))
+         primitive-realm)
+        (current-continuation-marks))))
     (do-number->string n radix)]
    [(n)
     (do-number->string n 10)]))

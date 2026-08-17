@@ -7322,7 +7322,7 @@ static void zuo_primitive_init(int will_load_image) {
 static void zuo_image_init(char *boot_image) {
 # if EMBEDDED_IMAGE
   if (!boot_image) {
-    zuo_fasl_restore((char *)emedded_boot_image, emedded_boot_image_len * sizeof(zuo_int32_t));
+    zuo_fasl_restore((char *)embedded_boot_image, embedded_boot_image_len * sizeof(zuo_int32_t));
     zuo_sync_in_case_of_fail();
   } else {
 # endif

@@ -79,22 +79,26 @@
     (raise-argument-error 'exn-classify-errno
                           "(or/c exn? (cons/c exact-integer? (or/c 'posix 'windows 'gai)))"
                           errno/exn))
-  (define errno
-    (cond
-      [(pair? errno/exn) errno/exn]
-      [(exn:fail:filesystem:errno? errno/exn)
-       (exn:fail:filesystem:errno-errno errno/exn)]
-      [(exn:fail:network:errno? errno/exn)
-       (exn:fail:network:errno-errno errno/exn)]
-      [else '(#f . #f)]))
-  (and (fixnum? (car errno))
-       (let ([bstr (rktio_classify_error (case (cdr errno)
-                                           [(posix) RKTIO_ERROR_KIND_POSIX]
-                                           [(windows) RKTIO_ERROR_KIND_WINDOWS]
-                                           [else RKTIO_ERROR_KIND_GAI])
-                                         (car errno))])
-         (and bstr
-              (string->symbol (bytes->string/latin-1 bstr))))))
+  (cond
+    [(exn:fail:filesystem:exists? errno/exn)
+     'EEXIST]
+    [else
+     (define errno
+       (cond
+         [(pair? errno/exn) errno/exn]
+         [(exn:fail:filesystem:errno? errno/exn)
+          (exn:fail:filesystem:errno-errno errno/exn)]
+         [(exn:fail:network:errno? errno/exn)
+          (exn:fail:network:errno-errno errno/exn)]
+         [else '(#f . #f)]))
+     (and (fixnum? (car errno))
+          (let ([bstr (rktio_classify_error (case (cdr errno)
+                                              [(posix) RKTIO_ERROR_KIND_POSIX]
+                                              [(windows) RKTIO_ERROR_KIND_WINDOWS]
+                                              [else RKTIO_ERROR_KIND_GAI])
+                                            (car errno))])
+            (and bstr
+                 (string->symbol (bytes->string/latin-1 bstr)))))]))
 
 ;; Install the default error-value->string handler,
 ;; replacing the non-working primitive placeholder

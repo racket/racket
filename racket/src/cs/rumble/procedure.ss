@@ -917,8 +917,11 @@
   (raise
    (|#%app|
     exn:fail:contract:arity
-    (string-append "procedure-result chaperone: result arity mismatch;\n"
-                   " expected number of values not received from wrapper on the original procedure's result")
+    (error-message->adjusted-string
+     '|procedure-result chaperone| primitive-realm
+     (string-append "result arity mismatch;\n"
+                    " expected number of values not received from wrapper on the original procedure's result")
+     primitive-realm)
     (current-continuation-marks))))
 
 (define (raise-mark-missing-key-or-val-error chaperone? pos next-p wrapper)
@@ -950,19 +953,20 @@
   (raise
    (|#%app|
     exn:fail:contract:arity
-    (string-append
+    (error-message->adjusted-string
      (if chaperone?
-         "procedure chaperone"
-         "procedure impersonator")
-     ": arity mismatch;\n"
-     " expected number of results not received from wrapper on the original\n"
-     " procedure's arguments\n"
-     "  original: " (reindent/newline (error-value->string proc))
-     "\n"
-     "  wrapper: " (reindent/newline (error-value->string wrapper))
-     "\n"
-     "  expected: " (number->string expected-n) " or more\n"
-     "  received: " (number->string got-n))
+         '|procedure chaperone|
+         '|procedure impersonator|)
+     primitive-realm
+     (string-append
+      "arity mismatch;\n"
+      " expected number of results not received from wrapper on the original\n"
+      " procedure's arguments\n"
+      "  original: " (reindent/newline (error-value->string proc)) "\n"
+      "  wrapper: " (reindent/newline (error-value->string wrapper)) "\n"
+      "  expected: " (number->string expected-n) " or more\n"
+      "  received: " (number->string got-n))
+     primitive-realm)
     (current-continuation-marks))))
 
 ;; ----------------------------------------

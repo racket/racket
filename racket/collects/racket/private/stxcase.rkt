@@ -207,8 +207,13 @@
 		 [lit-comp-is-mod? (and (identifier? lit-comp)
 					(free-identifier=? 
 					 lit-comp
-					 (quote-syntax free-identifier=?)))])
-            (syntax-arm
+					 (quote-syntax free-identifier=?)))]
+                 [track-use (lambda (stx)
+                              (if s-exp?
+                                  stx
+                                  (let ([kws (map syntax-local-introduce (stx->list kws))])
+                                    (syntax-property stx 'disappeared-use kws))))])
+            (track-use
              (datum->syntax
               (quote-syntax here)
               (list (quote-syntax let) (list (list arg (if (or s-exp? (syntax-e arg-is-stx?))
@@ -302,10 +307,15 @@
                                            (list rslt
                                                  (if cant-fail?
                                                      arg
-                                                     (list* (datum->syntax
-                                                             (quote-syntax here)
-                                                             mtch
-                                                             pattern)
+                                                     (list* (let ([mtch (datum->syntax
+                                                                         (quote-syntax here)
+                                                                         mtch
+                                                                         pattern)])
+                                                              (if (and (not interp?) lit-comp-is-mod?)
+                                                                  (syntax-property mtch
+                                                                                   'disappeared-use
+                                                                                   (syntax-local-introduce lit-comp))
+                                                                  mtch))
                                                             arg
                                                             (if (or interp? lit-comp-is-mod?)
                                                                 null

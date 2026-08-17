@@ -5144,6 +5144,8 @@ static Scheme_Object *exn_classify_errno(int argc, Scheme_Object *argv[])
 
   if (SCHEME_CHAPERONE_STRUCTP(p)
       && scheme_is_struct_instance(exn_table[MZEXN].type, p)) {
+    if (scheme_is_struct_instance(exn_table[MZEXN_FAIL_FILESYSTEM_EXISTS].type, p))
+      return scheme_intern_symbol("EEXIST");
     if (scheme_is_struct_instance(exn_table[MZEXN_FAIL_FILESYSTEM_ERRNO].type, p)
         || scheme_is_struct_instance(exn_table[MZEXN_FAIL_NETWORK_ERRNO].type, p))
       p = scheme_struct_ref(p, 2);

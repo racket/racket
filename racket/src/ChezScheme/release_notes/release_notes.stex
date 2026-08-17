@@ -37,7 +37,8 @@ procedure) is given in parentheses.
      \item x86, nonthreaded (i3le) and threaded (ti3le)
      \item x86\_64, nonthreaded (a6le) and threaded (ta6le)
      \item AArch64 including Android, nonthreaded (arm64le) and threaded (tarm64le)
-     \item ARMv6 (32-bit) including Android, nonthreaded (arm32le) and threaded (tarm32le)
+     \item ARMv6 (32-bit armhf), nonthreaded (arm32le) and threaded (tarm32le)
+     \item ARMv7 (32-bit armel) including Android, nonthreaded (arm7le) and threaded (tarm7le)
      \item RV64G (64-bit RISC-V), nonthreaded (rv64le) and threaded (trv64le)
      \item LoongArch64 (64-bit LoongArch), nonthreaded (la64le) and threaded (tla64le)
      \item PowerPC (32-bit), nonthreaded (ppc32le) and threaded (tppc32le)
@@ -128,6 +129,12 @@ struct/union members as defined by C11 and later. Anonymous fields have arrow
 (\scheme{=>}) as their name and must themselves be of a struct, union, or bits
 ftype, whose fields are accessible directly from the containing ftype
 (recursively from the innermost named parent when nested).
+
+\subsection{New machine type for ARMv7 armel (10.5.0)}
+
+The arm7le and tarm7le machine types correspond to a 32-bit ARM
+compilation target using the armel ABI, which is consistent with (old)
+Android devices.
 
 \subsection{Named Cost Center (10.4.0)}
 
@@ -3008,6 +3015,21 @@ argument raises and error and the offset is out of bounds---has been fixed.
 
 When \scheme{log} is called with exact \scheme{1} as the second argument, the error is now
 reported in terms of \scheme{log} instead of a divide-by-zero error in \scheme{/}.
+
+\subsection{Repairs for 32-bit ARM foreign call and callables (10.5.0)}
+
+Several problems with floating-point values for foreign calls and
+callables on 32-bit ARM (arm32 and tarm32 machine types) have been
+fixed. Foreign calls in \scheme{__collect_safe} mode that have
+multiple floating-point arguments could deliver the wrong values. When
+a callable has both floating-point arguments and a struct result that
+does not fit into registers, then the argument was not received
+correctly. When a foreign-call argument or result is a multi-element
+\scheme{union} or a \scheme{struct} type that contains multi-element
+\scheme{union}s and has only \scheme{double} or \scheme{float}
+members, the argument or result could be passed incorrectly. A varargs
+foreign call's struct result was not received correctly when it was
+small and with only \scheme{double} or \scheme{float} members.
 
 \subsection{Repair allocation in \scheme{logtest} (10.4.1)}
 

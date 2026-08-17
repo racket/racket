@@ -30,16 +30,16 @@
 
 ;; Hack to make AArch64 libraries look like other architecture:
 (define aarch64-renames
-  `(("libmpfr.6" "libmpfr.4")))
+  `())
 
 (define libs
-  `("libffi.6"
+  `("libffi.8"
     "libgio-2.0.0"
     "libgmodule-2.0.0"
     "libgthread-2.0.0"
     "libglib-2.0.0"
     "libgobject-2.0.0"
-    "libintl.9"
+    "libintl.8"
     "libharfbuzz.0"
     "libfribidi.0"
     "libpango-1.0.0"
@@ -53,9 +53,11 @@
     "libpixman-1.0"
     "libpng16.16"
     "libgmp.10"
-    "libmpfr.4"
-    "libjpeg.9"
-    "libpoppler.44"
+    "libmpfr.6"
+    "libjpeg.9"))
+
+(define nonlinux-libs
+  '("libpoppler.163"
     "libpoppler-glib.8"))
 
 (define win-libs
@@ -69,10 +71,13 @@
      "ossl-modules/legacy")
    (if aarch64?
        null
-       '("longdouble"))))
+       '("longdouble"))
+   nonlinux-libs))
 
 (define mac-libs
-  '("libedit.0"))
+  (append
+   '("libedit.0")
+   nonlinux-libs))
 
 (define mac64-libs
   '("MMTabBarView.framework"))
@@ -80,8 +85,7 @@
 (define macx86-libs
   '("PSMTabBarControl.framework"))
 
-(define stuck-on-openssl1? (or (and linux? (not aarch64?))
-                               (and mac? (or m32? ppc?))))
+(define stuck-on-openssl1? (and mac? (or i386? ppc?)))
 
 (define nonwin-libs
   (append
@@ -91,7 +95,9 @@
        '("libcrypto.3"
          "libssl.3"
          "ossl-modules/legacy"))
-   '("libuuid.1")))
+   (if mac?
+       '()
+       '("libuuid.1"))))
 
 (define no-copy-libs
   '("PSMTabBarControl.framework"
@@ -113,7 +119,7 @@
      "libgdk-x11-2.0.0"
      "libgdk_pixbuf-2.0.0")))
 (define linux-remove-libs
-  '("libintl.9"))
+  '("libintl.8"))
 
 (struct pkg-spec (name
                   suffix ; (increment after "-" when library versions change)
@@ -134,7 +140,7 @@
 (define package-mapping
   (package-mapping-qq
    (["draw"        ; pkg name
-     "-3"          ; pkg suffix (increment after "-" when library versions change)
+     "-4"          ; pkg suffix (increment after "-" when library versions change)
      "racket/draw" ; subdir
      "" ; extra for "LICENSE.txt"
      ("additionally, fontconfig/src/fcmd5.h and"
@@ -196,7 +202,9 @@
               Zlib])]
     ["racket"
      ,(cond
-        [(and mac? (not m32?) (not ppc?))
+        [(and mac? (not i386?) (not ppc?))
+         "-4"]
+        [(and linux? x86_64?)
          "-4"]
         [else
          "-3"])
@@ -206,7 +214,7 @@
      #t
      "base"
      ,(cond
-        [(and mac? (not m32?) (not ppc?))
+        [(and mac? (not i386?) (not ppc?))
          "1.0"]
         [else
          "1.2"])
@@ -233,7 +241,7 @@
                  BSD-3-clause])]
 
     ["math"
-     ""
+     "-2"
      "math"
      ""
      ()
@@ -341,7 +349,7 @@
                  blessing])]
     
     ["poppler"
-     ""
+     "-2"
      "racket-poppler"
      ""
      ()
@@ -586,14 +594,18 @@
                   (system (format "install_name_tool -change ~a @loader_path/~a ~a"
                                   (format "~a/~a.dylib" from (revert-name s renames))
                                   (format "~a~a.dylib" dots s)
+                                  p-new))
+                  (system (format "install_name_tool -change ~a @loader_path/~a ~a"
+                                  (format "@rpath/~a.dylib" (revert-name s renames))
+                                  (format "~a~a.dylib" dots s)
                                   p-new)))
-                (append libs nonwin-libs))
+                (append libs mac-libs nonwin-libs))
       (system (format "strip -S ~a" p-new))
       (mask-out-build-path p-new)
       (when sign-as
 	(system (format "codesign -s ~s --timestamp ~a" sign-as p-new)))))
 
-  (define platform (~a (if m32? 
+  (define platform (~a (if i386? 
                            (if ppc? "ppc" "i386")
 			   (if aarch64? "aarch64" "x86_64"))
                        "-macosx"))
@@ -619,7 +631,7 @@
                      [ppc? '()]
                      [else mac-libs])
                    (cond
-                     [m32? '()]
+                     [i386? '()]
                      [else mac64-libs])
                    (cond
                      [aarch64? '()]
@@ -629,7 +641,7 @@
 
 (define (install-win)
   (define exe-prefix (cond
-                       [m32? "i686-w64-mingw32"]
+                       [i386? "i686-w64-mingw32"]
                        [aarch64? "aarch64-w64-mingw32"]
                        [else "x86_64-w64-mingw32"]))
 
@@ -637,7 +649,7 @@
                       aarch64-renames
                       null))
 
-  (sync-dirs (if m32?
+  (sync-dirs (if i386?
                  "lib/ossl-modules"
                  "lib64/ossl-modules")
              "bin/ossl-modules")
@@ -674,13 +686,13 @@
   (parameterize ([current-environment-variables
                   (environment-variables-copy
                    (current-environment-variables))])
-    (putenv "PATH" (~a (if m32?
+    (putenv "PATH" (~a (if i386?
                            "/usr/local/mw32/bin:/usr/mw32/bin:"
                            "/usr/local/mw64/bin:/usr/mw64/bin:")
                        (getenv "PATH")))
 
-    (install (~a "win32-" (if m32? "i386" (if aarch64? "arm64" "x86_64")))
-             (~a "win32\\" (if m32? "i386" (if aarch64? "arm64" "x86_64")))
+    (install (~a "win32-" (if i386? "i386" (if aarch64? "arm64" "x86_64")))
+             (~a "win32\\" (if i386? "i386" (if aarch64? "arm64" "x86_64")))
              "dll"
              fixup
              (for/list ([s (in-list (append libs
@@ -700,7 +712,7 @@
 
   (define platform (~a (cond
                          [aarch64? "aarch64"]
-                         [m32? "i386"]
+                         [i386? "i386"]
                          [else "x86_64"])
                        "-linux-natipkg"))
 
@@ -749,20 +761,21 @@
                    linux-libs)
            renames))
 
-(define (mask-out-build-path p-new)
+(define (mask-out-build-path p-new [start 0])
   (define old-bytes (path->bytes (build-path (current-directory) "dest")))
   (define rx (byte-regexp (regexp-quote old-bytes)))
   (define i (open-input-file p-new))
+  (file-position i start)
   (define pos (regexp-match-positions rx i))
-  (close-input-port i)
+  (close-input-port i)  
   (when pos
     (printf "Replacing build path in ~a\n" p-new)
     (define new-bytes (regexp-replace* #rx#"[^a-z]" old-bytes #"x"))
     (define o (open-output-file p-new #:exists 'update))
-    (file-position o (caar pos))
+    (file-position o (+ start (caar pos)))
     (write-bytes new-bytes o)
     (close-output-port o)
-    (mask-out-build-path p-new)))
+    (mask-out-build-path p-new (+ start (cdar pos)))))
 
 (define (sync-dirs from to)
   (define dest (build-path (current-directory) "dest"))

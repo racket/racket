@@ -158,10 +158,10 @@
         (unless (hash-ref cmd 'keep-collects? #f)
           (fd-write out (~a "#define ZUO_LIB_PATH NULL" nl)))
         (fd-write out (~a "#define EMBEDDED_IMAGE 1" nl))
-        (fd-write out (~a "static zuo_uint32_t emedded_boot_image_len = "
+        (fd-write out (~a "static zuo_uint32_t embedded_boot_image_len = "
                           (quotient (string-length image) 4)
                           ";" nl))
-        (fd-write out (~a "static zuo_uint32_t emedded_boot_image[] = {" nl))
+        (fd-write out (~a "static zuo_uint32_t embedded_boot_image[] = {" nl))
         (let ([accum->line (lambda (accum) (apply ~a (reverse (cons nl accum))))])
           (let loop ([i 0] [col 0] [accum '()])
             (cond

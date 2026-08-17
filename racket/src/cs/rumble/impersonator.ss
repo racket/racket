@@ -254,12 +254,15 @@
   (raise
    (|#%app|
     exn:fail:contract:arity
-    (string-append
-     (symbol->string who) ": arity mismatch;\n"
-     " received wrong number of values from a chaperone's replacement procedure\n"
-     "  expected: " (number->string n) "\n"
-     "  received: " (number->string (length args)) "\n"
-     "  chaperone: " (error-value->string orig)))))
+    (error-message->adjusted-string
+     who primitive-realm
+     (string-append
+      "arity mismatch;\n"
+      " received wrong number of values from a chaperone's replacement procedure\n"
+      "  expected: " (number->string n) "\n"
+      "  received: " (number->string (length args)) "\n"
+      "  chaperone: " (error-value->string orig))
+     primitive-realm))))
 
 ;; ----------------------------------------
 
@@ -711,16 +714,22 @@
       (raise
        (|#%app|
         exn:fail:contract:variable
-        (format "~a: ~a;\n cannot ~a field before initialization"
-                n short-msg what)
+        (error-message->adjusted-string
+         n primitive-realm
+         (format "~a;\n cannot ~a field before initialization"
+                 short-msg what)
+         primitive-realm)
         (current-continuation-marks)
         n)))]
    [else
     (raise
      (|#%app|
       exn:fail:contract
-      (format "~a: ~a;\n cannot ~as field before initialization"
-              (object-name orig-proc) short-msg what)
+      (error-message->adjusted-string
+       (object-name orig-proc) primitive-realm
+       (format "~a;\n cannot ~a field before initialization"
+               short-msg what)
+       primitive-realm)
       (current-continuation-marks)))])))
 
 ;; ----------------------------------------

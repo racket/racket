@@ -226,8 +226,11 @@
       (unless (fixnum? n)
         (raise (|#%app|
                 exn:fail:out-of-memory
-                (#%format "out of memory making ~a\n  length: ~a"
-                          what len)
+                (error-message->adjusted-string
+                 #f primitive-realm
+                 (#%format "out of memory making ~a\n  length: ~a"
+                           what len)
+                 primitive-realm)
                 (current-continuation-marks))))
       (immediate-allocation-check n)
       ;; Watch out for radiply growing memory use that isn't captured

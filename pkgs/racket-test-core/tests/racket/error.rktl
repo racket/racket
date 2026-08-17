@@ -201,4 +201,17 @@
 (test #f (exn-classify-errno (cons (expt 2 100) 'windows)))
 (test #f (exn-classify-errno (cons (expt 2 100) 'gai)))
 
+(unless (eq? 'windows (system-type))
+  (test 'EISDIR
+        exn-classify-errno
+        (with-handlers ([exn:fail? (lambda (e) e)])
+          (open-input-file (find-system-path 'temp-dir)))))
+
+(let ([f (make-temporary-file)])
+  (test 'EEXIST
+        exn-classify-errno
+        (with-handlers ([exn:fail? (lambda (e) e)])
+          (open-output-file f)))
+  (delete-directory/files f))
+
 (report-errs)

@@ -137,12 +137,22 @@ static void do_remap_error(rktio_err_t *err)
       rktio_set_error(err, RKTIO_ERROR_KIND_WINDOWS, ERROR_FILE_EXISTS);
 #endif
       break;
+    case RKTIO_ERROR_IS_A_DIRECTORY:
+#ifdef RKTIO_SYSTEM_UNIX
+      rktio_set_error(err, RKTIO_ERROR_KIND_POSIX, EISDIR);
+#endif
+      break;
     case RKTIO_ERROR_ACCESS_DENIED:
 #ifdef RKTIO_SYSTEM_UNIX
       rktio_set_error(err, RKTIO_ERROR_KIND_POSIX, EACCES);
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
       rktio_set_error(err, RKTIO_ERROR_KIND_WINDOWS, ERROR_ACCESS_DENIED);
+#endif
+      break;
+    case RKTIO_ERROR_NOT_A_LINK:
+#ifdef RKTIO_SYSTEM_UNIX
+      rktio_set_error(err, RKTIO_ERROR_KIND_POSIX, EINVAL);
 #endif
       break;
     }

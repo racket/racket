@@ -6,13 +6,16 @@
 As Racket programs are compiled (see @secref["compiler"]), the
 compiler may reorder or even remove @defterm{pure} computations that
 have no visible effect. For compilation purposes, the time needed to
-perform a computation is not considered a visible effect. The compiler
-takes into account memory used by a computation, including values that
-the computation keeps reachable, only to the degree that it will not
-increase the asymptotic memory use of a program, but it may remove or
-reorder computations in a way that reduces memory use. The
-@racket[black-box] function inhibits many of these optimizations
-without adding additional overhead.
+perform a computation is not considered a visible effect, so even a
+long-running computation may be eliminated if its result is not used.
+The compiler may also reorder expression evaluation in a way that
+reduces asymptotic memory use. The @racket[black-box] function
+inhibits many of these optimizations without adding additional
+overhead.@margin-note*{The compiler may reorder evaluation in a way
+that increases memory use by a small constant factor, but it will not
+reorder in a way that increases asymptotic memory use (e.g., causing a
+recursion of variable depth @math{N} to use @math{O(N)} memory when it
+should an amount of memory that is independent of @math{N}).}
 
 @defproc[(black-box [v any/c]) any/c]{
 

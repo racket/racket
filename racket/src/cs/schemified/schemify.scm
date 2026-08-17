@@ -23618,8 +23618,8 @@
                                                  (values exp_1 exps_0)))))))
                                      (lambda (exp_0 exps_0)
                                        (begin
-                                         (find-mutated!_0 exp_0 ids_1)
-                                         (find-mutated!*_0 exps_0 #f))))
+                                         (find-mutated!*_0 exps_0 #f)
+                                         (find-mutated!_0 exp_0 ids_1))))
                                     (if (if (eq? 'set! hd_0)
                                           (let ((a_0 (cdr (unwrap v_0))))
                                             (let ((p_0 (unwrap a_0)))
