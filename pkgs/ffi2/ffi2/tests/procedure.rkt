@@ -100,4 +100,13 @@
 
 ;; ----------------------------------------
 
+(let ()
+  (define callback (ffi2-cast (lambda () (void)) #:from (-> void_t) #:to ptr_t))
+  (check-equal? ((ffi2-cast callback #:to (-> void_t)))
+                (void))
+  (black-box callback)
+  (void))
+
+;; ----------------------------------------
+
 (clean-ffi2-lib)
