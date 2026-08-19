@@ -145,10 +145,39 @@
           
 ;; ----------------------------------------
 
+;; If `rhs` (already schemified) tail-ends in a `values` call with
+;; exactly as many results as `ids` expects --- possibly under a chain
+;; of single-binding `let`s that `left-to-right/app` introduced above
+;; to order `rhs`'s own non-simple subexpressions --- then the number
+;; of results is known statically to match, so `ids` can be bound
+;; directly via `let` instead of going through `call-with-values` and
+;; an arity-checking `case-lambda`.
+(define (find-values-tail rhs n)
+  (match rhs
+    [`(let ([,id ,e]) ,body)
+     (find-values-tail body n)]
+    [`(values . ,es)
+     (and (= (length es) n) es)]
+    [`,_ #f]))
+
+(define (rewrap-values-tail rhs new-body)
+  (match rhs
+    [`(let ([,id ,e]) ,body)
+     `(let ([,id ,e]) ,(rewrap-values-tail body new-body))]
+    [`,_ new-body]))
+
 (define (make-let-values ids rhs body target unsafe-mode?)
   (cond
    [(and (pair? ids) (null? (cdr ids)))
     `(let ([,(car ids) ,rhs]) ,body)]
+   [(find-values-tail rhs (length ids))
+    => (lambda (es)
+         (rewrap-values-tail
+          rhs
+          (let loop ([ids ids] [es es])
+            (cond
+              [(null? ids) body]
+              [else `(let ([,(car ids) ,(car es)]) ,(loop (cdr ids) (cdr es)))]))))]
    [else
     (match (and (null? ids) rhs)
       [`(begin ,rhs (values))
@@ -161,7 +190,7 @@
              (lambda ,ids ,body))]
          [else
           `(call-with-values (lambda () ,rhs)
-             (case-lambda 
+             (case-lambda
                [,ids ,body]
                [args (,@(if (aim? target 'system) '() '(#%app/no-return))
                       raise-binding-result-arity-error ,(length ids) args)]))])])]))
