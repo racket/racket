@@ -1068,15 +1068,42 @@
                                                                   (map dep->target (reverse (hash-ref deps key '())))))
                                                               names))
                                                   (map dep->target (reverse (hash-ref deps key '())))))]
+                                  [get-deps+preamble (lambda (token)
+                                                       (define deps (get-deps))
+                                                       (define rev-deps+preamble
+                                                         (foldl (lambda (dep rev-deps+preamble)
+                                                                  (cond
+                                                                    [(hash-ref (target-options dep) 'secondary? #f)
+                                                                     (define r
+                                                                       (if (symbol? (target-name dep))
+                                                                           ((target-get-rule dep) token)
+                                                                           ((target-get-rule dep) (target-name dep) token)))
+                                                                     (define preamble (cdr rev-deps+preamble))
+                                                                     (cons (append (reverse (rule-deps r))
+                                                                                   (car rev-deps+preamble))
+                                                                           (lambda ()
+                                                                             (preamble)
+                                                                             (build/no-dep dep token)))]
+                                                                    [else
+                                                                     (cons (cons dep (car rev-deps+preamble))
+                                                                           (cdr rev-deps+preamble))]))
+                                                                (cons '() void)
+                                                                deps))
+                                                       (cons (reverse (car rev-deps+preamble))
+                                                             (cdr rev-deps+preamble)))]
                                   [t (make-target name
                                                   (if (symbol? name)
                                                       (lambda (token . args)
-                                                        (make-phony-rule (get-deps)
+                                                        (define deps+preamble (get-deps+preamble token))
+                                                        (make-phony-rule (car deps+preamble)
                                                                          (lambda ()
+                                                                           ((cdr deps+preamble))
                                                                            (apply (list-ref spec 3) (cons token args)))))
                                                       (lambda (path token)
-                                                        (make-rule (get-deps)
+                                                        (define deps+preamble (get-deps+preamble token))
+                                                        (make-rule (car deps+preamble)
                                                                    (lambda ()
+                                                                     ((cdr deps+preamble))
                                                                      ((list-ref spec 3) path token)))))
                                                   (foldl (lambda (tag options)
                                                            (hash-set options (hash-ref keyword-to-option tag) #t))
@@ -1100,4 +1127,5 @@
         ':noisy 'noisy?
         ':quiet 'quiet?
         ':eager 'eager?
-        ':recur 'recur?))
+        ':recur 'recur?
+        ':secondary 'secondary?))
