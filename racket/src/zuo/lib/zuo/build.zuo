@@ -344,8 +344,12 @@
      ;; no dependencies, not need for a thread to build, etc.
      (define r ((target-get-rule t) (target-name t) #f))
      (define sha256 (or (rule-sha256 r) (file-sha256/state (target-path t) state)))
-     (when (equal? sha256 no-sha256) ((rule-build r)))
-     (update-target-state state t (list sha256))]
+     (cond
+       [(equal? sha256 no-sha256)
+        ((rule-build r)) ; might error
+        state]
+       [else
+        (update-target-state state t (list sha256))])]
     [else (call-with-name+stack
            (target-name t)
            seen
@@ -737,7 +741,7 @@
   (hash-ref (build-state-target-state state) (target-key t) #f))
 
 (define (add-dependent-target-state dep dep-sha256s state)
-  (define ts (target-state state dep))
+  (define ts (or (target-state state dep) (list no-sha256)))
   (define sha256 (car ts))
   (hash-set dep-sha256s (target-key dep) (if (eq? sha256 phony-sha256) no-sha256 sha256)))
 
