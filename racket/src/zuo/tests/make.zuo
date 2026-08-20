@@ -6,6 +6,10 @@
 
 (define work-dir (build-path tmp-dir "work"))
 
+(define (file-changed)
+  ;; flush SHA cache in case timestamp resolution is too coarse
+  (rm* (build-path work-dir "_zuo_tc.db")))
+
 ;; check that `build/dep` and `build/no-dep` both cooperate with handling of deleted inputs
 (define (try-dep build/*dep)
   (rm* work-dir)
@@ -39,9 +43,7 @@
 
   (rm inter.txt)
   (display-to-file "1234" inter.txt)
-
-  ;; flush SHA cache in case timestamp resolution is too coarse
-  (rm* (build-path work-dir "_zuo_tc.db"))
+  (file-changed)
 
   (build (find-target out.txt all-targets))
   (check (file->string out.txt) (if (eq? build/*dep build/no-dep)
@@ -88,6 +90,7 @@
 
   (rm inter.txt)
   (display-to-file "1234" inter.txt)
+  (file-changed)
 
   (build (find-target out.txt all-targets))
   (check (file->string out.txt) "123")
@@ -95,11 +98,12 @@
   (rm inter.txt)
   (build (find-target out.txt all-targets))
   (check (file->string out.txt) "123")
-
   (check (file-exists? inter.txt) #f)
 
   (rm in.txt)
   (display-to-file "1234" in.txt)
+  (file-changed)
+
   (build (find-target out.txt all-targets))
   (check (file->string out.txt) "1234")
   (check (file-exists? inter.txt) #t)
