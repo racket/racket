@@ -40,6 +40,9 @@
   (rm inter.txt)
   (display-to-file "1234" inter.txt)
 
+  ;; flush SHA cache in case timestamp resolution is too coarse
+  (rm* (build-path work-dir "_zuo_tc.db"))
+
   (build (find-target out.txt all-targets))
   (check (file->string out.txt) (if (eq? build/*dep build/no-dep)
                                     "123"
