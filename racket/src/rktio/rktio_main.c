@@ -10,7 +10,7 @@
 #ifdef RKTIO_SYSTEM_WINDOWS
 #include <synchapi.h>
 
-#define CS_SPINCOUNT 4000
+#define CS_SPINCOUNT 256
 static BOOL rktio_global_cs_initialized = FALSE;
 CRITICAL_SECTION rktio_global_cs = {0};
 #endif
