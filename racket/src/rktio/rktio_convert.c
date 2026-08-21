@@ -129,7 +129,12 @@ static void init_iconv()
     }
   }
 
-  /* Try potentially embedded, first: */
+  /* Yes, we are using goto here. It makes the logic for this section simpler.
+   * As soon as we have loaded the library, we skip ahead to the next part of the 
+   * initialization logic.
+   */
+
+  /* We start with embedded libraries first, then searching the DLL path and so on */
   m = rktio_load_library(A_PRIMARY_ICONV_DLL);
   if (m)
     goto iconv_loaded;
