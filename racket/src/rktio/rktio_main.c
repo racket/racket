@@ -24,7 +24,7 @@ rktio_t *rktio_init(void)
 
 #ifdef RKTIO_SYSTEM_WINDOWS
   if (!rktio_global_cs_initialized) {
-    InitializeCriticalSectionAndSpinCount(&rktio_global_cs,4000);
+    InitializeCriticalSectionAndSpinCount(&rktio_global_cs, CS_SPINCOUNT);
     InterlockedExchange(&rktio_global_cs_initialized, TRUE);
   }
 #endif
