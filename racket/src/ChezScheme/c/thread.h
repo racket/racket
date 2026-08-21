@@ -26,6 +26,7 @@
  * complete implementation of pthreads functionality.
  */
 
+#define MUTEX_SPIN_COUNT 4000
 typedef DWORD s_thread_t;
 typedef DWORD s_thread_key_t;
 typedef CRITICAL_SECTION s_thread_mutex_t;
@@ -40,7 +41,7 @@ typedef void s_thread_rv_t;
 #define s_thread_key_delete(key) (TlsFree(key) == 0 ? EINVAL : 0)
 #define s_thread_getspecific(key) TlsGetValue(key)
 #define s_thread_setspecific(key, value) (TlsSetValue(key, (void *)value) == 0 ? EINVAL : 0)
-#define s_thread_mutex_init(mutex) InitializeCriticalSection(mutex)
+#define s_thread_mutex_init(mutex) InitializeCriticalSectionAndSpinCount(mutex, MUTEX_SPIN_COUNT)
 #define s_thread_mutex_lock(mutex) (EnterCriticalSection(mutex), 0)
 #define s_thread_mutex_unlock(mutex) (LeaveCriticalSection(mutex), 0)
 #define s_thread_mutex_trylock(mutex) (TryEnterCriticalSection(mutex) ? 0 : EBUSY)

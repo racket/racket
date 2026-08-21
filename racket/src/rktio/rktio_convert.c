@@ -112,6 +112,13 @@ static void init_iconv()
 
   EnterCriticalSection(&rktio_global_cs);
 
+  // Another thread could have initialized the library
+  // while we were waiting to enter the CS, so check
+  // iconv_is_ready.
+  
+  if (iconv_is_ready)
+    return;
+
   /* bundled iconv may depend on vcruntime140 as also bundled, so try
      loading that as bundled, just in case */
   if (!rktio_load_library("vcruntime140.dll")) {
@@ -131,36 +138,36 @@ static void init_iconv()
   if (m)
     goto iconv_loaded;
 
-  m = rktio_load_library(A_SECONDARY_ICONV_DLL);
-  if (m)
-    goto iconv_loaded;
-
   p = rktio_get_dll_path(PRIMARY_ICONV_DLL);
   if (p) {
       m = LoadLibraryW(p);
       free(p);
-      goto iconv_loaded;
+      if (m)
+        goto iconv_loaded;
   }
 
   p = rktio_get_dll_path(SECONDARY_ICONV_DLL);
   if (p) {
       m = LoadLibraryW(p);
       free(p);
-      goto iconv_loaded;
-  } 
+      if (m)
+        goto iconv_loaded;
+  }
 
   p = rktio_get_dll_path(FALLBACK1_ICONV_DLL);
   if (p) {
       m = LoadLibraryW(p);
       free(p);
-      goto iconv_loaded;
+      if (m)
+        goto iconv_loaded;
   }
 
   p = rktio_get_dll_path(FALLBACK2_ICONV_DLL);
   if (p) {
       m = LoadLibraryW(p);
       free(p);
-      goto iconv_loaded;
+      if (m)
+        goto iconv_loaded;
   }
 
   m = LoadLibraryW(PRIMARY_ICONV_DLL);
@@ -182,7 +189,7 @@ static void init_iconv()
   /*
    * We failed to load the iconv library.
    * set all the procs to null, leave the 
-   * critical section and return;
+   * critical section and return.
    */
 
   iconv = NULL;
@@ -190,6 +197,7 @@ static void init_iconv()
   iconv_close = NULL;
   locale_charset = NULL;
   iconv_errno = NULL;
+  iconv_is_ready = 1;
   LeaveCriticalSection(&rktio_global_cs);
   return;
 
