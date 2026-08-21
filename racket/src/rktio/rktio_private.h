@@ -486,5 +486,5 @@ void rktio_set_console_handler(void);
 /* A lazy solution to some lazy-initialization synchronization,
    depends on the first call to rktio_init() not being concurrent
    (as does some other initialization for Windows): */
-extern HANDLE rktio_global_lock;
+extern CRITICAL_SECTION rktio_global_cs;
 #endif

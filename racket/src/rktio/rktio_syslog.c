@@ -78,7 +78,7 @@ static rktio_ok_t do_syslog(rktio_t *rktio, int level, const char *name, const c
     char *naya = NULL;
     int ok;
 
-    WaitForSingleObject(rktio_global_lock, INFINITE);
+    EnterCriticalSection(&rktio_global_cs);
     if (rktio->hEventLog == INVALID_HANDLE_VALUE) {
       int ok = 1;
       rktio_err_t err;
@@ -97,11 +97,11 @@ static rktio_ok_t do_syslog(rktio_t *rktio, int level, const char *name, const c
 	ok = 0;
       }
       if (!ok) {
-	ReleaseSemaphore(rktio_global_lock, 1, NULL);
+	LeaveCriticalSection(&rktio_global_cs);
 	return 0;
       }
     }
-    ReleaseSemaphore(rktio_global_lock, 1, NULL);
+    LeaveCriticalSection(&rktio_global_cs);
     
     switch (level) {
     case RKTIO_LOG_FATAL:

@@ -8,7 +8,11 @@
 #endif
 
 #ifdef RKTIO_SYSTEM_WINDOWS
-HANDLE rktio_global_lock;
+#include <synchapi.h>
+
+#define CS_SPINCOUNT 256
+static BOOL rktio_global_cs_initialized = FALSE;
+CRITICAL_SECTION rktio_global_cs = {0};
 #endif
 
 rktio_t *rktio_init(void)
@@ -19,8 +23,10 @@ rktio_t *rktio_init(void)
   memset(rktio, 0, sizeof(rktio_t));
 
 #ifdef RKTIO_SYSTEM_WINDOWS
-  if (!rktio_global_lock)
-    rktio_global_lock = CreateSemaphore(NULL, 1, 1, NULL);
+  if (!rktio_global_cs_initialized) {
+    InitializeCriticalSectionAndSpinCount(&rktio_global_cs, CS_SPINCOUNT);
+    InterlockedExchange(&rktio_global_cs_initialized, TRUE);
+  }
 #endif
 
   if (!rktio_environ_init(rktio)) {
@@ -94,6 +100,7 @@ void rktio_destroy(rktio_t *rktio)
   rktio_free_signal(rktio);
 #ifdef RKTIO_SYSTEM_WINDOWS
   rktio_winsock_done(rktio);
+  DeleteCriticalSection(&rktio_global_cs);
 #endif
   free(rktio);
 }
