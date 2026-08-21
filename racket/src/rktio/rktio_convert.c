@@ -136,13 +136,17 @@ static void init_iconv()
 
   /* We start with embedded libraries first, then searching the DLL path and so on */
   m = rktio_load_library(A_PRIMARY_ICONV_DLL);
-  if (m)
+  if (m) {
+    hook_handle = 1;
     goto iconv_loaded;
+  }
 
   m = rktio_load_library(A_SECONDARY_ICONV_DLL);
-  if (m)
+  if (m) {
+    hook_handle = 1;
     goto iconv_loaded;
-
+  }
+  
   p = rktio_get_dll_path(PRIMARY_ICONV_DLL);
   if (p) {
       m = LoadLibraryW(p);
