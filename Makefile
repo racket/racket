@@ -129,7 +129,7 @@ EXTRA_REPOS_BASE =
 # to include in a distribution; if "{}" appears at the start,
 # then the content of "build/PKGS" can override when that file
 # exists:
-PKGS = {} main-distribution main-distribution-test
+PKGS = {} main-distribution main-distribution-test racket-tstring tstring
 
 # Needed for any distribution (not meant to be configured):
 REQUIRED_PKGS = racket-lib

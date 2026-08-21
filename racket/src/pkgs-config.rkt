@@ -99,10 +99,10 @@
                          #t
                          'build-stamp
                          (auto-stamp)
-                         'interactive-file
-                         'racket/interactive
-                         'gui-interactive-file
-                         'racket/gui/interactive))]))
+                          'interactive-file
+                          'racket/interactive/tstring
+                          'gui-interactive-file
+                          'racket/gui/interactive))]))
 
 (define (maybe-update-stamp)
   (when (file-exists? config-file-path)
