@@ -377,6 +377,14 @@ The following keys are recognized in @racket[options]:
       same as non-dry-run modes. This option is analogous to prefixing
       a command with @litchar{+} in a makefile.}
 
+@item{@racket['secondary?] mapped to any value: if non-@racket[#f],
+      then when the target is referenced as a dependency via
+      @racket[make-targets], the target's
+      own dependencies are substituted, instead, and the referencing
+      target's action is prefixed with a @racket[build/dep] of the
+      secondary target. This option is analogous to making a target
+      a dependency of @litchar{.SECONDARY} in a makefile.}
+
 @item{@racket['db-dir] mapped to a path or @racket[#f]: if
       non-@racket[#f], build information for the target is stored in
       @filepath{_zuo.db} and @filepath{_zuo_tc.db} files in the
@@ -384,7 +392,8 @@ The following keys are recognized in @racket[options]:
 
 ]
 
-@history[#:changed "1.8" @elem{Added @racket['recur?] for @racket[options].}]}
+@history[#:changed "1.8" @elem{Added @racket['recur?] for @racket[options].}
+         #:changed "1.16" @elem{Added @racket['secondary?] for @racket[options].}]}
 
 @deftogether[(
 @defproc[(rule [dependencies (listof (or/c target? path-string?))]
@@ -693,7 +702,8 @@ to an input-file target. A @racket[_dep-path-or-target] can also be a
 target that is created outside the @racket[make-targets] call.
 
 An @racket[_option] can be @racket[':precious], @racket[':command],
-@racket[':noisy], @racket[':quiet], @racket[':eager], or @racket[':recur] to set the
+@racket[':noisy], @racket[':quiet], @racket[':eager], @racket[':recur],
+or @racket[':secondary] to set the
 corresponding option (see @racket[target]) in a target.
 
 A @racket[':db-dir] line (appearing at most once) specifies where
@@ -701,4 +711,6 @@ build information should be recorded for all targets. Otherwise, the
 build result for each target is stored in the target's directory.
 
 @history[#:changed "1.8" @elem{Added @racket[':recur] for
+                               @racket[_option].}
+         #:changed "1.16" @elem{Added @racket[':secondary] for
                                @racket[_option].}]}

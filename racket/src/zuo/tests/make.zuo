@@ -1,0 +1,111 @@
+#lang zuo
+
+(require "harness.zuo")
+
+(alert "make")
+
+(define work-dir (build-path tmp-dir "work"))
+
+(define (file-changed)
+  ;; flush SHA cache in case timestamp resolution is too coarse
+  (rm* (build-path work-dir "_zuo_tc.db")))
+
+;; check that `build/dep` and `build/no-dep` both cooperate with handling of deleted inputs
+(define (try-dep build/*dep)
+  (rm* work-dir)
+  (mkdir-p work-dir)
+
+  (define out.txt (build-path work-dir "out.txt"))
+  (define in.txt (build-path work-dir "in.txt"))
+  (define inter.txt (build-path work-dir "inter.txt"))
+  (define all-targets
+    (make-targets
+     `([:target ,out.txt
+                (,in.txt)
+                ,(lambda (dest token)
+                   (build/*dep
+                    (find-target inter.txt all-targets)
+                    token)
+                   (cp inter.txt dest))
+                :quiet]
+       [:target ,inter.txt
+                (,in.txt)
+                ,(lambda (dest token)
+                   (cp in.txt dest))]
+       [:target clean
+                ()
+                ,(lambda (token)
+                   (rm* inter.txt))])))
+
+  (display-to-file "123" in.txt)
+  (build (find-target out.txt all-targets))
+  (check (file->string out.txt) "123")
+
+  (rm inter.txt)
+  (display-to-file "1234" inter.txt)
+  (file-changed)
+
+  (build (find-target out.txt all-targets))
+  (check (file->string out.txt) (if (eq? build/*dep build/no-dep)
+                                    "123"
+                                    "1234"))
+
+  (rm inter.txt)
+  (build (find-target out.txt all-targets))
+  (check (file->string out.txt) "123")
+
+  (void))
+
+(try-dep build/dep)
+(try-dep build/no-dep)
+
+;; check `:secondary`
+(let ()
+  (rm* work-dir)
+  (mkdir-p work-dir)
+
+  (define out.txt (build-path work-dir "out.txt"))
+  (define in.txt (build-path work-dir "in.txt"))
+  (define inter.txt (build-path work-dir "inter.txt"))
+  (define all-targets
+    (make-targets
+     `([:target ,out.txt
+                (,inter.txt)
+                ,(lambda (dest token)
+                   (cp inter.txt dest))
+                :quiet]
+       [:target ,inter.txt
+                (,in.txt)
+                ,(lambda (dest token)
+                   (cp in.txt dest))
+                :secondary]
+       [:target clean
+                ()
+                ,(lambda (token)
+                   (rm* inter.txt))])))
+
+  (display-to-file "123" in.txt)
+  (build (find-target out.txt all-targets))
+  (check (file->string out.txt) "123")
+
+  (rm inter.txt)
+  (display-to-file "1234" inter.txt)
+  (file-changed)
+
+  (build (find-target out.txt all-targets))
+  (check (file->string out.txt) "123")
+
+  (rm inter.txt)
+  (build (find-target out.txt all-targets))
+  (check (file->string out.txt) "123")
+  (check (file-exists? inter.txt) #f)
+
+  (rm in.txt)
+  (display-to-file "1234" in.txt)
+  (file-changed)
+
+  (build (find-target out.txt all-targets))
+  (check (file->string out.txt) "1234")
+  (check (file-exists? inter.txt) #t)
+
+  (void))
