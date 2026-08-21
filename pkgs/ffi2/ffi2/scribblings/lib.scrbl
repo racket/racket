@@ -29,8 +29,8 @@ is called to produce a result.
 
 }
 
-@defproc[(ffi2-lib-ref [name (or/c string? bytes? symbol?)]
-                       [lib (or/c ffi2-lib? #f)]
+@defproc[(ffi2-lib-ref [lib (or/c ffi2-lib? #f)]
+                       [name (or/c string? bytes? symbol?)]
                        [#:fail fail (or/c (->/c any) #f) #f])
          any]{
 
