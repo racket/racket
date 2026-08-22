@@ -230,7 +230,7 @@ static void init_iconv()
       iconv_errno = (errno_proc_t)GetProcAddress(m, "_errno");
     
   if (!iconv_errno)
-    iconv_errno = &_errno;
+    iconv_errno = _errno;
 	
   iconv_is_ready = 1;
   LeaveCriticalSection(&rktio_global_cs);
