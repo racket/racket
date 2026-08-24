@@ -419,8 +419,7 @@ Returns the @as-index{least common multiple} (a non-negative number)
  of the @racket[n]s. For two non-integer @racket[n]s, the result is
  the absolute value of the product divided by the
  @racket[gcd]. If no arguments are provided, the result is
- @racket[1]. If any argument is zero, the result is zero; furthermore,
- if any argument is exact @racket[0], the result is exact @racket[0].
+ @racket[1]. If any argument is zero, the result is zero.
 
 @mz-examples[(lcm 10) (lcm 3 4.0) (lcm 1/2 2/3)]}
 
