@@ -55,7 +55,7 @@ Search Configuration
 
 When the user configures search through the gear icon on the search
 page, the confguration is preserved in local storage (fallback for old
-browsers: a cookie). The configuartion will not get propagated to
+browsers: a cookie). The configuration will not get propagated to
 other pages, but that's fine: a search should return to the same URL.
 
 The search panel's mechanics in general are implemented here in
