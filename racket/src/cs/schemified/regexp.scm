@@ -6149,31 +6149,30 @@
            (cons
             app_0
             (reverse$1
-             (call-with-values
-              (lambda () (values state5_0 (unsafe-vector-length state5_0)))
-              (lambda (vec_0 len_0)
-                (letrec*
-                 ((for-loop_0
-                   (|#%name|
-                    for-loop
-                    (lambda (fold-var_0 pos_0)
-                      (if (unsafe-fx< pos_0 len_0)
-                        (let ((p_0 (unsafe-vector-ref vec_0 pos_0)))
-                          (let ((fold-var_1
-                                 (let ((fold-var_1
-                                        (cons
-                                         (if p_0
-                                           (let ((app_1
-                                                  (+ (car p_0) delta1_0)))
-                                             (cons
-                                              app_1
-                                              (+ (cdr p_0) delta1_0)))
-                                           #f)
-                                         fold-var_0)))
-                                   (values fold-var_1))))
-                            (for-loop_0 fold-var_1 (unsafe-fx+ 1 pos_0))))
-                        fold-var_0)))))
-                 (for-loop_0 null 0))))))))))))
+             (let ((vec_0 state5_0))
+               (let ((len_0 (unsafe-vector-length state5_0)))
+                 (letrec*
+                  ((for-loop_0
+                    (|#%name|
+                     for-loop
+                     (lambda (fold-var_0 pos_0)
+                       (if (unsafe-fx< pos_0 len_0)
+                         (let ((p_0 (unsafe-vector-ref vec_0 pos_0)))
+                           (let ((fold-var_1
+                                  (let ((fold-var_1
+                                         (cons
+                                          (if p_0
+                                            (let ((app_1
+                                                   (+ (car p_0) delta1_0)))
+                                              (cons
+                                               app_1
+                                               (+ (cdr p_0) delta1_0)))
+                                            #f)
+                                          fold-var_0)))
+                                    (values fold-var_1))))
+                             (for-loop_0 fold-var_1 (unsafe-fx+ 1 pos_0))))
+                         fold-var_0)))))
+                  (for-loop_0 null 0))))))))))))
 (define byte-positions->bytess.1
   (|#%name|
    byte-positions->bytess
@@ -6185,31 +6184,30 @@
         app_0
         (if state12_0
           (reverse$1
-           (call-with-values
-            (lambda () (values state12_0 (unsafe-vector-length state12_0)))
-            (lambda (vec_0 len_0)
-              (letrec*
-               ((for-loop_0
-                 (|#%name|
-                  for-loop
-                  (lambda (fold-var_0 pos_0)
-                    (if (unsafe-fx< pos_0 len_0)
-                      (let ((p_0 (unsafe-vector-ref vec_0 pos_0)))
-                        (let ((fold-var_1
-                               (let ((fold-var_1
-                                      (cons
-                                       (if p_0
-                                         (let ((app_1 (- (car p_0) delta7_0)))
-                                           (subbytes
-                                            in9_0
-                                            app_1
-                                            (- (cdr p_0) delta7_0)))
-                                         #f)
-                                       fold-var_0)))
-                                 (values fold-var_1))))
-                          (for-loop_0 fold-var_1 (unsafe-fx+ 1 pos_0))))
-                      fold-var_0)))))
-               (for-loop_0 null 0)))))
+           (let ((vec_0 state12_0))
+             (let ((len_0 (unsafe-vector-length state12_0)))
+               (letrec*
+                ((for-loop_0
+                  (|#%name|
+                   for-loop
+                   (lambda (fold-var_0 pos_0)
+                     (if (unsafe-fx< pos_0 len_0)
+                       (let ((p_0 (unsafe-vector-ref vec_0 pos_0)))
+                         (let ((fold-var_1
+                                (let ((fold-var_1
+                                       (cons
+                                        (if p_0
+                                          (let ((app_1 (- (car p_0) delta7_0)))
+                                            (subbytes
+                                             in9_0
+                                             app_1
+                                             (- (cdr p_0) delta7_0)))
+                                          #f)
+                                        fold-var_0)))
+                                  (values fold-var_1))))
+                           (for-loop_0 fold-var_1 (unsafe-fx+ 1 pos_0))))
+                       fold-var_0)))))
+                (for-loop_0 null 0)))))
           null))))))
 (define byte-positions->string-positions.1
   (|#%name|
@@ -6248,31 +6246,31 @@
           app_0
           (if state23_0
             (reverse$1
-             (call-with-values
-              (lambda () (values state23_0 (unsafe-vector-length state23_0)))
-              (lambda (vec_0 len_0)
-                (letrec*
-                 ((for-loop_0
-                   (|#%name|
-                    for-loop
-                    (lambda (fold-var_0 pos_0)
-                      (if (unsafe-fx< pos_0 len_0)
-                        (let ((p_0 (unsafe-vector-ref vec_0 pos_0)))
-                          (let ((fold-var_1
-                                 (let ((fold-var_1
-                                        (cons
-                                         (if p_0
-                                           (let ((app_1
-                                                  (string-offset_0 (car p_0))))
-                                             (cons
-                                              app_1
-                                              (string-offset_0 (cdr p_0))))
-                                           #f)
-                                         fold-var_0)))
-                                   (values fold-var_1))))
-                            (for-loop_0 fold-var_1 (unsafe-fx+ 1 pos_0))))
-                        fold-var_0)))))
-                 (for-loop_0 null 0)))))
+             (let ((vec_0 state23_0))
+               (let ((len_0 (unsafe-vector-length state23_0)))
+                 (letrec*
+                  ((for-loop_0
+                    (|#%name|
+                     for-loop
+                     (lambda (fold-var_0 pos_0)
+                       (if (unsafe-fx< pos_0 len_0)
+                         (let ((p_0 (unsafe-vector-ref vec_0 pos_0)))
+                           (let ((fold-var_1
+                                  (let ((fold-var_1
+                                         (cons
+                                          (if p_0
+                                            (let ((app_1
+                                                   (string-offset_0
+                                                    (car p_0))))
+                                              (cons
+                                               app_1
+                                               (string-offset_0 (cdr p_0))))
+                                            #f)
+                                          fold-var_0)))
+                                    (values fold-var_1))))
+                             (for-loop_0 fold-var_1 (unsafe-fx+ 1 pos_0))))
+                         fold-var_0)))))
+                  (for-loop_0 null 0)))))
             null)))))))
 (define byte-positions->strings.1
   (|#%name|
@@ -6289,32 +6287,32 @@
         app_0
         (if state30_0
           (reverse$1
-           (call-with-values
-            (lambda () (values state30_0 (unsafe-vector-length state30_0)))
-            (lambda (vec_0 len_0)
-              (letrec*
-               ((for-loop_0
-                 (|#%name|
-                  for-loop
-                  (lambda (fold-var_0 pos_0)
-                    (if (unsafe-fx< pos_0 len_0)
-                      (let ((p_0 (unsafe-vector-ref vec_0 pos_0)))
-                        (let ((fold-var_1
-                               (let ((fold-var_1
-                                      (cons
-                                       (if p_0
-                                         (let ((app_1 (- (car p_0) delta25_0)))
-                                           (bytes->string/utf-8
-                                            bstr-in27_0
-                                            '#\x3f
-                                            app_1
-                                            (- (cdr p_0) delta25_0)))
-                                         #f)
-                                       fold-var_0)))
-                                 (values fold-var_1))))
-                          (for-loop_0 fold-var_1 (unsafe-fx+ 1 pos_0))))
-                      fold-var_0)))))
-               (for-loop_0 null 0)))))
+           (let ((vec_0 state30_0))
+             (let ((len_0 (unsafe-vector-length state30_0)))
+               (letrec*
+                ((for-loop_0
+                  (|#%name|
+                   for-loop
+                   (lambda (fold-var_0 pos_0)
+                     (if (unsafe-fx< pos_0 len_0)
+                       (let ((p_0 (unsafe-vector-ref vec_0 pos_0)))
+                         (let ((fold-var_1
+                                (let ((fold-var_1
+                                       (cons
+                                        (if p_0
+                                          (let ((app_1
+                                                 (- (car p_0) delta25_0)))
+                                            (bytes->string/utf-8
+                                             bstr-in27_0
+                                             '#\x3f
+                                             app_1
+                                             (- (cdr p_0) delta25_0)))
+                                          #f)
+                                        fold-var_0)))
+                                  (values fold-var_1))))
+                           (for-loop_0 fold-var_1 (unsafe-fx+ 1 pos_0))))
+                       fold-var_0)))))
+                (for-loop_0 null 0)))))
           null))))))
 (define byte-index->string-index
   (lambda (str_0 start-pos_0 pos_0)
@@ -6686,36 +6684,34 @@
                   app_0
                   (if state_0
                     (reverse$1
-                     (call-with-values
-                      (lambda ()
-                        (values state_0 (unsafe-vector-length state_0)))
-                      (lambda (vec_0 len_0)
-                        (letrec*
-                         ((for-loop_0
-                           (|#%name|
-                            for-loop
-                            (lambda (fold-var_0 pos_0)
-                              (if (unsafe-fx< pos_0 len_0)
-                                (let ((p_0 (unsafe-vector-ref vec_0 pos_0)))
-                                  (let ((fold-var_1
-                                         (let ((fold-var_1
-                                                (cons
-                                                 (if p_0
-                                                   (let ((app_1
-                                                          (string-offset_0
-                                                           (car p_0))))
-                                                     (cons
-                                                      app_1
-                                                      (string-offset_0
-                                                       (cdr p_0))))
-                                                   #f)
-                                                 fold-var_0)))
-                                           (values fold-var_1))))
-                                    (for-loop_0
-                                     fold-var_1
-                                     (unsafe-fx+ 1 pos_0))))
-                                fold-var_0)))))
-                         (for-loop_0 null 0)))))
+                     (let ((vec_0 state_0))
+                       (let ((len_0 (unsafe-vector-length state_0)))
+                         (letrec*
+                          ((for-loop_0
+                            (|#%name|
+                             for-loop
+                             (lambda (fold-var_0 pos_0)
+                               (if (unsafe-fx< pos_0 len_0)
+                                 (let ((p_0 (unsafe-vector-ref vec_0 pos_0)))
+                                   (let ((fold-var_1
+                                          (let ((fold-var_1
+                                                 (cons
+                                                  (if p_0
+                                                    (let ((app_1
+                                                           (string-offset_0
+                                                            (car p_0))))
+                                                      (cons
+                                                       app_1
+                                                       (string-offset_0
+                                                        (cdr p_0))))
+                                                    #f)
+                                                  fold-var_0)))
+                                            (values fold-var_1))))
+                                     (for-loop_0
+                                      fold-var_1
+                                      (unsafe-fx+ 1 pos_0))))
+                                 fold-var_0)))))
+                          (for-loop_0 null 0)))))
                     null)))
                #f))))))))
 (define fast-drive-regexp-match/bytes
@@ -6739,31 +6735,30 @@
               app_0
               (if state_0
                 (reverse$1
-                 (call-with-values
-                  (lambda () (values state_0 (unsafe-vector-length state_0)))
-                  (lambda (vec_0 len_0)
-                    (letrec*
-                     ((for-loop_0
-                       (|#%name|
-                        for-loop
-                        (lambda (fold-var_0 pos_0)
-                          (if (unsafe-fx< pos_0 len_0)
-                            (let ((p_0 (unsafe-vector-ref vec_0 pos_0)))
-                              (let ((fold-var_1
-                                     (let ((fold-var_1
-                                            (cons
-                                             (if p_0
-                                               (let ((app_1 (car p_0)))
-                                                 (subbytes
-                                                  in_0
-                                                  app_1
-                                                  (cdr p_0)))
-                                               #f)
-                                             fold-var_0)))
-                                       (values fold-var_1))))
-                                (for-loop_0 fold-var_1 (unsafe-fx+ 1 pos_0))))
-                            fold-var_0)))))
-                     (for-loop_0 null 0)))))
+                 (let ((vec_0 state_0))
+                   (let ((len_0 (unsafe-vector-length state_0)))
+                     (letrec*
+                      ((for-loop_0
+                        (|#%name|
+                         for-loop
+                         (lambda (fold-var_0 pos_0)
+                           (if (unsafe-fx< pos_0 len_0)
+                             (let ((p_0 (unsafe-vector-ref vec_0 pos_0)))
+                               (let ((fold-var_1
+                                      (let ((fold-var_1
+                                             (cons
+                                              (if p_0
+                                                (let ((app_1 (car p_0)))
+                                                  (subbytes
+                                                   in_0
+                                                   app_1
+                                                   (cdr p_0)))
+                                                #f)
+                                              fold-var_0)))
+                                        (values fold-var_1))))
+                                 (for-loop_0 fold-var_1 (unsafe-fx+ 1 pos_0))))
+                             fold-var_0)))))
+                      (for-loop_0 null 0)))))
                 null)))
            #f))))))
 (define fast-drive-regexp-match/string
@@ -6787,34 +6782,33 @@
                 app_0
                 (if state_0
                   (reverse$1
-                   (call-with-values
-                    (lambda () (values state_0 (unsafe-vector-length state_0)))
-                    (lambda (vec_0 len_0)
-                      (letrec*
-                       ((for-loop_0
-                         (|#%name|
-                          for-loop
-                          (lambda (fold-var_0 pos_0)
-                            (if (unsafe-fx< pos_0 len_0)
-                              (let ((p_0 (unsafe-vector-ref vec_0 pos_0)))
-                                (let ((fold-var_1
-                                       (let ((fold-var_1
-                                              (cons
-                                               (if p_0
-                                                 (let ((app_1 (car p_0)))
-                                                   (bytes->string/utf-8
-                                                    in_0
-                                                    '#\x3f
-                                                    app_1
-                                                    (cdr p_0)))
-                                                 #f)
-                                               fold-var_0)))
-                                         (values fold-var_1))))
-                                  (for-loop_0
-                                   fold-var_1
-                                   (unsafe-fx+ 1 pos_0))))
-                              fold-var_0)))))
-                       (for-loop_0 null 0)))))
+                   (let ((vec_0 state_0))
+                     (let ((len_0 (unsafe-vector-length state_0)))
+                       (letrec*
+                        ((for-loop_0
+                          (|#%name|
+                           for-loop
+                           (lambda (fold-var_0 pos_0)
+                             (if (unsafe-fx< pos_0 len_0)
+                               (let ((p_0 (unsafe-vector-ref vec_0 pos_0)))
+                                 (let ((fold-var_1
+                                        (let ((fold-var_1
+                                               (cons
+                                                (if p_0
+                                                  (let ((app_1 (car p_0)))
+                                                    (bytes->string/utf-8
+                                                     in_0
+                                                     '#\x3f
+                                                     app_1
+                                                     (cdr p_0)))
+                                                  #f)
+                                                fold-var_0)))
+                                          (values fold-var_1))))
+                                   (for-loop_0
+                                    fold-var_1
+                                    (unsafe-fx+ 1 pos_0))))
+                               fold-var_0)))))
+                        (for-loop_0 null 0)))))
                   null)))
              #f)))))))
 (define drive-regexp-match.1

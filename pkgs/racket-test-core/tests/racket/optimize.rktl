@@ -1992,12 +1992,15 @@
                 (let-values ([(a b) (values (cons 1 z) (cons 2 z))])
                   (list a b)))))
            '(module m racket/base
-             ;; Reference to a ready module-level variable shouldn't
-             ;; prevent let-values splitting
+             ;; `let-values` on a direct `values` right-hand side
+             ;; desugars to nested `let`s (github racket/racket#4634);
+             ;; the first, non-tail value still gets a name, but the
+             ;; last is used directly in tail position
              (#%plain-module-begin
               (define z (random))
               (define (f)
-                (list (cons 1 z) (cons 2 z))))))
+                (let ([a (cons 1 z)])
+                  (list a (cons 2 z)))))))
 
 (test-comp '(module m racket/base
              ;; Don't reorder references to a mutable variable
@@ -3551,13 +3554,16 @@
                   (/ a b))))
            `(module m racket/base
               (define (f x)
-                ;; Not equivalent if a continuation capture
-                ;; during `+' somehow exposes the shared `a'?
+                ;; These are now equivalent: `let*-values` whose
+                ;; right-hand side is a direct `values` call desugars
+                ;; straight to nested `let`s (github racket/racket#4634),
+                ;; with no intermediate producer closure through which a
+                ;; continuation capture during `+' could expose a
+                ;; differently-shared `a' than this hand-written `let*'.
                 (let* ([a x]
                        [b (+ x x)])
                   (set! a 5)
-                  (/ a b))))
-           #f)
+                  (/ a b)))))
 
 ;; check omit & reorder possibilities for unsafe
 ;; operations on mutable values:
@@ -5316,6 +5322,33 @@
 (err/rt-test (cwv-2-5-f (lambda () (values 1 2)) (lambda (y) (+ y 2))) exn:fail:contract:arity?)
 (err/rt-test (cwv-2-5-f (lambda () 1) (lambda (y z) (+ y 2))) exn:fail:contract:arity?)
 (err/rt-test (cwv-2-5-f (lambda () (values 1 2 3)) (lambda (y z) (+ y 2))) exn:fail:contract:arity?)
+
+;; `let-values`/`define-values` whose right-hand side directly returns
+;; statically-known values, including a non-atomic argument needing
+;; sequencing (github racket/racket#4634): schemify's desugaring of
+;; the binding should produce plain `let`s, with no `call-with-values`
+;; or arity-checking `case-lambda` left over
+(module cwv-values-1 racket/base
+  (define (cwv-values-1-f x)
+    (define-values (a b) (values (add1 x) (sub1 x)))
+    (+ a b))
+  (provide cwv-values-1-f))
+(require 'cwv-values-1)
+(test 20 cwv-values-1-f 10)
+
+;; mismatched arity against a statically-known `values` right-hand
+;; side must still raise at run time, not be silently accepted
+(module cwv-values-2 racket/base
+  (define (cwv-values-2-f x)
+    (let-values ([(a b c) (values (add1 x) (sub1 x))])
+      (+ a b c)))
+  (provide cwv-values-2-f))
+(require 'cwv-values-2)
+(err/rt-test (cwv-values-2-f 10) exn:fail:contract:arity?)
+
+(test-comp '(lambda (x) (let ([a (add1 x)]) (+ a (sub1 x))))
+           '(lambda (x) (let-values ([(a b) (values (add1 x) (sub1 x))])
+                          (+ a b))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Transform call-with-values to direct application:

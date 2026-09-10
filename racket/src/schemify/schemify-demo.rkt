@@ -103,7 +103,20 @@
                                                                      (fx+ x 2))))
                           (define-values (done) (z))
                           (define-values (call) (lambda () (values 'c1 'c2)))
-                          (define-values (c1 c2) (call)))))
+                          (define-values (c1 c2) (call))
+                          ;; github racket/racket#4634: values with
+                          ;; non-atomic arguments needing sequencing
+                          (define-values (issue-4634-test)
+                            (lambda (n)
+                              (let-values ([(a b) (values (unsafe-fx+ n 1) (unsafe-fx+ n -1))])
+                                (unsafe-fx+ a b))))
+                          ;; mismatched-arity case must still use the
+                          ;; checked call-with-values path (and error
+                          ;; at run time), not the fast path
+                          (define-values (issue-4634-mismatch-test)
+                            (lambda (n)
+                              (let-values ([(a b) (values (unsafe-fx+ n 1))])
+                                (unsafe-fx+ a b)))))))
                     #;
                     (call-with-input-file "regexp.rktl" read)
                     #t          ; serializable
