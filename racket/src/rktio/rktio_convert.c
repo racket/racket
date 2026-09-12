@@ -108,7 +108,7 @@ static void init_iconv()
   int hook_handle = 0;
 
   if (iconv_is_ready)
-    return;
+     return;
     
   EnterCriticalSection(&rktio_global_cs);
 

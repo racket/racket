@@ -210,32 +210,10 @@ rktio_ok_t rktio_dll_close(rktio_t *rktio, rktio_dll_t *dll)
  * is way out of our support window and this is much simpler and faster.
  */
 
-typedef BOOL (WINAPI *EnumProcessModules_t)(HANDLE hProcess,
-                                            HMODULE* lphModule,
-                                            DWORD cb,
-                                            LPDWORD lpcbNeeded);
-EnumProcessModules_t _EnumProcessModules = NULL;
-
-#include <psapi.h>
-
 static BOOL do_EnumProcessModules(HANDLE hProcess, HMODULE* lphModule,
                                   DWORD cb, LPDWORD lpcbNeeded)
 {
-
-  if (IsWindows7OrGreater()) {
-    return EnumProcessModules(hProcess, lphModule, cb, lpcbNeeded);
-  }
-
-  if (_EnumProcessModules != NULL){
-    return _EnumProcessModules(hProcess, lphModule, cb, lpcbNeeded);
-  }
-
-  HANDLE m = GetModuleHandle("psapi.dll");
-  if (m == NULL)
-    m = LoadLibrary("psapi.dll");
-
-  _EnumProcessModules = (EnumProcessModules_t) GetProcAddress(m, "EnumProcessModules");
-  return _EnumProcessModules(hProcess, lphModule, cb, lpcbNeeded);
+  return EnumProcessModules(hProcess, lphModule, cb, lpcbNeeded);
 }
 
 #endif

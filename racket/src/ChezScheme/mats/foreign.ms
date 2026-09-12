@@ -235,20 +235,11 @@
       (error? (load-shared-object 3))
     )
    ]
-  [(i3nt ti3nt)
+  [(i3nt ti3nt a6nt ta6nt arm64nt tarm64nt)
    (mat load-shared-object
       (file-exists? foreign1.so)
       (begin (load-shared-object foreign1.so) #t)
       (begin (load-shared-object "msvcrt.dll") #t)
-      (begin (load-shared-object "kernel32.dll") #t)
-      (error? (load-shared-object 3))
-    )
-   ]
-  [(a6nt ta6nt arm64nt tarm64nt)
-   (mat load-shared-object
-      (file-exists? foreign1.so)
-      (begin (load-shared-object foreign1.so) #t)
-      (begin (load-shared-object "ucrtbase.dll") #t)
       (begin (load-shared-object "kernel32.dll") #t)
       (error? (load-shared-object 3))
     )
@@ -3396,9 +3387,7 @@
 	 '(load-shared-object "libroot.so")]
         [(i3fb ti3fb a6fb ta6fb)
          '(load-shared-object "libc.so.7")]
-        [(a6nt ta6nt arm64nt tarm64nt)
-         '(load-shared-object "ucrtbase.dll")]
-        [(i3nt ti3nt)
+        [(i3nt ti3nt a6nt ta6nt arm64nt tarm64nt)
          '(load-shared-object "msvcrt.dll")]
         [(i3osx ti3osx a6osx ta6osx ppc32osx tppc32osx arm64osx tarm64osx
                 a6ios ta6ios arm64ios tarm64ios)

@@ -10,7 +10,7 @@
 #ifdef RKTIO_SYSTEM_WINDOWS
 #include <winnt.h>
 #define CS_SPINCOUNT 4000
-BOOL rktio_global_cs_created = FALSE;
+static BOOL global_cs_created = FALSE;
 CRITICAL_SECTION rktio_global_cs;
 #endif
 
@@ -22,8 +22,7 @@ rktio_t *rktio_init(void)
   memset(rktio, 0, sizeof(rktio_t));
 
 #ifdef RKTIO_SYSTEM_WINDOWS
-  BOOL was_created = InterlockedCompareExchangeAcquire(&rktio_global_cs_created, TRUE, FALSE);
-  if (!was_created)
+  if (!InterlockedCompareExchangeAcquire(&global_cs_created, TRUE, FALSE))
     InitializeCriticalSectionEx(&rktio_global_cs, CS_SPINCOUNT, CRITICAL_SECTION_NO_DEBUG_INFO);
 #endif
 
@@ -98,7 +97,7 @@ void rktio_destroy(rktio_t *rktio)
   rktio_free_signal(rktio);
 #ifdef RKTIO_SYSTEM_WINDOWS
   DeleteCriticalSection(&rktio_global_cs);
-  rktio_global_cs_created = FALSE;
+  global_cs_created = FALSE;
   rktio_winsock_done(rktio);
 #endif
   free(rktio);

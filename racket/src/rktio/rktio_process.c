@@ -1154,44 +1154,7 @@ static void close_inherited_handle(HANDLE dest)
 }
 
 /* Avoid direct reference to Vista functionality: */
-typedef struct {
-  STARTUPINFOW StartupInfo;
-  void *lpAttributeList;
-} rktio_STARTUPINFOEXW;
-#define rktio_EXTENDED_STARTUPINFO_PRESENT 0x00080000
-#define rktio_PROC_THREAD_ATTRIBUTE_HANDLE_LIST 0x00020002
-typedef BOOL (*rktio_InitializeProcThreadAttributeList_t)(void *lpAttributeList,
-                                                          DWORD dwAttributeCount,
-                                                          DWORD dwFlags,
-                                                          PSIZE_T lpSize);
-static rktio_InitializeProcThreadAttributeList_t rktio_InitializeProcThreadAttributeList;
-typedef BOOL (*rktio_UpdateProcThreadAttribute_t)(void *lpAttributeList,
-                                                  DWORD dwFlags,
-                                                  DWORD_PTR Attribute,
-                                                  PVOID lpValue,
-                                                  SIZE_T cbSize,
-                                                  PVOID lpPreviousValue,
-                                                  PSIZE_T lpReturnSize);
-static rktio_UpdateProcThreadAttribute_t rktio_UpdateProcThreadAttribute;
-typedef void (*rktio_DeleteProcThreadAttributeList_t)(void *lpAttributeList);
-static rktio_DeleteProcThreadAttributeList_t rktio_DeleteProcThreadAttributeList;
-static void init_thread_attr_procs()
-{
-  if (rktio_InitializeProcThreadAttributeList != NULL &&
-    rktio_UpdateProcThreadAttribute != NULL &&
-    rktio_DeleteProcThreadAttributeList != NULL) {
-      return;
-  }
-  
-  HMODULE hm;
-  hm = GetModuleHandle("kernel32.dll");
 
-  // This used to be locked, but there is no need. 
-
-  rktio_InitializeProcThreadAttributeList = (rktio_InitializeProcThreadAttributeList_t)GetProcAddress(hm, "InitializeProcThreadAttributeList");
-  rktio_UpdateProcThreadAttribute = (rktio_UpdateProcThreadAttribute_t)GetProcAddress(hm, "UpdateProcThreadAttribute");
-  rktio_DeleteProcThreadAttributeList = (rktio_DeleteProcThreadAttributeList_t)GetProcAddress(hm, "DeleteProcThreadAttributeList");
-}
 
 static intptr_t do_spawnv(rktio_t *rktio,
                           const char *command, int argc, const char * const *argv,
@@ -1205,7 +1168,7 @@ static intptr_t do_spawnv(rktio_t *rktio,
   intptr_t cr_flag;
   char *cmdline;
   wchar_t *cmdline_w, *wd_w, *command_w;
-  rktio_STARTUPINFOEXW startupx;
+  STARTUPINFOEXW startupx;
   STARTUPINFOW *startup;
   PROCESS_INFORMATION info;
 
@@ -1281,27 +1244,24 @@ static intptr_t do_spawnv(rktio_t *rktio,
     /* don't just set the `bInherit` argument to `CreateProcessW` to
        false, because that disables sharing for
        stdin.stdout/stderr. */
-    init_thread_attr_procs();
-    if (rktio_InitializeProcThreadAttributeList
-        && rktio_UpdateProcThreadAttribute
-        && rktio_DeleteProcThreadAttributeList) {
+
       LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList = NULL;
       SIZE_T size = 0;
       HANDLE handles_to_inherit[3];
-      rktio_InitializeProcThreadAttributeList(NULL, 1, 0, &size);
+      InitializeProcThreadAttributeList(NULL, 1, 0, &size);
       lpAttributeList = HeapAlloc(GetProcessHeap(), 0, size);
-      rktio_InitializeProcThreadAttributeList(lpAttributeList, 1, 0, &size);
+      InitializeProcThreadAttributeList(lpAttributeList, 1, 0, &size);
       handles_to_inherit[0] = startup->hStdInput;
       handles_to_inherit[1] = startup->hStdOutput;
       handles_to_inherit[2] = startup->hStdError;
-      rktio_UpdateProcThreadAttribute(lpAttributeList,
-                                      0, rktio_PROC_THREAD_ATTRIBUTE_HANDLE_LIST,
+      UpdateProcThreadAttribute(lpAttributeList,
+                                      0, PROC_THREAD_ATTRIBUTE_HANDLE_LIST,
                                       handles_to_inherit,
                                       sizeof(handles_to_inherit), NULL, NULL);
       startupx.lpAttributeList = lpAttributeList;
-      startup->cb = sizeof(startupx);
-      cr_flag |= rktio_EXTENDED_STARTUPINFO_PRESENT;
-    } else
+      startup->cb = sizeof(STARTUPINFOEX);
+      cr_flag |= EXTENDED_STARTUPINFO_PRESENT;
+  } else {
       disable_inherit = 0;
   }
 
@@ -1327,7 +1287,7 @@ static intptr_t do_spawnv(rktio_t *rktio,
 
   if (disable_inherit) {
     void *lpAttributeList = startupx.lpAttributeList;
-    rktio_DeleteProcThreadAttributeList(lpAttributeList);
+    DeleteProcThreadAttributeList(lpAttributeList);
     HeapFree(GetProcessHeap(), 0, lpAttributeList);
   }
 
