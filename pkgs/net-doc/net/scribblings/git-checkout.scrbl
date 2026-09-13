@@ -12,7 +12,7 @@ protocol or its layering over HTTP(S). The
 binaries (such as a @exec{git} client) or Git-specific native
 libraries (such as @filepath{libgit}).}
 
-When run as a program, @racket[net/git-checkout] accepts command-line
+When run as a program, @racketmodname[net/git-checkout] accepts command-line
 arguments to drive the checkout. Use
 @;
 @commandline{racket -l- net/git-checkout -h}

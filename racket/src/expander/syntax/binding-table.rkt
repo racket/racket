@@ -30,7 +30,8 @@
          in-full-non-bulk-binding-table
          
          binding-table-symbols
-         
+         binding-table-interned-scope-keys
+
          prop:bulk-binding
          (struct-out bulk-binding-class)
          
@@ -83,9 +84,10 @@
   (make-struct-type-property 'bulk-binding))
 
 ;; Value of `prop:bulk-binding`
-(struct bulk-binding-class (get-symbols ; bulk-binding list-of-shift -> sym -> binding-info
-                            create      ; bulk-binding -> binding-info sym -> binding
-                            modname))   ; bulk-binding list-of-shift -> resolved-module-path
+(struct bulk-binding-class (get-symbols     ; bulk-binding list-of-shift -> sym -> binding-info
+                            create          ; bulk-binding -> binding-info sym -> binding
+                            modname         ; bulk-binding list-of-shift -> resolved-module-path
+                            report-shifts)) ; bulk-binding list-of-shift report-callback -> any
 (define (bulk-binding-symbols b s extra-shifts)
   ;; Providing the identifier `s` supports its shifts
   ((bulk-binding-class-get-symbols (bulk-binding-ref b))
@@ -101,6 +103,9 @@
   (hash-set! modname-ht b ((bulk-binding-class-modname (bulk-binding-ref b)) b extra-shifts))
   ;; getting symbols has the effect of forcing:
   (bulk-binding-symbols b #f extra-shifts))
+
+(define (bulk-binding-report-shifts b bulk-shifts report-shifts)
+  ((bulk-binding-class-report-shifts (bulk-binding-ref b)) b bulk-shifts report-shifts))
 
 ;; ----------------------------------------
 
@@ -330,11 +335,44 @@
      sym)))
 
 ;; ----------------------------------------
+
+;; Return a set of interned scopes that can be added to `scs` to reach some binding
+(define (binding-table-interned-scope-keys table scs sym s extra-shifts
+                                           interned-scope? interned-scope-key
+                                           #:exactly? [exactly? #f])
+  (define-values (ht bulk-bindings)
+    (if (hash? table)
+        (values table null)
+        (values (table-with-bulk-bindings-syms table)
+                (table-with-bulk-bindings-bulk-bindings table))))
+  (set-union
+   (for*/seteq ([an-scs (in-hash-keys (hash-ref ht sym #hasheq()))]
+                [sc (in-set an-scs)]
+                #:when (and (interned-scope? sc)
+                            (not (set-member? scs sc))
+                            (if exactly?
+                                (set=? an-scs (set-add scs sc))
+                                (subset? an-scs (set-add scs sc)))))
+     (interned-scope-key sc))
+   (for*/seteq ([bba (in-list bulk-bindings)]
+                #:when (hash-ref (bulk-binding-symbols (bulk-binding-at-bulk bba) s extra-shifts)
+                                 sym
+                                 #f)
+                #:do [(define an-scs (bulk-binding-at-scopes bba))]
+                [sc (in-set an-scs)]
+                #:when (and (interned-scope? sc)
+                            (not (set-member? scs sc))
+                            (if exactly?
+                                (set=? an-scs (set-add scs sc))
+                                (subset? an-scs (set-add scs sc)))))
+     (interned-scope-key sc))))
+
+;; ----------------------------------------
 ;; Pruning functions are called by scope serialization
 
 (define (binding-table-prune-to-reachable bt state)
   (or (hash-ref (serialize-state-bindings-intern state) bt #f)
-      (let ([reachable-scopes (serialize-state-reachable-scopes state)])
+      (let ([reachable-scopes (serialize-state-all-reachable-scopes state)])
         (define new-syms
           (for*/hasheq ([(sym bindings-for-sym) (in-immutable-hash
                                                  (if (hash? bt)
@@ -361,24 +399,33 @@
         (hash-set! (serialize-state-bulk-bindings-intern state) bt new-bt)
         new-bt)))
 
-(define (binding-table-register-reachable bt get-reachable-scopes bulk-shifts reach register-trigger)
+(define (binding-table-register-reachable bt get-reachable-scopes bulk-shifts reach
+                                          register-trigger reach-implicitly report-shifts)
   ;; Check symbol-specific scopes for both `free-id=?` reachability and
   ;; for implicitly reachable scopes
   (for* ([(sym bindings-for-sym) (in-immutable-hash (if (hash? bt)
                                                         bt
                                                         (table-with-bulk-bindings-syms/serialize bt)))]
          [(scopes binding) (in-immutable-hash bindings-for-sym)])
+    (when (and report-shifts (binding-shift-report? binding))
+      ((binding-shift-report-ref binding) binding bulk-shifts report-shifts))
     (define v (and (binding-reach-scopes? binding)
                    ((binding-reach-scopes-ref binding) binding)))
-    (scopes-register-reachable scopes v get-reachable-scopes bulk-shifts reach register-trigger))
+    (scopes-register-reachable scopes v get-reachable-scopes bulk-shifts reach
+                               register-trigger reach-implicitly))
   ;; Need to check bulk-binding scopes for implicitly reachable
   (when (table-with-bulk-bindings? bt)
     (for ([bba (in-list (table-with-bulk-bindings-bulk-bindings bt))])
       (when bulk-shifts ; indicates that bulk bindings will be retained, and maybe they need to be reified
         (force-bulk-bindings (bulk-binding-at-bulk bba) bulk-shifts))
-      (scopes-register-reachable (bulk-binding-at-scopes bba) #f get-reachable-scopes bulk-shifts reach register-trigger))))
+      (when report-shifts
+        ;; report shifts after forcing
+        (bulk-binding-report-shifts (bulk-binding-at-bulk bba) bulk-shifts report-shifts))
+      (scopes-register-reachable (bulk-binding-at-scopes bba) #f get-reachable-scopes bulk-shifts reach
+                                 register-trigger reach-implicitly))))
 
-(define (scopes-register-reachable scopes v get-reachable-scopes bulk-shifts reach register-trigger)
+(define (scopes-register-reachable scopes v get-reachable-scopes bulk-shifts reach
+                                   register-trigger reach-implicitly)
   (define reachable-scopes (get-reachable-scopes))
   (cond
     [(subset? scopes reachable-scopes)
@@ -399,7 +446,18 @@
          (reach v bulk-shifts)
          (for ([sc (in-set scopes)])
            (when (implicitly-reachable? sc)
-             (reach sc bulk-shifts)))))
+             ;; Mark implicitly reachable as reachable, depending on `bulk-shifts`
+             (cond
+               [(not bulk-shifts)
+                ;; Treating as reachable, which might be the case with
+                ;; direct scope manipulations. This is maybe too conservative,
+                ;; though.
+                (reach sc bulk-shifts)]
+               [else
+                ;; Pruning, in part because `bulk-shifts` may not be right
+                ;; for associated bindings, and in part because this is
+                ;; for a mode with more agressive pruning overall
+                (reach-implicitly sc)])))))
      (for ([sc (in-set pending-scopes)])
        (register-trigger sc (lambda (reach)
                               (set! pending-scopes (hash-remove pending-scopes sc))

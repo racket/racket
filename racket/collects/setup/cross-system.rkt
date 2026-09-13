@@ -7,7 +7,9 @@
 
 (define cross-system-table #f)
 
-(define system-type-symbols '(os os* arch word gc vm link machine so-suffix so-mode fs-change target-machine))
+(define system-type-symbols '(os os* arch word so-find platform
+                                 gc vm link machine
+                                 so-suffix so-mode fs-change target-machine))
 
 (define (compute-cross!)
   (unless cross-system-table
@@ -59,7 +61,9 @@
      (unless (memq mode system-type-symbols)
        (raise-argument-error
         'cross-system-type
-        "(or/c 'os 'word 'gc 'vm 'link 'machine 'target-machine 'so-suffix 'so-mode 'fs-change)"
+        (string-append "(or/c 'os 'os* 'arch 'word 'so-find 'platform\n"
+                       "      'gc 'vm 'link 'machine\n"
+                       "      'target-machine 'so-suffix 'so-mode 'fs-change)")
         mode))
      (compute-cross!)
      (define v (hash-ref cross-system-table mode (void)))

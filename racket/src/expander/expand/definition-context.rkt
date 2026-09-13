@@ -11,7 +11,8 @@
          "main.rkt"
          "log.rkt"
          "free-id-set.rkt"
-         "stop-ids.rkt")
+         "stop-ids.rkt"
+         "../common/contract.rkt")
 
 (provide add-intdef-scopes
          add-intdef-bindings
@@ -19,6 +20,7 @@
          
          internal-definition-context?
          syntax-local-make-definition-context
+         syntax-local-make-definition-context-introducer
          syntax-local-bind-syntaxes
          internal-definition-context-binding-identifiers
          internal-definition-context-introduce
@@ -70,6 +72,29 @@
     (set-box! def-ctx-scopes (cons inside-edge (cons outside-edge (unbox def-ctx-scopes)))))
   (define use-site-scopes (box '()))
   (internal-definition-context frame-id outside-edge inside-edge add-scope? (box null) use-site-scopes parent-ctx))
+
+;; syntax-local-make-definition-context-introducer
+(define/who (syntax-local-make-definition-context-introducer [name 'intdef])
+  (check who (lambda (name) (and (symbol? name) (not (eq? name 'macro))))
+         #:contract "(and/c symbol? (not/c 'macro))"
+         name)
+  (define ctx (get-current-expand-context who))
+  (define scope (new-scope name))
+  (define def-ctx-scopes (expand-context-def-ctx-scopes ctx))
+  (when def-ctx-scopes
+    (set-box! def-ctx-scopes (cons scope (unbox def-ctx-scopes))))
+  (lambda (s [mode 'flip])
+    (define who 'definition-context-introducer)
+    (check who syntax? s)
+    (define new-s
+      (case mode
+        [(add) (add-scope s scope)]
+        [(remove) (remove-scope s scope)]
+        [(flip) (flip-scope s scope)]
+        [else (raise-argument-error who "(or/c 'add 'remove 'flip)" mode)]))
+    (define ctx (get-current-expand-context #:fail-ok? #t))
+    (when ctx (log-expand ctx 'track-syntax who new-s s))
+    new-s))
 
 ;; syntax-local-bind-syntaxes
 (define (syntax-local-bind-syntaxes ids s intdef [extra-intdefs '()])

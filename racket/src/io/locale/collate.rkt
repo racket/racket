@@ -120,7 +120,7 @@
           (cond
             [(and done1? done2?)
              (define v
-               (atomically
+               (rktioly
                 (sync-locale!)
                 (if ci?
                     (rktio_locale_strcoll rktio

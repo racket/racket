@@ -1,3 +1,187 @@
+Version 9.3, July 2026
+raco pkg install: Add `--adjacent-deps`, `--destdir`, and `--attach`,
+  refine `--skip-installed`
+raco setup: Add `--doc-markdown`
+Add `ffi/unsafe/runtime-lib`
+Change `prompt-tag/c` so that no checking is performed on `call/cc`
+  when the `#:call/cc` option is not present
+Add composable-continuation interposition in `impersonate-prompt-tag`
+Add `error-syntax->srcloc-handler`
+Change `(tcp-listen 0)` to retry when it fails with "address in use"
+Simplify `racket/base` to fewer internal modules and instantiations
+Complete internal support for `ffi2`
+file/zip: Add configurable directory and compression level
+
+Version 9.2, April 2026
+Allow more types of `quote`d data in cross-phase persistent modules
+Change `match` to reject non-linear patterns with mismatched ellipsis
+ depth
+Add a `#%foreign-inline` core syntactic form for unsafe access to
+ facilities provided at the linklet layer by a Racket implementation
+Change `object/c` implementation to improve performance
+Reduce foreign-procedure call overhead in some cases by internally
+ shifting interrupt-disabling responsibility to callbacks
+Add internal "ffi2" support for a more static FFI (to be used in
+ a future package)
+Correct some error messages from `memw`, `with-syntax`,
+  and `unquote-splicing`
+Reorganize, tidy, and merge various `racket/private` modules
+Rewrite the implementations of `member`, `memw`, `when`, `unless`,
+  `let/ec`, and `cond` to use only racket/kernel syntax  
+Add `impersonator-property-predicate-procedure?`
+Add `terminal-file-position`
+Use Unicode 17.0 for character and string operations
+
+Version 9.1, January 2026
+Added support for configuring a language family to navigate
+ documentation
+Add `exn-classify-errno`
+BC: Change all characters to be interned, so `interned-char?`
+ implies `char?` and `eqv?` implies `eq?` on characters
+Change `make-struct-type` to accept `'current` for inspector
+Add `#:on-length-mismatch` to `for` and variants
+Add `--enable-sofind=<conv>` configuration mode to generalize
+ `--enable-[no]natipkg`
+Add `'platform` and `'so-find` modes to `system`
+Add `openssl/legacy`
+
+Version 9.0, October 2025
+Add support for recording a thread's results via the `#:keep` option
+ to `thread`; results are returned by `thread-wait`
+CS: Add support for parallel threads via the `#:pool` argument to
+ `thread`
+CS: Expand the set of primitives that can be used in futures without
+ blocking, although the changes are mainly meant to enable more
+ parallelism via parallel threads
+Adapt and expand the role of "uninterruptible" mode and the API
+ provided by `ffi/unsafe/atomic`
+Add `black-box`
+racket/linklet: Add `decompile-linklet`
+BC: Change `processor-count` to always return parallel count
+Add AArch64 "natipkg" packages, which are useful for package-build
+ and package-testing infrastructure
+
+Version 8.18, July 2025
+Build-system improvements support containers registered at Docker Hub
+ to build for all platforms that have downloads form the main Racket
+ download site; improvements also support Unix-style builds for Mac
+ OS a la MacPorts
+Use Unicode 16.0 for character and string operations
+Change `struct` to support `#:properties prop-alist-expr`
+Improve `expt` on a flonum to a large exact power
+Change TCP ports to use SO_KEEPALIVE correctly
+xml: Change structs to serializable
+ffi/unsafe: Add `start-uninterruptible`, `end-uninterruptible`
+net/imap: Add `imap-move`
+
+Version 8.17, April 2025
+Package manager: support a file URL without associated ".CHECKSUM"
+ file, and instead the download the file as needed to infer
+Add `bitwise-first-bit-set`
+Add a syntax-thunk argument to `dynamic-require`
+Add `error-module-path->string-handler`
+Improve precision in `angle`, `expt`, `log`, `sin`, and `cos`
+ on some platforms
+Improve `(apply string-append ....)` on long list arguments
+Change TCP ports to use SO_KEEPALIVE
+Add Windows mouse event translation in terminal support provided
+ by the `#%terminal` primitive module
+json: Add `#:replace-malformed-surrogate?` argument
+net/http-client: Avoid sending "Content-Length: 0" when no body
+compiler/demod: Improve pruning of unused assignments
+
+Version 8.16, January 2025
+Add `treelist-filter, `treelist-index-of`, `treelist-flatten`,
+ `treelist-append*`, and `sequence->treelist` in `racket/treelist`,
+  repair `treelist-set` on non-leftwise-dense subtrees,
+  and change `treelist/c` to never lazy by default
+Add `mutable-treelist-prepend!` in `racket/mutable-treelist`
+Change (mutable) treelists to support serialization
+Add `flbit-field` to `racket/flonum`
+Add `\X` in `pregexp` to match a grapheme cluster character sequence
+Improve `ffi/unsafe` layers to speed up `ptr-ref` and `ptr-set!`
+Add `port-file-stat`
+Add `pipe-port?`
+Add `open-input-nowhere` to `racket/port`
+Improve `read-bytes` for large requests through custom input ports
+CS: repair custom-port polling by `peek-bytes-avail*!`
+Allow `make-parameter` as cross-phase persistent
+CS: repair `simplify-path` for a link that needs simplification
+Add `read-json*` and `write-json*` in `(submod json for-extension)`
+Improve XML reader performance
+Add `error-syntax->name-handler`
+Add `racket/serialize-structs`
+BC: upgrade to libffi 3.4.6
+
+Version 8.15, October 2024
+Sort and highlight documentation-search results by core documentation
+ and main-distribution packages
+Add "language family" to documents, support filtering searches by
+ language family, and highlight results that are not the main family
+Add `'ios` as a compilation target distinct from `'macos`
+Use `AI_V4MAPPED` and `AI_ADDRCONFIG` for hostname resolution via
+ `getaddrinfo`, which improves IPv4 vs. IPv6 on some platforms
+raco pkg: Add `uninstall` command prefer it to `remove`
+raco pkg: Improve `--clone` transition for packages that are included
+ in a distribution, and improve `--unclone` propagation to implied
+ffi/unsafe: Add `'zeroed-atomic[-interior]` allocation mode
+compiler/demod: Repair for Windows paths and some syntax scopes
+
+Version 8.14, July 2024
+Add `case-λ`, add `match-λ` (and variants) to `racket/match`, and
+ change the binding of `λ` to be `free-identifier=?` to `lambda`
+Add the `compiler/demod` language, improve `raco demod` to support
+ the preservation of syntax, provides, macros, and submodules, and
+ improve the effectiveness of definition pruning
+Generalize `contract-in` to have the same features as `contract-out`
+Add `hash-filter` to `racket/hash`
+Add `#:flatten-requires` and `#:unlimited-compile` keywords for
+ `#%declare`
+Add `raco/testing`, now used by `rackunit/log`, as a home for general
+ testing like `test-log` and `current-test-invocation-directory`
+Adjust `raco test` to use `current-test-invocation-directory`, and
+ adjust `raco test` output to show well-formed module paths
+Support an embedding of Racket CS where boot files are provided in
+ memory, instead of requiring a file
+Fix `equal-always?` on paths, fxvectors, flvectors, extflvectors,
+ and stencil vectors
+
+Version 8.13, April 2024
+Add `racket/treelist` and `racket/mutable-treelist`
+Add `contract-in`
+Add `hash-filter-keys` and `hash-filter-values` to `racket/hash`
+Add `vector-extend` and `vector*-extend` ro `racket/vector`
+Add `syntax-local-lift-require-top-level-form`
+Add `syntax-local-make-definition-context-introducer`
+Improve support for static generation of foreign-function bindings via
+ machine-specific cross-module optimization
+Use Unicode 15.1 for character and string operations
+
+Version 8.12, January 2024
+Change `open-input-file`, `open-output-file`, and `subprocess`
+ on variants of Unix and Mac OS where O_CLOEXEC is supported
+ to open files with that flag and to refrain from closing all
+ file descriptors (without O_CLOEXEC) in `subprocess`
+Add support for `hash` and `hash*` patterns in `match`
+Add `vector-set/copy` to `racket/vector`
+Add `pregexp-quote`
+Add `convention:hyphen->{Pascal,camel}Case` FFI conventions
+Add `racket/case` with `case/equal-always` and related forms
+Add configured build stamp to `banner` result
+Change treatment of shadowing for a `for/fold` accumulator
+ variable by an iteration clause
+Change `PLT_LINKLET_SHOW` and variants to write to error port,
+ and adjusted the output format
+Add partial support for static generation of foreign-function
+ bindings
+
+Version 8.11, October 2023
+Add `#:do` option support to `match` clauses
+Add `#:indent` to `write-json`
+Add `initiate-sequence` and extend `:do-in` to allow an inner
+ definition sequence
+Fix `module-path?` to disallow trailing dots in directory elements
+
 Version 8.10, July 2023
 Improve Check Syntax binding arrows from `define-local-member-name`
 Change `syntax-parse` to use interpreted mode for patterns outside
@@ -129,7 +313,7 @@ Switch Racket CS immutable hash table to HAMTs, based on
  stencil vectors in the Chez Scheme
 Bug repairs and other changes noted in the documentation
 
-Version 7.6, January 2019
+Version 7.6, January 2020
 Bug repairs and other changes noted in the documentation
 
 Version 7.5, November 2019

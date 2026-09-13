@@ -11,12 +11,12 @@
     exn:fail:contract:arity]
    [(and (format-condition? v)
          (who-condition? v)
-         (#%memq (condition-who v) '(/ modulo remainder quotient atan angle log))
+         (#%memq (condition-who v) '(/ modulo remainder quotient atan angle log $quotient-remainder))
          (string=? "undefined for ~s" (condition-message v)))
     exn:fail:contract:divide-by-zero]
    [(and (format-condition? v)
          (who-condition? v)
-         (#%memq (condition-who v) '(expt atan2))
+         (#%memq (condition-who v) '(expt atan2 log))
          (string=? "undefined for values ~s and ~s" (condition-message v)))
     exn:fail:contract:divide-by-zero]
    [(and (format-condition? v)
@@ -33,6 +33,13 @@
    [(and (who-condition? v)
          (eq? 'time-utc->date (condition-who v)))
     exn:fail]
+   [(and (format-condition? v)
+         (who-condition? v)
+         (#%memq (condition-who v) '(make-string make-vector make-fxvector make-flvector make-bytevector))
+         (string-prefix? "~s is not a valid " (condition-message v))
+         (string-suffix? " length" (condition-message v))
+         (exact-nonnegative-integer? (car (condition-irritants v))))
+    exn:fail:out-of-memory]
    [else
     exn:fail:contract]))
 
@@ -52,16 +59,20 @@
                 bytevector-u8-set! bytes-set!
                 bytevector-length bytes-length
                 bytevector-copy bytes-copy
+                make-bytevector make-bytes
                 bitwise-arithmetic-shift arithmetic-shift
-                fixnum->flonum fx->fl 
+                fixnum->flonum fx->fl
                 flonum->fixnum fl->fx
                 fxarithmetic-shift-right fxrshift
                 fxarithmetic-shift-left fxlshift
                 fxsll/wraparound fxlshift/wraparound
                 fxsrl fxrshift/logical
+                exact inexact->exact
                 real->flonum ->fl
                 time-utc->date seconds->date
-                make-record-type-descriptor* make-struct-type)
+                make-record-type-descriptor* make-struct-type
+                atan2 atan
+                $quotient-remainder quotient/remainder)
         (set! rewrites-added? #t)))
     (getprop n 'error-rename n)))
 
@@ -77,9 +88,17 @@
              "~a: undefined;\n cannot reference an identifier before its definition"
              "\n  alert: compiler pass failed to add more specific guard!")
             irritants)]
-   [(and (equal? str "undefined for ~s")
+   [(and (eq? who '/)
+         (equal? str "undefined for ~s")
          (equal? irritants '(0)))
     (values "division by zero" null)]
+   [(equal? str "undefined for values ~s and ~s")
+    (cond
+     [(and (eq? who 'log)
+           (eqv? (cadr irritants) 1))
+      (values "undefined for base ~s" '(1))]
+     [else
+      (values "undefined for ~s and ~s" irritants)])]
    [(and (string-prefix? result-arity-msg-head str)
          (string-suffix? result-arity-msg-tail str))
     (values (string-append "result arity mismatch;\n"
@@ -93,30 +112,33 @@
                                                 s)))
             null)]
    [(equal? str "~s is not a pair")
-    (format-error-values (string-append
-                          "contract violation\n  expected: "
-                          (error-contract->adjusted-string "pair?" primitive-realm)
-                          "\n  given: ~s")
-                         irritants)]
+    (format-contract-violation "pair?" irritants)]
    [(and (equal? str "incorrect list structure ~s")
          (cxr->contract who))
     => (lambda (ctc)
-         (format-error-values (string-append "contract violation\n  expected: "
-                                             (error-contract->adjusted-string ctc primitive-realm)
-                                             "\n  given: ~s")
-                              irritants))]
+         (format-contract-violation ctc irritants))]
    [(and (or (eq? who 'list-ref) (eq? who 'list-tail))
          (equal? str "index ~s is out of range for list ~s"))
-    (format-error-values (string-append "index too large for list\n"
-                                        "  index: ~s\n"
-                                        "  in: ~s")
-                         irritants)]
+    (cond
+      [(and (eq? who 'list-ref)
+            (not (pair? (cadr irritants))))
+       (format-contract-violation "pair?" (list (cadr irritants)))]
+      [else
+       (format-error-values (string-append "index too large for list\n"
+                                           "  index: ~s\n"
+                                           "  in: ~s")
+                            irritants)])]
    [(and (or (eq? who 'list-ref) (eq? who 'list-tail))
          (equal? str "index ~s reaches a non-pair in ~s"))
-    (format-error-values (string-append "index reaches a non-pair\n"
-                                        "  index: ~s\n"
-                                        "  in: ~s")
-                         irritants)]
+    (cond
+      [(and (eq? who 'list-ref)
+            (not (pair? (cadr irritants))))
+       (format-contract-violation "pair?" (list (cadr irritants)))]
+      [else
+       (format-error-values (string-append "index reaches a non-pair\n"
+                                           "  index: ~s\n"
+                                           "  in: ~s")
+                            irritants)])]
    [(or (eq? who 'memq) (eq? who 'memv))
     (format-error-values "not a proper list\n  in: ~s" irritants)]
    [(equal? str  "~s is not a valid index for ~s")
@@ -143,21 +165,39 @@
                                                 "  " what ": ~s")
                                  irritants)))]
      [else
-      (format-error-values (string-append "contract violation\n"
-                                          "  expected: exact-nonnegative-integer?\n"
+      (format-error-values (string-append "contract violation\n  expected: "
+                                          (error-contract->adjusted-string
+                                           "exact-nonnegative-integer?"
+                                           primitive-realm)
+                                          "\n"
                                           "  given: ~s\n"
                                           "  argument position: 2nd\n"
                                           "  first argument...:\n"
                                           "   ~s")
                            irritants)])]
+   [(equal? str "~s is not a valid unicode scalar value")
+    (format-contract-violation "(and/c (integer-in 0 #x10FFFF) (not/c (integer-in #xD800 #xDFFF)))" irritants)]
+   [(and (string-prefix? "~s is not a valid " str)
+         (string-suffix? " length" str)
+         (#%memq who '(make-string make-vector make-fxvector make-flvector make-bytevector)))
+    (if (exact-nonnegative-integer? (car irritants))
+        (values (string-append "out of memory making "
+                               (case who
+                                 [(make-string) "string"]
+                                 [(make-vector) "vector"]
+                                 [(make-fxvector) "fxvector"]
+                                 [(make-flvector) "flvector"]
+                                 [(make-bytevector) "byte string"])
+                               "\n  length: ~s")
+                irritants)
+        (format-contract-violation "exact-nonnegative-integer?" irritants))]
    [(and (> (string-length str) (string-length is-not-a-str))
          (equal? (substring str 0 (string-length is-not-a-str)) is-not-a-str)
          (= 1 (length irritants)))
     (let ([ctc (desc->contract (substring str (string-length is-not-a-str) (string-length str)))])
-      (format-error-values (string-append "contract violation\n  expected: "
-                                          (error-contract->adjusted-string ctc primitive-realm)
-                                          "\n  given: ~s")
-                           irritants))]
+      (format-contract-violation ctc irritants))]
+   [(equal? str "index ~s is not an exact nonnegative integer") ; doesn't match `is-not-a-str`
+    (format-contract-violation "exact-nonnegative-integer?" irritants)]
    [(equal? str "cannot extend sealed record type ~s as ~s")
     (format-error-values (string-append "cannot make a subtype of a sealed type\n"
                                         "  type name: ~s\n"
@@ -170,13 +210,16 @@
         (and (eq? who 'stencil-vector-update)
              (or (equal? str invalid-removal-mask)
                  (equal? str invalid-addition-mask))))
-    (format-error-values (string-append "contract violation\n"
-                                        "  expected: (integer-in 0 (sub1 (expt 2 (stencil-vector-mask-width))))\n"
+    (format-error-values (string-append "contract violation\n  expected: "
+                                        (error-contract->adjusted-string
+                                         "(integer-in 0 (sub1 (expt 2 (stencil-vector-mask-width))))"
+                                         primitive-realm)
+                                        "\n"
                                         (cond
                                           [(equal? str invalid-removal-mask) "  argument position: 2nd\n"]
                                           [(equal? str invalid-addition-mask) "  argument position: 3rd\n"]
                                           [else ""])
-                                        "  given: ~s\n")
+                                        "  given: ~s")
                          irritants)]
    [(or (equal? str "mask ~s does not match given number of items ~s")
         (equal? str "addition mask ~s does not match given number of items ~s"))
@@ -196,8 +239,35 @@
                                         "  stencil vector: ~s\n"
                                         "  addition mask: ~s")
                          irritants)]
+   [(and (or (equal? str "invalid bit index ~s")
+             (equal? str "invalid start index ~s")
+             (equal? str "invalid end index ~s"))
+         (#%memq who '(bitwise-bit-set? bitwise-bit-field flbit-field)))
+    (cond
+      [(exact-nonnegative-integer? (car irritants))
+       (cond
+         [(and (eq? who 'flbit-field) (> (car irritants) 64))
+          ;; must be an out-of-range index
+          (format-contract-violation "(integer-in 0 64)" irritants)]
+         [else
+          ;; must be an out-of-range end index
+          (format-error-values (string-append
+                                "ending index is smaller than starting index\n  ending index: ~s")
+                               irritants)])]
+      [else
+       (format-contract-violation (if (eq? who 'flbit-field) "(integer-in 0 64)" "exact-nonnegative-integer?") irritants)])]
+   [(and (equal? str "invalid value ~s")
+         (eq? who 'bytevector-u8-set!))
+    (format-contract-violation "byte?" irritants)]
    [else
     (format-error-values str irritants)]))
+
+(define (format-contract-violation contract-str irritants)
+  (format-error-values (string-append
+                        "contract violation\n  expected: "
+                        (error-contract->adjusted-string contract-str primitive-realm)
+                        "\n  given: ~s")
+                       irritants))
 
 (define (format-error-values str irritants)
   (let ([str (string-copy str)]
@@ -214,7 +284,7 @@
           [(#\s)
            (string-set! str (fx+ i 1) #\a)
            (loop (fx+ i 2)
-                 (cons (error-value->string (car irritants))
+                 (cons (reindent/newline (error-value->string (car irritants)))
                        accum-irritants)
                  (cdr irritants))]
           [else (loop (fx+ i 2)

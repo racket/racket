@@ -623,6 +623,9 @@ ac_includes_default="\
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 upsrcdir
+INSTALL_PKG_CATALOG
+INSTALL_MISSING_PKGS
+INSTALL_PKGS
 CFLAGS_FOR_BUILD
 CC_FOR_BUILD
 RKTIO_CONFIGURE_ARGS
@@ -705,6 +708,7 @@ CONFIG_PATH
 GR_APP_COLLECTS_PATH
 GUI_COLLECTS_PATH
 COLLECTS_PATH
+guibindir
 pkgsdir
 includepltdir
 etcpltdir
@@ -745,7 +749,7 @@ collectsdir
 htmldir
 infodir
 docdir
-oldincludedir
+guibindir
 includedir
 localstatedir
 sharedstatedir
@@ -770,14 +774,12 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_shared
-enable_standalone
 enable_pthread
 enable_iconv
 enable_curses
 enable_curseslib
 enable_wpo
 enable_compress
-enable_compressmore
 enable_compressboot
 enable_origtree
 enable_sharezo
@@ -816,6 +818,9 @@ enable_cgcdefault
 enable_crossany
 enable_libz
 enable_liblz4
+enable_pkgs
+enable_missingpkgs
+enable_catalog
 '
       ac_precious_vars='build_alias
 host_alias
@@ -865,12 +870,12 @@ sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
 includedir='${prefix}/include'
-oldincludedir='/usr/include'
+guibindir='${bindir}'
 docdir='${datarootdir}/doc/${PACKAGE}'
 infodir='${datarootdir}/info'
 htmldir='${docdir}'
 collectsdir='${exec_prefix}/share/${PACKAGE}/collects'
-pkgsdir='${datarootdir}/${PACKAGE}/pkgs'
+pkgsdir='${datadir}/${PACKAGE}/pkgs'
 psdir='${docdir}'
 libdir='${exec_prefix}/lib'
 appsdir='${exec_prefix}/share/applications'
@@ -878,6 +883,33 @@ mandir='${datarootdir}/man'
 
 ac_prev=
 ac_dashdash=
+
+# Added to the front of an autoconf script to handle
+# `CFLAGS+=...` and similar additions, athering the
+# content into vabiables like `CFLAGS_ADD` and removing
+# them from autoconf's view
+
+for arg do
+    shift
+    case $arg in
+        CFLAGS+=*)
+            CFLAGS_ADD="${CFLAGS_ADD} "`echo $arg | sed -e 's/^CFLAGS+=//'`
+            ;;
+        CPPFLAGS+=*)
+            CPPFLAGS_ADD="${CPPFLAGS_ADD} "`echo $arg | sed -e 's/^CPPFLAGS+=//'`
+            ;;
+        LDFLAGS+=*)
+            LDFLAGS_ADD="${LDFLAGS_ADD} "`echo $arg | sed -e 's/^LDFLAGS+=//'`
+            ;;
+        LIBS+=*)
+            LIBS_ADD="${LIBS_ADD} "`echo $arg | sed -e 's/^LIBS+=//'`
+            ;;
+        *)
+            set -- "$@" "$arg"
+            ;;
+    esac
+done
+
 for ac_option
 do
   # If the previous option needs an argument, assign it.
@@ -1057,14 +1089,14 @@ do
   | --no-recurs | --no-recur | --no-recu | --no-rec | --no-re | --no-r)
     no_recursion=yes ;;
 
-  -oldincludedir | --oldincludedir | --oldincludedi | --oldincluded \
+  -guibindir | --guibindir | --guibindi | --guibind \
   | --oldinclude | --oldinclud | --oldinclu | --oldincl | --oldinc \
   | --oldin | --oldi | --old | --ol | --o)
-    ac_prev=oldincludedir ;;
-  -oldincludedir=* | --oldincludedir=* | --oldincludedi=* | --oldincluded=* \
+    ac_prev=guibindir ;;
+  -guibindir=* | --guibindir=* | --guibindi=* | --guibind=* \
   | --oldinclude=* | --oldinclud=* | --oldinclu=* | --oldincl=* | --oldinc=* \
   | --oldin=* | --oldi=* | --old=* | --ol=* | --o=*)
-    oldincludedir=$ac_optarg ;;
+    guibindir=$ac_optarg ;;
 
   -prefix | --prefix | --prefi | --pref | --pre | --pr | --p)
     ac_prev=prefix ;;
@@ -1252,7 +1284,7 @@ fi
 # Check all directory arguments for consistency.
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
-		oldincludedir docdir infodir htmldir collectsdir appsdir psdir \
+		guibindir docdir infodir htmldir collectsdir appsdir psdir \
 		libdir appsdir mandir
 do
   eval ac_val=\$$ac_var
@@ -1368,10 +1400,11 @@ if test "$ac_init_help" = "long"; then
   cat <<_ACEOF
 \`configure' configures this package to adapt to many kinds of systems.
 
-Usage: $0 [OPTION]... [VAR=VALUE]...
+Usage: $0 [OPTION]... [VAR=VALUE]... [VAR+=VALUE]...
 
 To assign environment variables (e.g., CC, CFLAGS...), specify them as
 VAR=VALUE.  See below for descriptions of some of the useful variables.
+Use += with CFLAGS, CPPFLAGS, LDFLAGS, or LIBS to add to the variable.
 
 Defaults for the options are specified in brackets.
 
@@ -1404,6 +1437,7 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
+  --guibindir=DIR         GUI programs [BINDIR]
   --datarootdir=DIR       read-only arch.-independent data root [PREFIX/share]
   --datadir=DIR           read-only architecture-independent data [DATAROOTDIR]
   --appsdir=DIR           .desktop files [EPREFIX/share/applications]
@@ -1431,14 +1465,12 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-shared         create shared libraries (not currently supported)
-  --enable-standalone     create a standalone shared library
   --enable-pthread        link with pthreads (usually auto-enabled if needed)
   --enable-iconv          use iconv (usually auto-enabled)
   --enable-curses         use curses (usually auto-enabled)
   --enable-curseslib=<libs> use <libs> for linking to curses library
   --enable-wpo            agressively optimize Racket core (enabled by default)
   --enable-compress       compress compiled code (enabled by default)
-  --enable-compressmore   compress compiled code even more
   --enable-compressboot   compress boot files
   --enable-origtree       install with original directory structure
   --enable-sharezo        install ".zo"s to "share", not "lib"
@@ -1454,7 +1486,9 @@ Optional Features:
   --enable-pbchunk        enable C chunks for pb boot (enabled by default)
   --enable-check          enable extra safety checks for testing
   --enable-portable       prefer portable to host-specific
-  --enable-natipkg        add "-natipkg" to library subpath
+  --enable-natipkg        use "natipkg" as shared-object convention
+  --enable-nonatipkg      use "nonatipkg" as shared-object convention
+  --enable-sofind=<conv>  use "<conv>" as shared-object convention
   --enable-sdk=<path>     use Mac OS 10.4 SDK directory
   --enable-sdk5=<path>    use Mac OS 10.5 SDK directory
   --enable-sdk6=<path>    use Mac OS 10.6 SDK directory
@@ -1483,6 +1517,9 @@ Optional Features:
   --enable-crossany       Record own cross target as machine-independent
   --enable-libz           use installed libz if available
   --enable-liblz4         use installed liblz4 if available
+  --enable-pkgs=<pkgs>    add <pkgs> on install
+  --enable-missingpkgs    add missing package dependencies on install
+  --enable-catalog=<url>  install packages from <url>
 
 Some influential environment variables:
   CC          C compiler command
@@ -2389,6 +2426,7 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
+
 ac_config_headers="$ac_config_headers cs_config.h"
 
 
@@ -2541,11 +2579,6 @@ if test "${enable_shared+set}" = set; then :
   enableval=$enable_shared;
 fi
 
-# Check whether --enable-standalone was given.
-if test "${enable_standalone+set}" = set; then :
-  enableval=$enable_standalone;
-fi
-
 # Check whether --enable-pthread was given.
 if test "${enable_pthread+set}" = set; then :
   enableval=$enable_pthread;
@@ -2577,11 +2610,6 @@ fi
 # Check whether --enable-compress was given.
 if test "${enable_compress+set}" = set; then :
   enableval=$enable_compress;
-fi
-
-# Check whether --enable-compressmore was given.
-if test "${enable_compressmore+set}" = set; then :
-  enableval=$enable_compressmore;
 fi
 
 # Check whether --enable-compressboot was given.
@@ -2665,6 +2693,16 @@ if test "${enable_portable+set}" = set; then :
   enableval=$enable_portable;
 fi
 
+
+# Check whether --enable-natipkg was given.
+if test "${enable_natipkg+set}" = set; then :
+  enableval=$enable_natipkg;
+fi
+
+# Check whether --enable-natipkg was given.
+if test "${enable_natipkg+set}" = set; then :
+  enableval=$enable_natipkg;
+fi
 
 # Check whether --enable-natipkg was given.
 if test "${enable_natipkg+set}" = set; then :
@@ -2762,7 +2800,7 @@ STRIP_DEBUG=":"
 STRIP_LIB_DEBUG=":"
 strip_debug_flags=""
 enable_strip_by_default=yes
-strip_needs_dash_s=no
+strip_needs_dash_s=yes
 
 STRIP_SIGNATURE=":"
 RESTORE_SIGNATURE=":"
@@ -2830,6 +2868,23 @@ fi
 if test "${enable_liblz4+set}" = set; then :
   enableval=$enable_liblz4;
 fi
+
+
+# Check whether --enable-pkgs was given.
+if test "${enable_pkgs+set}" = set; then :
+  enableval=$enable_pkgs;
+fi
+
+# Check whether --enable-missingpkgs was given.
+if test "${enable_missingpkgs+set}" = set; then :
+  enableval=$enable_missingpkgs;
+fi
+
+# Check whether --enable-catalog was given.
+if test "${enable_catalog+set}" = set; then :
+  enableval=$enable_catalog;
+fi
+
 
 
 
@@ -2903,7 +2958,6 @@ fi
 show_explicitly_enabled "${enable_pthread}" "pthreads"
 show_explicitly_disabled "${enable_pthread}" "pthreads"
 show_explicitly_disabled "${enable_compress}" "Compressed code"
-show_explicitly_disabled "${enable_compressmore}" "Compressed code even more"
 show_explicitly_enabled "${enable_compressboot}" "Compressed boot files"
 show_explicitly_disabled "${enable_compressboot}" "Compressed boot files"
 show_explicitly_enabled "${enable_xonx}" "Unix style"
@@ -2917,7 +2971,11 @@ show_explicitly_set "${enable_pb}" "pb machine type"
 show_explicitly_disabled "${enable_pbchunk}" "pbchunk"
 show_explicitly_enabled "${enable_portable}" "portable"
 
-show_explicitly_enabled "${enable_natipkg}" "Adding \"-natipkg\" suffix to library subpath"
+show_explicitly_enabled "${enable_natipkg}" "Adding \"natipkg\" as shared-object convention and library subpath"
+show_explicitly_enabled "${enable_nonatipkg}" "Adding \"nonatipkg\" as shared-object convention and library subpath"
+if test "${enable_sofind}" != "" ; then
+   echo "=== Setting shared-object convention and library-subpath suffix to ${enable_sofind}"
+fi
 
 show_explicitly_enabled "${enable_libz}" "Installed libz"
 show_explicitly_disabled "${enable_libz}" "Installed libz"
@@ -3073,6 +3131,24 @@ fi
 
 
 
+show_pkg_catalog="no"
+
+if test "$enable_pkgs" != ""  ; then
+  echo "=== Adding extra packages on install: $enable_pkgs"
+  show_pkg_catalog="yes"
+fi
+
+if test "$enable_missingpkgs" == "yes"  ; then
+  echo "=== Adding any missing package dependencies on install"
+  show_pkg_catalog="yes"
+fi
+
+if test "$show_pkg_catalog" != ""  ; then
+  if test "$enable_catalog" != "" ; then
+    echo "=== Installing packages from: $enable_catalog"
+  fi
+fi
+
 
 show_explicitly_enabled "${enable_crossany}" "Own cross-compile target as machine-independent"
 
@@ -3116,6 +3192,9 @@ if test "${enable_origtree}" != "yes" -a "${enable_useprefix}" != "no" ; then
   if test "${bindir}" != '${exec_prefix}/bin' ; then
    unixstyle=yes
   fi
+  if test "${guibindir}" != '${bindir}' ; then
+   unixstyle=yes
+  fi
   if test "${datadir}" != '${prefix}/share' ; then
    # Newer autoconf uses datarootdir:
    if test "${datadir}" = '${datarootdir}' ; then
@@ -3149,13 +3228,20 @@ if test "${enable_origtree}" != "yes" -a "${enable_useprefix}" != "no" ; then
   if test "${collectsdir}" != '${exec_prefix}/share/${PACKAGE}/collects' ; then
     unixstyle=yes
   fi
-  if test "${pkgsdir}" != '${datarootdir}/${PACKAGE}/pkgs' ; then
+  if test "${pkgsdir}" != '${datadir}/${PACKAGE}/pkgs' ; then
     unixstyle=yes
   fi
   if test "${appsdir}" != '${exec_prefix}/share/applications' ; then
     unixstyle=yes
   fi
 fi
+
+update_guibin_default_as_root()
+{
+  if test "${guibindir_is_default}" = "yes" ; then
+     guibindir='${prefix}'
+  fi
+}
 
 MAKE_COPYTREE=no
 if test "${unixstyle}" = "no" ; then
@@ -3166,6 +3252,8 @@ if test "${unixstyle}" = "no" ; then
     MAKE_COPYTREE=copytree
   fi
   bindir='${prefix}/bin'
+  guibindir='${bindir}'
+  guibindir_is_default=yes
   libpltdir='${prefix}/lib'
   libpltdir_rel='lib'
   sharepltdir='${prefix}/share'
@@ -3252,6 +3340,7 @@ GUI_CONFIG_PATH="${CONFIG_PATH}"
 
 
 
+
 ########################################
 
 show_path_results()
@@ -3272,6 +3361,7 @@ show_path_results()
   else
     echo ">>> Installation targets:"
     echo " executables        : ${bindir}/..."
+    echo " GUI executables    : ${guibindir}/..."
     echo " core docs          : ${docdir}/..."
     echo " C libraries        : ${libdir}/..."
     echo " C headers          : ${includepltdir}/..."
@@ -3284,13 +3374,14 @@ show_path_results()
     echo " man pages          : ${mandir}/..."
     echo "     where prefix = ${prefix}"
     echo "  and datarootdir = ${datarootdir}"
+    echo "  and datadir = ${datadir}"
+    echo "  and bindir = ${bindir}"
     if test "${unixstyle}" = "yes" ; then
       echo "  and exec_prefix = ${exec_prefix}"
       echo "  and PACKAGE = racket"
     fi
   fi
 }
-
 
 
 ############## init variables ################
@@ -3333,6 +3424,8 @@ use_own_zlibs=no
 
 cs_auto_flags=--disable-auto-flags
 
+dist_install_missing_pkgs=no
+
 COPY_NEW_CFLAGS_TO_CPPFLAGS=no
 
 SCHEME_LIBFFI=no
@@ -3357,16 +3450,27 @@ if test "${enable_ios}" != "" ; then
   esac
   case "${enable_ios}" in
     iPhoneOS|iPhoneSimulator)
-     ios_sdk=/Applications/Xcode.app/Contents/Developer/Platforms/${enable_ios}.platform/Developer/SDKs/${enable_ios}.sdk
-     echo "=== Using inferred iOS SDK path ${ios_sdk}"
+     IOS_SDK="$(xcode-select -p)/Platforms/${enable_ios}.platform/Developer/SDKs/${enable_ios}.sdk"
+     echo "=== Using inferred iOS SDK path ${IOS_SDK}"
      ;;
     *)
-     ios_sdk="${enable_ios}"
+     IOS_SDK="${enable_ios}"
      ;;
   esac
   IOS_PHONE_VERS="6.0"
-  PREFLAGS="$PREFLAGS -DTARGET_OS_IPHONE=1 -arch ${IOS_ARCH} -isysroot ${ios_sdk} -miphoneos-version-min=${IOS_PHONE_VERS}"
-  LDFLAGS="$LDFLAGS -arch ${IOS_ARCH} -isysroot ${ios_sdk} -miphoneos-version-min=${IOS_PHONE_VERS} -liconv"
+  IOS_SDK_FLAGS="-miphoneos-version-min=${IOS_PHONE_VERS}"
+  case "${IOS_SDK}" in
+      # When -arch is arm64-apple-darwin and -sdk is iPhoneSimulator,
+      # passing -miphoneos-version-min makes clang think it's targeting
+      # iPhoneOS instead of iPhoneSimulator, which causes the configure
+      # script to fail. There is no -miphonesimulator-version-min flag.
+      # The -mtargetos flag exhibits the same behavior.
+      *iPhoneSimulator.sdk)
+          IOS_SDK_FLAGS=""
+          ;;
+  esac
+  PREFLAGS="$PREFLAGS -DTARGET_OS_IPHONE=1 -arch ${IOS_ARCH} -isysroot ${IOS_SDK} ${IOS_SDK_FLAGS}"
+  LDFLAGS="$LDFLAGS -arch ${IOS_ARCH} -isysroot ${IOS_SDK} ${IOS_SDK_FLAGS} -liconv"
 fi
 
 
@@ -3677,6 +3781,33 @@ See \`config.log' for more details" "$LINENO" 5; }
 $as_echo "$as_me:${as_lineno-$LINENO}: checking for C compiler version" >&5
 set X $ac_compile
 ac_compiler=$2
+
+# Added to the front of an autoconf script to handle
+# `CFLAGS+=...` and similar additions, athering the
+# content into vabiables like `CFLAGS_ADD` and removing
+# them from autoconf's view
+
+for arg do
+    shift
+    case $arg in
+        CFLAGS+=*)
+            CFLAGS_ADD="${CFLAGS_ADD} "`echo $arg | sed -e 's/^CFLAGS+=//'`
+            ;;
+        CPPFLAGS+=*)
+            CPPFLAGS_ADD="${CPPFLAGS_ADD} "`echo $arg | sed -e 's/^CPPFLAGS+=//'`
+            ;;
+        LDFLAGS+=*)
+            LDFLAGS_ADD="${LDFLAGS_ADD} "`echo $arg | sed -e 's/^LDFLAGS+=//'`
+            ;;
+        LIBS+=*)
+            LIBS_ADD="${LIBS_ADD} "`echo $arg | sed -e 's/^LIBS+=//'`
+            ;;
+        *)
+            set -- "$@" "$arg"
+            ;;
+    esac
+done
+
 for ac_option in --version -v -V -qversion; do
   { { ac_try="$ac_compiler $ac_option >&5"
 case "(($ac_try" in
@@ -4160,6 +4291,30 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
+
+# The "filter_add.sh" script is inserted into autoconf output just
+# before the generated configure script handles arguments. The
+# configure script later handles the variables potentially built up
+# here, adding contents to the default or initially configured flag
+# sets.
+
+if test "$CPPFLAGS_ADD" != "" ; then
+   CPPFLAGS="$CPPFLAGS $CPPFLAGS_ADD"
+fi
+
+if test "$CFLAGS_ADD" != "" ; then
+   CFLAGS="$CFLAGS $CFLAGS_ADD"
+fi
+
+if test "$LDFLAGS_ADD" != "" ; then
+   LDFLAGS="$LDFLAGS $LDFLAGS_ADD"
+fi
+
+if test "$LIBS_ADD" != "" ; then
+   LIBS="$LIBS $LIBS_ADD"
+fi
+
+
 # If using gcc, we'll want all warnings
 
 is_gcc=`$CC -v 2>&1 | tail -n 1 | grep -E '^gcc version [[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+ \([^\)]+\)[[:space:]]*$'`
@@ -4427,6 +4582,7 @@ case "$host_os" in
     LIBS="$LIBS -lsocket -lnsl -lintl"
     use_flag_pthread="no"
     use_flag_posix_pthread="yes"
+    strip_needs_dash_s="no"
     ;;
   aix*)
     ;;
@@ -4457,9 +4613,8 @@ case "$host_os" in
     MACH_OS=nb
     LIBS="${LIBS} -lm -lpthread"
     LINK_DYNAMIC="-rdynamic"
-    add_iconv_lib="/usr/lib/i18n/libiconv_std.a"
-    skip_curses_check=yes
-    add_curses_lib="/usr/pkg/lib/libncurses.a"
+    skip_iconv_check=yes
+    add_curses_lib="-lterminfo"
     default_post_linker="paxctl +m"
     ;;
   irix*)
@@ -4492,9 +4647,12 @@ case "$host_os" in
     skip_curses_check=yes
     use_flag_pthread=no
     use_own_zlibs=yes
+    dist_install_missing_pkgs=yes
+    update_guibin_default_as_root
     MACH_OS=nt
     LIBS="${LIBS} -lshell32 -luser32 -lole32 -lrpcrt4 -luuid -lws2_32 -ladvapi32 -lwinmm"
     MINGW="t"
+    # keep "winfig.bat" consistent with the compression default:
     compress_boot_files_by_default=yes
     if `which ${host}-windres > /dev/null` ; then
       WINDRES="${host}-windres"
@@ -4509,18 +4667,19 @@ case "$host_os" in
   darwin*)
     PREFLAGS="$PREFLAGS -DOS_X"
     MACH_OS=osx
+    if test "${enable_ios}" != "" ; then
+      MACH_OS=ios
+    fi
     LIBS="${LIBS} -framework CoreFoundation"
     LDFLAGS="${LDFLAGS} -Wl,-headerpad_max_install_names"
     SIGNED_EXE="t"
     if test "${enable_xonx}" = "no" ; then
       OSX="t"
+      dist_install_missing_pkgs=yes
+      update_guibin_default_as_root
     else
       CONFIGURE_RACKET_SO_COMPILE="PLT_CS_MAKE_UNIX_STYLE_MACOS=y"
       CPPFLAGS="${CPPFLAGS} -DRACKET_XONX"
-      strip_needs_dash_s=yes
-    fi
-    if test "${enable_embedfw}" = "yes" ; then
-      strip_needs_dash_s=yes
     fi
 
     PROPAGATE_SUB_CONFIGURE=no
@@ -4704,6 +4863,10 @@ case "$MACH_HOST_CPU" in
     MACH="${thread_prefix}rv64${MACH_OS}"
     pb_machine_name="${thread_prefix}pb64l"
     ;;
+  loongarch64*)
+    MACH="${thread_prefix}la64${MACH_OS}"
+    pb_machine_name="${thread_prefix}pb64l"
+    ;;
 esac
 
 if test "${MACH}" = "" ; then
@@ -4803,6 +4966,9 @@ if test "${build_os}_${build_cpu}" != "${host_os}_${host_cpu}" ; then
     riscv64*)
       BUILD_MACH="${BUILD_THREAD_PREFIX}rv64${BUILD_OS}"
       ;;
+    loongarch64*)
+      BUILD_MACH="${BUILD_THREAD_PREFIX}la64${BUILD_OS}"
+      ;;
     *)
       echo "unknown build CPU"
       exit 1
@@ -4856,9 +5022,6 @@ fi
 
 if test "${enable_compress}" != "no" ; then
   COMPRESS_COMP="--compress"
-fi
-if test "${enable_compressmore}" = "yes" ; then
-  COMPRESS_COMP="--compress-more"
 fi
 
 if test "${enable_compressboot}" = "yes" ; then
@@ -4977,11 +5140,11 @@ else
   STRIP="$ac_cv_prog_STRIP"
 fi
 
-  # Used to add -S flag, but not all `strip' variants support it:
   STRIP_DEBUG="${STRIP}"
   if test "${INSTALL_LIBS_ENABLE}" = "install" ; then
     check_strip_dash_s=yes
   fi
+  # Note that `check_strip_dash_s` is set to "yes" by default
   if test "${strip_needs_dash_s}" = "yes" ; then
     check_strip_dash_s=yes
   fi
@@ -5035,9 +5198,56 @@ fi
 
 ############## natipkg ################
 
+if test "${enable_natipkg}" = "no" ; then
+  if "${enable_nonatipkg}" = "" ; then
+    if "${enable_sofind}" = "" ; then
+       enable_nonatipkg=yes
+    fi
+  fi
+fi
+
+if test "${enable_nonatipkg}" = "yes" ; then
+  if test "${enable_natipkg}" = "yes" ; then
+     echo 'cannot specify both `--enable-natipkg` and `--enable-nonatipkg`'
+     exit 1
+  fi
+elif test "${enable_nonatipkg}" = "no" ; then
+  if "${enable_nonatipkg}" = "no" ; then
+    if "${enable_sofind}" = "" ; then
+       echo 'cannot specify both `--disable-natipkg` and `--disable-nonatipkg`'
+       echo 'without `--enable-sofind=<sofind>`'
+       exit 1
+    fi
+  fi
+fi
+
+if test "${enable_sofind}" != "" ; then
+  if test "${enable_natipkg}" = "yes" ; then
+     echo 'cannot specify both `--enable-natipkg` and `--enable-sofind`'
+     exit 1
+  fi
+  if test "${enable_nonatipkg}" = "yes" ; then
+     echo 'cannot specify both `--enable-nonatipkg` and `--enable-sofind`'
+     exit 1
+  fi
+fi
+
+
 if test "${enable_natipkg}" = "yes" ; then
   CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} PLT_CS_SLSP_SUFFIX=-natipkg"
   PLT_CS_SLSP_SUFFIX="-natipkg"
+  dist_install_missing_pkgs=yes
+  use_own_zlibs=yes
+fi
+if test "${enable_nonatipkg}" = "yes" ; then
+  CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} PLT_CS_SLSP_SUFFIX=-nonatipkg"
+  PLT_CS_SLSP_SUFFIX="-nonatipkg"
+  dist_install_missing_pkgs=no
+  use_own_zlibs=no
+fi
+if test "${enable_sofind}" != "" ; then
+  CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} PLT_CS_SLSP_SUFFIX=-${enable_sofind}"
+  PLT_CS_SLSP_SUFFIX="-${enable_sofind}"
 fi
 
 ############## ubsan ################
@@ -6026,6 +6236,20 @@ if test "${enable_check}" = "yes" ; then
   ENABLE_EXTRA_CHECKS=yes
 fi
 
+############## Packages tool ################
+
+INSTALL_PKGS="$enable_pkgs"
+INSTALL_PKG_CATALOG="$enable_catalog"
+
+if test "$enable_missingpkgs" = "" ; then
+  if test "$dist_install_missing_pkgs" = "yes" ; then
+    INSTALL_MISSING_PKGS="dist"
+  fi
+else
+  INSTALL_MISSING_PKGS="$enable_missingpkgs"
+fi
+
+
 ############## subconfigure ################
 
 # Before libtool setup
@@ -6141,7 +6365,7 @@ do
   # Strip away all feature choices
   -enable* | --enable* | -disable* | --disable*)
     ;;
-  -collects* | --collects* | -apps* | --apps* | -pkgs* | --pkgs*)
+  -collects* | --collects* | -apps* | --apps* | -pkgs* | --pkgs* | -guibin*  | --guibin*)
     ;;
   *)
     case $fixup_arg in
@@ -6153,6 +6377,9 @@ done
 
 
 RKTIO_CONFIGURE_ARGS="${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"
+
+
+
 
 
 

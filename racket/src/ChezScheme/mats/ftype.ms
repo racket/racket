@@ -59,12 +59,14 @@
   (begin
     (define max-integer-alignment
       (if (or (> (fixnum-width) 32)
-              (memq (machine-type) '(i3nt ti3nt i3qnx ti3qnx arm32le tarm32le ppc32le tppc32le)))
+              (memq (machine-type) '(i3nt ti3nt i3qnx ti3qnx arm32le tarm32le ppc32le tppc32le
+                                          pb32l tpb32l pb32b tpb32b armv7le tarmv7le)))
           8
           4))
     (define max-float-alignment
       (if (or (> (fixnum-width) 32)
-              (memq (machine-type) '(i3nt ti3nt arm32le tarm32le ppc32le tppc32le)))
+              (memq (machine-type) '(i3nt ti3nt arm32le tarm32le ppc32le tppc32le
+                                          pb32l tpb32l pb32b tpb32b armv7le tarmv7le)))
           8
           4))
     (define-syntax fptr-free
@@ -81,6 +83,7 @@
            ans)]))
     #t)
 )
+
 
 (mat ftype
    (error? ; misplaced function type
@@ -120,6 +123,44 @@
    (begin
      (define-ftype F1 (function (int) int))
      #t)
+
+   (error? ; bad uid
+     (define-ftype P1 ftype-pointer (nongenerative 100)))
+
+   (error? ; require gensym for uid
+     (define-ftype P1 ftype-pointer (nongenerative p)))
+
+   (error? ; must include a uid
+     (define-ftype I1 int (nongenerative)))
+
+   (error? ; bad syntax
+     (define-ftype I1 int (ng #{int of6r270eh1theews7ikmyh8vo-0})))
+
+   (error? ; bad syntax
+     (define-ftype I1 int nongenerative))
+
+   (error? ; must include a uid
+     (define-ftype (I1 int (nongenerative))))
+
+   (error? ; bad syntax
+     (define-ftype (I1 int (ng #{int of6r270eh1theews7ikmyh8vo-0}))))
+
+   (error? ; bad syntax
+     (define-ftype (I1 int nongenerative)))
+
+   (error? ; alias cannot have a uid
+     (define-ftype I1 int (nongenerative #{int of6r270eh1theews7ikmyh8vo-0})))
+
+   (begin
+     (define-ftype PI1 (* int) (nongenerative #{int of6r270eh1theews7ikmyh8vo-0}))
+     (define-ftype PI2 (* int) (nongenerative #{int of6r270eh1theews7ikmyh8vo-0}))
+     (define-ftype
+      (PI3 (* int) (nongenerative #{int of6r270eh1theews7ikmyh8vo-0}))
+      (PI4 (* long) (nongenerative #{int of6r270eh1theews7ikmyh8vo-2})))
+     #t)
+
+   (error? ; mismatch
+     (define-ftype PI5 (* long) (nongenerative #{int of6r270eh1theews7ikmyh8vo-0})))
 
    (error? ; function ftypes have unknown size
      (ftype-sizeof F1))
@@ -166,6 +207,18 @@
         (ftype-pointer-address (ftype-&ref Ac (c2 b1) x))
         (ftype-pointer-address (ftype-&ref Ac (c3) x))))
     '(6 1 16 0 2 4 6 8))
+
+  (equivalent-expansion?
+    (parameterize ([enable-cp0 #t] [#%$suppress-primitive-inlining #f])
+      (expand/optimize
+        '(lambda ()
+           (#2%list
+            (ftype-pointer-address (ftype-&ref Ac (c1 a1) (make-ftype-pointer Ac 0)))
+            (ftype-pointer-address (ftype-&ref Ac (c1 a2) (make-ftype-pointer Ac 0)))
+            (ftype-pointer-address (ftype-&ref Ac (c1 a3) (make-ftype-pointer Ac 0)))
+            (ftype-pointer-address (ftype-&ref Ac (c2 b1) (make-ftype-pointer Ac 0)))
+            (ftype-pointer-address (ftype-&ref Ac (c3) (make-ftype-pointer Ac 0)))))))
+    '(lambda () (#2%list 0 2 4 6 8)))
 
   (begin
     (define addr (foreign-alloc (ftype-sizeof Ac)))
@@ -407,6 +460,91 @@
 
  ; ----------------
 
+  (begin
+    (define-ftype Fa
+      (struct
+        [x integer-32]
+        [y double-float]
+        [z (array 25 (struct [_ integer-16] [b integer-16]))]
+        [w (struct
+             [a integer-32]
+             [b (union
+                  [=> (struct
+                        [a integer-32]
+                        [b integer-16]
+                        [=> (endian little
+                              (bits
+                                [c unsigned 10]
+                                [d signed 6]))])]
+                  [b2 (struct [a integer-8] [b double])]
+                  [=> Aa])])]
+        [v (* Ac)]))
+    #t)
+
+  (equal?
+    (let ([x (make-ftype-pointer Fa 0)])
+      (list
+        (ftype-sizeof Fa)
+        (ftype-pointer-address (ftype-&ref Fa (x) x))
+        (ftype-pointer-address (ftype-&ref Fa (y) x))
+        (ftype-pointer-address (ftype-&ref Fa (z) x))
+        (ftype-pointer-address (ftype-&ref Fa (w) x))
+        (ftype-pointer-address (ftype-&ref Fa (v) x))
+        (ftype-pointer-address (ftype-&ref Fa (z 0) x))
+        (ftype-pointer-address (ftype-&ref Fa (z 4 b) x))
+        (ftype-pointer-address (ftype-&ref Fa (w a) x))
+        (ftype-pointer-address (ftype-&ref Fa (w b) x))
+        (ftype-pointer-address (ftype-&ref Fa (w b a) x))
+        (ftype-pointer-address (ftype-&ref Fa (w b b) x))
+        (ftype-pointer-address (ftype-&ref Fa (w b b2) x))
+        (ftype-pointer-address (ftype-&ref Fa (w b b2 a) x))
+        (ftype-pointer-address (ftype-&ref Fa (w b b2 b) x))
+        (ftype-pointer-address (ftype-&ref Fa (w b a1) x))
+        (ftype-pointer-address (ftype-&ref Fa (w b a2) x))
+        (ftype-pointer-address (ftype-&ref Fa (w b a3) x))))
+    (if (< max-float-alignment 8)
+        '(132 0 4 12 112 128 12 30 112 116 116 120 116 116 120 116 118 120)
+        '(152 0 8 16 120 144 16 34 120 128 128 132 128 128 136 128 130 132)))
+
+  (begin
+    (define-ftype Fb
+      (packed
+        (struct
+          [x integer-32]
+          [y double-float]
+          [z (array 25 (struct [_ integer-16] [b integer-16]))]
+          [=> (struct
+                [a integer-32]
+                [=> (union
+                      [b1 (struct [a integer-32] [b integer-32])]
+                      [b2 (struct [a integer-8] [b double])])])]
+          [v (* Ac)])))
+    #t)
+
+  (equal?
+    (let ([x (make-ftype-pointer Fb 0)])
+      (list
+        (ftype-sizeof Fb)
+        (ftype-pointer-address (ftype-&ref Fb (x) x))
+        (ftype-pointer-address (ftype-&ref Fb (y) x))
+        (ftype-pointer-address (ftype-&ref Fb (z) x))
+        (ftype-pointer-address (ftype-&ref Fb (a) x))
+        (ftype-pointer-address (ftype-&ref Fb (v) x))
+        (ftype-pointer-address (ftype-&ref Fb (z 0) x))
+        (ftype-pointer-address (ftype-&ref Fb (z 4 b) x))
+        (ftype-pointer-address (ftype-&ref Fb (a) x))
+        (ftype-pointer-address (ftype-&ref Fb (b1) x))
+        (ftype-pointer-address (ftype-&ref Fb (b1 a) x))
+        (ftype-pointer-address (ftype-&ref Fb (b1 b) x))
+        (ftype-pointer-address (ftype-&ref Fb (b2) x))
+        (ftype-pointer-address (ftype-&ref Fb (b2 a) x))
+        (ftype-pointer-address (ftype-&ref Fb (b2 b) x))))
+    (if (< (fixnum-width) 32)
+        '(129 0 4 12 112 125 12 30 112 116 116 120 116 116 117)
+        '(133 0 4 12 112 125 12 30 112 116 116 120 116 116 117)))
+
+ ; ----------------
+
   (equal?
     (let ()
       (define-ftype A (struct [a1 integer-32]))
@@ -441,6 +579,7 @@
         (uptr . ,(if (< (fixnum-width) 32) "uint32_t" "uint64_t"))
         (fixnum . ,(if (< (fixnum-width) 32) "int32_t" "int64_t"))
         (boolean . "int")
+        (stdbool . "int8_t")
         (integer-8 . "int8_t")
         (unsigned-8 . "uint8_t")
         (integer-16 . "int16_t")
@@ -450,7 +589,9 @@
         (integer-64 . "int64_t")
         (unsigned-64 . "uint64_t")
         (single-float . "float")
-        (double-float . "double")))
+        (double-float . "double")
+        (ftype-pointer . "void*")
+        (ftype-scheme-object-pointer . "void*")))
 
     (define ftype-paths
       (lambda (name ftype alist)
@@ -696,7 +837,21 @@
     [M2 (struct [a M1] [b integer-32])]
     [M3 (struct [a integer-32] [b M1])]
     [N1 (struct [a integer-32] [b integer-64])]
-  )
+    [P1 (struct [a ftype-pointer])]
+    [P2 (struct [a (* ftype-pointer)])]
+    [P3 (struct [a ftype-scheme-object-pointer])]
+    [P4 (struct [a (* ftype-scheme-object-pointer)])])
+
+ ; ----------------
+
+  (begin
+    (define-ftype TSsub
+      (struct [a ftype-scheme-object-pointer]))
+    (define-ftype TAsub
+      (array 10 ftype-scheme-object-pointer))
+    #t)
+  (not (ftype-scheme-object-pointer? (make-ftype-pointer TSsub 0)))
+  (not (ftype-scheme-object-pointer? (make-ftype-pointer TAsub 0)))
 
  ; ----------------
 
@@ -721,7 +876,8 @@
            [a15 fixnum]
            [a16 iptr]
            [a17 uptr]
-           [a18 void*]))
+           [a18 void*]
+           [a19 stdbool]))
        (define a (make-ftype-pointer A (foreign-alloc (ftype-sizeof A))))
        (free-after a
          (ftype-set! A (a1) a 3.5)
@@ -742,6 +898,7 @@
          (ftype-set! A (a16) a -30004)
          (ftype-set! A (a17) a #xabcdef07)
          (ftype-set! A (a18) a 25000)
+         (ftype-set! A (a19) a 'howdy)
          (list
            (ftype-ref A (a1) a)
            (ftype-ref A (a2) a)
@@ -760,7 +917,8 @@
            (ftype-ref A (a15) a)
            (ftype-ref A (a16) a)
            (ftype-ref A (a17) a)
-           (ftype-ref A (a18) a))))
+           (ftype-ref A (a18) a)
+           (ftype-ref A (a19) a))))
     `(3.5
       -4.5
       -30000
@@ -778,7 +936,8 @@
       ,(most-positive-fixnum)
       -30004
       #xabcdef07
-      25000))
+      25000
+      #t))
 
   (begin
     (define-ftype A
@@ -917,6 +1076,43 @@
   (begin
     (fptr-free x)
     #t)
+ ; ----------------
+  (begin
+    (define-ftype Dlist
+      (struct
+        [head int]
+        [=> (struct
+              [prev (* Dlist)]
+              [next (* Dlist)]
+              [=> (endian little
+                    (bits
+                      [lock unsigned 1]
+                      [z signed 7]))])]))
+    (define x (make-ftype-pointer Dlist (foreign-alloc (ftype-sizeof Dlist))))
+    (ftype-set! Dlist (head) x 17)
+    (ftype-set! Dlist (prev) x x)
+    (ftype-set! Dlist (next) x x)
+    (ftype-set! Dlist (lock) x 1)
+    (ftype-set! Dlist (z) x -6)
+    #t)
+  (eqv? (ftype-ref Dlist (head) x) 17)
+  (eqv? (ftype-ref Dlist (next * head) x) 17)
+  (eqv? (ftype-ref Dlist (prev * next * next * next * head) x) 17)
+  (eqv? (ftype-ref Dlist (lock) x) 1)
+  (eqv? (ftype-ref Dlist (z) x) -6)
+  (equal?
+    (ftype-pointer->sexpr x)
+    '#4=(struct
+          [head 17]
+          [=> (struct
+                [prev (* #4#)]
+                [next (* #4#)]
+                [=> (bits
+                      [lock 1]
+                      [z -6])])]))
+  (begin
+    (fptr-free x)
+    #t)
 
  ; ----------------
   (begin
@@ -968,6 +1164,85 @@
       [Qsnark (struct
                 [head int]
                 [tail (* Qfrob)])]))
+
+  (begin
+    (define-ftype Qa1jk
+      (struct
+        [a1 char]
+        [j int]
+        [k short]))
+    (define-ftype Qs3d
+      (union
+        [=> (struct
+              [s0 short]
+              [s1 short]
+              [s2 short])]
+        [d double]))
+    #t)
+
+  (error? ; duplicate name (s1)
+    (define-ftype Qfrob
+      (struct
+        [i int]
+        [=> (struct
+              [j int]
+              [s1 short])]
+        [=> Qs3d]
+        [c char])))
+
+  (error? ; duplicate name (d)
+    (define-ftype Qfrob
+      (struct
+        [i int]
+        [=> Qa1jk]
+        [=> (union
+              [=> (struct
+                    [d short]
+                    [s1 short]
+                    [s2 short])]
+              [d double])]
+        [c char])))
+
+  (error? ; duplicate name (k)
+    (define-ftype Qfrob
+      (struct
+        [k char]
+        [=> Qa1jk])))
+
+  (error? ; duplicate name (a1)
+    (define-ftype Qfrob
+      (struct
+        [=> Qa1jk]
+        [=> (union
+              [=> Aa]
+              [d double])])))
+
+  (error? ; invalid anonymous field ftype
+    (define-ftype Qfrob
+      (struct
+        [i int]
+        [=> Qa1jk]
+        [c char]
+        [=> (union
+              [=> (array 10 int)]
+              [d double])])))
+
+  (begin
+    (define-ftype Qfrob-ng0
+      (struct
+        [i int]
+        [=> Qa1jk]
+        [=> Qs3d]
+        [c char])
+      (nongenerative #{g1 o9p9ilrfa6hjqgdu4l7ulfkl1-6}))
+    (define-ftype Qfrob-ng1
+      (struct
+        [i int]
+        [=> Qa1jk]
+        [=> Qs3d]
+        [c char])
+      (nongenerative #{g1 o9p9ilrfa6hjqgdu4l7ulfkl1-6}))
+    #t)
 
  ; ----------------
   (begin
@@ -1056,6 +1331,85 @@
     (fptr-free a)
     (fptr-free b)
     #t)
+
+ ; ----------------
+  (begin
+    (define-ftype A (struct [x (* integer-8)] [y ftype-pointer]))
+    (define a (make-ftype-pointer A (foreign-alloc (ftype-sizeof A))))
+    (ftype-set! A (x) a (make-ftype-pointer integer-8 (foreign-alloc (ftype-sizeof integer-8))))
+    (ftype-set! A (y) a (make-ftype-pointer integer-8 0))
+    (ftype-set! A (x *) a 10)
+    (define bv (bytevector 1 2 3 4 5))
+    (define bv-p (make-ftype-scheme-object-pointer bv 2))
+    #t)
+
+  (error? ; wrong pointer type
+   (ftype-ref integer-8 () bv-p))
+  (error? ; wrong pointer type
+   (ftype-set! integer-8 () bv-p 0))
+  (error? ; wrong pointer type
+   (ftype-ref integer-8 () (ftype-any-ref ftype-pointer () a)))
+
+  (equal? (ftype-ref A (x *) a) 10)
+  (error? ; cannot deference void
+   (ftype-ref A (y *) a))
+  (error? ; wrong pointer type
+   (ftype-set! A (x *) bv-p))
+  (ftype-pointer-null? (ftype-ref A (y) a))
+
+  (equal? (ftype-any-ref integer-8 () (ftype-any-ref ftype-pointer () a)) 10)
+
+  (eq? bv (ftype-scheme-object-pointer-object bv-p))
+  (eqv? 2 (ftype-scheme-object-pointer-offset bv-p))
+  (eqv? 3 (ftype-any-ref integer-8 () bv-p 0))
+  (eqv? 4 (ftype-any-ref integer-8 () bv-p 1))
+  (eqv? 2 (ftype-any-ref integer-8 () (make-ftype-scheme-object-pointer bv -11) 12))
+  (begin
+    (ftype-any-set! integer-8 () bv-p 1 5)
+    (eqv? 5 (bytevector-u8-ref bv 3)))
+
+  (begin
+    (collect 0)
+    (eq? bv (ftype-scheme-object-pointer-object bv-p)))
+
+  (begin
+    (foreign-free (ftype-pointer-address (ftype-ref A (x) a)))
+    (lock-object bv)
+    (ftype-set! A (x) a (make-ftype-pointer integer-8 (ftype-pointer-address bv-p)))
+    (ftype-set! A (y) a bv-p)
+    #t)
+
+  (equal? (ftype-ref A (x *) a) 3)
+  (begin
+    (unlock-object bv)
+    #t)
+  (equal? (ftype-pointer->sexpr bv-p) `(offset ,bv 2))
+  (equal? (ftype-pointer->sexpr (make-ftype-scheme-object-pointer bv)) bv)
+  (equal? (ftype-pointer->sexpr (make-ftype-scheme-object-pointer bv 0)) bv)
+
+  (begin
+    (ftype-any-set! uptr () (ftype-&ref A (y) a) 0)
+    (ftype-pointer-null? (ftype-ref A (y) a)))
+
+  ;; null read as an object pointer produces a null fptr
+  (ftype-pointer-null? (ftype-any-ref ftype-scheme-object-pointer ()
+                                      (make-ftype-scheme-object-pointer
+                                       (bytevector 0 0 0 0 0 0 0 0)
+                                       0)))
+
+  ;; ftype-any-ref offsets are not scaled by the type
+  (equal? #x0202 (ftype-any-ref unsigned-16 () (make-ftype-scheme-object-pointer (bytevector 1 1 2 2 3 3 4 4))
+                                2))
+  (let ([bv (bytevector 1 1 2 2 3 3 4 4)])
+    (ftype-any-set! unsigned-16 () (make-ftype-scheme-object-pointer bv) 2 #x0505)
+    (equal? bv #vu8(1 1 5 5 3 3 4 4)))
+
+  (let ([bv (make-reference-bytevector 8)])
+    (ftype-any-set! ftype-scheme-object-pointer () (make-ftype-scheme-object-pointer bv) 0 (make-ftype-scheme-object-pointer 'hello))
+    (collect)
+    (eq? (ftype-scheme-object-pointer-object
+          (ftype-any-ref ftype-scheme-object-pointer () (make-ftype-scheme-object-pointer bv) 0))
+         'hello))
 
  ; ----------------
   (begin
@@ -1300,11 +1654,73 @@
      (foreign-free (ftype-pointer-address s-fptr))
      (equal? (list a b c d) (list 42 7.125 75 8.25))))
 
+ ; ------------------------------------------------------------
+ (begin
+   (define-ftype x-pointer ftype-pointer)
+   (define-ftype x1-pointer ftype-pointer (nongenerative #{x1 febdtjdl3qff3qc00rnyph70g-0}))
+   (define-ftype x2-pointer x1-pointer (nongenerative #{x2 febdtjdl3qff3qc00rnyph70g-2}))
+   (define-ftype s-pointer ftype-scheme-object-pointer)
+   (define-ftype s1-pointer ftype-scheme-object-pointer (nongenerative #{s1 febdtjdl3qff3qc00rnyph70g-1}))
+   (define-ftype s2-pointer s1-pointer (nongenerative #{s2 febdtjdl3qff3qc00rnyph70g-3}))
+   #t)
+
+ (error? ; cannot use scheme-object pointer ftype
+  (make-ftype-pointer s-pointer 0))
+ (error? ; must use scheme-object pointer ftype
+  (make-ftype-scheme-object-pointer 0 0 x-pointer))
+
+ (ftype-pointer? (make-ftype-pointer x-pointer 0))
+ (ftype-pointer? x-pointer (make-ftype-pointer x-pointer 0))
+ (not (ftype-pointer? x1-pointer (make-ftype-pointer x-pointer 0)))
+ (not (ftype-pointer? x2-pointer (make-ftype-pointer x-pointer 0)))
+ (ftype-pointer? x-pointer (make-ftype-pointer x1-pointer 0))
+ (ftype-pointer? x-pointer (make-ftype-pointer x2-pointer 0))
+ (ftype-pointer? x1-pointer (make-ftype-pointer x2-pointer 0))
+ (not (ftype-pointer? x2-pointer (make-ftype-pointer x1-pointer 0)))
+
+ (ftype-pointer? (make-ftype-scheme-object-pointer 0 0 s-pointer))
+ (ftype-pointer? x-pointer (make-ftype-scheme-object-pointer 0 0 s-pointer))
+ (ftype-pointer? s-pointer (make-ftype-scheme-object-pointer 0 0 s-pointer))
+ (not (ftype-pointer? s1-pointer (make-ftype-scheme-object-pointer 0 0 s-pointer)))
+ (not (ftype-pointer? s2-pointer (make-ftype-scheme-object-pointer 0 0 s-pointer)))
+ (not (ftype-pointer? x1-pointer (make-ftype-scheme-object-pointer 0 0 s-pointer)))
+ (not (ftype-pointer? x2-pointer (make-ftype-scheme-object-pointer 0 0 s-pointer)))
+ (ftype-scheme-object-pointer? (make-ftype-scheme-object-pointer 0 0 s-pointer))
+ (ftype-scheme-object-pointer? (make-ftype-scheme-object-pointer 0 0 s1-pointer))
+ (ftype-scheme-object-pointer? (make-ftype-scheme-object-pointer 0 0 s2-pointer))
+ (ftype-pointer? s-pointer (make-ftype-scheme-object-pointer 0 0 s1-pointer))
+ (ftype-pointer? s1-pointer (make-ftype-scheme-object-pointer 0 0 s1-pointer))
+ (not (ftype-pointer? s2-pointer (make-ftype-scheme-object-pointer 0 0 s1-pointer)))
+ (ftype-pointer? s2-pointer (make-ftype-scheme-object-pointer 0 0 s2-pointer))
+
+ (let loop ([n 1000])
+  (or (zero? n)
+      (let ()
+        (define bstr (make-bytevector 100))
+        (define p (make-ftype-scheme-object-pointer bstr 0 s2-pointer))
+        (collect)
+        (and (eq? bstr (ftype-scheme-object-pointer-object p))
+             (loop (sub1 n))))))
+
+ ; ------------------------------------------------------------
  (begin
    ;; Show that binding does not interfere with native types.
    (define-syntax unsigned-16 (make-compile-time-value "Non-interfering binding"))
    (let ([fptr (make-ftype-pointer unsigned-16 0)])
      (= (ftype-pointer-address fptr) 0)))
+
+  ;; regression test for arm32 backend and distant offset to floating-point field
+  (let ()
+    (define-ftype T
+      (struct
+          [a (array 6368 int)] ; offset derived from 6368 is not funky12
+          [n double]))
+    (define (f x y)
+      (ftype-set! T (n) x y))
+    (let ([p (make-ftype-pointer T (foreign-alloc (ftype-sizeof T)))])
+      (f p 1.0)
+      (equal? (ftype-ref T (n) p) 1.0)))
+
 )
 
 (mat ftype-pointer-address-optimizations
@@ -2797,11 +3213,11 @@
     (ftype-init-lock! A (g *) x)
     #t)
 
-  (ftype-lock! A (c) x)
-  (ftype-lock! A (f f1) x)
-  (ftype-lock! A (f f2 1 f3b) x)
-  (ftype-lock! A (f f2 $idx f3b) x)
-  (ftype-lock! A (g *) x)
+  (retry-for-spurious (ftype-lock! A (c) x))
+  (retry-for-spurious (ftype-lock! A (f f1) x))
+  (retry-for-spurious (ftype-lock! A (f f2 1 f3b) x))
+  (retry-for-spurious (ftype-lock! A (f f2 $idx f3b) x))
+  (retry-for-spurious (ftype-lock! A (g *) x))
 
   (not (ftype-lock! A (c) x))
   (not (ftype-lock! A (f f1) x))
@@ -2831,6 +3247,17 @@
     (fptr-free x)
     (fptr-free g)
     #t)
+
+  ;; This is intended mainly as a test of `retry-for-spurious`:
+  (let ([m (make-ftype-pointer iptr (foreign-alloc (ftype-sizeof iptr)))])
+    (ftype-init-lock! iptr () m)
+    (let loop ([i 10000000])
+      (or (fx= i 0)
+          (and (retry-for-spurious (ftype-lock! iptr () m))
+               (begin
+                 (ftype-unlock! iptr () m)
+                 (loop (fx- i 1)))))))
+
 )
 
 (mat ftype-compile-file
@@ -2958,6 +3385,36 @@
   (begin
     (load "testfile-ftype5.so")
     (ftype-pointer? ftype5-A (make-ftype-pointer ftype5-A 0)))
+
+  (begin
+    (with-output-to-file "testfile-ftype6.ss"
+      (lambda ()
+        (pretty-print
+         '(define-ftype ftype6-A (struct [a double] [b wchar])
+            (nongenerative #{ftype-6 jni7x5i9jgwk8q0utdook23gt-1})))
+        (pretty-print
+          '(define a (make-ftype-pointer ftype6-A (foreign-alloc (ftype-sizeof ftype6-A))))))
+      'replace)
+    (load "testfile-ftype6.ss")
+    #t)
+  (begin
+    (for-each separate-compile '(ftype6))
+    (load "testfile-ftype6.so")
+    #t)
+  (begin
+    ;; separate compile with same uid should be ok
+    (with-output-to-file "testfile-ftype6.ss"
+      (lambda ()
+        (pretty-print
+         '(define-ftype ftype6-A (union [a double] [b wchar])
+            (nongenerative #{ftype-6 jni7x5i9jgwk8q0utdook23gt-1}))))
+      'replace)
+    (for-each separate-compile '(ftype6))
+    #t)
+  (error?
+    ;; ...but fail on load
+    (load "testfile-ftype6.so"))
+
 )
 
 (mat ftype-bits
@@ -4009,7 +4466,8 @@
              [a15 fixnum]
              [a16 iptr]
              [a17 uptr]
-             [a18 void*])))
+             [a18 void*]
+             [a19 stdbool])))
        (define a (make-ftype-pointer A (foreign-alloc (ftype-sizeof A))))
        (free-after a
          (ftype-set! A (a1) a 3.5)
@@ -4030,6 +4488,7 @@
          (ftype-set! A (a16) a -30004)
          (ftype-set! A (a17) a #xabcdef07)
          (ftype-set! A (a18) a 25000)
+         (ftype-set! A (a19) a 'howdy)
          (list
            (ftype-ref A (a1) a)
            (ftype-ref A (a2) a)
@@ -4048,7 +4507,8 @@
            (ftype-ref A (a15) a)
            (ftype-ref A (a16) a)
            (ftype-ref A (a17) a)
-           (ftype-ref A (a18) a))))
+           (ftype-ref A (a18) a)
+           (ftype-ref A (a19) a))))
     `(3.5
       -4.5
       -30000
@@ -4066,7 +4526,8 @@
       ,(most-positive-fixnum)
       -30004
       #xabcdef07
-      25000))
+      25000
+      #t))
   (equal?
     (let ()
        (define-ftype A
@@ -4089,7 +4550,8 @@
              [a15 fixnum]
              [a16 iptr]
              [a17 uptr]
-             [a18 void*])))
+             [a18 void*]
+             [a19 stdbool])))
        (define a (make-ftype-pointer A (foreign-alloc (ftype-sizeof A))))
        (free-after a
          (ftype-set! A (a1) a 3.5)
@@ -4110,6 +4572,7 @@
          (ftype-set! A (a16) a -30004)
          (ftype-set! A (a17) a #xabcdef07)
          (ftype-set! A (a18) a 25000)
+         (ftype-set! A (a19) a 'howdy)
          (list
            (ftype-ref A (a1) a)
            (ftype-ref A (a2) a)
@@ -4128,7 +4591,8 @@
            (ftype-ref A (a15) a)
            (ftype-ref A (a16) a)
            (ftype-ref A (a17) a)
-           (ftype-ref A (a18) a))))
+           (ftype-ref A (a18) a)
+           (ftype-ref A (a19) a))))
     `(3.5
       -4.5
       -30000
@@ -4146,7 +4610,8 @@
       ,(most-positive-fixnum)
       -30004
       #xabcdef07
-      25000))
+      25000
+      #t))
   (equal?
     (let ()
        (define-ftype A
@@ -4169,7 +4634,8 @@
              [a15 fixnum]
              [a16 iptr]
              [a17 uptr]
-             [a18 void*])))
+             [a18 void*]
+             [a19 stdbool])))
        (define a (make-ftype-pointer A (foreign-alloc (ftype-sizeof A))))
        (free-after a
          (ftype-set! A (a1) a 3.5)
@@ -4190,6 +4656,7 @@
          (ftype-set! A (a16) a -30004)
          (ftype-set! A (a17) a #xabcdef07)
          (ftype-set! A (a18) a 25000)
+         (ftype-set! A (a19) a 'howdy)
          (list
            (ftype-ref A (a1) a)
            (ftype-ref A (a2) a)
@@ -4208,7 +4675,8 @@
            (ftype-ref A (a15) a)
            (ftype-ref A (a16) a)
            (ftype-ref A (a17) a)
-           (ftype-ref A (a18) a))))
+           (ftype-ref A (a18) a)
+           (ftype-ref A (a19) a))))
     `(3.5
       -4.5
       -30000
@@ -4226,7 +4694,8 @@
       ,(most-positive-fixnum)
       -30004
       #xabcdef07
-      25000))
+      25000
+      #t))
 
  ; ----------------
   (begin
@@ -5654,7 +6123,8 @@
           [a15 fixnum]
           [a16 iptr]
           [a17 uptr]
-          [a18 void*])))
+          [a18 void*]
+          [a19 stdbool])))
     #t)
   (equivalent-expansion?
     (parameterize ([optimize-level 3] [enable-cp0 #t] [#%$suppress-primitive-inlining #f])
@@ -5678,6 +6148,7 @@
            (ftype-ref A (a16) x)
            (ftype-ref A (a17) x)
            (ftype-ref A (a18) x)
+           (ftype-ref A (a19) x)
            x)))
     '(lambda (x) x))
   (equivalent-expansion?
@@ -5702,6 +6173,7 @@
            (ftype-&ref A (a16) x)
            (ftype-&ref A (a17) x)
            (ftype-&ref A (a18) x)
+           (ftype-&ref A (a19) x)
            x)))
     '(lambda (x) x))
   (begin
@@ -5725,7 +6197,8 @@
           [a15 fixnum]
           [a16 iptr]
           [a17 uptr]
-          [a18 void*])))
+          [a18 void*]
+          [a19 stdbool])))
     #t)
   (equivalent-expansion?
     (parameterize ([optimize-level 3] [enable-cp0 #t] [#%$suppress-primitive-inlining #f])
@@ -5749,6 +6222,7 @@
            (ftype-ref A (a16) x)
            (ftype-ref A (a17) x)
            (ftype-ref A (a18) x)
+           (ftype-ref A (a19) x)
            x)))
     '(lambda (x) x))
   (equivalent-expansion?
@@ -5773,6 +6247,7 @@
            (ftype-&ref A (a16) x)
            (ftype-&ref A (a17) x)
            (ftype-&ref A (a18) x)
+           (ftype-&ref A (a19) x)
            x)))
     '(lambda (x) x))
   (begin

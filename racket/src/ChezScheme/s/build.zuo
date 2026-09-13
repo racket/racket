@@ -125,10 +125,14 @@
 
 (define cpnanopass-src-names
   ;; files that are `include`d by "cpnanopass.ss" and "cpprim.ss"
-  (list "x86.ss" "x86_64.ss" "arm32.ss" "arm64.ss" "ppc32.ss" "riscv64.ss" "pb.ss"
+  (list "x86.ss" "x86_64.ss" "arm32.ss" "arm64.ss" "ppc32.ss" "riscv64.ss" "loongarch64.ss" "pb.ss"
         "np-languages.ss" "fxmap.ss" "cptypes-lattice.ss"
         "np-register.ss" "np-info.ss" "np-help.ss"
         "ffi-help.ss"))
+
+(define unicode-src-names
+  '("../unicode/unicode-char-cases.ss"
+    "../unicode/unicode-charinfo.ss"))
 
 ;; used externally as dependencies
 (define all-src-names
@@ -136,7 +140,8 @@
           macro-src-names
           other-src-names
           type-src-names
-          cpnanopass-src-names))
+          cpnanopass-src-names
+          unicode-src-names))
 
 ;; The `compiler-compiler-options` argument overrides certain `var` and config-file
 ;; options for building preamble files, which is useful for compiling a cross-compiler
@@ -198,9 +203,6 @@
   (define cpnanopass-srcs
     (map at-source cpnanopass-src-names))
 
-  (define unicode-src-names
-    '("../unicode/unicode-char-cases.ss"
-      "../unicode/unicode-charinfo.ss"))
   (define unicode-srcs
     (map at-source unicode-src-names))
 
@@ -209,7 +211,8 @@
     (append (map at-source
                  (list "debug.ss" "primdata.ss" "layout.ss"))
             (append type-srcs
-                    cpnanopass-srcs)))
+                    cpnanopass-srcs
+                    unicode-srcs)))
 
   (define other-srcs
     ;; files that are used to initialize the compiler
@@ -447,8 +450,7 @@
        ;; independent of whether dependencies changed:
        [:target all (bootall ,@output-headers)
                 ,void]
-       [:target bootall (,@all-srcs ,@(add-patchfile macro-objs) ,nanopass.so ,@type-srcs
-                                    ,@cpnanopass-srcs ,@unicode-srcs)
+       [:target bootall (,@all-srcs ,@(add-patchfile macro-objs) ,nanopass.so)
                 ,(lambda (token)
                    (mkdir-p (at-boot "."))
                    (run-scheme "all at once"

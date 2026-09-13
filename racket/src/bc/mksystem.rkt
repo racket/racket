@@ -29,6 +29,8 @@
               'os* (system-type 'os*)
               'arch (system-type 'arch)
               'word (system-type 'word)
+              'so-find (system-type 'so-find)
+              'platform (system-type 'platform)
               'gc variant
               'vm (system-type 'vm)
               'link (system-type 'link)
@@ -65,8 +67,8 @@
                                 (lambda (var) (string->symbol (get-string var)))]
                                [(get-int)
                                 (lambda (var) (string->number (get-string var)))])
-                    (let-values ([(library-subpath)
-                                  (get-string "system_library_subpath")]
+                    (let-values ([(library-subpath) (get-string "system_library_subpath")]
+                                 [(library-subpath-suffix) (get-string "system_library_subpath_suffix")]
                                  [(os) (get-symbol "system_type_os")]
                                  [(os*) (get-symbol "system_type_os_star")]
                                  [(arch) (get-symbol "system_type_arch")])
@@ -74,6 +76,12 @@
                             'os* os*
                             'arch arch
                             'word (* 8 (get-int "system_pointer_size"))
+                            'so-find (if (equal? library-subpath-suffix "")
+                                         (if (eq? os 'unix)
+                                             'system
+                                             'natipkg)
+                                         (string->symbol (substring library-subpath-suffix 1)))
+                            'platform library-subpath
                             'gc variant
                             'vm 'racket
                             'link (get-symbol "system_type_link")

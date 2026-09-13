@@ -39,7 +39,7 @@
    "basic" "create" "install" "permissions"
    "conflicts" "checksums"
    "deps" "update" "implies"
-   "remove"
+   "uninstall"
    "promote"
    "locking"
    "overwrite"

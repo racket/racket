@@ -2,8 +2,10 @@
 ;; #%qqstx : quasisyntax
 
 (module qqstx '#%kernel
-  (#%require "define-et-al.rkt" "stxcase-scheme.rkt" "stx.rkt" "template.rkt"
-             (for-syntax '#%kernel "qq-and-or.rkt" "cond.rkt" "stxcase-scheme.rkt" "stx.rkt"))
+  (#%require "core-syntax.rkt" "stxcase-scheme.rkt" "stx.rkt" "template.rkt"
+             (rename "core-syntax.rkt" -define define)
+             (rename "core-syntax.rkt" -define-syntax define-syntax)
+             (for-syntax '#%kernel "core-syntax.rkt" "stxcase-scheme.rkt" "stx.rkt"))
 
   (#%provide quasisyntax
              quasisyntax/loc
@@ -33,7 +35,7 @@
     (unless (stx-list? l)
       (raise-argument-error
        'unsyntax-splicing
-       "syntax->list"
+       "stx-list?" ; as exported from syntax/stx
        l))
     (datum->syntax ctx l ctx))
 

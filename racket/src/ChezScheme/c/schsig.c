@@ -16,16 +16,23 @@
 
 #include "system.h"
 #include <setjmp.h>
+#include <errno.h>
 
 /* locally defined functions */
 static void split(ptr k, ptr *s);
-static void reset_scheme(void);
+static void reset_scheme(ptr tc);
 static NORETURN void do_error(iptr type, const char *who, const char *s, ptr args);
 static void handle_call_error(ptr tc, iptr type, ptr x);
 static void init_signal_handlers(void);
 static void keyboard_interrupt(ptr tc);
 
 static void (*register_modified_signal)(int);
+
+#ifdef WIN32
+typedef int *(*get_errno_ptr_t)(void);
+static get_errno_ptr_t msvcrt_get_errno_ptr;
+static get_errno_ptr_t ucrt_get_errno_ptr;
+#endif
 
 ptr S_get_scheme_arg(ptr tc, iptr n) {
 
@@ -316,9 +323,7 @@ void S_abnormal_exit() {
   abort();
 }
 
-static void reset_scheme() {
-    ptr tc = get_thread_context();
-
+static void reset_scheme(ptr tc) {
     alloc_mutex_acquire();
    /* eap should always be up-to-date now that we write-through to the tc
       when making any changes to eap when eap is a real register */
@@ -335,8 +340,8 @@ static void reset_scheme() {
  */
 
 void S_error_reset(const char *s) {
-
-    if (!S_errors_to_console) reset_scheme();
+    ptr tc = get_thread_context();
+    if (!S_errors_to_console && (tc != (ptr)0)) reset_scheme(tc);
     do_error(ERROR_RESET, "", s, Snil);
 }
 
@@ -464,6 +469,63 @@ void S_handle_mvlet_error(void) {
     handle_call_error(tc, ERROR_MVLET, Sfalse);
 }
 
+#ifdef WIN32
+static int *get_errno_ptr(void) {
+  return &errno;
+}
+#endif
+
+ptr S_save_errno(void) {
+    int errno_val;
+
+#ifdef WIN32
+    {
+      ptr tc = get_thread_context();
+      if (CURRENTERRNOSOURCE(tc) == Sfalse) {
+	errno_val = errno;
+      } else if (Schar_value(STRIT(SYMNAME(CURRENTERRNOSOURCE(tc)), 0)) == 'm' /* msvcrt */) {
+	if (!msvcrt_get_errno_ptr) {
+	  HMODULE hm;
+	  get_errno_ptr_t new_get_errno_ptr = NULL;
+	  hm = LoadLibrary("msvcrt.dll");
+	  if (hm)
+	    new_get_errno_ptr = (get_errno_ptr_t)GetProcAddress(hm, "_errno");
+	  if (!new_get_errno_ptr)
+	    new_get_errno_ptr = get_errno_ptr;
+	  while (msvcrt_get_errno_ptr == NULL) {
+	    COMPARE_AND_SWAP_PTR(&msvcrt_get_errno_ptr, NULL, new_get_errno_ptr);
+	  }
+	}
+	errno_val = *(msvcrt_get_errno_ptr());
+      } else {
+	if (!ucrt_get_errno_ptr) {
+	  HMODULE hm;
+	  get_errno_ptr_t new_get_errno_ptr = NULL;
+	  hm = LoadLibrary("ucrtbase.dll");
+	  if (hm)
+	    new_get_errno_ptr = (get_errno_ptr_t)GetProcAddress(hm, "_errno");
+	  if (!new_get_errno_ptr)
+	    new_get_errno_ptr = get_errno_ptr;
+	  while (ucrt_get_errno_ptr == NULL) {
+	    COMPARE_AND_SWAP_PTR(&ucrt_get_errno_ptr, NULL, new_get_errno_ptr);
+	  }
+	}
+	errno_val = *(ucrt_get_errno_ptr());
+      }
+    }
+#else
+    errno_val = errno;
+#endif
+
+    return Sinteger(errno_val);
+}
+
+#ifdef WIN32
+ptr S_save_last_error(void) {
+    return Sinteger(GetLastError());
+}
+#endif
+
 void S_handle_event_detour() {
     ptr tc = get_thread_context();
     ptr resume_proc = CP(tc);
@@ -533,9 +595,10 @@ void S_fire_collector(void) {
 
 void S_noncontinuable_interrupt(void) {
   ptr tc = get_thread_context();
-
-  reset_scheme();
-  KEYBOARDINTERRUPTPENDING(tc) = Sfalse;
+  if (tc != (ptr)0) {
+    reset_scheme(tc);
+    KEYBOARDINTERRUPTPENDING(tc) = Sfalse;
+  }
   do_error(ERROR_NONCONTINUABLE_INTERRUPT,"","",Snil);
 }
 
@@ -566,12 +629,9 @@ static BOOL WINAPI handle_signal(DWORD dwCtrlType) {
   switch (dwCtrlType) {
     case CTRL_C_EVENT:
     case CTRL_BREAK_EVENT: {
-#ifdef PTHREADS
-     /* get_thread_context() always returns 0, so assume main thread */
-      ptr tc = S_G.thread_context;
-#else
-      ptr tc = get_thread_context();
-#endif
+      /* A new thread is created to handle these signals, so Scheme doesn't know about
+         it. Consequently, it interrupts the main thread. */
+      ptr tc = TO_PTR(S_G.thread_context);
       if (!THREAD_GC(tc)->during_alloc && Sboolean_value(KEYBOARDINTERRUPTPENDING(tc)))
         return(FALSE);
       keyboard_interrupt(tc);
@@ -585,6 +645,8 @@ static BOOL WINAPI handle_signal(DWORD dwCtrlType) {
 static LONG WINAPI fault_handler(LPEXCEPTION_POINTERS e) {
   if (e->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
     ptr tc = get_thread_context();
+    if (tc == (ptr)0) /* not a Scheme thread */
+      return EXCEPTION_CONTINUE_SEARCH;
     if (THREAD_GC(tc)->during_alloc)
       S_error_abort("nonrecoverable invalid memory reference");
     else
@@ -666,6 +728,16 @@ ptr S_dequeue_scheme_signals(ptr tc) {
 static void forward_signal_to_scheme(INT sig) {
   ptr tc = get_thread_context();
 
+#ifdef PTHREADS
+  /* deliver signals to the main thread, only; depending
+     on the threads that are running, `tc` might even be NULL */
+  if (tc != TO_PTR(S_G.thread_context)) {
+    pthread_kill(S_main_thread_id, sig);
+    RESET_SIGNAL
+    return;
+  }
+#endif
+
   if (enqueue_scheme_signal(tc, sig)) {
     SIGNALINTERRUPTPENDING(tc) = Strue;
     SOMETHINGPENDING(tc) = Strue;
@@ -713,7 +785,7 @@ static void handle_signal(INT sig, UNUSED siginfo_t *si, UNUSED void *data) {
             ptr tc = get_thread_context();
            /* disable keyboard interrupts in subordinate threads until we think
              of something more clever to do with them */
-            if (tc == TO_PTR(&S_G.thread_context)) {
+            if (tc == TO_PTR(S_G.thread_context)) {
               if (!THREAD_GC(tc)->during_alloc && Sboolean_value(KEYBOARDINTERRUPTPENDING(tc))) {
                /* this is a no-no, but the only other options are to ignore
                   the signal or to kill the process */
@@ -742,16 +814,15 @@ static void handle_signal(INT sig, UNUSED siginfo_t *si, UNUSED void *data) {
 #ifdef SIGBUS
         case SIGBUS:
 #endif /* SIGBUS */
-        case SIGSEGV:
-          {
+        case SIGSEGV: {
             ptr tc = get_thread_context();
             RESET_SIGNAL
-            if (THREAD_GC(tc)->during_alloc)
+            if ((tc == (ptr)0) || THREAD_GC(tc)->during_alloc)
                 S_error_abort("nonrecoverable invalid memory reference");
             else
                 S_error_reset("invalid memory reference");
-          }
-	    break;
+            break;
+        }
         default:
             RESET_SIGNAL
             S_error_reset("unexpected signal");

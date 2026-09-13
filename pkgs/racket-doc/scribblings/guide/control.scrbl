@@ -121,7 +121,7 @@ Exceptions carry information about the error that occurred. The
 @racket[exn-message] accessor provides a descriptive message for the
 exception. The @racket[exn-continuation-marks] accessor provides
 information about the point where the exception was raised.
-@margin-note{The @racket[continuation-mark-set->context] procedure provides best-effort structured backtrace information.}
+@margin-note[#:footnote? #t]{The @racket[continuation-mark-set->context] procedure provides best-effort structured backtrace information.}
 
 @interaction[
 (with-handlers ([exn:fail?
@@ -213,18 +213,18 @@ changing @racket[0] to grab the continuation before returning 0:
 @interaction[
 #:eval cc-eval
 (define saved-k #f)
-(define (save-it!)
+(define (save-comp!)
   (call-with-composable-continuation
    (lambda (k) (code:comment @#,t{@racket[k] is the captured continuation})
      (set! saved-k k)
      0)))
-(+ 1 (+ 1 (+ 1 (save-it!))))
+(+ 1 (+ 1 (+ 1 (save-comp!))))
 ]
 
 The @tech{continuation} saved in @racket[saved-k] encapsulates the
 program context @racket[(+ 1 (+ 1 (+ 1 _?)))], where @racket[_?]
 represents a place to plug in a result value---because that was the
-expression context when @racket[save-it!] was called. The
+expression context when @racket[save-comp!] was called. The
 @tech{continuation} is encapsulated so that it behaves like the
 function @racket[(lambda (v) (+ 1 (+ 1 (+ 1 v))))]:
 
@@ -243,7 +243,7 @@ not syntactically. For example, with
 #:eval cc-eval
 (define (sum n)
   (if (zero? n)
-      (save-it!)
+      (save-comp!)
       (+ n (sum (sub1 n)))))
 (sum 5)
 ]
@@ -262,15 +262,31 @@ A more traditional continuation operator in Racket (or Scheme) is
 @racket[call/cc]. It is like
 @racket[call-with-composable-continuation], but applying the captured
 continuation first @tech{aborts} (to the current @tech{prompt}) before
-restoring the saved continuation. In addition, Scheme systems
-traditionally support a single prompt at the program start, instead of
-allowing new prompts via
-@racket[call-with-continuation-prompt]. Continuations as in Racket
-are sometimes called @deftech{delimited continuations}, since a
-program can introduce new delimiting prompts, and continuations as
-captured by @racket[call-with-composable-continuation] are sometimes
-called @deftech{composable continuations}, because they do not have a
-built-in @tech{abort}.
+restoring the saved continuation.
+
+@interaction[
+#:eval cc-eval
+(+ 1 (+ 1 (+ 1 (save-comp!))))
+(+ 1 (saved-k 0))
+(define (save-cc!)
+  (call-with-current-continuation
+   (lambda (k) (code:comment @#,t{@racket[k] is the captured continuation})
+     (set! saved-k k)
+     0)))
+(+ 1 (+ 1 (+ 1 (save-cc!))))
+(+ 1 (saved-k 0))
+]
+
+Other Scheme systems traditionally support a single prompt at the program
+start, instead of allowing new prompts via
+@racket[call-with-continuation-prompt].
+
+Continuations as in Racket are sometimes called
+@deftech{delimited continuations}, since a program can introduce new
+delimiting prompts, and continuations as captured by
+@racket[call-with-composable-continuation] are sometimes called
+@deftech{composable continuations}, because they do not have a built-in
+@tech{abort}.
 
 For an example of how @tech{continuations} are useful, see
 @other-manual['(lib "scribblings/more/more.scrbl")]. For specific

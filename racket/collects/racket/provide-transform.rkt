@@ -2,10 +2,7 @@
   (#%require "private/stxcase-scheme.rkt"
              "private/stx.rkt"
              "private/define-struct.rkt"
-             "private/define-et-al.rkt"
-             "private/qq-and-or.rkt"
-             "private/cond.rkt"
-             "private/define.rkt"
+             "private/core-syntax.rkt"
              "phase+space.rkt")
   
   (#%provide expand-export pre-expand-export 

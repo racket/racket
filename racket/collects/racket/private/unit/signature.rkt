@@ -6,6 +6,7 @@
                      racket/list
                      racket/struct-info
                      racket/syntax
+                     racket/private/stx
                      syntax/parse/pre
                      syntax/private/struct
                      syntax/stx
@@ -213,9 +214,10 @@
                              (datum->syntax sig-stx (syntax-e name))))
                           names))))
 
-     (define dup (check-duplicate-identifier names))
+     (define-values (dup origs) (stx-find-duplicate-identifiers names))
      (when dup
-       (raise-stx-err (format "duplicate binding for ~.s" (syntax-e dup))))
+       (raise-stx-err (format "duplicate binding for ~.s" (syntax-e dup))
+                      dup origs))
 
      (quasisyntax/loc this-syntax
        (provide #,@names))]))

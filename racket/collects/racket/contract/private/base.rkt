@@ -245,22 +245,22 @@
       [else
        (define r-ctc (force-recursive-contract ctc))
        (define f (get/build-late-neg-projection r-ctc))
-       (define val-neg-party-acceptor (make-thread-cell #f #t))
+       (define val-neg-party-acceptor-tc (make-thread-cell #f #t))
        (λ (val neg-party)
          (cond
-           [(thread-cell-ref val-neg-party-acceptor)
+           [(thread-cell-ref val-neg-party-acceptor-tc)
             =>
             (λ (f) (f val neg-party))]
            [else
+            (define (val-neg-party-acceptor val neg-party)
+              (do-list-check val neg-party blame)
+              (f-of-blame val neg-party))
             (update-cache blame-accepting-func-cell blame
                           (λ (val neg-party)
-                            ((thread-cell-ref val-neg-party-acceptor) val neg-party)))
+                            (val-neg-party-acceptor val neg-party)))
             (do-list-check val neg-party blame)
             (define f-of-blame 'f-of-blame-not-yet-set)
-            (thread-cell-set! val-neg-party-acceptor
-                              (λ (val neg-party)
-                                (do-list-check val neg-party blame)
-                                (f-of-blame val neg-party)))
+            (thread-cell-set! val-neg-party-acceptor-tc val-neg-party-acceptor)
             (set! f-of-blame (f blame))
             (f-of-blame val neg-party)]))])))
 

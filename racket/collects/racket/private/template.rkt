@@ -1,12 +1,8 @@
 (module template '#%kernel
-(#%require "stx.rkt" "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt" "performance-hint.rkt"
-           (rename "define-et-al.rkt" define -define)
-           (rename "define-et-al.rkt" define-syntax -define-syntax)
+(#%require "stx.rkt" "core-syntax.rkt" "performance-hint.rkt"
            "ellipses.rkt"
-           (for-syntax "stx.rkt" "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt"
-                       (rename "define-et-al.rkt" define -define)
-                       (rename "define-et-al.rkt" define-syntax -define-syntax)
-                       #;"member.rkt" "sc.rkt" '#%kernel))
+           (for-syntax "stx.rkt" "core-syntax.rkt"
+                       "sc.rkt" '#%kernel))
 (#%provide syntax
            syntax/loc
            datum

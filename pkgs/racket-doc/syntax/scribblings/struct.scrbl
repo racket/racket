@@ -7,7 +7,7 @@
 
 @defproc[(parse-define-struct [stx syntax?] [orig-stx syntax?]) 
          (values identifier?
-                 (or/c identifier? false/c)
+                 (or/c identifier? #f)
                  (listof identifier?)
                  syntax?)]{
 
@@ -24,7 +24,7 @@ expression.}
                              [#:constructor-name ctr-name (or/c identifier? #f) #f]
 			     [omit-sel? boolean?]
 			     [omit-set? boolean?]
-			     [src-stx (or/c syntax? false/c) #f])
+			     [src-stx (or/c syntax? #f) #f])
           (listof identifier?)]{
 
 Generates the names bound by @racket[define-struct] given an
@@ -91,8 +91,8 @@ Like @racket[build-struct-generation], but given the names produced by
                                    [omit-sel? boolean?]
                                    [omit-set? boolean?]
                                    [base-name (or/c identifier? boolean?)]
-                                   [base-getters (listof (or/c identifier? false/c))]
-                                   [base-setters (listof (or/c identifier? false/c))])
+                                   [base-getters (listof (or/c identifier? #f))]
+                                   [base-setters (listof (or/c identifier? #f))])
 	 any]{
 
 Takes mostly the same arguments as @racket[build-struct-names], plus a parent
@@ -119,7 +119,7 @@ See @secref[#:doc refman]{structinfo}.}
 
 @defproc[(generate-struct-declaration [orig-stx syntax?] 
                                       [name-id identifier?]
-                                      [super-id-or-false (or/c identifier? false/c)]
+                                      [super-id-or-false (or/c identifier? #f)]
                                       [field-id-list (listof identifier?)]
                                       [current-context any/c]
 				      [make-make-struct-type procedure?]

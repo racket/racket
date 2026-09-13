@@ -138,7 +138,35 @@
    (symbol? '2@3+4i)
 ; check for float read bug introduced into 3.0:
    (< -.039 -.038413 -.038)
- )
+; non-empty mantissa widths
+   (eqv? #e0.1|1 1/8)
+   (eqv?   0.1|1 0.125)
+   (eqv? 77|1 64.0)
+   (eqv? 12|0 0.0)
+   (eqv? #e12|0 0)
+   (eqv? 9|3 8.0)
+   (eqv? -10|3 -10.0)
+   (eqv? #e99999999999999983222784|54 99999999999999983222784)
+   (eqv? #e99999999999999983222784|53 99999999999999991611392)
+   (eqv? #e99999999999999983222783|54 99999999999999983222784)
+   (eqv? #e99999999999999983222783|53 99999999999999974834176)
+   (eqv? 1000 (integer-length (numerator #e1.2345678901234567891012345|1000)))
+   (eqv? 1000 (integer-length (denominator #e1.2345678901234567891012345|1000)))
+   (eqv? 10000 (integer-length (numerator #e1.2345678901234567891012345|10000)))
+   (eqv? 10000 (integer-length (denominator #e1.2345678901234567891012345|10000)))
+; don't run out of memory unnecessarily
+   (eqv? #e1234567|100000000000000000 1234567)
+   (eqv? #i1.234567|100000000000000000 1.234567)
+   (eqv?   1.234567|100000000000000000 1.234567)
+   (eqv?   1.234567e300|100000000000000000 1.234567e300)
+   (eqv? 0.1|100000000000000000 0.1|100)
+   (eqv? 0.3|100000000000000000 0.3|53)
+   (not (eqv? 0.3|52 0.3|53)) ; confirm boundary
+   (eqv? 0.3e300|100000000000000000 0.3e300|50)
+   (not (eqv? 0.3e300|50 0.3e300|49))
+   (eqv? #e0.3e300|1000000000000000 #e0.3e300)
+   (eqv? #e0.3e300|696 #e0.3e300)
+   (not (eqv? #e0.3e300|695 #e0.3e300)))
 
 (mat string->number
   ; error cases
@@ -1109,6 +1137,7 @@
     (error? (< 3.4+0.0i 3.5))
     (error? (< 3.2 3.4+0.0i))
     (error? (< 3.2 3.3 3.4+0.0i))
+    (error? (< 1.0+0.0i 0.0+2.0i))
     (not (< 3 3))
     (< 3 4)
     (not (< -3 -3))
@@ -1169,6 +1198,7 @@
     (error? (<= 3.4+0.0i 3.5))
     (error? (<= 3.2 3.4+0.0i))
     (error? (<= 3.2 3.3 3.4+0.0i))
+    (error? (<= 1.0+0.0i 0.0+2.0i))
     (<= 3 3)
     (<= 3 4)
     (<= -3 -3)
@@ -1228,6 +1258,7 @@
     (error? (> 3.4+0.0i 3.5))
     (error? (> 3.2 3.4+0.0i))
     (error? (> 3.2 3.3 3.4+0.0i))
+    (error? (> 1.0+0.0i 0.0+2.0i))
     (not (> 3 3))
     (not (> 3 4))
     (not (> -3 -3))
@@ -1287,6 +1318,7 @@
     (error? (>= 3.4+0.0i 3.5))
     (error? (>= 3.2 3.4+0.0i))
     (error? (>= 3.2 3.3 3.4+0.0i))
+    (error? (>= 1.0+0.0i 0.0+2.0i))
     (>= 3 3)
     (not (>= 3 4))
     (>= -3 -3)
@@ -1389,6 +1421,7 @@
     (error? (r6rs:< 'a 3 4))
     (error? (r6rs:< 4 'a 3))
     (error? (r6rs:< 3 5 'a 4))
+    (error? (r6rs:< 1.0+0.0i 0.0+2.0i))
     (not (r6rs:< 3 3))
     (r6rs:< 3 4)
     (not (r6rs:< -3 -3))
@@ -1439,6 +1472,7 @@
     (error? (r6rs:<= 'a 3 4))
     (error? (r6rs:<= 4 'a 3))
     (error? (r6rs:<= 3 5 'a 4))
+    (error? (r6rs:<= 1.0+0.0i 0.0+2.0i))
     (r6rs:<= 3 3)
     (r6rs:<= 3 4)
     (r6rs:<= -3 -3)
@@ -1489,6 +1523,7 @@
     (error? (r6rs:> 'a 3 4))
     (error? (r6rs:> 4 'a 3))
     (error? (r6rs:> 3 5 'a 4))
+    (error? (r6rs:> 1.0+0.0i 0.0+2.0i))
     (not (r6rs:> 3 3))
     (not (r6rs:> 3 4))
     (not (r6rs:> -3 -3))
@@ -1539,6 +1574,7 @@
     (error? (r6rs:>= 'a 3 4))
     (error? (r6rs:>= 4 'a 3))
     (error? (r6rs:>= 3 5 'a 4))
+    (error? (r6rs:>= 1.0+0.0i 0.0+2.0i))
     (r6rs:>= 3 3)
     (not (r6rs:>= 3 4))
     (r6rs:>= -3 -3)
@@ -1763,6 +1799,7 @@
     (eqv? (* 2 3 4) 24)
     (eqv? (* 2 3 4 5) 120)
     (eqv? (* 2/3 3/4 4/5 5/6) 1/3)
+    (eqv? (* -4503599627370496 512) -2305843009213693952)
     (cfl~= (* 1.0+2.0i 3.0+4.0i) -5.0+10.0i)
     (cfl~= (* 1.0+2.0i 3.0) 3.0+6.0i)
     (cfl~= (* -2.0 3.0+4.0i) -6.0-8.0i)
@@ -2232,6 +2269,14 @@
     (eqv? (remainder -4.0 2.0) 0.0)
     (eqv? (remainder 4.0 -2.0) 0.0)
     (eqv? (remainder 0 2.0) 0)
+    (eqv? (remainder 7.0 1) 0.0)
+    (eqv? (remainder 7.0 -1) 0.0)
+    (eqv? (remainder #e1e1000 1.0) 0.0)
+    (eqv? (remainder #e1e1000 3.0) 1.0)
+    (eqv? (remainder #e2e1000 3.0) 2.0)
+    (eqv? (remainder #e-1e1000 1.0) 0.0)
+    (eqv? (remainder #e-1e1000 3.0) -1.0)
+    (eqv? (remainder #e-2e1000 3.0) -2.0)
     (fl= (remainder 5.842423430828094e+60 10) 4.0)
     (fl= (remainder 5.842423430828094e+60 10.0) 4.0)
     (fl= (remainder 5.842423430828094e+60 -10) 4.0)
@@ -2283,6 +2328,14 @@
     (eqv? (modulo -4.0 2.0) 0.0)
     (eqv? (modulo 4.0 -2.0) 0.0)
     (eqv? (modulo 0 2.0) 0)
+    (eqv? (modulo 7.0 1) 0.0)
+    (eqv? (modulo 7.0 -1) 0.0)
+    (eqv? (modulo #e1e1000 1.0) 0.0)
+    (eqv? (modulo #e1e1000 3.0) 1.0)
+    (eqv? (modulo #e2e1000 3.0) 2.0)
+    (eqv? (modulo #e-1e1000 1.0) 0.0)
+    (eqv? (modulo #e-1e1000 3.0) 2.0)
+    (eqv? (modulo #e-2e1000 3.0) 1.0)
     (fl= (modulo 5.842423430828094e+60 10) 4.0)
     (fl= (modulo 5.842423430828094e+60 10.0) 4.0)
     (fl= (modulo -5.842423430828094e+60 10) 6.0)
@@ -2550,9 +2603,14 @@
     (eqv? (lcm 0 6 7 10) 0)
     (eqv? (lcm 10 6 7 0) 0)
     (eqv? (lcm 0.0 0.0) 0.0)
+    (eqv? (lcm 0 0.0) 0)
+    (eqv? (lcm 0.0 0) 0)
     (eqv? (lcm 10.0 0.0) 0.0)
     (eqv? (lcm 0.0 10.0) 0.0)
     (eqv? (lcm 0.0 0.0 0.0) 0.0)
+    (eqv? (lcm 10.0 0) 0)
+    (eqv? (lcm 0 10.0) 0)
+    (eqv? (lcm 0.0 0 0.0) 0)
     (eqv? (lcm 10.0 0.0 0.0) 0.0)
     (eqv? (lcm 0.0 10.0 0.0) 0.0)
     (eqv? (lcm 0.0 0.0 10.0) 0.0)
@@ -2563,6 +2621,16 @@
     (eqv? (lcm 10.0 0.0 0.0 0.0) 0.0)
     (eqv? (lcm 0.0 6.0 7.0 10.0) 0.0)
     (eqv? (lcm 10.0 6.0 7.0 0.0) 0.0)
+    (eqv? (lcm 3E307 5E307) +inf.0)
+    (eqv? (lcm #e3E999 1.0) +inf.0)
+    (begin
+      ;; make sure the optimizer doesn't assume an integer result
+      (define ($lcm-result x) (if (integer? (lcm x 1.0)) 'int 'non-int))
+      #t)
+    (eqv? (lcm 3E307 0) 0)
+    (eqv? (lcm #e3E999 0) 0)
+    (eq? ($lcm-result 5) 'int)
+    (eq? ($lcm-result #e3E999) 'non-int)
  )
 
 (mat expt
@@ -2677,6 +2745,75 @@
                        (begin (set! ls (reverse ls)) 3))])
           (cons n ls)))
       '(8 c b a c b a))
+    (eqv? 0.0 (expt 0.0 (add1 (expt 2 10))))
+    (eqv? +inf.0 (expt 0.0 (- (add1 (expt 2 10)))))
+    (eqv? -0.0 (expt -0.0 (add1 (expt 2 10))))
+    (eqv? -inf.0 (expt -0.0 (- (add1 (expt 2 10)))))
+    (eqv? 0.0 (expt 0.0 (add1 (expt 2 55))))
+    (eqv? +inf.0 (expt 0.0 (- (add1 (expt 2 55)))))
+    (eqv? -0.0 (expt -0.0 (add1 (expt 2 55))))
+    (eqv? -inf.0 (expt -0.0 (- (add1 (expt 2 55)))))
+    (eqv? 0.0 (expt 0.0 (add1 (expt 2 155))))
+    (eqv? +inf.0 (expt 0.0 (- (add1 (expt 2 155)))))
+    (eqv? -0.0 (expt -0.0 (add1 (expt 2 155))))
+    (eqv? -inf.0 (expt -0.0 (- (add1 (expt 2 155)))))
+    (begin
+      (define ($flexpt~= a b)
+        ;; The accuracy of `expt` ultimately depends on the C
+        ;; library's `pow`, and platforms vary. The `fl~=` predicate
+        ;; reflects that variation for most purposes, but `pow` can
+        ;; vary more. Enumerate a few platforms where we trust `pow` to
+        ;; be good, and increase the fuzz for other platforms.
+        (fl~= a b
+              (case (machine-type)
+                [(i3le ti3le a6le ta6le a6osx ta6osx arm64osx tarm64osx)
+                 *fuzz*]
+                [else
+                 1e-5])))
+      #t)
+    ;; In the following tests, the expected value comes from taking
+    ;; the number represented the flonum first argument to `expt` and
+    ;; finding the flonum that most accurately represents the exact
+    ;; power of that number --- as computed by Brad Lucier's package
+    ;; for computable reals.
+    ($flexpt~= (expt 1.000000000000001 72057594037927936) 5.540622384393264e34)
+    ($flexpt~= (expt -1.000000000000001 72057594037927936) 5.540622384393264e34)
+    ($flexpt~= (expt 1.000000000000001 72057594037927937) 5.54062238439327e34)
+    ($flexpt~= (expt -1.000000000000001 72057594037927937) -5.54062238439327e34)
+    ($flexpt~= (expt 1.000000000000001 72057594037927938) 5.5406223843932765e34)
+    ($flexpt~= (expt 1.000000000000001 72057594037927939) 5.540622384393282e34)
+    ($flexpt~= (expt 1.000000000000001 72057594037927940) 5.5406223843932885e34)
+    ($flexpt~= (expt 1.000000000000001 72057594037927941) 5.540622384393295e34)
+    ($flexpt~= (expt 1.000000000000001 72057594037927942) 5.5406223843933005e34)
+    ($flexpt~= (expt 1.000000000000001 72057594037927943) 5.540622384393307e34)
+    ($flexpt~= (expt 1.000000000000001 72057594037927944) 5.540622384393313e34)
+    ($flexpt~= (expt 1.000000000000001 72057594037927945) 5.540622384393319e34)
+    ($flexpt~= (expt 1.000000000000001 72057594037927946) 5.540622384393325e34)
+    ($flexpt~= (expt 1.000000000000001 72057594037927947) 5.540622384393332e34)
+    ($flexpt~= (expt 1.000000000000001 72057594037927948) 5.540622384393337e34)
+    ($flexpt~= (expt 1.000000000000001 72057594037927949) 5.540622384393344e34)
+    ($flexpt~= (expt 1.000000000000001 72057594037927950) 5.54062238439335e34)
+    ($flexpt~= (expt 1.000000000000001 72057594037927951) 5.540622384393357e34)
+    ($flexpt~= (expt 1.000000000000001 72057594037927952) 5.540622384393362e34)
+    ($flexpt~= (expt .999999999999923 9113206036900117) 1.1282707411034352e-305)
+    ($flexpt~= (expt .999999999999923 9113206036900118) 1.1282707411033483e-305)
+    ($flexpt~= (expt .999999999999923 9113206036900119) 1.1282707411032614e-305)
+    ($flexpt~= (expt .999999999999923 9113206036900120) 1.1282707411031744e-305)
+    ($flexpt~= (expt .999999999999923 9113206036900121) 1.1282707411030875e-305)
+    ($flexpt~= (expt .999999999999923 9113206036900122) 1.1282707411030006e-305)
+    ($flexpt~= (expt .999999999999923 9113206036900123) 1.1282707411029136e-305)
+    ($flexpt~= (expt .999999999999923 9113206036900124) 1.1282707411028267e-305)
+    ($flexpt~= (expt .999999999999923 9113206036900125) 1.1282707411027398e-305)
+   ; large exponent: out of memory for integer bases with |x| > 1
+    (error? (expt 3 (expt 2 100)))
+    (error? (expt -2 (expt 2 100)))
+    (error? (expt (expt 10 100) (expt 2 100)))
+    (error? (expt 3 (- (expt 2 100))))
+   ; large exponent: special bases should still work
+    (eqv? (expt 0 (expt 2 100)) 0)
+    (eqv? (expt 1 (expt 2 100)) 1)
+    (eqv? (expt -1 (expt 2 100)) 1)
+    (eqv? (expt -1 (+ 1 (expt 2 100))) -1)
  )
 
 (mat expt-mod
@@ -2808,20 +2945,30 @@
     (= 0.970453319804345 (pseudo-random-generator-next! prgen))
     (= 0.41754101818626094 (pseudo-random-generator-next! prgen))
     (= 0.13061439482676662 (pseudo-random-generator-next! prgen))
-    (let ([hits (make-vector 10)])
-      (let loop ([i 1000])
-        (unless (zero? i)
-          (let* ([n (pseudo-random-generator-next! prgen (expt 10 1000))]
-                 [k (quotient n (expt 10 999))])
-            (vector-set! hits k (add1 (vector-ref hits k)))
-            (loop (sub1 i)))))
-      ;; We expect about 100 hits in each bin. Having less than 50 or
-      ;; more than 150 should be so etxremely unlikely that we can rely on
-      ;; it not happning:
-      (let loop ([i (vector-length hits)])
-        (or (= i 0)
-            (and (< 50 (vector-ref hits (sub1 i)) 150)
-                 (loop (sub1 i))))))
+    (let nloop ([ns (list (expt 2 31)
+                          (expt 2 32)
+                          (expt 2 33)
+                          (expt 2 64)
+                          (expt 10 1000))])
+      (or (null? ns)
+          (and
+           (let* ([M 64]
+                  [hits (make-vector M)])
+             (let loop ([i (* M 100)])
+               (unless (zero? i)
+                 (let* ([n (pseudo-random-generator-next! prgen (car ns))]
+                        [k (quotient n (quotient (car ns) M))])
+                   (when (>= n (car ns)) (error 'random "too big"))
+                   (vector-set! hits k (add1 (vector-ref hits k)))
+                   (loop (sub1 i)))))
+             ;; We expect about 100 hits in each bin. Having less than 50 or
+             ;; more than 150 should be so extremely unlikely that we can rely on
+             ;; it not happening:
+             (let loop ([i (vector-length hits)])
+               (or (= i 0)
+                   (and (< 50 (vector-ref hits (sub1 i)) 150)
+                        (loop (sub1 i))))))
+           (nloop (cdr ns)))))
  )
       
 
@@ -2976,6 +3123,7 @@
     (~= (sqrt -5-12i) (sqrt -5.0-12.0i))
     (~= (sqrt 1e38) (sqrt #e1e38))
     (~= (sqrt -1.0-0.0i) 0.0-1.0i)
+    (~= (sqrt -10+1i) 0.15791710027873843+3.1662182190367814i)
  )
 
 (mat isqrt
@@ -3012,6 +3160,7 @@
     (error? (log))
     (error? (log 'a))
     (error? (log 0))
+    (error? (log 5 1))
     (= (log 1) 0)
     (fl= (log 1.0) 0.0)
     (eqv? (log 0.0) -inf.0)
@@ -3374,6 +3523,7 @@
        #t)
      #t)
    ($test-right-shift (lambda (x n) (ash x (- n))))
+   (eqv? (ash 0 (expt 2 28)) 0)
 )
 
 (mat bitwise-arithmetic-shift
@@ -5770,6 +5920,18 @@
               (if (fx= i (* (integer-length (ash (most-negative-fixnum) 5)) 2))
                   (g (fx- j 1))
                   (and (p? n i) (f (fx+ i 1)))))))))
+  (eqv? (logbit0 (expt 2 28) 0) 0)
+  ;; logbit0 with fixnum k at the integer-length boundary
+  (eqv? (logbit0 2 7) 3)   ; k < integer-length, bit set
+  (eqv? (logbit0 3 7) 7)   ; k = integer-length, bit clear
+  (eqv? (logbit0 4 7) 7)   ; k > integer-length, bit clear
+  ;; logbit0 with large fixnum k and non-negative n
+  (eqv? (logbit0 (most-positive-fixnum) 0) 0)
+  (eqv? (logbit0 (most-positive-fixnum) 5) 5)
+  ;; logbit0 at the fixnum/bignum k boundary
+  (eqv? (logbit0 (+ (most-positive-fixnum) 1) 0) 0)
+  (eqv? (logbit0 (+ (most-positive-fixnum) 1) 5) 5)
+  (eqv? (logbit0 (expt 2 100) 7) 7)
 )
 
 (mat logbit1
@@ -5905,6 +6067,12 @@
               (if (fx= i (* (integer-length (ash (most-negative-fixnum) 5)) 2))
                   (g (fx- j 1))
                   (and (p? n i) (f (fx+ i 1)))))))))
+  (eqv? (logbit1 (expt 2 28) -1) -1)
+  ;; logbit1 at the fixnum/bignum k boundary with negative n
+  (eqv? (logbit1 (+ (most-positive-fixnum) 1) -1) -1)
+  (eqv? (logbit1 (+ (most-positive-fixnum) 1) -5) -5)
+  (eqv? (logbit1 (expt 2 100) -1) -1)
+  (eqv? (logbit1 (expt 2 100) -5) -5)
 )
 
 (mat bitwise-copy-bit ; adapted from logbit0 and logbit1 above

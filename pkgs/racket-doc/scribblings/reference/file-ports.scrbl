@@ -89,13 +89,18 @@ cases, the port is buffered by default.
 The port produced by @racket[open-input-file] should be explicitly
 closed, either though @racket[close-input-port] or indirectly via
 @racket[custodian-shutdown-all], to release the OS-level file
-handle. The input port will not be closed automatically if it is
+handle. The input port will not be closed automatically even if it is
 otherwise available for garbage collection (see
 @secref["gc-model"]); a @tech{will} could be associated with an input port
 to close it more automatically (see @secref["willexecutor"]).
 
 A @tech{path} value that is the @tech{cleanse}d version of
 @racket[path] is used as the name of the opened port.
+
+On variants of Unix and MacOS that support @tt{O_CLOEXEC}, the file is
+opened with @tt{O_CLOEXEC} so that the underlying file descriptor is
+not shared with a subprocess created by @racket[subprocess]. On
+Windows, the file is opened as a non-inherited handle.
 
 If opening the file fails due to an error in the filesystem,
 then @exnraise[exn:fail:filesystem:errno]---as long as
@@ -110,7 +115,9 @@ then the raised exception is either
 @racket[current-module-path-for-load] is a @tech{syntax object}) or
 @racket[exn:fail:filesystem:missing-module] (otherwise).
 
-@history[#:changed "6.0.1.6" @elem{Added @racket[#:for-module?].}]
+@history[#:changed "6.0.1.6" @elem{Added @racket[#:for-module?].}
+         #:changed "8.11.1.6" @elem{Changed to use @tt{O_CLOEXEC}
+                                    where supported by the operating system.}]
 
 @file-examples[
 ;; put some text in a file
@@ -127,7 +134,7 @@ then the raised exception is either
                                                        'replace 'truncate 
                                                        'must-truncate 'truncate/replace) 'error]
                            [#:permissions permissions (integer-in 0 65535) @#,default-permissions]
-                           [#:replace-permissions? replace-permissions? #f])
+                           [#:replace-permissions? replace-permissions? any/c #f])
           output-port?]{
 
 Opens the file specified by @racket[path] for output. The
@@ -213,13 +220,18 @@ until a reader for the fifo is available; see also
 The port produced by @racket[open-output-file] should be explicitly
 closed, either though @racket[close-output-port] or indirectly via
 @racket[custodian-shutdown-all], to release the OS-level file
-handle. The output port will not be closed automatically if it is
+handle. The output port will not be closed automatically even if it is
 otherwise available for garbage collection (see
 @secref["gc-model"]); a @tech{will} could be associated with an output port
 to close it more automatically (see @secref["willexecutor"]).
 
 A @tech{path} value that is the @tech{cleanse}d version of
 @racket[path] is used as the name of the opened port.
+
+On variants of Unix and MacOS that support @tt{O_CLOEXEC}, the file is
+opened with @tt{O_CLOEXEC} so that the underlying file descriptor is
+not shared with a subprocess created by @racket[subprocess]. On
+Windows, the file is opened as a non-inherited handle.
 
 If opening the file fails due to an error in the underlying filesystem
 then @exnraise[exn:fail:filesystem:errno].
@@ -238,7 +250,9 @@ then @exnraise[exn:fail:filesystem:errno].
                                    make the port block for output until the fifo has a
                                    reader.}
          #:changed "8.1.0.3" @elem{Added the @racket[#:permissions] argument.}
-         #:changed "8.7.0.10" @elem{Added the @racket[#:replace-permissions?] argument.}]}
+         #:changed "8.7.0.10" @elem{Added the @racket[#:replace-permissions?] argument.}
+         #:changed "8.11.1.6" @elem{Changed to use @tt{O_CLOEXEC}
+                                    where supported by the operating system.}]}
 
 @defproc[(open-input-output-file [path path-string?]
                            [#:mode mode-flag (or/c 'binary 'text) 'binary]
@@ -246,7 +260,7 @@ then @exnraise[exn:fail:filesystem:errno].
                                                        'replace 'truncate 
                                                        'must-truncate 'truncate/replace) 'error]
                            [#:permissions permissions (integer-in 0 65535) @#,default-permissions]
-                           [#:replace-permissions? replace-permissions? #f])
+                           [#:replace-permissions? replace-permissions? any/c #f])
           (values input-port? output-port?)]{
 
 Like @racket[open-output-file], but producing two values: an input
@@ -287,10 +301,10 @@ when @racket[proc] returns.
                                                             'replace 'truncate 
                                                             'must-truncate 'truncate/replace) 'error]
                                 [#:permissions permissions (integer-in 0 65535) @#,default-permissions]
-                                [#:replace-permissions? replace-permissions? #f])
+                                [#:replace-permissions? replace-permissions? any/c #f])
          any]{
 Analogous to @racket[call-with-input-file], but passing @racket[path],
-@racket[mode-flag], @racket[exists-flag], and @racket[permissions] to
+@racket[mode-flag], @racket[exists-flag], @racket[permissions], and @racket[replace-permissions?] to
 @racket[open-output-file].
 
 @file-examples[
@@ -321,7 +335,7 @@ return, a continuation application, or a prompt-based abort.}
                                                              'replace 'truncate
                                                              'must-truncate 'truncate/replace) 'error]
                                  [#:permissions permissions (integer-in 0 65535) @#,default-permissions]
-                                 [#:replace-permissions? replace-permissions? #f])
+                                 [#:replace-permissions? replace-permissions? any/c #f])
          any]{
 Like @racket[call-with-output-file], but the newly opened port is
 closed whenever control escapes the dynamic extent of the
@@ -354,7 +368,7 @@ the current input port (see @racket[current-input-port]) using
                                                           'replace 'truncate 
                                                           'must-truncate 'truncate/replace) 'error]
                               [#:permissions permissions (integer-in 0 65535) @#,default-permissions]
-                              [#:replace-permissions? replace-permissions? #f])
+                              [#:replace-permissions? replace-permissions? any/c #f])
          any]{
 Like @racket[call-with-output-file*], but instead of passing the newly
 opened port to the given procedure argument, the port is installed as
@@ -450,3 +464,10 @@ pipe instead of a file, the @exnraise[exn:fail:filesystem].
 (close-output-port file1)
 (close-output-port file2)
 ]}
+
+@defproc[(port-file-stat [port file-stream-port?]) (and/c (hash/c symbol? any/c) hash-eq?)]{
+
+Like @racket[file-or-directory-stat], but returns information for an
+open file represented by a port, instead using of the file's path.
+
+@history[#:added "8.15.0.6"]}

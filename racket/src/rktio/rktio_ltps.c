@@ -20,6 +20,9 @@
 #endif
 #ifdef HAVE_EPOLL_SYSCALL
 # include <sys/epoll.h>
+# ifdef RKTIO_HAS_CLOEXEC
+#  include <fcntl.h>
+# endif
 #endif
 #include <stdlib.h>
 #include <string.h>
@@ -242,11 +245,16 @@ rktio_ltps_handle_t *rktio_ltps_add(rktio_t *rktio, rktio_ltps_t *lt, rktio_fd_t
 # endif
 # ifdef HAVE_EPOLL_SYSCALL
   if (lt->fd < 0) {
+    rktio_cloexec_lock();
     lt->fd = epoll_create(5);
     if (lt->fd < 0) {
       get_posix_error();
-      log_kqueue_error("create", lt->fd);      
+      rktio_cloexec_unlock();
+      log_kqueue_error("create", lt->fd);
       return NULL;
+    } else {
+      rktio_fd_cloexec(lt->fd);
+      rktio_cloexec_unlock();
     }
   }
 # endif

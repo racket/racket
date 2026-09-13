@@ -92,7 +92,7 @@ static ptr s_ee_read_char(IBOOL blockp) {
   ptr tc;
 #endif /* PTHREADS */
   BOOL succ;
-  static wchar_t buf[10];
+  static wchar_t buf[20];
   static int bufidx = 0;
   static int buflen = 0;
   static int rptcnt = 0;
@@ -227,6 +227,91 @@ static ptr s_ee_read_char(IBOOL blockp) {
        when the window size changes. */
       case WINDOW_BUFFER_SIZE_EVENT: // scrn buf. resizing 
         return Strue;
+
+    case MOUSE_EVENT: {
+      MOUSE_EVENT_RECORD mer = irInBuf[0].Event.MouseEvent;
+      short x = mer.dwMousePosition.X % 1000;
+      short y = mer.dwMousePosition.Y % 1000;
+      short bstate = mer.dwButtonState & 0xffff;
+      short hbstate = mer.dwButtonState >> 16;
+      static short obstate = 0;
+
+      /* Mouse reporting starts with CSI [ < */
+      bufidx = 0;
+      buf[bufidx++] = '\033';
+      buf[bufidx++] = '[';
+      buf[bufidx++] = '<';
+
+      /* button mask (+ extra information) */
+      int bmask = 32;
+      char action = 'm';
+
+      if ((bstate & 1) ^ (obstate & 1)) {
+	/* left button changed, keep bmask 0, remove possible movement flag */
+	if (bstate & 1) {
+	  action = 'M';
+	}
+	bmask = 0;
+	obstate = (obstate & ~1) | (bstate & 1);
+      } else if ((bstate & 2) ^ (obstate & 2)) {
+	/* right button */
+	if (bstate & 2) {
+	  action = 'M';
+	}
+	bmask = 2;
+	obstate = (obstate & ~2) | (bstate & 2);
+      } else if ((bstate & 4) ^ (obstate & 4)) {
+	/* middle (second left) button */
+	if (bstate & 4) {
+	  action = 'M';
+	}
+	bmask = 1;
+	obstate = (obstate & ~4) | (bstate & 4);
+      } else if (mer.dwEventFlags == 4) {
+	/* MOUSE_WHEELED */
+	action = 'M';
+	if (hbstate > 0) {
+	  /* positive: wheel down */
+	  bmask = 65;
+	} else {
+	  /* negative: wheel up */
+	  bmask = 64;
+	}
+      }
+      if (bmask >= 10) {
+	buf[bufidx++] = '0' + (bmask / 10);
+      }
+      buf[bufidx++] = '0' + (bmask % 10);
+      buf[bufidx++] = ';';
+
+      /* X coordinate */
+      if (x >= 100) {
+	buf[bufidx++] = '0' + (x / 100);
+      }
+      if (x >= 10) {
+	buf[bufidx++] = '0' + ((x / 10) % 10);
+      }
+      buf[bufidx++] = '0' + (x % 10);
+      buf[bufidx++] = ';';
+
+      /* Y coordinate */
+      if (y >= 100) {
+	buf[bufidx++] = '0' + (y / 100);
+      }
+      if (y >= 10) {
+	buf[bufidx++] = '0' + ((y / 10) % 10);
+      }
+      buf[bufidx++] = '0' + (y % 10);
+
+      /* terminate with m/M based on button state changes */
+      buf[bufidx++] = action;
+
+      /* send however many characters were needed to encode the event */
+      buflen = bufidx;
+      bufidx = 0;
+      rptcnt = 1;
+      break;
+    }
   
       default: 
         break; 
@@ -660,8 +745,8 @@ static void s_ee_set_color(int color_id, IBOOL background) {
 # define CHTYPE int
 # include </usr/include/curses.h>
 # include </usr/include/term.h>
-#elif defined(NETBSD)
-# include <ncurses.h>
+#elif defined(__DragonFly__)
+# include <ncurses/curses.h>
 # include <ncurses/term.h>
 #else
 # include <curses.h>
@@ -677,11 +762,11 @@ static void s_ee_set_color(int color_id, IBOOL background) {
 # include <unistd.h>
 # include <time.h>
 #endif
-#if !defined(__GLIBC__) && !defined(__OpenBSD__) && !defined(__NetBSD__) && !defined(__linux__) && !defined(__EMSCRIPTEN__) && !defined(NO_USELOCALE)
+#if !defined(__GLIBC__) && !defined(__COSMOPOLITAN__) && !defined(__OpenBSD__) && !defined(__NetBSD__) && !defined(__linux__) && !defined(__HAIKU__) && !defined(__EMSCRIPTEN__) && !defined(NO_USELOCALE)
 # include <xlocale.h>
 #endif
 
-#if defined(__linux__) && !defined(_XOPEN_SOURCE)
+#if (defined(__gnu_hurd__) || defined(__linux__)) && !defined(_XOPEN_SOURCE)
 extern int wcwidth(wchar_t);
 #endif
 
@@ -1304,9 +1389,18 @@ static void s_ee_flush(void) {
   fflush(stdout);
 }
 
+static ptr s_ee_pending_winch() {
+#ifdef HANDLE_SIGWINCH
+  return winched ? Strue : Sfalse;
+#else
+  return Sfalse;
+#endif
+}
+
 void S_expeditor_init(void) {
   Sforeign_symbol("(cs)ee_init_term", (void *)s_ee_init_term);
   Sforeign_symbol("(cs)ee_read_char", (void *)s_ee_read_char);
+  Sforeign_symbol("(cs)ee_pending_winch", (void *)s_ee_pending_winch);
   Sforeign_symbol("(cs)ee_write_char", (void *)s_ee_write_char);
   Sforeign_symbol("(cs)ee_char_width", (void *)s_ee_char_width);
   Sforeign_symbol("(cs)ee_set_color", (void *)s_ee_set_color);

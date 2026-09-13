@@ -28,9 +28,9 @@
          interpretable-jitified-linklet
          interpret-linklet)
 
-(struct indirect (pos element))
-(struct boxed (pos))
-(struct boxed/check boxed ())
+(struct indirect (pos element) #:authentic)
+(struct boxed (pos) #:authentic)
+(struct boxed/check boxed () #:authentic)
 
 (define primitives '#hasheq())
 (define strip-annotations (lambda (e) e))
@@ -40,13 +40,17 @@
 (define variable-set! (lambda (var v) (set-box! var v)))
 (define variable-set!/define (lambda (var v) (set-box! var v)))
 (define make-interp-procedure* (lambda (proc mask name+realm) proc))
+(define decode-procedure-name (lambda (name) name))
+(define foreign-inline-eval (lambda (e) e))
 
 (define (interpreter-link! prims
                            strip
                            make-var
                            var-ref var-ref/no-check
                            var-set! var-set!/def
-                           make-proc)
+                           make-proc
+                           decode-proc-name
+                           foreign-eval)
   (set! primitives prims)
   (set! strip-annotations strip)
   (set! make-internal-variable make-var)
@@ -54,7 +58,9 @@
   (set! variable-ref/no-check var-ref/no-check)
   (set! variable-set! var-set!)
   (set! variable-set!/define var-set!/def)
-  (set! make-interp-procedure* make-proc))
+  (set! make-interp-procedure* make-proc)
+  (set! decode-procedure-name decode-proc-name)
+  (set! foreign-inline-eval foreign-eval))
 
 (define (interpretable-jitified-linklet linklet-e serializable? realm)
   ;; Return a compiled linklet as an expression for the linklet body.
@@ -305,6 +311,9 @@
                  (box? v))
              (vector 'quote v)
              v))]
+      [`(#%foreign-inline ,e ,_)
+       (let ([e (strip-annotations e)])
+         (vector 'foreign-inline e))]
       [`(set! ,id ,rhs)
        (compile-assignment id rhs env stack-depth stk-i mutated)]
       [`(define ,id ,rhs)
@@ -389,6 +398,8 @@
       [`(variable-ref/no-check ,id)
        (define var (hash-ref env (unwrap id)))
        (vector 'ref-variable (stack->pos var stk-i))]
+      [`(ffi-static-call-and-callback-core ,_ ...)
+       (error 'compile "unexpected ffi-static-call-and-callback-core in interpreter mode")]
       [`(#%app ,_ ...) (compile-apply (wrap-cdr e) env stack-depth stk-i tail? mutated)]
       [`(#%app/value ,_ ...) (compile-apply (wrap-cdr e) env stack-depth stk-i tail? mutated)]
       [`(#%app/no-return ,_ ...) (compile-apply (wrap-cdr e) env stack-depth stk-i tail? mutated)]
@@ -474,9 +485,9 @@
        (extract-list-mutated body (extract-list-mutated rhss mutated))]
       [`(begin . ,vs)
        (extract-list-mutated vs mutated)]
-      [`(begin0 ,vs)
+      [`(begin0 . ,vs)
        (extract-list-mutated vs mutated)]
-      [`(begin-unsafe ,vs)
+      [`(begin-unsafe . ,vs)
        (extract-list-mutated vs mutated)]
       [`($value ,e)
        (extract-expr-mutated e mutated)]
@@ -489,6 +500,8 @@
        (define val-mutated (extract-expr-mutated val key-mutated))
        (extract-expr-mutated body val-mutated)]
       [`(quote ,v)
+       mutated]
+      [`(#%foreign-inline . ,_)
        mutated]
       [`(set! ,id ,rhs)
        (define new-mutated (hash-set mutated (unwrap id) #t))
@@ -504,6 +517,8 @@
       [`(variable-ref ,id)
        mutated]
       [`(variable-ref/no-check ,id)
+       mutated]
+      [`(ffi-static-call-and-callback-core ,_ ...)
        mutated]
       [`(#%app ,es ...)
        (extract-list-mutated es mutated)]
@@ -582,21 +597,7 @@
   (define (extract-procedure-wrap-data e realm)
     ;; Get name and method-arity information
     (define encoded-name (wrap-property e 'inferred-name))
-    (define name
-      (cond
-        [(eq? encoded-name '|[|) #f]
-        [(symbol? encoded-name)
-         (define s (symbol->immutable-string encoded-name))
-         (cond
-           [(fx= 0 (string-length s)) encoded-name]
-           [else
-            (define ch (string-ref s 0))
-            (cond
-              [(or (char=? #\[ ch)
-                   (char=? #\] ch))
-               (string->symbol (substring s 1 (string-length s)))]
-              [else encoded-name])])]
-        [else encoded-name]))
+    (define name (decode-procedure-name encoded-name))
     (define name+realm (if realm (cons name realm) name))
     (if (wrap-property e 'method-arity-error)
         (box name+realm)
@@ -630,6 +631,7 @@
        (interp-match
         e
         [#(quote) e]
+        [#(foreign-inline) e]
         [#($value) e]
         [#(lambda) e]
         [#(case-lambda) e]
@@ -650,11 +652,11 @@
       (define args-stack (for/fold ([stack start-stack]) ([arg (in-list args)]
                                                           [i (in-naturals 0)])
                            (stack-set stack i arg)))
-      (define post-args-pos (stack-count args-stack))
+      (define post-args-pos (length args))
       (define args+vars-stack (for/fold ([stack args-stack]) ([var (in-list internal-var-syms)]
                                                               [i (in-naturals 0)])
                                 (stack-set stack (+ i post-args-pos) (make-internal-variable var))))
-      (define post-args+vars-pos (stack-count args+vars-stack))
+      (define post-args+vars-pos (+ post-args-pos (length internal-var-syms)))
       (define stack (for/fold ([stack args+vars-stack]) ([i (in-range num-body-vars)])
                       (stack-set stack (+ i post-args+vars-pos) (box unsafe-undefined))))
       (interpret-expr b stack))]))
@@ -760,6 +762,11 @@
          (if return-mode
              (values stack v)
              v)]
+        [#(foreign-inline ,e)
+         (let ([v (foreign-inline-eval e)])
+           (if return-mode
+               (values stack v)
+               v))]
         [#(unbox ,s)
          (define-values (new-stack bx) (stack-ref stack s))
          (define val (unbox* bx))
@@ -1107,7 +1114,8 @@
                      var
                      var-val var-val
                      (lambda (b v) (set-var-val! b v)) (lambda (b v c) (set-var-val! b v))
-                     (lambda (proc mask name) proc))
+                     (lambda (proc mask name) proc)
+                     (lambda (name) name))
   (define b
     (interpretable-jitified-linklet '(lambda (x two-box)
                                        (define other 5)

@@ -1,6 +1,7 @@
 ;; types that are right for most platforms:
 (define-constant-default int-bits 32)
 (define-constant-default short-bits 16)
+(define-constant-default stdbool-bits 8)
 (define-constant-default typedef-ptr "void *")
 (define-constant-default typedef-iptr "long")
 (define-constant-default typedef-uptr "unsigned long")
@@ -32,7 +33,6 @@
                                                    8
                                                    4))
 (define-constant-default special-initial-field-alignment? #f)
-(define-constant-default time-t-bits (constant ptr-bits))
 (define-constant-default segment-table-levels (if (= 64 (constant ptr-bits))
                                                   3
                                                   1))

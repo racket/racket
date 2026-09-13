@@ -240,25 +240,29 @@
                                            (set! memo (cons (cons f new) memo))
                                            new))))
                                  rng-late-neg-ctcs)))
-      (define (chk val mtd?) 
-        (cond
-          [(null? specs)
-           (unless (procedure? val)
-             (raise-blame-error blame val "expected a procedure"))]
-          [else
-           (for-each 
-            (λ (dom-length has-rest?)
-              (if has-rest?
-                  (check-procedure/more val mtd? dom-length '() '() blame #f)
-                  (check-procedure val mtd? dom-length 0 '() '() blame #f)))
-            specs rst-ctcs)]))
       (apply (base-case->-wrapper ctc)
-             chk
+             (case->-first-order-check specs rst-ctcs blame)
              wrapper
              blame
              blame-party-info
              ctc
              projs))))
+
+
+(define ((case->-first-order-check specs rst-ctcs blame) val mtd?)
+  (cond
+    [(null? specs)
+     (if (procedure? val)
+         #t
+         (if blame
+             (raise-blame-error blame val "expected a procedure")
+             #f))]
+    [else
+     (for/and ([dom-length (in-list specs)]
+               [has-rest? (in-list rst-ctcs)])
+       (if has-rest?
+           (check-procedure/more val mtd? dom-length '() '() blame #f)
+           (check-procedure val mtd? dom-length 0 '() '() blame #f)))]))
 
 ;; Re `print-as-method-if-method?`: See comment before `base->-name` in arrow-val-first.rkt
 (define ((case->-name print-as-method-if-method?) ctc)
@@ -283,7 +287,14 @@
         (base-case->-rst-ctcs ctc)
         (base-case->-rng-ctcs ctc))))
 
-(define (case->-first-order ctc) (λ (val) (procedure? val)))
+(define (case->-first-order ctc)
+  (define proc
+    (case->-first-order-check (base-case->-specs ctc)
+                              (base-case->-rst-ctcs ctc)
+                              #f))
+  (define mtd? (base-case->-mctc? ctc))
+  (λ (val)
+    (proc val mtd?)))
 
 (define (make-case->-stronger/equiv? this that stronger?)
   (define recur (if stronger? contract-struct-stronger? contract-struct-equivalent?))

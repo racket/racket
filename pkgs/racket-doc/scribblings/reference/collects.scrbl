@@ -5,7 +5,7 @@
 
 @title[#:tag "collects"]{Libraries and Collections}
 
-A @deftech{library} is @racket[module] declaration for use by multiple
+A @deftech{library} is a @racket[module] declaration for use by multiple
 programs. Racket further groups libraries into @deftech{collections}.
 Typically, collections are added via @deftech{packages} (see
 @other-doc['(lib "pkg/scribblings/pkg.scrbl")]); the package manager

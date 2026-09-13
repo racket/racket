@@ -15,80 +15,46 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v7
     - name: Build
-      run: make CPUS=$(nproc) PKGS="racket-test db-test unstable-flonum-lib net-test"
+      run: make CPUS="$(nproc)" PKGS=""
+    - name: Extend PATH with Racket executable
+      run: echo "${GITHUB_WORKSPACE}/racket/bin" >> $GITHUB_PATH
     - name: Test
-      run: |
-        export PATH=$PATH:`pwd`/racket/bin
-        raco test -l tests/racket/test
-        racket -l tests/racket/contract/all
-        raco test -l tests/json/json
-        raco test -l tests/file/main
-        raco test -l tests/net/head
-        raco test -l tests/net/uri-codec
-        raco test -l tests/net/url
-        raco test -l tests/net/url-port
-        raco test -l tests/net/encoders
-        raco test -l tests/openssl/basic
-        raco test -l tests/openssl/https
-        raco test -l tests/match/main
-        raco test -l tests/zo-path
-        raco test -c tests/xml
-        raco test --timeout 300 -c tests/future
-        raco test -l tests/db/all-tests
-        raco test -c tests/stxparse
-        raco test -c tests/syntax
+      run: bash .github/scripts/run-racket-tests.sh
 
   buildtest-macos:
 
-    runs-on: macos-latest
+    runs-on: macos-14
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v7
     - name: Build
-      run: make CPUS=$(sysctl -n hw.physicalcpu) PKGS="racket-test db-test unstable-flonum-lib net-test"
+      run: make CPUS="$(sysctl -n hw.physicalcpu)" PKGS=""
+    - name: Extend PATH with Racket executable
+      run: echo "${GITHUB_WORKSPACE}/racket/bin" >> $GITHUB_PATH
     - name: Test
-      run: |
-        export PATH=$PATH:`pwd`/racket/bin
-        raco test -l tests/racket/test
-        racket -l tests/racket/contract/all
-        raco test -l tests/json/json
-        raco test -l tests/file/main
-        raco test -l tests/net/head
-        raco test -l tests/net/uri-codec
-        raco test -l tests/net/url
-        raco test -l tests/net/url-port
-        raco test -l tests/net/encoders
-        raco test -l tests/openssl/basic
-        raco test -l tests/openssl/https
-        raco test -l tests/match/main
-        raco test -l tests/zo-path
-        raco test -c tests/xml
-        raco test --timeout 300 -c tests/future
-        raco test -l tests/db/all-tests
-        raco test -c tests/stxparse
-        raco test -c tests/syntax
+      run: bash .github/scripts/run-racket-tests.sh
     - name: Tarball
-      run: tar -cvjf racketcs-macos-x64_git${{ github.sha }}.tar.bz2 racket
-    - uses: actions/upload-artifact@v3
+      run: tar -cvjf racketcs-macos-aarch64_git${{ github.sha }}.tar.bz2 racket
+    - uses: actions/upload-artifact@v7
       with:
-        name: racketcs-macos-x64_git${{ github.sha }}
-        path: racketcs-macos-x64_git${{ github.sha }}.tar.bz2
+        name: racketcs-macos-aarch64_git${{ github.sha }}
+        path: racketcs-macos-aarch64_git${{ github.sha }}.tar.bz2
 
   build-ios:
-    runs-on: macos-latest
+    runs-on: macos-14
     needs: buildtest-macos
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/download-artifact@v3
+    - uses: actions/checkout@v7
+    - uses: actions/download-artifact@v8
       with:
-        name: racketcs-macos-x64_git${{ github.sha }}
+        name: racketcs-macos-aarch64_git${{ github.sha }}
         path: ${{ github.workspace }}
     - name: Untar host Racket
       run: |
         mkdir host-racket
-        tar -xvjf racketcs-macos-x64_git${{ github.sha }}.tar.bz2 -C host-racket --strip-components 1
+        tar -xvjf racketcs-macos-aarch64_git${{ github.sha }}.tar.bz2 -C host-racket --strip-components 1
     - name: Build iOS Racket
       run: |
         set -euxo pipefail
@@ -99,5 +65,55 @@ jobs:
           --enable-ios=iPhoneOS \
           --enable-racket=${{ github.workspace }}/host-racket/bin/racket \
           --enable-scheme=${{ github.workspace }}/host-racket/src/build/cs/c
+        make
+        make install
+
+  build-pb-ios:
+    runs-on: macos-14
+    steps:
+    - uses: actions/checkout@v7
+    - name: Build LibFFI
+      run: |
+        set -euxo pipefail
+        brew install automake libtool
+        git clone https://github.com/libffi/libffi
+        cd libffi
+        git checkout v3.4.6
+        ./autogen.sh
+        python generate-darwin-source-and-headers.py --only-ios
+        xcodebuild \
+          -configuration release \
+          -target libffi-iOS \
+          -scheme libffi-iOS \
+          -sdk "$(xcode-select -p)/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk" \
+          -derivedDataPath dist \
+          IPHONEOS_DEPLOYMENT_TARGET=12
+    - name: Build PB iOS Racket
+      run: |
+        set -euxo pipefail
+        make fetch-pb
+        mkdir -p racket/src/build
+        cd racket/src/build
+        cat >libffi.pc <<EOF
+          prefix=${GITHUB_WORKSPACE}/libffi/dist/Build/Products/Release-iphoneos
+          exec_prefix=\${prefix}
+          libdir=\${exec_prefix}
+          toolexeclibdir=\${libdir}
+          includedir=\${prefix}/include/ffi
+
+          Name: libffi
+          Description: Library supporting Foreign Function Interfaces
+          Version: 3.4.6
+          Libs: -L\${toolexeclibdir} -lffi
+          Cflags: -I\${includedir}
+        EOF
+        cat libffi.pc
+        env PKG_CONFIG_PATH="$(pwd)" \
+          ../configure \
+            --host=aarch64-apple-darwin \
+            --enable-ios=iPhoneOS \
+            --enable-pb \
+            --enable-racket=auto \
+            --enable-libffi
         make
         make install

@@ -74,6 +74,7 @@
 (provide make-module-path-index-table
          add-module-path-index!
          add-module-path-index!/pos
+         module-path-index-table-mpis
          generate-module-path-index-deserialize
          deserialize-module-path-index-data
          mpis-as-vector
@@ -86,7 +87,7 @@
 
          deserialize-instance
          deserialize-imports
-         
+
          serialize-module-uses
          serialize-phase-to-link-module-uses)
 
@@ -115,6 +116,13 @@
           (let ([pos (hash-count positions)])
             (hash-set! positions mpi pos)
             pos)))]))
+
+(define (module-path-index-table-mpis mpis)
+  (define pos->mpi
+    (for/hasheqv ([(mpi pos) (in-hash (module-path-index-table-positions mpis))])
+      (values pos mpi)))
+  (for/vector ([i (in-range (hash-count pos->mpi))])
+    (hash-ref pos->mpi i)))
 
 (define (generate-module-path-index-deserialize mpis
                                                 #:as-data? [as-data? #f])
@@ -228,7 +236,7 @@
     (define-values (,mpi-vector-id)
       ,(generate-module-path-index-deserialize mpis))))
 
-(define (generate-module-declaration-linklet mpis self requires recur-requires provides
+(define (generate-module-declaration-linklet mpis self requires recur-requires flattened-requires provides
                                              phase-to-link-module-uses-expr
                                              portal-stxes)
   `(linklet
@@ -239,6 +247,7 @@
     (self-mpi
      requires
      recur-requires 
+     flattened-requires
      provides
      phase-to-link-modules
      portal-stxes)
@@ -246,6 +255,10 @@
     (define-values (self-mpi) ,(add-module-path-index! mpis self))
     (define-values (requires) ,(generate-deserialize requires #:mpis mpis #:syntax-support? #f))
     (define-values (recur-requires) (quote ,recur-requires))
+    (define-values (flattened-requires) ,(if flattened-requires
+                                             (generate-deserialize flattened-requires #:mpis mpis
+                                                                   #:syntax-support? #f)
+                                             '(quote #f)))
     (define-values (provides) ,(generate-deserialize provides #:mpis mpis #:syntax-support? #f
                                                      #:phase+space-hasheqv provides))
     (define-values (phase-to-link-modules) ,phase-to-link-module-uses-expr)
@@ -288,24 +301,40 @@
                               #:syntax-support? [syntax-support? #t]
                               #:preserve-prop-keys [preserve-prop-keys #hasheq()]
                               #:keep-provides? [keep-provides? #f]
-                              #:phase+space-hasheqv [phase+space-hasheqv #f]) ; keys of this value must be interned
+                              #:phase+space-hasheqv [phase+space-hasheqv #f] ; keys of this value must be interned
+                              #:map-mpi [map-mpi (lambda (mpi) mpi)]
+                              #:map-binding-symbol [map-binding-symbol (lambda (mpi sym phase) (values sym phase))]
+                              #:report-mpi-shifts [report-mpi-shifts #f])
   (define bulk-shifts (and keep-provides? (list (make-hasheq))))
 
-  (define reachable-scopes (find-reachable-scopes v bulk-shifts))
+  (define-values (reachable-scopes implicitly-reachable-scopes)
+    (find-reachable-scopes v bulk-shifts report-mpi-shifts))
 
   (define state (make-serialize-state reachable-scopes
+                                      implicitly-reachable-scopes
                                       preserve-prop-keys
                                       (and keep-provides?
                                            (lambda (b)
                                              (define name (hash-ref (car bulk-shifts) b #f))
                                              (or (not name) ; shouldn't happen
-                                                 (keep-provides? name))))))
+                                                 (keep-provides? name))))
+                                      (and report-mpi-shifts #t)
+                                      map-binding-symbol))
 
   (define mutables (make-hasheq)) ; v -> pos
   (define objs (make-hasheq))     ; v -> step
   (define shares (make-hasheq))   ; v -> #t
+  (define binding-interns (make-hash))
   (define obj-step 0)
-  
+
+  (define (serialize-maybe-intern v)
+    (cond
+      [(module-binding? v)
+       (module-binding-maybe-intern v binding-interns
+                                    map-binding-symbol
+                                    (lambda (mpi) (add-module-path-index!/pos mpis (map-mpi mpi))))]
+      [else #f]))
+
   ;; Build table of sharing and mutable values
   (define frontier null)
   (define add-frontier!
@@ -319,6 +348,8 @@
             (module-path-index? v))
         ;; no need to find sharing
         (void)]
+       [(serialize-maybe-intern v)
+        => (lambda (v) (loop v))]
        [(hash-ref objs v #f)
         (unless (hash-ref mutables v #f)
           (hash-set! shares v #t))]
@@ -372,7 +403,7 @@
          [else
           (void)])
         ;; `v` may already be in `objs`, but to get the order right
-        ;; for unmarshaling, we need to map it to ka new step number
+        ;; for unmarshaling, we need to map it to a new step number
         (hash-set! objs v obj-step)
         (set! obj-step (add1 obj-step))]))
     (unless (null? frontier)
@@ -381,7 +412,7 @@
       (for ([v (in-list l)])
         (frontier-loop v))))
 
-  ;; Maybe object steps to positions in a vector after mutables
+  ;; Map object steps to positions in a vector after mutables
   (define num-mutables (hash-count mutables))
   (define share-step-positions
     (let ([share-steps (for/list ([obj (in-hash-keys shares)])
@@ -448,12 +479,14 @@
   ;; Handle an immutable, not-shared (or on RHS of binding) value
   (define (ser-push-encoded! v)
     (cond
+     [(serialize-maybe-intern v)
+      => (lambda (v) (ser-push! v))]
      [(keyword? v)
       (ser-push! 'tag '#:quote)
       (ser-push! 'exact v)]
      [(module-path-index? v)
       (ser-push! 'tag '#:mpi)
-      (ser-push! 'exact (add-module-path-index!/pos mpis v))]
+      (ser-push! 'exact (add-module-path-index!/pos mpis (map-mpi v)))]
      [(serialize? v)
       ((serialize-ref v) v ser-push! state)]
      [(and (list? v)
@@ -940,11 +973,19 @@
 ;; ----------------------------------------
 ;; For pruning unreachable scopes in serialization
 
-(define (find-reachable-scopes v bulk-shifts)
+(define (find-reachable-scopes v bulk-shifts report-mpi-shifts)
   (define seen (make-hasheq))
   (define reachable-scopes (interned-scopes))
+  (define implicitly-reachable-scopes (interned-scopes))
   (define (get-reachable-scopes) reachable-scopes)
   (define scope-triggers (make-hasheq))
+
+  (define report-shifts
+    (and report-mpi-shifts
+         ;; Serialization context wants to know how reachable mpis are resolved
+         ;; by their context, so report as we discover them
+         (lambda (mpi bulk-shifts)
+           (report-mpi-shifts mpi (apply-syntax-shifts mpi (cdr bulk-shifts))))))
 
   ;; `bulk-shifts` is used to propagate shifts from a syntax object to
   ;; binding tables when bulk-binding provides will be preserved, in
@@ -985,7 +1026,11 @@
            (hash-update! scope-triggers
                          sc-unreachable
                          (lambda (l) (cons b l))
-                         null)))]
+                         null))
+         (lambda (sc)
+           (unless (set-member? reachable-scopes sc)
+             (set! implicitly-reachable-scopes (set-add implicitly-reachable-scopes sc))))
+         report-shifts)]
        [(reach-scopes? v)
         ((reach-scopes-ref v) v bulk-shifts loop)]
        [(pair? v)
@@ -1008,7 +1053,36 @@
        [else
         (void)])]))
   
-  reachable-scopes)
+  (values reachable-scopes
+          implicitly-reachable-scopes))
+
+;; ----------------------------------------
+
+;; See `generate-lazy-syntax-literals!`. This function is called on demand to
+;; shift a syntax-object literal for a given module instantiation.
+(define (force-syntax-object syntax-literals pos
+                             mpi self-mpi phase-shift inspector
+                             deserialized-syntax-vector/box bulk-binding-registry
+                             deserialize-syntax)
+  (define deserialized-syntax-vector
+    (or (unbox deserialized-syntax-vector/box)
+        (begin
+          (deserialize-syntax bulk-binding-registry)
+          (unbox deserialized-syntax-vector/box))))
+  (define stx (syntax-module-path-index-shift
+               (syntax-shift-phase-level
+                (vector*-ref deserialized-syntax-vector pos)
+                phase-shift)
+               mpi
+               self-mpi
+               inspector))
+  ;; loop in case of spurious CAS failure
+  (let loop ()
+    (vector-cas! syntax-literals pos #f stx)
+    (define new-stx (vector*-ref syntax-literals pos))
+    (if new-stx
+        new-stx
+        (loop))))
 
 ;; ----------------------------------------
 ;; Set up the instance to import into deserializing linklets
@@ -1017,6 +1091,7 @@
   '(deserialize-module-path-indexes
     syntax-module-path-index-shift
     syntax-shift-phase-level
+    force-syntax-object
     module-use
     deserialize))
 
@@ -1032,5 +1107,6 @@
                  'deserialize-module-path-indexes deserialize-module-path-indexes
                  'syntax-module-path-index-shift syntax-module-path-index-shift/no-keywords
                  'syntax-shift-phase-level syntax-shift-phase-level
+                 'force-syntax-object force-syntax-object
                  'module-use module-use
                  'deserialize deserialize))

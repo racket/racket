@@ -16,6 +16,7 @@
     (if in
         (values #f (dup-fd (fd-port-fd in) void "stdin dup"))
         (reverse-pipe void "stdin pipe")))
+  ;; in atomic and rktio:
   (define (clean-in)
     (rktio_close rktio child-in-fd)
     (unless in
@@ -24,6 +25,7 @@
     (if out
         (values #f (dup-fd (fd-port-fd out) clean-in "stdout dup"))
         (pipe clean-in "stdout pipe")))
+  ;; in atomic and rktio:
   (define (clean-out+in)
     (rktio_close rktio child-out-fd)
     (unless out
@@ -34,7 +36,7 @@
         (values #f (dup-fd (fd-port-fd err) clean-out+in "stderr dup"))
         (pipe clean-out+in "stderr pipe")))
   (values (and parent-in-fd
-               (open-output-fd parent-in-fd "place-in"))
+               (open-output-fd parent-in-fd "place-in" #:is-terminal? #f))
           (and parent-out-fd
                (open-input-fd parent-out-fd "place-out"))
           (and parent-err-fd
@@ -45,22 +47,28 @@
 
 ;; ----------------------------------------
 
+;; in atomic mode
 (define (dup-fd fd cleanup during)
-  (define new-fd (rktio_dup rktio fd))
+  (define new-fd (rktioly (rktio_dup rktio fd)))
   (when (rktio-error? new-fd)
     (cleanup)
     (end-atomic)
     (raise-rktio-error 'dynamic-place new-fd (string-append "error during " during)))
   new-fd)
 
+;; in atomic mode;
+;; calls `cleanup` in atomic mode and rktio mode
 (define (pipe cleanup during)
-  (define p (rktio_make_pipe rktio 0))
+  (start-rktio)
+  (define p (rktio_make_pipe rktio (bitwise-ior RKTIO_NO_INHERIT_INPUT RKTIO_NO_INHERIT_OUTPUT)))
   (when (rktio-error? p)
     (cleanup)
+    (end-rktio)
     (end-atomic)
     (raise-rktio-error 'dynamic-place p (string-append "error during " during)))
   (define-values (in out) (rktio_pipe_results p))
   (rktio_free p)
+  (end-rktio)
   (values in out))
 
 (define (reverse-pipe cleanup during)

@@ -39,6 +39,13 @@
       (shelly-install-dry-run what srcs)
       (shelly-install* what srcs pkgs)))
 
+  (define-syntax-rule (shelly-install-adjacent src)
+    (shelly-case
+     (format "Test adjacent-deps installation of ~a" src)
+     $ "racket -e '(require pkg-test1)'" =exit> 1
+     $ (~a "raco pkg install --adjacent-deps --deps search-auto " src)
+     $ "racket -e '(require pkg-test1)'" =exit> 0))
+
   (shelly-case
    "raco pkg install tests"
    (shelly-install/d "local package (tgz)" "test-pkgs/pkg-test1.tgz")
@@ -130,7 +137,7 @@
     "remote/URL/file, bad checksum"
     $ "raco pkg install --checksum zzz http://localhost:9997/pkg-test1.tgz"
     =exit> 1
-    =stderr> #rx"mismatched checksum")
+    =stderr> #rx"unexpected checksum")
 
    (shelly-case
     "local directory fails when not there"
@@ -175,6 +182,12 @@
                    $ "raco pkg install no-such-dir/pkg-test1.zip"
                    =exit> 1
                    =stderr> #rx"already installed")
+
+   (shelly-case
+    "attach fails when not there"
+    $ "raco pkg install --attach pkg-test1-not-there"
+    =exit> 1
+    =stderr> #rx"directory does not exist for package to attach")
 
    (shelly-case
     "conflicting package names disallowed"
@@ -262,6 +275,28 @@
      $ "raco pkg install pkg-git" =exit> 1
      $ "raco pkg config --set git-checkout-credentials user:password"
      $ "raco pkg install pkg-git"))
+
+   (with-fake-root
+    (define tmpdir (path->directory-path (make-temporary-file "pkg~a" 'directory)))
+
+    (shelly-case
+     "Test --destdir installation"
+     $ "racket -e '(require pkg-test1)'" =exit> 1
+     $ (~a "raco pkg install --destdir "tmpdir"/pkgs test-pkgs/pkg-test1.tgz")
+     $ "racket -e '(require pkg-test1)'" =exit> 1
+     $ (~a "test -d "tmpdir"/pkgs/pkg-test1"))
+
+    (shelly-case
+     "Test --attach installation"
+     $ "racket -e '(require pkg-test1)'" =exit> 1
+     $ (~a "racket -l racket/base -l racket/file -l setup/dirs"
+           " -e '(make-directory* (find-user-pkgs-dir))'")
+     $ (~a "racket -l racket/base -l racket/file -l setup/dirs"
+           " -e '(copy-directory/files \""tmpdir"/pkgs/pkg-test1\" (build-path (find-user-pkgs-dir) \"pkg-test1\"))'")
+     $ (~a "raco pkg install -u --attach pkg-test1")
+     $ "racket -e '(require pkg-test1)'")
+
+    (delete-directory/files tmpdir))
 
    (parameterize ([current-directory test-source-directory])
      (with-fake-root
@@ -427,4 +462,36 @@
           $ "raco pkg install --binary-lib pkg-strip" =exit> 1
           $ (format "raco pkg install --catalog file:///~a --binary-lib pkg-strip" (path->string catalog-dir))
           $ "racket -l pkg-strip" =stdout> "this pkg can be stripped in multiple modes\n"
-          (delete-directory/files tmp-dir)))))))
+          (delete-directory/files tmp-dir))))
+   (shelly-case
+    "adjacent deps"
+    (with-fake-root
+      (shelly-install-adjacent "test-pkgs/pkg-test2"))
+    (with-fake-root
+      (shelly-install-adjacent "--link test-pkgs/pkg-test2"))
+    (with-fake-root
+      (shelly-install-adjacent "--static-link test-pkgs/pkg-test2"))
+    (with-fake-root
+      (shelly-install-adjacent "test-pkgs/pkg-test2.zip"))
+    (with-fake-root
+      (shelly-install-adjacent "test-pkgs/pkg-test2.tgz")))
+
+   (with-fake-root
+     (shelly-case
+      "adjacent deps and --attach"
+      (define tmpdir (path->directory-path (make-temporary-file "pkg~a" 'directory)))
+      $ (~a "raco pkg install --adjacent-deps --deps search-auto --destdir "tmpdir"/pkgs test-pkgs/pkg-test2.tgz")
+      $ (~a "test -d "tmpdir"/pkgs/pkg-test2")
+      $ (~a "test -d "tmpdir"/pkgs/pkg-test1")
+      $ (~a "racket -l racket/base -l racket/file -l setup/dirs"
+            " -e '(make-directory* (find-user-pkgs-dir))'")
+      $ (~a "racket -l racket/base -l racket/file -l setup/dirs"
+            " -e '(copy-directory/files \""tmpdir"/pkgs/pkg-test1\" (build-path (find-user-pkgs-dir) \"pkg-test1\"))'"
+            " -e '(copy-directory/files \""tmpdir"/pkgs/pkg-test2\" (build-path (find-user-pkgs-dir) \"pkg-test2\"))'")
+      $ (~a "raco pkg install -u --adjacent-deps --deps search-auto --attach pkg-test2")
+      $ "racket -e '(require pkg-test1)'"
+
+      (delete-directory/files tmpdir)))
+
+   ) ; end "raco pkg install tests"
+  ))

@@ -33,7 +33,7 @@ See above for important constraints on the use of @racket[unsafe-undefined].}
 
 
 @defproc[(check-not-unsafe-undefined [v any/c] [sym symbol?])
-         (and/c any/c (not/c (one-of/c unsafe-undefined)))]{
+         any/c]{
 
 Checks whether @racket[v] is @racket[unsafe-undefined], and raises
 @racket[exn:fail:contract:variable] in that case with an error message
@@ -42,7 +42,7 @@ initialization.''  If @racket[v] is not @racket[unsafe-undefined],
 then @racket[v] is returned.}
 
 @defproc[(check-not-unsafe-undefined/assign [v any/c] [sym symbol?])
-         (and/c any/c (not/c (one-of/c unsafe-undefined)))]{
+         any/c]{
 
 The same as @racket[check-not-unsafe-undefined], except that the error
 message (if any) is along the lines of ``@racket[sym]: undefined;

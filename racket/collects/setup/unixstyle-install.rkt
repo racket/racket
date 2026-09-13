@@ -35,7 +35,10 @@
 (require setup/cross-system
          (submod compiler/private/collects-path set-executable-tag)
          racket/file
-         racket/list)
+         racket/list
+         racket/path
+         compiler/private/mach-o
+         compiler/private/macfw)
 
 (module test racket/base)
 
@@ -44,6 +47,8 @@
 (define (get-arg)
   (when (null? args) (error "insufficient arguments"))
   (begin0 (car args) (set! args (cdr args))))
+(define (maybe-get-arg)
+  (and (pair? args) (get-arg)))
 
 (define op (string->symbol (get-arg)))
 (define adjust-mode
@@ -63,12 +68,13 @@
                 [(collects) "collects"]
                 [(pkgs) (build-path "share" "pkgs")]
                 [(apps) (build-path "share" "applications")]
+                [(guibin) "bin"]
                 [else (symbol->string name)])))
 (define dirs (map (lambda (name) (list name 
                                        (if base-destdir
                                            (build-dest-arg name)
                                            (get-arg))))
-		  '(bin collects pkgs doc lib includerkt librkt sharerkt config apps man #|src|#)))
+		  '(bin guibin collects pkgs doc lib includerkt librkt sharerkt config apps man #|src|#)))
 
 (define (dir: name)
   (cadr (or (assq name dirs) (error 'getdir "unknown dir name: ~e" name))))
@@ -86,6 +92,7 @@
   (let ([dir (string->symbol (basename dir))])
     (case dir
       [(bin)      #f]
+      [(guibin)   #f]
       [(collects) 1]
       [(pkgs)     1]
       [(doc)      1]
@@ -175,7 +182,7 @@
             [(link-exists? src)
              (make-file-or-directory-link (resolve-path src) dst)]
             [(directory-exists? src)
-             (make-directory dst)
+             (make-directory* dst) ; `*` to support merging instead of only replacing
              (if build-path?
                  (for-each (lambda (p) (loop (make-path src p) (make-path dst p)))
                            (parameterize ([current-directory src])
@@ -208,30 +215,48 @@
 (define (register-change! op . args)
   (set! path-changes (cons (cons op args) path-changes)))
 
+;; similar to `register-change!`, but for checking merge collisions
+;; instead of undoing, so record paths within a directory
+(define wrote-paths (make-hash))
+(define (register-wrote-path! dest)
+  (hash-set! wrote-paths dest #t)
+  (when (directory-exists? dest)
+    (for ([f (in-list (directory-list dest))])
+      (register-wrote-path! (path->string (build-path dest f))))))
+
 ;; like `mv', but also record moves
 (define (mv* src dst)
   (mv src dst)
-  (register-change! 'mv src dst))
+  (register-change! 'mv src dst)
+  (register-wrote-path! dst))
 
 ;; like `cp', but also record copies
 (define (cp* src dst)
   (cp src dst)
-  (register-change! 'cp src dst))
+  (register-change! 'cp src dst)
+  (register-wrote-path! dst))
 
 (define (cp*/build src dst)
   (cp src dst #:build-path? #t)
-  (register-change! 'cp src dst))
+  (register-change! 'cp src dst)
+  (register-wrote-path! dst))
 
 (define (fix-executable file #:ignore-non-executable? [ignore-non-executable? #f])
-  (define (fix-binary file)
+  (define (fix-binary file mach-o?)
     (define (fix-one tag desc dir)
       (set-executable-tag 'unixstyle-install tag desc file ignore-non-executable? dir
                           (path->bytes
                            (if (string? dir)
                                (string->path dir)
                                dir))))
+    (when (executable-for-signing? file)
+      (remove-signature file))
     (fix-one #rx#"coLLECTs dIRECTORy:" "collects" (dir: 'collects))
-    (fix-one #rx#"coNFIg dIRECTORy:" "config" (dir: 'config)))
+    (fix-one #rx#"coNFIg dIRECTORy:" "config" (dir: 'config))
+    (when mach-o?
+      (update-framework-path (path->directory-path (dir: 'librkt)) file #f))
+    (when (executable-for-signing? file)
+      (add-ad-hoc-signature file)))
   (define (fix-script file)
     (let* ([size (file-size file)]
            [buf (with-input-from-file file (lambda () (read-bytes size)))]
@@ -239,48 +264,68 @@
                    #rx#"\n# {{{ bindir\n(.*?\n)# }}} bindir\n" buf)
                   (error (format "could not find binpath block in script: ~a"
                                  file)))]
-           [m2 (regexp-match-positions
-                #rx#"\n# unixstyle-install: use librktdir\n" buf)])
+           [use-librkt? (regexp-match?
+                         #rx#"\n# unixstyle-install: use librktdir\n" buf)]
+           [use-guibin? (regexp-match?
+                         #rx#"\n# unixstyle-install: use guibindir\n" buf)])
       ;; 'truncate file to keep it executable
       (with-output-to-file file #:exists 'truncate
         (lambda ()
           (write-bytes buf (current-output-port) 0 (caadr m))
           (define (escaped-dir: sym)
             (regexp-replace* #rx"[\"`'$\\]" (dir: sym) "\\\\&"))
-          (printf "bindir=\"~a\"\n" (if m2
-                                        (escaped-dir: 'librkt)
-                                        (escaped-dir: 'bin)))
+          (printf "bindir=\"~a\"\n" (cond
+                                      [use-librkt? (escaped-dir: 'librkt)]
+                                      [use-guibin? (escaped-dir: 'guibin)]
+                                      [else (escaped-dir: 'bin)]))
           (write-bytes buf (current-output-port) (cdadr m))))))
-  (let ([magic (with-input-from-file file (lambda () (let ([r (read-bytes 10)])
-                                                       (if (eof-object? r)
-                                                           #""
-                                                           r))))])
-    (cond [(or (regexp-match #rx#"^\177ELF" magic)
-               (regexp-match #rx#"^\316\372\355\376" magic)
-               (regexp-match #rx#"^\317\372\355\376" magic))
-           (let ([temp (format "~a-temp-for-install"
-                               (regexp-replace* #rx"/" file "_"))])
-             (with-handlers ([exn? (lambda (e) (rm temp) (raise e))])
-               ;; always copy so we never change the running executable
-               (rm temp)
-               (copy-file file temp)
-               (fix-binary temp)
-               (rm file)
-               (mv temp file)))]
-          [(regexp-match #rx#"^#!/bin/sh" magic)
-           (fix-script file)]
-          [ignore-non-executable? (void)]
-          [else (error (format "unknown executable: ~a" file))])))
+  (cond
+    [(file-exists? file)
+     (let ([magic (with-input-from-file file (lambda () (let ([r (read-bytes 10)])
+                                                          (if (eof-object? r)
+                                                              #""
+                                                              r))))])
+       (define elf? (regexp-match #rx#"^\177ELF" magic))
+       (define mach-o? (and (not elf?)
+                            (or
+                             ;; Mach-O magic numbers for LE/BE, 32/64-bit
+                             (regexp-match #rx#"^\316\372\355\376" magic)
+                             (regexp-match #rx#"^\317\372\355\376" magic)
+                             (regexp-match #rx#"^\376\355\372\316" magic)
+                             (regexp-match #rx#"^\376\355\372\317" magic))))
+       (cond [(or elf? mach-o?)
+              (let ([temp (format "~a-temp-for-install"
+                                  (regexp-replace* #rx"/" file "_"))])
+                (with-handlers ([exn? (lambda (e) (rm temp) (raise e))])
+                  ;; always copy so we never change the running executable
+                  (rm temp)
+                  (copy-file file temp)
+                  (fix-binary temp mach-o?)
+                  (rm file)
+                  (mv temp file)))]
+             [(regexp-match #rx#"^#!/bin/sh" magic)
+              (fix-script file)]
+             [ignore-non-executable? (void)]
+             [else (error (format "unknown executable: ~a" file))]))]
+    [else
+     ;; must be an ".app" bundle
+     (define-values (base name dir?) (split-path file))
+     (define exe-file (build-path file "Contents" "MacOS" (path-replace-extension name #"")))
+     (when (file-exists? exe-file)
+       (fix-executable (path->string exe-file)))]))
 
-(define (fix-executables bindir librktdir [binfiles #f] [libfiles #f])
-  (for ([dir (in-list (list bindir librktdir))]
-        [files (in-list (list binfiles libfiles))]
-        [ignore-non-executable? (in-list (list #f #t))])
+(define (fix-executables bindir guibindir librktdir [binfiles #f] [guibinfiles '()] [libfiles #f])
+  (for ([dir (in-list (list bindir guibindir librktdir))]
+        [files (in-list (list binfiles guibinfiles libfiles))]
+        [ignore-non-executable? (in-list (list #f #t #t))])
     (parameterize ([current-directory dir])
-      (for ([f (in-list (or files (ls)))] #:when (file-exists? f))
+      (for ([f (in-list (or files (ls)))]
+            #:when (or (file-exists? f)
+                       (and (directory-exists? f)
+                            (equal? (path-get-extension f) #".app"))))
         (fix-executable f #:ignore-non-executable? ignore-non-executable?)))))
 
-(define (fix-desktop-files appsdir bindir sharerktdir [appfiles #f])
+(define (fix-desktop-files appsdir [appfiles #f])
   ;; For absolute mode, change `Exec' and `Icon' lines to
   ;; have absolute paths:
   (define (fixup-path at-dir orig-path)
@@ -297,7 +342,7 @@
                          ;; Assume anything after a space is the argument spec:
                          (let ([m (regexp-match #rx"Exec=([^ ]*)(.*)" l)])
                            (format "Exec=~a~a" 
-                                   (fixup-path (dir: 'bin) (cadr m))
+                                   (fixup-path (dir: 'guibin) (cadr m))
                                    (caddr m)))]
                         [(regexp-match? #rx"^Icon=" l)
                          (format "Icon=~a" (fixup-path (dir: 'sharerkt) (substring l 5)))]
@@ -320,7 +365,19 @@
      (lambda (o)
        (fprintf o "(\n")
        (for ([e (in-list entries)])
-         (define p (cadr e))
+         (define p (let ([p (cadr e)])
+                     ;; normalize to string form, which assumes that we get here
+                     ;; only for a Unix filesystem and with string-friendly
+                     ;; package paths
+                     (cond
+                       [(string? p) p]
+                       [(bytes? p) (path->string (bytes->path p))]
+                       [else (path->string
+                              (apply build-path
+                                     (for/list ([pe (in-list p)])
+                                       (if (bytes? pe)
+                                           (bytes->path-element pe)
+                                           pe))))])))
          (fprintf o " ")
          (define m (regexp-match #rx"^pkgs/(.*)$" p))
          (write
@@ -410,6 +467,7 @@
        (define old (or (and (file-exists? src)
                             (call-with-input-file src read))
                        (hash)))
+       (make-dir* configdir)
        (with-output-to-file src #:exists 'truncate/replace
          (lambda ()
            (define handled (make-hash))
@@ -426,6 +484,9 @@
            (out! 'share-dir (dir: 'sharerkt))
            (out! 'include-dir (dir: 'includerkt))
            (out! 'bin-dir (dir: 'bin))
+           (if (equal? (dir: 'bin) (dir: 'guibin))
+               (hash-set! handled 'gui-bin-dir #t)
+               (out! 'gui-bin-dir (dir: 'guibin)))
            (out! 'apps-dir (dir: 'apps))
            (out! 'man-dir (dir: 'man))
            (out! 'absolute-installation? #t)
@@ -448,8 +509,11 @@
     (register-change! 'md dir)))
 
 (define yes-to-all? #f)
-(define (ask-overwrite kind path)
-  (let ([rm (lambda () (rm path))])
+(define (ask-overwrite kind path #:merge? merge?)
+  (let ([rm (lambda ()
+              (when (and merge? (hash-ref wrote-paths path #f))
+                (error 'merge "merge would overwrite previous path: ~a" path))
+              (rm path))])
     (if yes-to-all?
       (rm)
       (begin (printf "Overwrite ~a \"~a\"?\n" kind path)
@@ -466,12 +530,13 @@
 
 (define ((move/copy-tree move?) src dst*
                                 #:missing [missing 'error]
-                                #:build-path? [build-path? #f])
+                                #:build-path? [build-path? #f]
+                                #:merge? [merge? #f])
   (define skip-filter (current-skip-filter))
   (define dst (if (symbol? dst*) (dir: dst*) dst*))
   (define src-exists?
     (or (directory-exists? src) (file-exists? src) (link-exists? src)))
-  (printf "~aing ~a -> ~a\n" (if move? "Mov" "Copy") src dst)
+  (printf "~aing~a ~a -> ~a\n" (if move? "Mov" "Copy") (if merge? " with merge" "") src dst)
   (cond
     [src-exists?
      (make-dir* (dirname dst))
@@ -485,20 +550,20 @@
              [dst-f? (file-exists? dst)])
          (unless (skip-filter src)
            (when (and src-d? (not lvl) (not dst-d?))
-             (when (or dst-l? dst-f?) (ask-overwrite "file or link" dst))
+             (when (or dst-l? dst-f?) (ask-overwrite "file or link" dst #:merge? merge?))
              (make-directory dst)
              (register-change! 'md dst)
              (set! dst-d? #t) (set! dst-l? #f) (set! dst-f? #f))
-           (cond [dst-l? (ask-overwrite "symlink" dst) (doit)]
-                 [dst-d? (if (and src-d? (or (not lvl) (< 0 lvl)))
+           (cond [dst-l? (ask-overwrite "symlink" dst #:merge? merge?) (doit)]
+                 [dst-d? (if (and src-d? (or (not lvl) (< 0 lvl) merge?))
                            ;; recur only when source is dir, & not too deep
                            (for-each (lambda (name)
                                        (loop (make-path src name)
                                              (make-path dst name)
                                              (and lvl (sub1 lvl))))
                                      (ls src))
-                           (begin (ask-overwrite "dir" dst) (doit)))]
-                 [dst-f? (ask-overwrite "file" dst) (doit)]
+                           (begin (ask-overwrite "dir" dst #:merge? merge?) (doit)))]
+                 [dst-f? (ask-overwrite "file" dst #:merge? merge?) (doit)]
                  [else (doit)]))))
      (when move? (remove-empty-dirs src))]
     [(eq? missing 'error)
@@ -517,6 +582,7 @@
     (error "Cannot handle distribution of shared-libraries (yet)"))
   (with-handlers ([exn? (lambda (e) (undo-changes) (raise e))])
     (define binfiles (ls* "bin"))
+    (define guibinfiles null) ; must be the same as bin or not yet relevant (e.g., build from source)
     (define libfiles (ls* "lib"))
     (if (eq? 'windows (cross-system-type))
         ;; Windows executables appear in the immediate directory:
@@ -551,8 +617,8 @@
       (error (format "leftovers in source tree: ~s" (ls))))
     ;; we need to know which files need fixing
     (unless bundle?
-      (fix-executables (dir: 'bin) (dir: 'librkt) binfiles libfiles)
-      (fix-desktop-files (dir: 'apps) (dir: 'bin) (dir: 'sharerkt) appfiles)
+      (fix-executables (dir: 'bin) (dir: 'guibin) (dir: 'librkt) binfiles guibinfiles libfiles)
+      (fix-desktop-files (dir: 'apps) appfiles)
       (write-uninstaller)
       (write-config)))
   (when move?
@@ -571,7 +637,9 @@
 
 (define (make-install-copytree)
   (define copytree (move/copy-tree #f))
+  (define (maybe-complete-path p) (and p (path->complete-path p)))
   (define origtree? (equal? "yes" (get-arg)))
+  (define prepared-dir (maybe-complete-path (maybe-get-arg))) ; "collects" root and "doc" parent
   (current-directory rktdir)
   (skip-dot-files!)
   (with-handlers ([exn? (lambda (e) (undo-changes) (raise e))])
@@ -582,8 +650,16 @@
       (copytree "share"  'sharerkt #:missing 'skip))
     (copytree "doc"      'doc      #:missing 'skip)
     (copytree "etc"      'config   #:missing 'skip)
+    (copytree "lib"      'librkt   #:missing 'skip)
     (unless (equal-path? (dir: 'pkgs) (build-path (dir: 'sharerkt) "pkgs"))
       (fix-pkg-links (dir: 'sharerkt) (dir: 'pkgs)))
+    (when prepared-dir
+      (parameterize ([current-directory (reroot-path (current-directory)
+                                                     prepared-dir)])
+        (copytree "collects" 'collects #:missing 'skip #:merge? #t)
+        (copytree (make-path "share" "pkgs") 'pkgs #:missing 'skip #:merge? #t))
+      (parameterize ([current-directory prepared-dir])
+        (copytree "doc" 'doc #:missing 'skip #:merge? #t)))
     (unless origtree? (write-config))))
 
 (define (remove-dest destdir p)
@@ -635,6 +711,7 @@
   (define libzo? (equal? "libzo" (get-arg)))
   ;; grab paths before we change them
   (define bindir      (dir: 'bin))
+  (define guibindir   (dir: 'guibin))
   (define librktdir   (dir: 'librkt))
   (define sharerktdir   (dir: 'sharerkt))
   (define configdir   (dir: 'config))
@@ -643,8 +720,9 @@
   ;; no need to send an explicit binfiles argument -- this function is used
   ;; only when DESTDIR is present, so we're installing to a directory that
   ;; has only our binaries
-  (fix-executables bindir librktdir)
-  (fix-desktop-files appsdir bindir sharerktdir)
+  (fix-executables bindir guibindir librktdir
+                   #f (if (equal? bindir guibindir) '() #f) #f)
+  (fix-desktop-files appsdir)
   (unless origtree? (write-config configdir libzo?)))
 
 (define (post-adjust)
@@ -658,6 +736,13 @@
          (or (regexp-match? #rx"^build$" (basename p))
              (chez-skip p)))))
     (do-tree "src" (build-path base-destdir "src") #:build-path? #t)
+    (let ([tag (build-path base-destdir "src" "source-dist.txt")])
+      (unless (file-exists? tag)
+        (call-with-output-file*
+         tag
+         (lambda (o)
+           (fprintf o "This is a source distribution.\n")
+           (fprintf o "(The existence of this file is a hint to build scripts.)\n")))))
     ;; Copy pb boot files, if present
     (let ([src-pb "src/ChezScheme/boot/pb"])
       (when (directory-exists? src-pb)

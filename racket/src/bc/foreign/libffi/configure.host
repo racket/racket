@@ -6,9 +6,11 @@
 # THIS TABLE IS SORTED.  KEEP IT THAT WAY.
 # Most of the time we can define all the variables all at once...
 case "${host}" in
-  aarch64*-*-cygwin* | aarch64*-*-mingw* | aarch64*-*-win* )
+  aarch64*-*-cygwin* | aarch64*-*-msys* | aarch64*-*-mingw* | aarch64*-*-win* )
 	TARGET=ARM_WIN64; TARGETDIR=aarch64
-	MSVC=1
+	if test "${ax_cv_c_compiler_vendor}" = "microsoft"; then
+	  MSVC=1
+	fi
 	;;
 
   aarch64*-*-* | arm64*-*-*)
@@ -28,9 +30,11 @@ case "${host}" in
 	SOURCES="ffi.c arcompact.S"
 	;;
 
-  arm*-*-cygwin* | arm*-*-mingw* | arm*-*-win* )
+  arm*-*-cygwin* | arm*-*-msys* | arm*-*-mingw* | arm*-*-win* )
 	TARGET=ARM_WIN32; TARGETDIR=arm
-	MSVC=1
+	if test "${ax_cv_c_compiler_vendor}" = "microsoft"; then
+	  MSVC=1
+	fi
 	;;
 
   arm*-*-*)
@@ -53,6 +57,11 @@ case "${host}" in
 	SOURCES="ffi.c sysv.S"
 	;;
 
+  csky-*-*)
+        TARGET=CSKY; TARGETDIR=csky
+        SOURCES="ffi.c sysv.S"
+        ;;
+
   frv-*-*)
 	TARGET=FRV; TARGETDIR=frv
 	SOURCES="ffi.c eabi.S"
@@ -64,6 +73,7 @@ case "${host}" in
 	;;
   hppa*64-*-hpux*)
 	TARGET=PA64_HPUX; TARGETDIR=pa
+	SOURCES="ffi64.c hpux64.S"
 	;;
   hppa*-*-hpux*)
 	TARGET=PA_HPUX; TARGETDIR=pa
@@ -74,8 +84,8 @@ case "${host}" in
 	TARGET=X86_FREEBSD; TARGETDIR=x86
 	;;
 
-  i?86-*-cygwin* | i?86-*-mingw* | i?86-*-win* | i?86-*-os2* | i?86-*-interix* \
-  | x86_64-*-cygwin* | x86_64-*-mingw* | x86_64-*-win* )
+  i?86-*-cygwin* | i?86-*-msys* | i?86-*-mingw* | i?86-*-win* | i?86-*-os2* | i?86-*-interix* \
+  | x86_64-*-cygwin* | x86_64-*-msys* | x86_64-*-mingw* | x86_64-*-win* )
 	TARGETDIR=x86
 	if test $ac_cv_sizeof_size_t = 4; then
 	  TARGET=X86_WIN32
@@ -108,22 +118,14 @@ case "${host}" in
   i?86-*-* | x86_64-*-* | amd64-*)
 	TARGETDIR=x86
 	if test $ac_cv_sizeof_size_t = 4; then
-	  case "$host" in
-	    x86_64-*x32|x86_64-x32-*)
-	      TARGET_X32=yes
-	      TARGET=X86_64
-	      ;;
-	    *)
-	      echo 'int foo (void) { return __x86_64__; }' > conftest.c
-	      if $CC $CFLAGS $CPPFLAGS -Werror -S conftest.c -o conftest.s > /dev/null 2>&1; then
-		TARGET_X32=yes
-		TARGET=X86_64
-	      else
-		TARGET=X86;
-	      fi
-	      rm -f conftest.*
-	      ;;
-          esac
+	  echo 'int foo (void) { return __x86_64__; }' > conftest.c
+	  if $CC $CFLAGS $CPPFLAGS -Werror -S conftest.c -o conftest.s > /dev/null 2>&1; then
+	    TARGET_X32=yes
+	    TARGET=X86_64
+	  else
+	    TARGET=X86;
+	  fi
+	  rm -f conftest.*
 	else
 	  TARGET=X86_64;
 	fi
@@ -132,6 +134,16 @@ case "${host}" in
   ia64*-*-*)
 	TARGET=IA64; TARGETDIR=ia64
 	SOURCES="ffi.c unix.S"
+	;;
+
+  kvx-*-*)
+	TARGET=KVX; TARGETDIR=kvx
+	SOURCES="ffi.c sysv.S"
+	;;
+
+  loongarch64-*-*)
+	TARGET=LOONGARCH64; TARGETDIR=loongarch64
+	SOURCES="ffi.c sysv.S"
 	;;
 
   m32r*-*-*)
@@ -167,7 +179,7 @@ case "${host}" in
   mips-sgi-irix5.* | mips-sgi-irix6.* | mips*-*-rtems*)
 	TARGET=MIPS; TARGETDIR=mips
 	;;
-  mips*-*linux* | mips*-*-openbsd*)
+  mips*-*linux* | mips*-*-openbsd* | mips*-*-freebsd*)
 	# Support 128-bit long double for NewABI.
 	HAVE_LONG_DOUBLE='defined(__mips64)'
 	TARGET=MIPS; TARGETDIR=mips
@@ -190,7 +202,10 @@ case "${host}" in
   powerpc-*-amigaos*)
 	TARGET=POWERPC; TARGETDIR=powerpc
 	;;
-  powerpc-*-beos*)
+  powerpc-*-eabi*)
+	TARGET=POWERPC; TARGETDIR=powerpc
+	;;
+  powerpc-*-beos* | powerpc-*-haiku*)
 	TARGET=POWERPC; TARGETDIR=powerpc
 	;;
   powerpc-*-darwin* | powerpc64-*-darwin*)
@@ -198,12 +213,18 @@ case "${host}" in
 	;;
   powerpc-*-aix* | rs6000-*-aix*)
 	TARGET=POWERPC_AIX; TARGETDIR=powerpc
+	# Create AIX-style "FAT" libraries.
+	tmake_file="t-aix"
 	;;
   powerpc-*-freebsd* | powerpc-*-openbsd* | powerpc-*-netbsd*)
 	TARGET=POWERPC_FREEBSD; TARGETDIR=powerpc
 	HAVE_LONG_DOUBLE_VARIANT=1
 	;;
-  powerpc64-*-freebsd*)
+  powerpcspe-*-freebsd*)
+	TARGET=POWERPC_FREEBSD; TARGETDIR=powerpc
+	CFLAGS="$CFLAGS -D__NO_FPRS__"
+	;;
+  powerpc64-*-freebsd* | powerpc64le-*-freebsd*)
 	TARGET=POWERPC; TARGETDIR=powerpc
 	;;
   powerpc*-*-rtems*)
@@ -244,6 +265,11 @@ case "${host}" in
 	SOURCES="ffi.c elfbsd.S"
 	;;
 
+  wasm32-*-*)
+	TARGET=wasm32; TARGETDIR=wasm32
+	SOURCES="ffi.c"
+	;;
+
   xtensa*-*)
 	TARGET=XTENSA; TARGETDIR=xtensa
 	SOURCES="ffi.c sysv.S"
@@ -253,10 +279,18 @@ esac
 # ... but some of the cases above share configury.
 case "${TARGET}" in
   ARM_WIN32)
-	SOURCES="ffi.c sysv_msvc_arm32.S"
+	if test "$MSVC" = 1; then
+		SOURCES="ffi.c sysv_msvc_arm32.S"
+	else
+		SOURCES="ffi.c sysv.S"
+	fi
 	;;
   ARM_WIN64)
-	SOURCES="ffi.c win64_armasm.S"
+	if test "$MSVC" = 1; then
+		SOURCES="ffi.c win64_armasm.S"
+	else
+		SOURCES="ffi.c sysv.S"
+	fi
 	;;
   MIPS)
 	SOURCES="ffi.c o32.S n32.S"

@@ -89,9 +89,9 @@
 #define _jit_ldi_d(f0, i0) MOVSDmr((intptr_t)(i0), _NOREG, _NOREG, _SCL1, f0)
 #ifdef JIT_X86_64
 # define jit_ldi_d(f0, i0)			\
-  (_u32P((intptr_t)(i0))			\
-   ? _jit_ldi_d(f0, i0)				\
-   : (jit_movi_l(JIT_REXTMP, (intptr_t)(i0)), jit_ldr_d(f0, JIT_REXTMP)))
+  (_u32P((intptr_t)(i0))       \
+   ? _jit_ldi_d(f0, i0)                               \
+   : (MOVQir((intptr_t)(i0), JIT_REXTMP), jit_ldr_d(f0, JIT_REXTMP)))
 #else
 # define jit_ldi_d(f0, i0) _jit_ldi_d(f0, i0)
 #endif
@@ -108,7 +108,7 @@
 # define jit_sti_d(i0, f0) \
   (_u32P((intptr_t)(i0)) \
    ? _jit_sti_d((intptr_t)(i0), f0)					\
-   : (jit_movi_l(JIT_REXTMP, (intptr_t)(i0)), jit_str_d(JIT_REXTMP, f0)))
+   : (MOVQir((intptr_t)(i0), JIT_REXTMP), jit_str_d(JIT_REXTMP, f0)))
 #else
 # define jit_sti_d(i0, f0) _jit_sti_d(i0, f0) 
 #endif
@@ -123,7 +123,7 @@
     ? XORPDrr(f0, f0) \
     : finish_movi_d(f0, i0)))
 #ifdef JIT_X86_64
-# define finish_movi_d(f0, i0) (jit_movi_l(JIT_REXTMP, _jitl.d_data.l), MOVDQXrr(JIT_REXTMP, f0))
+# define finish_movi_d(f0, i0) (MOVQir(_jitl.d_data.l, JIT_REXTMP), MOVDQXrr(JIT_REXTMP, f0))
 #else
 # define finish_movi_d(f0, i0) \
   (jit_pushi_i(_jitl.d_data.i[1]), jit_pushi_i(_jitl.d_data.i[0]), \
@@ -152,7 +152,7 @@
 
 #ifdef JIT_X86_64
 # define jit_negr_d(f0, f1)  \
-  (jit_movi_l(JIT_REXTMP, 0x8000000000000000), \
+  (MOVQir(0x8000000000000000, JIT_REXTMP),                 \
    ((f0 == f1) \
     ? (MOVDQXrr(JIT_REXTMP, JIT_FPTMP0), \
        XORPDrr(JIT_FPTMP0, f0)) \

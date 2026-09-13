@@ -296,6 +296,13 @@ Returns the superclass of @racket[cls].
 @history[#:added "6.3"]}
 
 
+@defproc[(objc-class-has-instance-method? [cls _Class] [sel _SEL]) boolean?]{
+
+Reports report @racket[cls] offers an instance method @racket[sel].
+
+@history[#:added "9.0.0.6"]}
+
+
 @defproc[(objc-dispose-class [cls _Class]) void?]{
 
 Destroys @racket[cls], which must have no existing instances or
@@ -321,6 +328,15 @@ the list in @racket[keep], which might also be included in
 retained as long as the block remains in use.
 
 @history[#:added "6.3"]}
+
+
+@defproc[(objc-block-function-pointer [block cpointer?]) fpointer?]{
+
+Extracts the function pointer of an Objective-C block. Cast this
+function pointer to a suitable function type to call it, where the
+block itself must be passed as the first argument to the function.
+
+@history[#:added "8.13.0.1"]}
 
 
 @defform[(with-blocking-tell form ...+)]{

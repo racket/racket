@@ -60,8 +60,10 @@
   (define name
     (get-ffi-obj 'name librktio (_fun arg-type ... -> ret-type))))
 
-(define-syntax-rule (define-function/errno* err-v flags ret-type name ([rktio-type rktio-name] [arg-type arg-name] ...)
-                      err-expr)
+(define-syntax-rule (define-function/errno* flags ret-type name ([rktio-type rktio-name] [arg-type arg-name] ...)
+                      err?-expr
+                      make-err-expr
+                      make-val-expr)
   (begin
     (define proc
       (get-ffi-obj 'name librktio (_fun rktio-type arg-type ... -> ret-type)))
@@ -70,21 +72,45 @@
         (start-atomic)
         (begin0
           (let ([v (proc rktio-name arg-name ...)])
-            (if (eqv? v err-v)
-                err-expr
-                v))
+            (if (err?-expr v)
+                (make-err-expr v)
+                (make-val-expr v)))
           (end-atomic))))))
 
 (define-syntax-rule (define-function/errno err-v flags ret-type name ([rktio-type rktio-name] [arg-type arg-name] ...))
-  (define-function/errno* err-v flags ret-type name ([rktio-type rktio-name] [arg-type arg-name] ...)
-    (vector (rktio_get_last_error_kind rktio-name)
-            (rktio_get_last_error rktio-name))))
+  (define-function/errno* flags ret-type name ([rktio-type rktio-name] [arg-type arg-name] ...)
+    (lambda (v) (eqv? v err-v))
+    (lambda (v)
+      (vector (rktio_get_last_error_kind rktio-name)
+              (rktio_get_last_error rktio-name)))
+    (lambda (v) v)))
 
 (define-syntax-rule (define-function/errno+step err-v flags ret-type name ([rktio-type rktio-name] [arg-type arg-name] ...))
-  (define-function/errno* err-v flags ret-type name ([rktio-type rktio-name] [arg-type arg-name] ...)
-    (vector (rktio_get_last_error_kind rktio-name)
-            (rktio_get_last_error rktio-name)
-            (rktio_get_last_error_step rktio-name))))
+  (define-function/errno* flags ret-type name ([rktio-type rktio-name] [arg-type arg-name] ...)
+    (lambda (v) (eqv? v err-v))
+    (lambda (v)
+      (vector (rktio_get_last_error_kind rktio-name)
+              (rktio_get_last_error rktio-name)
+              (rktio_get_last_error_step rktio-name)))
+    (lambda (v) v)))
+
+(define-syntax-rule (define-function/result_t success-accessor flags ret-type name ([rktio-type rktio-name] [arg-type arg-name] ...))
+  (define-function/errno* flags ret-type name ([rktio-type rktio-name] [arg-type arg-name] ...)
+    (lambda (v) (not (rktio_result_is_success v)))
+    (lambda (v) (vector (rktio_get_error_kind v)
+                        (rktio_get_error v)))
+    (lambda (v) (success-accessor v))))
+
+(define-syntax-rule (define-function/alloc_result_t success-accessor flags ret-type name ([rktio-type rktio-name] [arg-type arg-name] ...))
+  (define-function/errno* flags ret-type name ([rktio-type rktio-name] [arg-type arg-name] ...)
+    (lambda (v) (not (rktio_result_is_success v)))
+    (lambda (v) (let ([vec (vector (rktio_get_error_kind v)
+                                   (rktio_get_error v))])
+                  (rktio_free v)
+                  vec))
+    (lambda (v) (let ([val (success-accessor v)])
+                  (rktio_free v)
+                  val))))
 
 (include "../../rktio/rktio.rktl")
 
@@ -103,6 +129,15 @@
 
 (define (rktio_recv_address_ref p)
   (Rrktio_length_and_addrinfo_t-address (cast p _pointer rktio_length_and_addrinfo_t)))
+
+(define (rktio_recv_with_addr_bytes_length_ref p)
+  (Rrktio_length_and_addr_bytes_t-len (cast p _pointer rktio_length_and_addr_bytes_t)))
+
+(define (rktio_recv_with_addr_bytes_to_bytes p)
+  (define r (cast p _pointer rktio_length_and_addr_bytes_t))
+  (define bstr (make-bytes (Rrktio_length_and_addr_bytes_t-addr_len r)))
+  (memcpy bstr 0 (Rrktio_length_and_addr_bytes_t-addr_bytes r) 0 (bytes-length bstr))
+  bstr)
 
 (define (rktio_stat_to_vector p)
   (let ([p (cast p _pointer _Rrktio_stat_t-pointer)])
@@ -218,11 +253,11 @@
   (racket:void))
 
 (define (rktio_process_result_stdin_fd r)
-  (Rrktio_process_result_t-stdin_fd (cast r _pointer _Rrktio_process_result_t-pointer)))
+  (Rrktio_process_result_t-stdin_rfd (cast r _pointer _Rrktio_process_result_t-pointer)))
 (define (rktio_process_result_stdout_fd r)
-  (Rrktio_process_result_t-stdout_fd (cast r _pointer _Rrktio_process_result_t-pointer)))
+  (Rrktio_process_result_t-stdout_rfd (cast r _pointer _Rrktio_process_result_t-pointer)))
 (define (rktio_process_result_stderr_fd r)
-  (Rrktio_process_result_t-stderr_fd (cast r _pointer _Rrktio_process_result_t-pointer)))
+  (Rrktio_process_result_t-stderr_rfd (cast r _pointer _Rrktio_process_result_t-pointer)))
 (define (rktio_process_result_process r)
   (Rrktio_process_result_t-process (cast r _pointer _Rrktio_process_result_t-pointer)))
 
@@ -262,7 +297,9 @@
                                       define-struct-type
                                       define-function
                                       define-function/errno
-                                      define-function/errno+step)
+                                      define-function/errno+step
+                                      define-function/result_t
+                                      define-function/alloc_result_t)
                         [(_ accum) (hasheq . accum)]
                         [(_ accum (define-constant . _) . rest)
                          (extract-functions accum . rest)]
@@ -275,6 +312,10 @@
                         [(_ accum (define-function/errno _ _ _ id . _) . rest)
                          (extract-functions ('id id . accum) . rest)]
                         [(_ accum (define-function/errno+step _ _ _ id . _) . rest)
+                         (extract-functions ('id id . accum) . rest)]
+                        [(_ accum (define-function/result_t _ _ _ id . _) . rest)
+                         (extract-functions ('id id . accum) . rest)]
+                        [(_ accum (define-function/alloc_result_t _ _ _ id . _) . rest)
                          (extract-functions ('id id . accum) . rest)]))
                     (define-syntax-rule (begin form ...)
                       (extract-functions [#;(begin)
@@ -284,6 +325,8 @@
                                           'rktio_is_timestamp rktio_is_timestamp
                                           'rktio_recv_length_ref rktio_recv_length_ref
                                           'rktio_recv_address_ref rktio_recv_address_ref
+                                          'rktio_recv_with_addr_bytes_length_ref rktio_recv_with_addr_bytes_length_ref
+                                          'rktio_recv_with_addr_bytes_to_bytes rktio_recv_with_addr_bytes_to_bytes
                                           'rktio_stat_to_vector rktio_stat_to_vector
                                           'rktio_identity_to_vector rktio_identity_to_vector
                                           'rktio_seconds_to_date* rktio_seconds_to_date*

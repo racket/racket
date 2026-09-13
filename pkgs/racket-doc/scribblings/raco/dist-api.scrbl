@@ -18,7 +18,7 @@ perform the same work as @exec{raco distribute}.}
                                 [exec-files (listof path-string?)]
                                 [#:executables? executables? any/c #t]
                                 [#:relative-base relative-base (or/c path-string? #f) #f]
-                                [#:collects-path path (or/c false/c (and/c path-string? relative-path?)) #f]
+                                [#:collects-path path (or/c #f (and/c path-string? relative-path?)) #f]
                                 [#:copy-collects dirs (listof path-string?) null])
          void?]{
 

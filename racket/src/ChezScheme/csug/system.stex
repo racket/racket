@@ -249,6 +249,8 @@ an \emph{exception state} comprising the current stack of handlers established
 by \scheme{with-exception-handler} and \scheme{guard}.
 When called with a single argument, which must be an exception state,
 \scheme{current-exception-state} sets the exception state.
+When a new thread is created, it starts with a default exception state
+equivalent to \scheme{(create-exception-state)}.
 
 %----------------------------------------------------------------------------
 \entryheader
@@ -545,6 +547,8 @@ After a signal handler for a given signal has been registered, receipt
 of the specified signal results in a call to the handler.
 The handler is passed the signal number, allowing the same handler to
 be used for different signals while differentiating among them.
+In a threaded version of the system, signals are always delivered to
+the main thread.
 
 Signals handled in this fashion are treated like keyboard interrupts in
 that the handler is not called immediately when the signal is delivered
@@ -2417,7 +2421,7 @@ to select a distinct symbol to hold the value of the \scheme{a-var}
 defininion, since \scheme{a-var} itself should not be defined directly
 at the top level. Finally, the \scheme{current-generate-id} procedure
 is called on \scheme{a-var} to select a name for the macro-introduced
-definiton of \scheme{a-var} in the expansion of \scheme{(def)}---which
+definition of \scheme{a-var} in the expansion of \scheme{(def)}---which
 turns out to be completely inaccessible since no reference is
 introduced by the same expansion step.
 
@@ -2720,10 +2724,13 @@ It is used to tell the compiler how important the preservation of
 debugging information is, with 0 being least important and 3 being
 most important.
 The default value is 1.
-As of Version~9.0, it is used solely to determine whether an
-error-causing call encountered in nontail position is treated as
-if it were in tail position (thus causing the caller's frame not
-to appear in a stack backtrace); this occurs at debug levels below~2.
+
+As of Version~9.0, the value of \scheme{debug-level} is used by the
+system only to discourage optimizations that affect the continuation
+as revealed by the inspector. The reduced optimization is intended to
+produce more informative stack backtraces at the point when an
+exception is raised, and the reduction applies when the debug level is
+2 or 3.
 
 %----------------------------------------------------------------------------
 \entryheader
@@ -2958,7 +2965,7 @@ For example, the programmer can define \scheme{case} as follows:
          ...))]))
 \endschemedisplay
 
-and count on the introduce \scheme{let} expression to be eliminated
+and count on the introduced \scheme{let} expression to be eliminated
 if \scheme{e} turns out to be an unassigned variable, and count on
 the entire \scheme{case} expression to be folded if \scheme{e} turns
 out to be a constant.
@@ -3233,7 +3240,7 @@ the parameter \scheme{generate-profile-forms} can be set to \scheme{#f}
 to inhibit the expander's implicit generation of \scheme{profile} forms
 for all annotated source expressions.
 It is also possible to obtain finer control over implicit generation of
-\scheme{profile} forms by marking which annotations that should and
+\scheme{profile} forms by marking which annotations should and
 should not be used for profiling (Section~\ref{SECTSYNTAXANNOTATIONS}).
 
 With block profiling enabled, the compiler similarly instruments the
@@ -5207,7 +5214,7 @@ The procedure \scheme{object-backreferences} returns a list of
 backreference lists. Each backreference list is a list of pairs, where
 the \scheme{car} of the pair is a referenced object, and the
 \scheme{cdr} of the pair is either \scheme{#f} or a value that caused
-the \scheme{car}'s value or be retained during collection. The
+the \scheme{car}'s value to be retained during collection. The
 \scheme{cdr} of a backreference pair is \scheme{#f} if the object in
 the \scheme{car} is retained by a root reference within the system's
 implementation or static generation. By locating the \scheme{cdr} of
@@ -5299,11 +5306,16 @@ This parameter is initially false.
 %----------------------------------------------------------------------------
 \entryheader
 \formdef{make-cost-center}{\categoryprocedure}{(make-cost-center)}
+\formdef{make-cost-center}{\categoryprocedure}{(make-cost-center \var{name})}
 \returns a new cost center
 \listlibraries
 \endentryheader
 
 The recorded costs of the new cost center are initialized to zero.
+
+\var{name}, if supplied, must be a symbol which identifies the cost center, or
+\scheme{#f} for no name. The name is printed every time the cost center is
+printed.
 
 %----------------------------------------------------------------------------
 \entryheader
@@ -5360,12 +5372,80 @@ The cpu time is returned as a time object with time-type \scheme{time-duration}.
 
 %----------------------------------------------------------------------------
 \entryheader
+\formdef{cost-center-name}{\categoryprocedure}{(cost-center-name \var{cost-center})}
+\returns the name associated with \var{cost-center}, if any; otherwise \scheme{#f}
+\listlibraries
+\endentryheader
+
+%----------------------------------------------------------------------------
+\entryheader
 \formdef{reset-cost-center!}{\categoryprocedure}{(reset-cost-center! \var{cost-center})}
 \returns unspecified
 \listlibraries
 \endentryheader
 
 This procedure resets the costs recorded by \var{cost-center} to zero.
+
+
+\section{Black-Box Procedure\label{SECTMISCBLACKBOX}}
+
+\noskipentryheader
+\formdef{black-box}{\categoryprocedure}{(black-box \var{obj})}
+\returns \var{obj}
+\listlibraries
+\endnoskipentryheader
+
+\noindent
+The \scheme{black-box} procedure simply returns its argument, but
+optimization passes make no assumptions about how \scheme{black-box}
+uses its argument, whether \scheme{black-box} has side effects,
+or what \scheme{black-box} returns beyond the fact that it is a
+single value.
+
+The intended use of \scheme{black-box} is for benchmarking and testing
+tasks that need to simulate an arbitrary consumption context for a
+computation, but without otherwise adding overhead to the computation
+by adding a non-inlined function call or other obfuscating work.
+
+Examples:
+
+\schemedisplay
+(time
+ (let ([to-power 100])
+   (let loop ([i 1000])
+     (unless (zero? i)
+       ; call to `expt` is likely optimized away entirely, since there's
+       ; no effect and the result is unused:
+       (expt 2 to-power)
+       (loop (sub1 i))))))
+
+(time
+ (let ([to-power 100])
+   (let loop ([i 1000])
+     (unless (zero? i)
+       ; likely optimized to just returning a folded constant, instead of
+       ; calling `expt` each iteration:
+       (black-box (expt 2 to-power))
+       (loop (sub1 i))))))
+
+(time
+ (let ([to-power (black-box 100)])
+   (let loop ([i 1000])
+     (unless (zero? i)
+       ; in safe mode, likely calls `expt`, because `to-power` is not known
+       ; to be a number, but likely optimized away with `(optimize-level 3)`:
+       (expt 2 to-power)
+       (loop (sub1 i))))))
+
+(time
+ (let ([to-power (black-box 100)])
+   (let loop ([i 1000])
+     (unless (zero? i)
+       ; arithmetic really performed every iteration, since `to-power` value
+       ; is assumed unknown, and `expt` result is assumed to be used
+       (black-box (expt 2 to-power))
+       (loop (sub1 i))))))
+\endschemedisplay
 
 
 \section{Parameters\label{SECTPARAMETERS}}

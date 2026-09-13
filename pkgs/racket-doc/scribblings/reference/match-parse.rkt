@@ -1,5 +1,6 @@
 #lang racket/base
-(require scribble/scheme
+(require racket/match
+         scribble/scheme
          scribble/basic
          scribble/struct
          scribble/manual
@@ -29,10 +30,16 @@
     => (fixup s (fixup-sexp 'qp))]
    [(regexp-match-positions #rx"lvp" s)
     => (fixup s (fixup-sexp 'lvp))]
+   [(regexp-match-positions #rx"kv-opt" s)
+    => (fixup s (fixup-sexp 'kv-opt))]
+   [(regexp-match-positions #rx"ht-opt" s)
+    => (fixup s (fixup-sexp 'ht-opt))]
    [(regexp-match-positions #rx"struct-id" s)
     => (fixup s (fixup-sexp 'struct-id))]
    [(regexp-match-positions #rx"pred-expr" s)
     => (fixup s (fixup-sexp 'pred-expr))]
+   [(regexp-match-positions #rx"def-expr" s)
+    => (fixup s (fixup-sexp 'def-expr))]
    [(regexp-match-positions #rx"expr" s)
     => (fixup s (fixup-sexp 'expr))]
    [(regexp-match-positions #rx"[*][*][*]" s)
@@ -46,44 +53,47 @@
    [else s]))
 
 (define (fixup-rhs s)
-  (let ([r (read (open-input-string s))])
-    (to-element (fixup-sexp r))))
+  (to-element (fixup-sexp (read-syntax #f (open-input-string s)))))
 
 (define (fixup-sexp s)
-  (cond
-   [(pair? s)
-    (cons (fixup-sexp (car s))
-          (fixup-sexp (cdr s)))]
-   [(vector? s)
-    (list->vector (map fixup-sexp (vector->list s)))]
-   [(box? s)
-    (box (fixup-sexp (unbox s)))]
-   [(struct? s)
-    (apply make-prefab-struct
-           (prefab-struct-key s)
-           (cdr (map fixup-sexp (vector->list (struct->vector s)))))]
-   [(symbol? s)
-    (case s
-      [(lvp pat qp literal ooo datum struct-id
-            string bytes number character expr id
-            rx-expr px-expr pred-expr
-            derived-pattern)
-       (match-nonterm (symbol->string s))]
-      [(QUOTE VAR LIST LIST-REST LIST* LIST-NO-ORDER VECTOR HASH-TABLE BOX STRUCT
-              REGEXP PREGEXP AND OR NOT APP ? QUASIQUOTE CONS MCONS)
-       (make-element symbol-color (list (string-downcase (symbol->string s))))]
-      [(***)
-       (make-element symbol-color '("..."))]
-      [(___) (make-element symbol-color '("___"))]
-      [(__K)
-       (make-element #f (list (make-element symbol-color '("__"))
-                              (match-nonterm "k")))]
-      [(..K)
-       (make-element #f (list (make-element symbol-color '(".."))
-                              (match-nonterm "k")))]
-      [else
-       s])]
-   [else s]))
+  (match (cond
+           [(syntax? s) (syntax-e s)]
+           [else s])
+    [(list xs ...)
+     (cond
+       [(and (syntax? s) (syntax-property s 'paren-shape))
+        (shaped-parens (map fixup-sexp xs) (syntax-property s 'paren-shape))]
+       [else (map fixup-sexp xs)])]
+    [(cons a b) (cons (fixup-sexp a) (fixup-sexp b))]
+    [(vector xs ...) (list->vector (map fixup-sexp xs))]
+    [(box s)
+     (box (fixup-sexp s))]
+    [(? struct? s)
+     (apply make-prefab-struct
+            (prefab-struct-key s)
+            (cdr (map fixup-sexp (vector->list (struct->vector s)))))]
+    [(? symbol? s)
+     (case s
+       [(lvp pat qp ht-opt kv-opt literal ooo datum struct-id
+             string bytes number character expr id
+             rx-expr px-expr pred-expr def-expr
+             derived-pattern)
+        (match-nonterm (symbol->string s))]
+       [(QUOTE VAR LIST LIST-REST LIST* LIST-NO-ORDER VECTOR HASH-TABLE BOX STRUCT
+               REGEXP PREGEXP AND OR NOT APP ? QUASIQUOTE CONS MCONS HASH HASH*)
+        (make-element symbol-color (list (string-downcase (symbol->string s))))]
+       [(***)
+        (make-element symbol-color '("..."))]
+       [(___) (make-element symbol-color '("___"))]
+       [(__K)
+        (make-element #f (list (make-element symbol-color '("__"))
+                               (match-nonterm "k")))]
+       [(..K)
+        (make-element #f (list (make-element symbol-color '(".."))
+                               (match-nonterm "k")))]
+       [else s])]
+    [(? keyword? s) (make-element paren-color (list (format "~a" s)))]
+    [_ s]))
 
 (define re:start-prod #rx"^([^ ]*)( +)::= (.*[^ ])( +)[@](.*)$")
 (define re:or-prod #rx"^( +) [|]  (.*[^ ])( +)[@](.*)$")

@@ -100,7 +100,9 @@
     (define context-triple
       (intern-context-triple (intern-scopes (syntax-scopes s) state)
                              (intern-shifted-multi-scopes (syntax-shifted-multi-scopes s) state)
-                             (intern-mpi-shifts (syntax-mpi-shifts s) state)
+                             (if (serialize-state-drop-shifts? state)
+                                 null
+                                 (intern-mpi-shifts (syntax-mpi-shifts s) state))
                              state))
     (define stx-state (get-syntax-context state))
     (cond

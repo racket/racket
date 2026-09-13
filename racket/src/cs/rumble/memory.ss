@@ -44,6 +44,7 @@
 (define gc-counter 1)
 (define log-collect-generation-radix 2)
 (define collect-generation-radix-mask (sub1 (bitwise-arithmetic-shift 1 log-collect-generation-radix)))
+(define peak-mem (bytes-allocated))
 
 ;; Some allocation patterns create a lot of overhead (i.e., wasted
 ;; pages in the allocator), so we need to detect that and force a GC.
@@ -71,6 +72,7 @@
         [pre-allocated+overhead (current-memory-bytes)]
         [pre-time (current-inexact-milliseconds)]
         [pre-cpu-time (cpu-time)])
+    (set! peak-mem (max peak-mem pre-allocated))
     (if (> (add1 this-counter) (bitwise-arithmetic-shift-left 1 (* log-collect-generation-radix (sub1 (collect-maximum-generation)))))
         (set! gc-counter 1)
         (set! gc-counter (add1 this-counter)))
@@ -208,6 +210,7 @@
      [(not mode) (bytes-allocated)]
      [(eq? mode 'cumulative) (with-interrupts-disabled
                               (+ (bytes-deallocated) (bytes-allocated)))]
+     [(eq? mode 'peak) peak-mem]
      ;; must be a custodian; hook is reposnsible for complaining if not
      [else (custodian-memory-use mode (bytes-allocated))])]))
 
@@ -223,8 +226,11 @@
       (unless (fixnum? n)
         (raise (|#%app|
                 exn:fail:out-of-memory
-                (#%format "out of memory making ~a\n  length: ~a"
-                          what len)
+                (error-message->adjusted-string
+                 #f primitive-realm
+                 (#%format "out of memory making ~a\n  length: ~a"
+                           what len)
+                 primitive-realm)
                 (current-continuation-marks))))
       (immediate-allocation-check n)
       ;; Watch out for radiply growing memory use that isn't captured
@@ -589,9 +595,12 @@
 ;; accommodates a limitation of the traditional Racket implementation
 (define (run-one-collect-callback v save sel)
   (let ([protocol (#%vector-ref v 0)]
-        [proc (cpointer-address (#%vector-ref v 1))]
+        [proc (ftype-pointer-address (cptr->fptr 'collect-callback (#%vector-ref v 1)))]
         [ptr (lambda (i)
-               (cpointer*-address (#%vector-ref v (fx+ 2 i))))]
+               (let ([n (#%vector-ref v (fx+ 2 i))])
+                 (if (integer? n)
+                     n
+                     (ftype-pointer-address (cptr->fptr 'collect-callback n)))))]
         [val (lambda (i)
                (#%vector-ref v (fx+ 2 i)))])
     (case protocol

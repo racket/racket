@@ -19,6 +19,20 @@
 ; THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #lang racket/base
+
+;; Note that this module only semi-private, in the sense that other packages
+;; which are in the main distribution but in separate repositories require
+;; it. This means any backwards-incompatible API changes need coordination.
+;; The following packages are known to use this module:
+;;
+;; - srfi-lib
+;;
+;; Please try not to add more packages which require this file. Instead,
+;; consider whether a public API is appropriate, or if a currently-private
+;; API should be made public. If not, then make a new file
+;; "racket/private/for-yourpackage.rkt" which exports the necessary
+;; definitions. See "racket/private/for-compatibility-lib.rkt" for an example.
+
 (require (prefix-in for: racket/private/for))
 
 (provide stream-null stream-cons stream? stream-null? stream-pair?
@@ -96,8 +110,9 @@
                   who
                   "delayed expression produced a non-stream"
                   "result" v)
-                 (raise-arguments-error
+                 (raise-arguments-error*
                   'stream-cons
+                  'racket/primitive
                   "rest expression produced a non-stream"
                   "rest result" v))])]))]
     [(for:stream? s) s]

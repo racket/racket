@@ -13,7 +13,7 @@
 ;;; See the License for the specific language governing permissions and
 ;;; limitations under the License.
 
-(if (or (windows?) (equal? (getenv "USER") "root") (embedded?))
+(if (or (windows?) (haiku?) (equal? (getenv "USER") "root") (embedded?))
     (mat unix-file-io
       (error? (errorf 'open-output-file "failed for testfile.ss: file exists"))
       (error? (errorf 'open-output-file "failed for testfile.ss: file exists"))
@@ -177,7 +177,7 @@
     )
 )
 
-(if (or (windows?) (equal? (getenv "USER") "root") (embedded?))
+(if (or (windows?) (haiku?) (equal? (getenv "USER") "root") (embedded?))
     (mat file-operations
       (error? (errorf 'delete-directory "failed for ~a: ~a" "testlink1" "not a directory"))
       (error? (errorf 'delete-directory "failed for ~a: ~a" "testlink2" "not a directory"))
@@ -704,3 +704,32 @@
             (close-port from-stderr))))
     )
 )
+
+(unless (or (windows?)
+            (not (threaded?)))
+  (mat thread-system
+
+    ;; make sure `system` works when interrupts are disabled
+    (with-interrupts-disabled
+      (eqv? 0 (system "echo hi")))
+
+    ;; check that when a thread is deactivated during `system`,
+    ;; the command that it's running isn't GCed
+    (let* ([count 50]
+           [ths
+            (let loop ([i count])
+              (cond
+                [(zero? i) '()]
+                [else
+                 (cons
+                  (fork-thread
+                   (lambda ()
+                     (let loop ([i 10])
+                       (unless (= i 0)
+                         (unless (zero?
+                                  (system (format "echo ~s > /dev/null"
+                                                  (make-string (random 4096) #\x))))
+                           (error 'system "FAILED"))
+                         (loop (sub1 i))))))
+                  (loop (sub1 i)))]))])
+      (= count (length (map thread-join ths))))))

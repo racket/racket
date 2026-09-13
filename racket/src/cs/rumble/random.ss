@@ -296,12 +296,48 @@
 
 |#
 
+(define-record-type (pseudo-random-generator create-pseudo-random-generator pseudo-random-generator?)
+  (fields (immutable prg)
+          (mutable lock)))
+
+(define (make-pseudo-random-generator)
+  (create-pseudo-random-generator (#%make-pseudo-random-generator) #f))
+
 (define/who current-pseudo-random-generator
   (make-parameter (make-pseudo-random-generator)
                   (lambda (v)
                     (check who pseudo-random-generator? v)
                     v)
                   'current-pseudo-random-generator))
+
+(define-syntax-rule (with-prg-lock rgn e)
+  (begin
+    (start-engine-uninterrupted 'lock-release)
+    (let loop ()
+      (cond
+        [(#%$record-cas! rgn 1 #f #t)
+         (memory-order-acquire)
+         (let ([v e])
+           (memory-order-release)
+           (let loop ()
+             (unless (#%$record-cas! rgn 1 #t #f)
+               (loop)))
+           (end-engine-uninterrupted 'lock-release)
+           v)]
+        [else
+         ;; we expect collisions to be rare and `e` to be short
+         (loop)]))))
+
+(define/who (pseudo-random-generator->vector prg)
+  (check who pseudo-random-generator? prg)
+  (with-prg-lock prg (#%pseudo-random-generator->vector (pseudo-random-generator-prg prg))))
+
+(define pseudo-random-generator-next!
+  (case-lambda
+   [(prg)
+    (with-prg-lock prg (#%pseudo-random-generator-next! (pseudo-random-generator-prg prg)))]
+   [(prg n)
+    (with-prg-lock prg (#%pseudo-random-generator-next! (pseudo-random-generator-prg prg) n))]))
 
 (define/who random
   (case-lambda
@@ -332,7 +368,8 @@
                     (<= k (sub1 (#%expt 2 31))))
          :contract "(integer-in 0 (sub1 (expt 2 31)))"
          k)
-  (pseudo-random-generator-seed! (current-pseudo-random-generator) k))
+  (let ([r (current-pseudo-random-generator)])
+    (with-prg-lock r (pseudo-random-generator-seed! (pseudo-random-generator-prg r) k))))
 
 (define (pseudo-random-generator-vector? v)
   (let ([in-range?
@@ -355,12 +392,12 @@
          (or (nonzero? 3) (nonzero? 4) (nonzero? 5)))))
 
 (define (vector->pseudo-random-generator v)
-  (#%vector->pseudo-random-generator (unwrap-pseudo-random-generator-vector v)))
+  (create-pseudo-random-generator (#%vector->pseudo-random-generator (unwrap-pseudo-random-generator-vector v)) #f))
 
-(define (vector->pseudo-random-generator! s v)
-  (#%vector->pseudo-random-generator! s (if (pseudo-random-generator? s)
-                                            (unwrap-pseudo-random-generator-vector v)
-                                            v)))
+(define/who (vector->pseudo-random-generator! s v)
+  (check who pseudo-random-generator? :contract "pseudo-random-generator?" s)
+  (let ([v (unwrap-pseudo-random-generator-vector v)])
+    (with-prg-lock s (#%vector->pseudo-random-generator! (pseudo-random-generator-prg s) v))))
 
 ;; convert a vector for chaperoned form:
 (define (unwrap-pseudo-random-generator-vector v)

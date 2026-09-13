@@ -160,11 +160,19 @@
          unsafe-end-breakable-atomic
          unsafe-in-atomic?
          unsafe-set-on-atomic-timeout!
+         unsafe-start-uninterruptible
+         unsafe-end-uninterruptible
+
+         unsafe-make-uninterruptible-lock
+         unsafe-uninterruptible-lock-acquire
+         unsafe-uninterruptible-lock-release
 
          unsafe-thread-at-root
          unsafe-make-custodian-at-root
          unsafe-custodian-register
          unsafe-custodian-unregister
+         unsafe-uninterruptible-custodian-lock-acquire
+         unsafe-uninterruptible-custodian-lock-release
 
          dynamic-place  ; not the one from `racket/place`
          place?
@@ -193,7 +201,6 @@
          would-be-future
          current-future
          future-block
-         future-sync
          current-future-prompt
          reset-future-logs-for-tracing!
          mark-future-trace-end!
@@ -206,6 +213,11 @@
          fsemaphore-wait
          fsemaphore-try-wait?
          fsemaphore-count
+
+         thread/parallel
+         make-parallel-thread-pool
+         parallel-thread-pool-close
+         parallel-thread-pool?
 
          unsafe-os-thread-enabled?
          unsafe-call-in-os-thread

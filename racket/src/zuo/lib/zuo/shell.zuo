@@ -53,7 +53,7 @@
        (loop (cdr args) (cons (car args) accum))])))
 
 (define (build-shell . strs)
-  (do-build-shell 'build-sehll strs))
+  (do-build-shell 'build-shell strs))
 
 (define (do-build-shell who . strs)
   (let ([strs (let loop ([strs strs])

@@ -60,7 +60,7 @@
    ;; Test the current-proxy-servers parameter can be set
    (parameterize ([current-proxy-servers '(("http" "proxy.com" 3128))])
      (current-proxy-servers))
-   => '(("http" "proxy.com" 3128))
+   => '(("http" "proxy.com" 3128 #f))
 
    ;; we have at least http, https, git
    (member "http" proxiable-url-schemes)
@@ -81,66 +81,66 @@
 
    ;; ------------------------------------------------------------------
    ;; HTTP: Test Proxy Servers (loading from environment and proxy-server-for)
-   
+
    ;; proxy servers set in current-proxy-servers are not overridden by environment
    (test-proxy-server-for #:current-proxy-servers '(("http" "proxy.com" 3128))
                           #:plt-http-proxy "http://proxy.net:1234"
                           #:http-proxy "http://proxy.net:1234"
                           "http" "test.racket-lang.org")
-   => '("http" "proxy.com" 3128)
+   => '("http" "proxy.com" 3128 #f)
 
    ;; plt_http_proxy is is prioritised over http_proxy
    (test-proxy-server-for #:plt-http-proxy "http://proxy.net:3128"
                           #:http-proxy "http://proxy.net:3228"
                           "http" "test.racket-lang.org")
-   => '("http" "proxy.net" 3128)
+   => '("http" "proxy.net" 3128 #f)
 
    ;; otherwise fall back to http_proxy
    (test-proxy-server-for #:http-proxy "http://proxy.net:3228"
                           "http" "test.racket-lang.org")
-   => '("http" "proxy.net" 3228)
+   => '("http" "proxy.net" 3228 #f)
 
    ;; ------------------------------------------------------------------
    ;; HTTPS: Test Proxy Servers (loading from environment and proxy-server-for)
-   
+
    ;; proxy servers set in current-proxy-servers are not overridden by environment
    (test-proxy-server-for #:current-proxy-servers '(("https" "proxy.com" 3128))
                           #:plt-https-proxy "http://proxy.net:1234"
                           #:https-proxy "http://proxy.net:1234"
                           "https" "test.racket-lang.org")
-   => '("https" "proxy.com" 3128)
+   => '("https" "proxy.com" 3128 #f)
 
    ;; plt_https_proxy is is prioritised over https_proxy
    (test-proxy-server-for #:plt-https-proxy "http://proxy.net:3128"
                           #:https-proxy "http://proxy.net:3228"
                           "https" "test.racket-lang.org")
-   => '("https" "proxy.net" 3128)
+   => '("https" "proxy.net" 3128 #f)
 
    ;; otherwise fall back to https_proxy
    (test-proxy-server-for #:https-proxy "http://proxy.net:3228"
                           "https" "test.racket-lang.org")
-   => '("https" "proxy.net" 3228)
+   => '("https" "proxy.net" 3228 #f)
 
    ;; ------------------------------------------------------------------
    ;; GIT: Test Proxy Servers (loading from environment and proxy-server-for)
-   
+
    ;; proxy servers set in current-proxy-servers are not overridden by environment
    (test-proxy-server-for #:current-proxy-servers '(("git" "proxy.com" 3128))
                           #:plt-git-proxy "http://proxy.net:1234"
                           #:git-proxy "http://proxy.net:1234"
                           "git" "test.racket-lang.org")
-   => '("git" "proxy.com" 3128)
+   => '("git" "proxy.com" 3128 #f)
 
    ;; plt_git_proxy is is prioritised over git_proxy
    (test-proxy-server-for #:plt-git-proxy "http://proxy.net:3128"
                           #:git-proxy "http://proxy.net:3228"
                           "git" "test.racket-lang.org")
-   => '("git" "proxy.net" 3128)
+   => '("git" "proxy.net" 3128 #f)
 
    ;; otherwise fall back to git_proxy
    (test-proxy-server-for #:git-proxy "http://proxy.net:3228"
                           "git" "test.racket-lang.org")
-   => '("git" "proxy.net" 3228)
+   => '("git" "proxy.net" 3228 #f)
 
    ;; ---------------------------------------------------------------------
    ;; Test NO Proxy Servers (loading from environment and proxy-server-for)
@@ -150,18 +150,18 @@
    ;; prove that we need a proxy if not otherwise told...
    (test-proxy-server-for #:current-proxy-servers '(("http" "proxy.com" 3128))
                           "http" "test.racket-lang.org")
-   => '("http" "proxy.com" 3128)
-   
+   => '("http" "proxy.com" 3128 #f)
+
    (test-proxy-server-for #:current-proxy-servers '(("http" "proxy.com" 3128))
                           #:current-no-proxy-servers '("test.racket-lang.org")
                           "http" "test.racket-lang.org")
    => #f
-   
+
    (test-proxy-server-for #:current-proxy-servers '(("http" "proxy.com" 3128))
                           #:plt-no-proxy "test.racket-lang.org"
                           "http" "test.racket-lang.org")
    => #f
-   
+
    (test-proxy-server-for #:current-proxy-servers '(("http" "proxy.com" 3128))
                           #:no-proxy "test.racket-lang.org"
                           "http" "test.racket-lang.org")
@@ -173,12 +173,12 @@
                           #:current-no-proxy-servers '(#rx".racket-lang.org")
                           "http" "test.racket-lang.org")
    => #f
-   
+
    (test-proxy-server-for #:current-proxy-servers '(("http" "proxy.com" 3128))
                           #:plt-no-proxy ".racket-lang.org"
                           "http" "test.racket-lang.org")
    => #f
-   
+
    (test-proxy-server-for #:current-proxy-servers '(("http" "proxy.com" 3128))
                           #:no-proxy ".racket-lang.org"
                           "http" "test.racket-lang.org")
@@ -188,12 +188,12 @@
    (test-proxy-server-for #:current-proxy-servers '(("http" "proxy.com" 3128))
                           #:plt-no-proxy ".racket-lang.org"
                           "http" "test.bracket-lang.org")
-   => '("http" "proxy.com" 3128)
-   
+   => '("http" "proxy.com" 3128 #f)
+
    (test-proxy-server-for #:current-proxy-servers '(("http" "proxy.com" 3128))
                           #:no-proxy ".racket-lang.org"
                           "http" "test.bracket-lang.org")
-   => '("http" "proxy.com" 3128)
+   => '("http" "proxy.com" 3128 #f)
 
    ;; Look at this... the no-proxes has a regexp which starts with a '.', a regexp
    ;; any char... that will match the 'b' in bracket
@@ -201,6 +201,28 @@
                              #:current-no-proxy-servers '(#rx".racket-lang.org")
                              "http" "test.bracket-lang.org")
    => #f
+
+   ;; ------------------------------------------------------------------
+   ;; Test proxy authentication credentials
+
+   ;; current-proxy-servers accepts 4-element lists with credentials
+   (parameterize ([current-proxy-servers '(("https" "proxy.com" 3128 "user:pass"))])
+     (current-proxy-servers))
+   => '(("https" "proxy.com" 3128 "user:pass"))
+
+   ;; credentials from environment variable URLs are extracted
+   (test-proxy-server-for #:https-proxy "http://user:pass@proxy.net:3128"
+                          "https")
+   => '("https" "proxy.net" 3128 "user:pass")
+
+   ;; credentials work for other schemes too
+   (test-proxy-server-for #:http-proxy "http://httpuser:httppass@proxy.net:8080"
+                          "http")
+   => '("http" "proxy.net" 8080 "httpuser:httppass")
+
+   (test-proxy-server-for #:git-proxy "http://gituser:gitpass@proxy.net:9418"
+                          "git")
+   => '("git" "proxy.net" 9418 "gituser:gitpass")
   )
 
   (define-values (ss:port ss:server-thread ss:shutdown-server)
@@ -209,7 +231,7 @@
   (define-values (ps:port ps:server-thread ps:shutdown-server)
     (ps:server))
 
-  (test (parameterize ([current-proxy-servers `(("https" "localhost" ,ps:port))])
+  (test (parameterize ([current-proxy-servers `(("https" "localhost" ,ps:port #f))])
           (port->string
            (get-pure-port
             (string->url

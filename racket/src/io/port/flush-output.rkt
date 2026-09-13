@@ -5,6 +5,7 @@
          "parameter.rkt"
          "port.rkt"
          "output-port.rkt"
+         "lock.rkt"
          "pipe.rkt"
          "check.rkt"
          "fd-port.rkt")
@@ -20,10 +21,10 @@
     (cond
       [(procedure? write-out)
        (let loop ()
-         (start-atomic)
+         (port-lock out)
          (check-not-closed who out)
-         (define r (write-out out #"" 0 0 #f #f #f))
-         (end-atomic)
+         (define r (write-out out #"" 0 0 #f #f #f #f))
+         (port-unlock out)
          (let r-loop ([r r])
            (cond
              [(eq? r 0) (void)]
@@ -31,7 +32,7 @@
              [(evt? r) (r-loop (sync r))]
              [else (error 'flush-output "weird result")])))]
       [else
-       (atomically (check-not-closed who out))
+       (with-lock out (check-not-closed who out))
        (wo-loop write-out)])))
 
 ;; ----------------------------------------

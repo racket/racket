@@ -15,6 +15,7 @@ READ_ONLY Scheme_Object *scheme_boolean_p_proc;
 READ_ONLY Scheme_Object *scheme_eq_proc;
 READ_ONLY Scheme_Object *scheme_eqv_proc;
 READ_ONLY Scheme_Object *scheme_equal_proc;
+READ_ONLY Scheme_Object *scheme_equal_always_proc;
 
 /* locals */
 static Scheme_Object *not_prim (int argc, Scheme_Object *argv[]);
@@ -68,6 +69,7 @@ void scheme_init_bool (Scheme_Startup_Env *env)
   REGISTER_SO(scheme_eq_proc);
   REGISTER_SO(scheme_eqv_proc);
   REGISTER_SO(scheme_equal_proc);
+  REGISTER_SO(scheme_equal_always_proc);
 
   p = scheme_make_folding_prim(not_prim, "not", 1, 1, 1);
   scheme_not_proc = p;
@@ -114,9 +116,10 @@ void scheme_init_bool (Scheme_Startup_Env *env)
                              scheme_make_prim_w_arity(equalish_prim, "equal?/recur", 3, 3),
                              env);
 
-  scheme_addto_prim_instance("equal-always?",
-                             scheme_make_prim_w_arity(equal_always_prim, "equal-always?", 2, 2),
-                             env);
+  p = scheme_make_prim_w_arity(equal_always_prim, "equal-always?", 2, 2);
+  scheme_equal_always_proc = p;
+  scheme_addto_prim_instance("equal-always?", p, env);
+
   scheme_addto_prim_instance("equal-always?/recur",
                              scheme_make_prim_w_arity(equal_always_recur_prim, "equal-always?/recur", 3, 3),
                              env);
@@ -433,7 +436,7 @@ XFORM_NONGCING int is_fast_equal (Scheme_Object *obj1, Scheme_Object *obj2, int 
  case scheme_windows_path_type:
    {
      intptr_t l1, l2;
-     if (for_chaperone_alw) return -1;
+     if (for_chaperone_alw && (t1 == scheme_byte_string_type)) return -1;
      l1 = SCHEME_BYTE_STRTAG_VAL(obj1);
      l2 = SCHEME_BYTE_STRTAG_VAL(obj2);
      return ((l1 == l2)
@@ -721,7 +724,7 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
       {
 #   include "mzeqchk.inc"
         if ((((eql->mode == EQUAL_MODE_CHAPERONE_OF) || (eql->mode == EQUAL_MODE_EQUAL_ALWAYS)))
-            && (!SCHEME_IMMUTABLEP(obj1) || !SCHEME_IMMUTABLEP(obj2)))
+            && ((t1 != scheme_vector_type) || !SCHEME_IMMUTABLEP(obj1) || !SCHEME_IMMUTABLEP(obj2)))
           return 0;
         if (union_check(obj1, obj2, eql))
           return 1;
@@ -751,7 +754,8 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
     case scheme_windows_path_type:
       {
         intptr_t l1, l2;
-        if (((eql->mode == EQUAL_MODE_CHAPERONE_OF) || (eql->mode == EQUAL_MODE_EQUAL_ALWAYS))
+        if ((t1 == scheme_byte_string_type)
+            && ((eql->mode == EQUAL_MODE_CHAPERONE_OF) || (eql->mode == EQUAL_MODE_EQUAL_ALWAYS))
             && (!SCHEME_IMMUTABLEP(obj1) || !SCHEME_IMMUTABLEP(obj2)))
           return 0;
         l1 = SCHEME_BYTE_STRTAG_VAL(obj1);

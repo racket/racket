@@ -3,11 +3,11 @@
 .if t .ds c caf\o'\'e'
 .if n .ds c cafe
 .ds ]W 
-.TH SCHEME 1 "Chez Scheme Version 9.5.9 May 2022"
+.TH SCHEME 1 "Chez Scheme Version 10.5.0 May 2026"
 .SH NAME
-\fIChez Scheme\fP
+{InstallSchemeName} - Chez Scheme
 .br
-\fIPetite Chez Scheme\fP
+{InstallPetiteName} - Petite Chez Scheme
 .SH SYNOPSIS
 \fB{InstallSchemeName}\fP [ \fIoptions\fP ] \fIfile\fP ...
 .br
@@ -196,6 +196,8 @@ not set, if the standard input or output files have been redirected, or
 if the --eedisable command-line option has been used.
 The history is saved across sessions, by default, in the file
 \*(lq$HOME/.chezscheme_history\*(rq.
+This default can be changed by setting the \*(lqCHEZSCHEME_HISTORY\*(rq
+environment variable.
 The --eehistory command-line option
 can be used to specify a different
 location for the history file or to disable the saving and restoring of
@@ -750,6 +752,11 @@ The environment variable
 (see above) may be set
 to a colon-separated (semi-colon under Windows) list of directories
 in which to search for boot files.
+
+The environment variable
+.B CHEZSCHEME_HISTORY \fR
+(see above) may be set
+to the location to use as the default history file location.
 .SH FILES
 .if 0 COMMENT: put the longest path from below in the tab computation:
 .ta \w'{InstallLibExamples}'u+.25i
@@ -794,6 +801,6 @@ Second Edition\fP,
 MIT press (1996).
 .in -5
 .SH AUTHOR
-Copyright 2022 Cisco Systems, Inc.
+Copyright 2026 Cisco Systems, Inc.
 Licensed under the Apache License, Version 2.0
 (http://www.apache.org/licenses/LICENSE-2.0)

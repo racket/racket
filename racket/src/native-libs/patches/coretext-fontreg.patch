@@ -1,10 +1,14 @@
 diff -u -r old/pango-1.36.6/pango/pangocoretext-fontmap.c new/pango-1.36.6/pango/pangocoretext-fontmap.c
 --- old/pango-1.36.6/pango/pangocoretext-fontmap.c	2015-10-04 20:27:08.000000000 -0600
 +++ new/pango-1.36.6/pango/pangocoretext-fontmap.c	2015-10-04 20:25:23.000000000 -0600
-@@ -548,6 +548,53 @@
+@@ -548,6 +548,57 @@
    pfclass->is_synthesized = pango_core_text_face_is_synthesized;
  }
  
++void pango_core_text_add_family_for_font_descriptors(PangoCoreTextFontMap *ctfontmap,
++                                                     char *name,
++                                                     int count,
++                                                     CTFontDescriptorRef *descs);
 +void pango_core_text_add_family_for_font_descriptors(PangoCoreTextFontMap *ctfontmap,
 +                                                     char *name,
 +                                                     int count,

@@ -1,12 +1,12 @@
 ;;; 7.ss
 ;;; Copyright 1984-2017 Cisco Systems, Inc.
-;;; 
+;;;
 ;;; Licensed under the Apache License, Version 2.0 (the "License");
 ;;; you may not use this file except in compliance with the License.
 ;;; You may obtain a copy of the License at
-;;; 
+;;;
 ;;; http://www.apache.org/licenses/LICENSE-2.0
-;;; 
+;;;
 ;;; Unless required by applicable law or agreed to in writing, software
 ;;; distributed under the License is distributed on an "AS IS" BASIS,
 ;;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -112,7 +112,7 @@
             (if (null? ls)
                 ($oops whoarg "file ~s not found in source directories" fn)
                 (let ([path (let ([dir (car ls)])
-                              (if (or (string=? dir "") (string=? dir "."))
+                              (if (string=? dir ".")
                                   fn
                                   (path-build dir fn)))])
                   (if (guard (c [#t #f]) (close-input-port (open-input-file path)) #t)
@@ -305,7 +305,12 @@
     (lambda (x) (run-outer x)))
 
   (define (do-load who fn situation for-import? importer ksrc)
-    (let ([ip ($open-file-input-port who fn)])
+    (let* ([file-ip ($open-file-input-port who fn)]
+           [ip (if ($fd-input-port-can-set-position? file-ip)
+                   file-ip
+                   (let ([bv-ip (open-bytevector-input-port (get-bytevector-all file-ip))])
+                     (close-port file-ip)
+                     bv-ip))])
       (on-reset (close-port ip)
         (let ([fp (let ([start-pos (port-position ip)])
                     (if (and (eqv? (get-u8 ip) (char->integer #\#))
@@ -466,7 +471,7 @@
     (define-record-type (sstats make-sstats sstats?)
       (nongenerative #{sstats pfwch3jd8ts96giujpitoverj-0})
       (sealed #t)
-      (fields 
+      (fields
         (mutable cpu sstats-cpu set-sstats-cpu!)
         (mutable real sstats-real set-sstats-real!)
         (mutable bytes sstats-bytes set-sstats-bytes!)
@@ -479,7 +484,7 @@
           (lambda (cpu real bytes gc-count gc-cpu gc-real gc-bytes)
             (new cpu real bytes gc-count gc-cpu gc-real gc-bytes))))))
   (define exact-integer? (lambda (x) (and (integer? x) (exact? x))))
-  (set-who! make-sstats 
+  (set-who! make-sstats
     (lambda (cpu real bytes gc-count gc-cpu gc-real gc-bytes)
       (define verify-time
         (lambda (name x)
@@ -616,29 +621,27 @@
      (unless (and (real? v) (not (negative? v)))
        ($oops 'collect-maximum-generation-threshold-factor "~s is not a nonnegative real" v))
      v)))
-  
+
 (define $reset-protect
   (lambda (body out)
-    ((call/cc
-       (lambda (k)
-         (parameterize ([reset-handler
-                         (lambda ()
-                           (k (lambda ()
-                                (out)
-                                ((reset-handler)))))])
-           (with-exception-handler
-             (lambda (c)
-              ; would prefer not to burn bridges even for serious condition
-              ; if the exception is continuable, but we have no way to know
-              ; short of grubbing through the continuation
-               (if (serious-condition? c)
-                   (k (lambda () (out) (raise c)))
-                   (raise-continuable c)))
-             (lambda ()
-               (call-with-values body
-                 (case-lambda
-                   [(v) (lambda () v)]
-                   [v* (lambda () (apply values v*))]))))))))))
+    (call/cc
+      (lambda (k)
+        (let ([marks (current-continuation-marks)])
+          (parameterize ([reset-handler
+                           (lambda ()
+                             (call-in-continuation k
+                               (lambda ()
+                                 (out)
+                                 ((reset-handler)))))])
+            (with-exception-handler
+                (lambda (c)
+                 ; would prefer not to burn bridges even for serious condition
+                 ; if the exception is continuable, but we have no way to know
+                 ; short of grubbing through the continuation
+                  (if (serious-condition? c)
+                      (call-in-continuation k marks (lambda () (out) (raise c)))
+                      (raise-continuable c)))
+              body)))))))
 
 (define exit-handler)
 (define reset-handler)
@@ -661,7 +664,7 @@
 
   (set! reset-handler
     ($make-thread-parameter
-      (lambda () (c-exit 0))
+      (lambda () (c-exit -1)) ; error during load of boot file uses this handler
       (lambda (v)
         (unless (procedure? v)
           ($oops 'reset-handler "~s is not a procedure" v))
@@ -709,14 +712,10 @@
 
 (define $format-scheme-version
   (lambda (n)
-    (if (= (logand (ash n -8) 255) 0)
-        (format "~d.~d"
-          (ash n -24)
-          (logand (ash n -16) 255))
-        (format "~d.~d.~d"
-          (ash n -24)
-          (logand (ash n -16) 255)
-          (logand (ash n -8) 255)))))
+    (format "~d.~d.~d"
+      (ash n -24)
+      (logand (ash n -16) 255)
+      (logand (ash n -8) 255))))
 
 ; set in back.ss
 (define $scheme-version)
@@ -785,7 +784,7 @@
 
 (define $scheme-greeting
   (lambda ()
-    (format "~a\nCopyright 1984-2022 Cisco Systems, Inc.\n"
+    (format "~a\nCopyright 1984-2026 Cisco Systems, Inc.\n"
       (scheme-version #t))))
 
 (define $session-key #f)
@@ -894,7 +893,7 @@
         (docollect
           (lambda (gct prev-allocated-after-max)
             (let ([max-gen? (fx= g (collect-maximum-generation))])
-              (values 
+              (values
                ; make gc-trip to look like we've just collected generation g
                ; w/o also having collected generation g+1
                (if max-gen?
@@ -1292,7 +1291,7 @@
                  (condition-wait $collect-cond $tc-mutex)
                  (f)]))))
         (critical-section
-          (dynamic-wind 
+          (dynamic-wind
             once
             (collect-request-handler)
             (lambda () (set! $collect-request-pending #f))))))))
@@ -1471,7 +1470,7 @@
   (define-record-type pass-stats
     (nongenerative)
     (sealed #t)
-    (fields 
+    (fields
       (mutable calls)
       (mutable cpu)
       (mutable gc-cpu)
@@ -1493,7 +1492,7 @@
       (set! stats-ht (make-eq-hashtable))))
 
   (set! $enable-pass-timing (make-parameter #f))
-  
+
   (set-who! $pass-time
     (lambda (name thunk)
       (unless (symbol? name) ($oops who "~s is not a symbol" name))
@@ -1543,8 +1542,8 @@
       (define (build-result namev psv)
         (vector->list
           (vector-map
-            (lambda (name ps) 
-              (list name 
+            (lambda (name ps)
+              (list name
                 (pass-stats-calls ps)
                 (pass-stats-cpu ps)
                 (pass-stats-gc-cpu ps)

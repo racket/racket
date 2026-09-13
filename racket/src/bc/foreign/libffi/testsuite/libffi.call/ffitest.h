@@ -5,6 +5,9 @@
 #include <ffi.h>
 #include "fficonfig.h"
 
+#include <float.h>
+#include <math.h>
+
 #if defined HAVE_STDINT_H
 #include <stdint.h>
 #endif
@@ -15,7 +18,29 @@
 
 #define MAX_ARGS 256
 
-#define CHECK(x) (void)(!(x) ? (abort(), 1) : 0)
+#define CHECK(x) \
+   do { \
+      if(!(x)){ \
+         printf("Check failed:\n%s\n", #x); \
+         abort(); \
+      } \
+   } while(0)
+
+#define CHECK_FLOAT_EQ(x, y) \
+   do { \
+      if(fabs((x) - (y)) > FLT_EPSILON){ \
+         printf("Check failed CHECK_FLOAT_EQ(%s, %s)\n", #x, #y); \
+         abort(); \
+      } \
+   } while(0)
+
+#define CHECK_DOUBLE_EQ(x, y) \
+   do { \
+      if(fabs((x) - (y)) > DBL_EPSILON){ \
+         printf("Check failed CHECK_FLOAT_EQ(%s, %s)\n", #x, #y); \
+         abort(); \
+      } \
+   } while(0)
 
 /* Define macros so that compilers other than gcc can run the tests.  */
 #undef __UNUSED__
@@ -63,8 +88,8 @@
 
 #endif
 
-/* MinGW kludge.  */
-#if defined(_WIN64) | defined(_WIN32)
+/* msvc kludge.  */
+#if defined(_MSC_VER)
 #define PRIdLL "I64d"
 #define PRIuLL "I64u"
 #else

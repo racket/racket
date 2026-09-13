@@ -8,7 +8,8 @@
          "fallback.rkt")
 
 (provide syntax-mapped-names
-         syntax-mapped-phases)
+         syntax-mapped-phases
+         syntax-mapped-interned-scope-symbols)
 
 (define (syntax-mapped-names s phase
                              #:only-interned? [only-interned? #f]
@@ -24,3 +25,12 @@
   (define smss (fallback-first (syntax-shifted-multi-scopes s)))
   (for/fold ([phases (seteqv)]) ([sms (in-set smss)])
     (shifted-multi-scope-add-binding-phases sms phases)))
+
+(define (syntax-mapped-interned-scope-symbols s phase #:exactly? exactly?)
+  (define s-scs (syntax-scope-set s phase))
+  (define sym (syntax-e s))
+  (for/fold ([syms (seteq)]) ([sc (in-set s-scs)])
+    (set-union syms
+               (binding-table-interned-scope-keys (scope-binding-table sc) s-scs sym s null
+                                                  #:exactly? exactly?
+                                                  interned-scope? interned-scope-key))))

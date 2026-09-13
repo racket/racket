@@ -13,6 +13,9 @@
 (define work-dir (make-temporary-file "path~a" 'directory))
 (current-directory work-dir)
 
+(define thread-procs (list thread
+                           (lambda (thunk) (thread #:pool 'own thunk))))
+
 (test #t port? (current-input-port))
 (test #t port? (current-output-port))
 (test #t input-port? (current-input-port))
@@ -43,7 +46,9 @@
 (test #f output-port? this-file)
 (test #f terminal-port? this-file)
 (test #t file-stream-port? this-file)
+(test #f port-closed? this-file)
 (close-input-port this-file)
+(test #t port-closed? this-file)
 
 (define this-file (open-input-file testing.rktl #:mode 'text))
 (test #t port? this-file)
@@ -59,6 +64,7 @@
 (arity-test current-input-port 0 1)
 (arity-test current-output-port 0 1)
 (arity-test current-error-port 0 1)
+(arity-test port-closed? 1 1)
 (err/rt-test (current-input-port 8))
 (err/rt-test (current-output-port 8))
 (err/rt-test (current-error-port 8))
@@ -89,6 +95,7 @@
 (err/rt-test (close-output-port 5))
 (err/rt-test (close-input-port (current-output-port)))
 (err/rt-test (close-output-port (current-input-port)))
+(err/rt-test (port-closed? #f) exn:fail:contract? #rx"port-closed[?]")
 
 (define (check-test-file name)
   (define test-file (open-input-file name))
@@ -298,12 +305,13 @@
 (err/rt-test (read-line (current-input-port) 'anyx))
 
 (when (file-exists? "/dev/zero")
-  ;; Make sure read-line is interruptable on a primitive port that
-  ;; has no line ending:
-  (define t (thread (lambda () (call-with-input-file* "/dev/zero" read-line))))
-  (sleep 0.1)
-  (kill-thread t)
-  (test #t thread-dead? t))
+  (for ([thread (in-list thread-procs)])
+    ;; Make sure read-line is interruptable on a primitive port that
+    ;; has no line ending:
+    (define t (thread (lambda () (call-with-input-file* "/dev/zero" read-line))))
+    (sleep 0.1)
+    (kill-thread t)
+    (test #t thread-dead? t)))
 
 (arity-test open-input-file 1 1)
 (err/rt-test (open-input-file 8))
@@ -575,11 +583,11 @@
   (let ([q (open-input-file tempfilename)])
     (test (port-file-identity p) port-file-identity q)
     (close-input-port q)
-    (err/rt-test (file-position q) exn:fail?)
-    (err/rt-test (port-file-identity q) exn:fail?))
+    (err/rt-test (file-position q) exn:fail? #rx"closed")
+    (err/rt-test (port-file-identity q) exn:fail? #rx"closed"))
   (close-output-port p)
-  (err/rt-test (file-position p) exn:fail?)
-  (err/rt-test (port-file-identity p) exn:fail?))
+  (err/rt-test (file-position p) exn:fail? #rx"closed")
+  (err/rt-test (port-file-identity p) exn:fail? #rx"closed"))
 (err/rt-test (let ([c (make-custodian)])
 	       (let ([p (parameterize ([current-custodian c])
 				      (open-output-file tempfilename #:exists 'replace))])
@@ -803,53 +811,54 @@
 (test eof read out)
 (close-input-port out)
 
-(define-values (in out) (make-pipe 3))
-(test 3 write-bytes-avail #"12345" out)
-(let ([s (make-bytes 5 (char->integer #\-))])
-  (test 3 read-bytes-avail! s in)
-  (test #"123--" values s))
-(display 1 out)
-(test 2 write-bytes-avail #"2345" out)
-(let ([th1 (thread (lambda ()
-		     (display "a" out)))]
-      [th2 (thread (lambda ()
-                     (display "a" out)))]
-      [th3 (thread (lambda ()
-                     (display "a" out)))])
-  (test #t thread-running? th1)
-  (test #t thread-running? th2)
-  (test #t thread-running? th3)
+(for ([thread (in-list thread-procs)])
+  (define-values (in out) (make-pipe 3))
+  (test 3 write-bytes-avail #"12345" out)
+  (let ([s (make-bytes 5 (char->integer #\-))])
+    (test 3 read-bytes-avail! s in)
+    (test #"123--" values s))
+  (display 1 out)
+  (test 2 write-bytes-avail #"2345" out)
+  (let ([th1 (thread (lambda ()
+                       (display "a" out)))]
+        [th2 (thread (lambda ()
+                       (display "a" out)))]
+        [th3 (thread (lambda ()
+                       (display "a" out)))])
+    (test #t thread-running? th1)
+    (test #t thread-running? th2)
+    (test #t thread-running? th3)
 
-  (test 49 read-byte in)
-  
-  (sync (system-idle-evt))
+    (test 49 read-byte in)
+    
+    (sync (system-idle-evt))
 
-  (test 2 + 
-	(if (thread-running? th1) 1 0)
-	(if (thread-running? th2) 1 0)
-	(if (thread-running? th3) 1 0))
+    (test 2 + 
+          (if (thread-running? th1) 1 0)
+          (if (thread-running? th2) 1 0)
+          (if (thread-running? th3) 1 0))
 
-  (test 50 read-byte in)
+    (test 50 read-byte in)
 
-  (sync (system-idle-evt))
+    (sync (system-idle-evt))
 
-  (test 1 + 
-	(if (thread-running? th1) 1 0)
-	(if (thread-running? th2) 1 0)
-	(if (thread-running? th3) 1 0))
-  
-  (test 51 read-byte in)
-  
-  (sync (system-idle-evt))
+    (test 1 + 
+          (if (thread-running? th1) 1 0)
+          (if (thread-running? th2) 1 0)
+          (if (thread-running? th3) 1 0))
+    
+    (test 51 read-byte in)
+    
+    (sync (system-idle-evt))
 
-  (test #f thread-running? th1)
-  (test #f thread-running? th2)
-  (test #f thread-running? th3)
+    (test #f thread-running? th1)
+    (test #f thread-running? th2)
+    (test #f thread-running? th3)
 
-  (close-output-port out)
+    (close-output-port out)
 
-  (test #"aaa" read-bytes 10 in))
-(close-input-port in)
+    (test #"aaa" read-bytes 10 in))
+  (close-input-port in))
 
 (arity-test write-bytes-avail 1 4)
 (arity-test write-bytes-avail* 1 4)
@@ -961,8 +970,12 @@
   (close-input-port p)
   (close-input-port q))
 
-;; We should be able to install the current permissions:
+(test #t exact-integer? (file-or-directory-modify-seconds "tmp1"))
+(test #t exact-integer? (file-or-directory-modify-seconds "tmp1" #f))
+
+;; We should be able to install the current permissions and timestamp:
 (test (void) file-or-directory-permissions "tmp1" (file-or-directory-permissions "tmp1" 'bits))
+(test (void) file-or-directory-modify-seconds "tmp1" (file-or-directory-modify-seconds "tmp1"))
 
 (define test-file 
   (open-output-file "tmp2" #:exists 'truncate))
@@ -1409,7 +1422,7 @@
 ;;------------------------------------------------------------
 ;; File-stream ports and blocking behavior
 
-(let ()
+(for ([thread (in-list thread-procs)])
   (define-values (s i o e) (subprocess #f #f #f (find-exe) "-e" "(read)"))
 
   (thread (lambda ()
@@ -1424,7 +1437,7 @@
   (close-input-port e)
   (subprocess-wait s))
 
-(let ()
+(for ([thread (in-list thread-procs)])
   (define-values (s i o e) (subprocess #f #f #f (find-exe) "-e" "(read)"))
 
   (thread (lambda ()
@@ -1437,7 +1450,7 @@
   (close-input-port e)
   (subprocess-wait s))
 
-(let ()
+(for ([thread (in-list thread-procs)])
   (define-values (s i o e) (subprocess #f #f #f (find-exe) "-e" "(read)"))
 
   (thread (lambda ()
@@ -1706,6 +1719,11 @@
 (test #f environment-variables-ref (make-environment-variables #"a" #"1" #"b" #"two") #"c")
 (test #f environment-variables-ref (make-environment-variables) #"a")
 
+(err/rt-test (make-environment-variables "badstr" #"a") exn:fail:contract? #rx"bytes-environment-variable-name[?].*badstr")
+(err/rt-test (make-environment-variables #"a" "badstr") exn:fail:contract? #rx"bytes-no-nuls[?].*badstr")
+(err/rt-test (make-environment-variables #"badstr\0" #"a") exn:fail:contract? #rx"bytes-environment-variable-name[?].*badstr")
+(err/rt-test (make-environment-variables #"a" #"badstr\0") exn:fail:contract? #rx"bytes-no-nuls[?].*badstr")
+
 (define (env-var-tests)
   (define success-1? (putenv "APPLE" "AnApple"))
   (define success-2? (putenv "BANANA" "AnotherApple"))
@@ -1724,10 +1742,14 @@
 
   (define env (current-environment-variables))
   (test #"AnApple" environment-variables-ref env #"APPLE")
+  (test #t immutable? (environment-variables-ref env #"APPLE"))
   (err/rt-test (environment-variables-ref env #"=AP=PLE="))
   (test (void) environment-variables-set! env #"APPLE" #"=x=")
   (test #"=x=" environment-variables-ref env #"APPLE")
   (test #"AnotherApple" environment-variables-ref env #"BANANA")
+  (test (void) environment-variables-set! env #"BANANA" (bytes-copy #"bananabanana"))
+  (test #"bananabanana" environment-variables-ref env #"BANANA")
+  (test #t immutable? (environment-variables-ref env #"BANANA"))
   (test (void) environment-variables-set! env #"BANANA" #f)
   (test #f environment-variables-ref env #"BANANA")
   (test #f getenv "BANANA")
@@ -1829,6 +1851,9 @@
 ;; Filesystem-change events
 
 (test #f filesystem-change-evt? 'evt)
+(err/rt-test (filesystem-change-evt 'evt))
+(err/rt-test (filesystem-change-evt-cancel 'evt))
+(err/rt-test (filesystem-change-evt-ready? 'evt))
 
 (let ([dir (make-temporary-file "change~a" 'directory)])
   (define known-supported? (vector-ref (system-type 'fs-change) 0))
@@ -1864,6 +1889,8 @@
     (when f1-e
       (test #f sync/timeout 0 f1-e)
       (test #f sync/timeout 0 f2-e)
+      (test #f filesystem-change-evt-ready? f1-e)
+      (test #f filesystem-change-evt-ready? f2-e)
       
       (call-with-output-file (if as-file?
                                  f1
@@ -1871,26 +1898,34 @@
         #:exists 'append 
         (lambda (o) (newline o)))
       (test f1-e sync f1-e)
+      (test #t filesystem-change-evt-ready? f1-e)
       (when known-x-supported?
-        (test #f sync/timeout 0 f2-e))
+        (test #f sync/timeout 0 f2-e)
+        (test #f filesystem-change-evt-ready? f2-e))
 
       (call-with-output-file (if as-file?
                                  f2
                                  (build-path f2 "y"))
         #:exists 'append 
         (lambda (o) (newline o)))
+      (test #t filesystem-change-evt-ready? f2-e)
       (test f2-e sync/timeout 0 f2-e)
       (test f2-e sync f2-e)
       (test f1-e sync f1-e)
+      (test #t filesystem-change-evt-ready? f2-e)
+      (test #t filesystem-change-evt-ready? f1-e)
 
       (define f1-e2 (filesystem-change-evt f1 (lambda () #f)))
       (when known-x-supported?
-        (test #f sync/timeout 0 f1-e2))
+        (test #f sync/timeout 0 f1-e2)
+        (test #f filesystem-change-evt-ready? f1-e2))
       (test f1-e sync/timeout 0 f1-e)
       (test f1-e sync f1-e)
+      (test #t filesystem-change-evt-ready? f1-e)
 
       (filesystem-change-evt-cancel f1-e2)
       (test f1-e2 sync/timeout 0 f1-e2)
+      (test #t filesystem-change-evt-ready? f1-e2)
 
       (define cust (make-custodian))
       (define f1-e3 (parameterize ([current-custodian cust])
@@ -1898,7 +1933,8 @@
       (when known-x-supported?
         (test #f sync/timeout 0 f1-e3))
       (custodian-shutdown-all cust)
-      (test f1-e3 sync/timeout 0 f1-e3)))
+      (test f1-e3 sync/timeout 0 f1-e3)
+      (test #t filesystem-change-evt-ready? f1-e3)))
 
   (check "f1" "f2" #t known-file-supported?)
   (check "f1d" "f2d" #f known-supported?)
@@ -1951,7 +1987,7 @@
                                              ;; In case IPv6 is supported by the OS but not for the loopback
                                              ;; devce, we also catch "Cannot assign requested address"
                                              (unless (regexp-match?
-                                                      #rx"family not supported by protocol|no address associated with name|Cannot assign requested address"
+                                                      #rx"family not supported by protocol|no address associated with name|Cannot assign requested address|Address family for hostname not supported"
                                                       (exn-message e))
                                                (raise e)))])
     ;; Supply listener hostname, so we can check whether `listen` receives IPv6 connections
@@ -1968,7 +2004,7 @@
 (arity-test tcp-port? 1 1)
 
 ;; Check that `tcp-accept-evt' uses the right custodian
-(let ()
+(for ([thread (in-list thread-procs)])
   (define l (tcp-listen 0 5 #t))
   (define port (listen-port l))
   (define c (make-custodian))
@@ -1978,14 +2014,19 @@
   (define t
     (thread
      (lambda ()
-       (parameterize ([current-custodian c])
-         (set!-values (i o) (apply values (sync (tcp-accept-evt l))))))))
-  
+       (define evt (parameterize ([current-custodian c])
+                     (tcp-accept-evt l)))
+       (set!-values (i o) (apply values (sync evt))))))
+
   (define-values (ci co) (tcp-connect "localhost" port))
   (sync t)
   
   (custodian-shutdown-all c)
   (test #t port-closed? i)
+  (err/rt-test (parameterize ([current-custodian c])
+                 (tcp-accept-evt l))
+               exn:fail?
+               #rx"custodian has been shut down")
   (tcp-close l)
   (close-input-port ci)
   (close-output-port co))
@@ -2192,52 +2233,53 @@
 ;; ----------------------------------------
 
 (unless (eq? 'windows (system-type))
-  (define can-open-nonblocking-fifo?
-    ;; The general implementation of fifo-write ports requires
-    ;; OS-managed threads internally. Use support forr futures and/or
-    ;; places as an indication that OS threads are available.
-    (or (place-enabled?)
-        (futures-enabled?)))
+  (for ([thread (in-list thread-procs)])
+    (define can-open-nonblocking-fifo?
+      ;; The general implementation of fifo-write ports requires
+      ;; OS-managed threads internally. Use support forr futures and/or
+      ;; places as an indication that OS threads are available.
+      (or (place-enabled?)
+          (futures-enabled?)))
 
-  (define fifo (build-path work-dir "ff"))
-  (system* (find-executable-path "mkfifo") fifo)
+    (define fifo (build-path work-dir "ff"))
+    (system* (find-executable-path "mkfifo") fifo)
 
-  (define i1 (open-input-file fifo))
-  (define o1 (open-output-file fifo #:exists 'update))
-  (write-bytes #"abc" o1)
-  (flush-output o1)
-  (test #"abc" read-bytes 3 i1)
-  (close-input-port i1)
-  (close-output-port o1)
+    (define i1 (open-input-file fifo))
+    (define o1 (open-output-file fifo #:exists 'update))
+    (write-bytes #"abc" o1)
+    (flush-output o1)
+    (test #"abc" read-bytes 3 i1)
+    (close-input-port i1)
+    (close-output-port o1)
 
-  (define (check-output-blocking do-write-abc)
-    ;; Make sure an output fifo blocks until there's a reader
-    (define t1
-      (thread
-       (lambda ()
-         (define o2 (open-output-file fifo #:exists 'update))
-         (test #t port-waiting-peer? o2)
-         (do-write-abc o2)
-         (close-output-port o2))))
-    (define t2
-      (thread
-       (lambda ()
-         (sync (system-idle-evt))
-         (define i2 (open-input-file fifo))
-         (test #"abc" read-bytes 3 i2)
-         (close-input-port i2))))
-    (sync t1)
-    (sync t2))
+    (define (check-output-blocking do-write-abc)
+      ;; Make sure an output fifo blocks until there's a reader
+      (define t1
+        (thread
+         (lambda ()
+           (define o2 (open-output-file fifo #:exists 'update))
+           (test #t port-waiting-peer? o2)
+           (do-write-abc o2)
+           (close-output-port o2))))
+      (define t2
+        (thread
+         (lambda ()
+           (sync (system-idle-evt))
+           (define i2 (open-input-file fifo))
+           (test #"abc" read-bytes 3 i2)
+           (close-input-port i2))))
+      (sync t1)
+      (sync t2))
 
-  (when can-open-nonblocking-fifo?
-    (check-output-blocking (lambda (o2) (write-bytes #"abc" o2)))
-    (check-output-blocking (lambda (o2)
-                             (parameterize ([current-output-port o2])
-                               (system* (find-executable-path "echo")
-                                        "-n"
-                                        "abc")))))
+    (when can-open-nonblocking-fifo?
+      (check-output-blocking (lambda (o2) (write-bytes #"abc" o2)))
+      (check-output-blocking (lambda (o2)
+                               (parameterize ([current-output-port o2])
+                                 (system* (find-executable-path "echo")
+                                          "-n"
+                                          "abc")))))
 
-  (delete-file fifo))
+    (delete-file fifo)))
 
 (test #f port-waiting-peer? (current-input-port))
 (test #f port-waiting-peer? (current-output-port))
@@ -2437,61 +2479,62 @@
 ;; Check that an asynchronous break that interrupts a flush
 ;; doesn't lose buffered bytes
 
-(let-values ([(subproc stdout stdin stderr) (subprocess #f #f #f (find-exe) "-e"
-                                                        (format "~s"
-                                                                '(begin
-                                                                   (define noise (make-bytes 256 (char->integer #\x)))
-                                                                   ;; Fill up the OS-level output pipe:
-                                                                   (let loop ()
-                                                                     (unless (zero? (write-bytes-avail* noise (current-output-port)))
-                                                                       (loop)))
-                                                                   ;; Wait until the other end has read:
-                                                                   (write-bytes-avail #"noise" (current-output-port))
-                                                                   (close-output-port (current-output-port))
-                                                                   ;; Drain the OS-level input pipe, succeeding if we
-                                                                   ;; find a "!".
-                                                                   (let loop ()
-                                                                     (define b (read-byte (current-input-port)))
-                                                                     (when (eqv? b (char->integer #\!))
-                                                                       (exit 0))
-                                                                     (when (eof-object? b)
-                                                                       (exit 1))
-                                                                     (loop)))))])
+(for ([thread (in-list thread-procs)])
+  (let-values ([(subproc stdout stdin stderr) (subprocess #f #f #f (find-exe) "-e"
+                                                          (format "~s"
+                                                                  '(begin
+                                                                     (define noise (make-bytes 256 (char->integer #\x)))
+                                                                     ;; Fill up the OS-level output pipe:
+                                                                     (let loop ()
+                                                                       (unless (zero? (write-bytes-avail* noise (current-output-port)))
+                                                                         (loop)))
+                                                                     ;; Wait until the other end has read:
+                                                                     (write-bytes-avail #"noise" (current-output-port))
+                                                                     (close-output-port (current-output-port))
+                                                                     ;; Drain the OS-level input pipe, succeeding if we
+                                                                     ;; find a "!".
+                                                                     (let loop ()
+                                                                       (define b (read-byte (current-input-port)))
+                                                                       (when (eqv? b (char->integer #\!))
+                                                                         (exit 0))
+                                                                       (when (eof-object? b)
+                                                                         (exit 1))
+                                                                       (loop)))))])
 
-  ;; Fill up the OS-level output pipe:
-  (let loop ()
-    (unless (zero? (write-bytes-avail* #"?????" stdin))
-      (loop)))
+    ;; Fill up the OS-level output pipe:
+    (let loop ()
+      (unless (zero? (write-bytes-avail* #"?????" stdin))
+        (loop)))
 
-  ;; At this point, the other end is still waiting for us to read.
-  ;; Add something to the Racket-level buffer that we want to make sure
-  ;; doesn't get lost
-  (write-bytes #"!" stdin)
+    ;; At this point, the other end is still waiting for us to read.
+    ;; Add something to the Racket-level buffer that we want to make sure
+    ;; doesn't get lost
+    (write-bytes #"!" stdin)
 
-  ;; Thread will get stuck trying to flush:
-  (define t (thread (lambda ()
-                      (with-handlers ([exn:break? void])
-                        (flush-output stdin)))))
+    ;; Thread will get stuck trying to flush:
+    (define t (thread (lambda ()
+                        (with-handlers ([exn:break? void])
+                          (flush-output stdin)))))
 
-  (sync (system-idle-evt))
-  (break-thread t)
-  (thread-wait t)
+    (sync (system-idle-evt))
+    (break-thread t)
+    (thread-wait t)
 
-  ;; Drain output from subprocess, so it can be unblocked:
-  (let loop ()
-    (unless (eof-object? (read-bytes-avail! (make-bytes 10) stdout))
-      (loop)))
+    ;; Drain output from subprocess, so it can be unblocked:
+    (let loop ()
+      (unless (eof-object? (read-bytes-avail! (make-bytes 10) stdout))
+        (loop)))
 
-  ;; Subprocess should be reading at this point
-  (flush-output stdin)
+    ;; Subprocess should be reading at this point
+    (flush-output stdin)
 
-  (close-output-port stdin)
-  (close-input-port stderr)
-  (close-input-port stdout)
+    (close-output-port stdin)
+    (close-input-port stderr)
+    (close-input-port stdout)
 
-  (subprocess-wait subproc)
+    (subprocess-wait subproc)
 
-  (test 0 subprocess-status subproc))
+    (test 0 subprocess-status subproc)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check `in-directory'
@@ -2893,12 +2936,16 @@
 (arity-test file-or-directory-stat 1 2)
 
 ; Write regular file and check stat data.
-(let ()
+(define (check-stat via-port)
   (define temp-file-path (build-path work-dir "stat-test"))
   (define TEST-CONTENT "stat test content")
   (display-to-file TEST-CONTENT temp-file-path #:exists 'truncate)
   (void (call-with-input-file temp-file-path read-byte))
-  (define stat-result (file-or-directory-stat temp-file-path))
+  (define stat-result (if via-port
+                          (if (eq? via-port 'input)
+                              (call-with-input-file temp-file-path port-file-stat)
+                              (call-with-output-file temp-file-path #:exists 'append port-file-stat))
+                          (file-or-directory-stat temp-file-path)))
   (test #t hash-eq? stat-result)
   (define expected-stat-keys '(device-id
                                inode
@@ -2971,7 +3018,19 @@
   (test (stat-ref 'creation-time-seconds) nano->secs (stat-ref 'creation-time-nanoseconds))
   (delete-file temp-file-path))
 
+(check-stat #f)
+(check-stat 'input)
+(check-stat 'output)
+
 (err/rt-test (file-or-directory-stat "thisDoesNotExistAtAll") exn:fail:filesystem?)
+(err/rt-test (port-file-stat (open-output-bytes)))
+(err/rt-test (port-file-stat (let ()
+                               (define temp-file-path (build-path work-dir "stat-test"))
+                               (define p (open-output-file temp-file-path))
+                               (close-output-port p)
+                               (delete-file temp-file-path)
+                               p))
+             exn:fail?)
 
 ; Test symlink-related features.
 (unless (eq? (system-type) 'windows)

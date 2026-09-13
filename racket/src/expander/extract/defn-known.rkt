@@ -150,6 +150,8 @@
 ;; checks for properties without guards or with guards for procedures of a known arity
 (define (expr-known-property e)
   (match e
+    [`(unsafe-make-struct-type-property/guard-calls-no-arguments ,name . ,rest)
+     (expr-known-property `(make-struct-type-property ,name . ,rest))]
     [`(make-struct-type-property ,name)
      (expr-known-property `(make-struct-type-property ,name #f))]
     [`(make-struct-type-property ,name ,guard)

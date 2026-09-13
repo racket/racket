@@ -717,7 +717,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
   int skip_coll_dirs = 0;
   Scheme_Object *collects_path = NULL, *collects_extra = NULL, *addon_dir = NULL;
   Scheme_Object *config_path = NULL;
-  Scheme_Object *host_collects_path = NULL, *host_config_path = NULL;
+  Scheme_Object *host_collects_path = NULL, *host_config_path = NULL, *host_addon_path = NULL;
   char *compiled_paths = NULL;
   Scheme_Object *collects_paths_l, *collects_paths_r, *config_table;
 #ifndef DONT_PARSE_COMMAND_LINE
@@ -927,6 +927,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
             was_config_flag = 1;
             host_config_path = config_path;
             host_collects_path = collects_path;
+            host_addon_path = addon_dir;
           }
 	  break;
 	case 'U':
@@ -1227,19 +1228,6 @@ static int run_from_cmd_line(int argc, char *_argv[],
 
   if (no_init_ns)
     init_ns = 0;
-
-  if (show_vers) {
-#ifndef RACKET_CMD_LINE  
-    if (!use_repl
-#ifdef CMDLINE_STDIO_FLAG
-	|| alternate_rep
-#endif
-	)
-#endif
-      PRINTF("%s", BANNER);
-
-   CMDLINE_FFLUSH(stdout);
-  }
 #endif /* DONT_PARSE_COMMAND_LINE */
 
   if (!syslog_level) {
@@ -1321,6 +1309,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
   if (cross_compile) {
     host_config_path = adjust_config_path(host_config_path);
     scheme_set_host_config_path(host_config_path);
+    /* host_addon_path installed below */
   }
 
   /* Make list of additional collection paths: */
@@ -1398,6 +1387,17 @@ static int run_from_cmd_line(int argc, char *_argv[],
     addon_dir = scheme_path_to_complete_path(addon_dir, NULL);
     scheme_set_addon_dir(addon_dir);
   }
+  if (cross_compile) {
+    if (!host_addon_path) {
+     char *s;
+     s = getenv("PLTADDONDIR");
+     if (s) {
+       s = scheme_expand_filename(s, -1, NULL, NULL, 0);
+       if (s) host_addon_path = scheme_make_path(s);
+     }
+    }
+    scheme_set_host_addon_dir(host_addon_path);
+  }
 
   /* Creates the main kernel environment */
   global_env = mk_basic_env();
@@ -1406,6 +1406,34 @@ static int run_from_cmd_line(int argc, char *_argv[],
   if (!skip_coll_dirs)
     scheme_init_collection_paths_post_config(global_env, collects_paths_l, collects_paths_r, config_table);
   scheme_init_compiled_roots_config(global_env, compiled_paths, config_table);
+
+  {
+    Scheme_Object *build_stamp;
+    build_stamp = scheme_hash_tree_get((Scheme_Hash_Tree *)config_table, scheme_intern_symbol("build-stamp"));
+    if (build_stamp) {
+      char *s;
+      intptr_t s_len;
+      s = scheme_display_to_string(build_stamp, &s_len);
+      if (s_len) {
+        scheme_set_build_stamp(s);
+      }
+    }
+  }
+
+#ifndef DONT_PARSE_COMMAND_LINE
+  if (show_vers) {
+#ifndef RACKET_CMD_LINE
+    if (!use_repl
+#ifdef CMDLINE_STDIO_FLAG
+        || alternate_rep
+#endif
+        )
+#endif
+      PRINTF("%s", BANNER);
+
+    CMDLINE_FFLUSH(stdout);
+  }
+#endif
 
   scheme_seal_parameters();
 
@@ -1465,13 +1493,14 @@ static int run_from_cmd_line(int argc, char *_argv[],
   "  -e <exprs>, --eval <exprs>\n"
   "     Evaluate <exprs>, print results\n"
   "  -f <file>, --load <file>\n"
-  "     Like -e '(load \"<file>\")' without printing\n"
+  "     Like -e '(load \"<file>\")' without printing, or\n"
+  "     evaluates all from input when <file> is \"-\"\n"
   "  -t <file>, --require <file>\n"
   "     Like -e '(require (file \"<file>\"))' [*]\n"
   "  -l <path>, --lib <path>\n"
   "     Like -e '(require (lib \"<path>\"))' [*]\n"
   "  -p <package>\n"
-  "     Like -e '(require (planet \"<package>\")' [*]\n"
+  "     Like -e '(require (planet \"<package>\"))' [*]\n"
   "  -r <file>, --script <file>\n"
   "     Same as -f <file> -N <file> --\n"
   "  -u <file>, --require-script <file>\n"
@@ -1498,7 +1527,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 # endif
 # ifndef NO_YIELD_BEFORE_EXIT
   "  -V, --no-yield\n"
-  "     Skip `((executable-yield-handler) <status>)` on exit\n"
+  "     Skip `((executable-yield-handler) <status>)` on exit; implies -v\n"
 # endif
   "\n"
   "Configuration options:\n\n"

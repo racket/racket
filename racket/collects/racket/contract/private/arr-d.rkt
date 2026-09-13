@@ -9,6 +9,7 @@
          (for-syntax "helpers.rkt")
          (for-syntax syntax/name)
          (for-syntax "arr-util.rkt")
+         (for-syntax racket/private/stx)
          "arrow-common.rkt")
 
 (provide ->d
@@ -192,13 +193,12 @@
                                                  stx
                                                  id))]
                           [else #f]))])
-                 (let ([dup (check-duplicate-identifier 
-                             (append (if rng-underscores? 
-                                         '()
-                                         (syntax->list #'(rng-params ...)))
-                                     (syntax->list #'(dom-params ...))))])
-                   (when dup
-                     (raise-syntax-error #f "duplicate identifier" stx dup)))
+                 (raise-if-duplicate-identifiers "duplicate identifier"
+                                                 stx
+                                                 (append (if rng-underscores? 
+                                                             '()
+                                                             (syntax->list #'(rng-params ...)))
+                                                         (syntax->list #'(dom-params ...))))
                  #`(let-syntax ([parameterize-this
                                  (let ([old-param #,maybe-this-param])
                                    (λ (stx)

@@ -203,7 +203,7 @@ regcomp(char *expstr, rxpos exp, int explen, int pcre, Scheme_Object *handler)
       return NULL;
     FAIL("unknown regexp failure");
   }
-  
+
   /* Small enough for pointer-storage convention? */
   if (regcodemax >= 32767L)		/* Probably could be 65535L. */
     FAIL("regexp too big");
@@ -1365,6 +1365,11 @@ regatom(int *flagp, int parse_flags, int at_start)
 	ret = regunicode(1);
 	regmatchmax = MAX_UTF8_CHAR_BYTES;
 	*flagp |= HASWIDTH;
+      } else if ((parse_flags & PARSE_PCRE) && (c == 'X')) {
+	ret = regnode(UNIGRAPH);
+	*flagp |= HASWIDTH;
+        if (*flagp & SPFIXED)
+          *flagp &= ~SPFIXED;
       } else if ((parse_flags & PARSE_PCRE) && (c >= '0') && (c <= '9')) {
 	int posn;
 	--regparse;
@@ -1834,8 +1839,8 @@ regranges(int parse_flags, int at_start)
 	  break;
 	if (((c >= 'a') && (c <= 'z'))
 	    || ((c >= 'A') && (c <= 'Z'))) {
-          if ((c == 'p') || (c == 'P')) {
-            /* unicode char class; give up */
+          if ((c == 'p') || (c == 'P') || (c == 'X')) {
+            /* unicode char class or grapheme; give up */
             break;
           }
 	  regcharclass(regparsestr[regparse], new_map, NULL);
@@ -3836,6 +3841,65 @@ regmatch(Regwork *rw, rxpos prog)
 	scan = NEXT_OP(scan);
       }
       break;
+    case UNIGRAPH:
+      {
+	unsigned char buf[MAX_UTF8_CHAR_BYTES];
+	mzchar us[1];
+	int c, data;
+	int v, pos;
+	int negate, bottom, top, state = 0;
+
+        while (1) {
+          NEED_INPUT(rw, is, 1);
+          if (is < rw->input_end) {
+            c = UCHAR(INPUT_REF(rw, is));
+            if (c < 128) {
+              v = c;
+              pos = 1;
+            } else {
+              pos = 1;
+              buf[0] = c;
+              while (1) {
+                v = scheme_utf8_decode_prefix(buf, pos, us, 0);
+                if (v == 1) {
+                  v = us[0];
+                  break;
+                } else if (v < -1) {
+                  /* treat a bad encoding like end of input */
+                  if (state == 0)
+                    return 0;
+                  break;
+                }
+                NEED_INPUT(rw, is, pos+1);
+                if (is + pos < rw->input_end) {
+                  buf[pos] = INPUT_REF(rw, is + pos);
+                  pos++;
+                } else {
+                  if (state == 0)
+                    return 0;
+                  break;
+                }
+              }
+            }
+          } else {
+            /* end of input terminates a grapheme if one was started */
+            if (state == 0)
+              return 0;
+            break;
+          }
+  
+          if (scheme_grapheme_cluster_step(v, &state)) {
+            if (state == 0)
+              is++; /* CRLF, consumed both */
+            break;
+          }
+
+          is += pos;
+        }
+	
+	scan = NEXT_OP(scan);
+      }
+      break;
     case CONDITIONAL:
       {
 	rxpos test = OPERAND3(scan);
@@ -4186,10 +4250,6 @@ regstrcspn(char *s1, char *e1, char *s2)
   }
   return(count);
 }
-
-#ifndef strncpy
-  extern char *strncpy();
-#endif
 
 /*
    - regsub - perform substitutions after a regexp match
@@ -4785,6 +4845,23 @@ static int translate(unsigned char *s, int len, char **result, int pcre)
 	range_len *= 2;
 	/* Sort the ranges by the starting index. */
 	my_qsort(range_array, range_len >> 1, 2 * sizeof(unsigned int), compare_ranges);
+
+        /* Merge adjacent ranges */
+        if (range_len > 0) {
+          int dp = 2;
+          for (rp = 2; rp < range_len; rp += 2) {
+            if (range_array[rp] <= range_array[dp-1]+1) {
+              if (range_array[rp+1] > range_array[dp-1])
+                range_array[dp-1] = range_array[rp+1];
+            } else {
+              range_array[dp] = range_array[rp];
+              range_array[dp + 1] = range_array[rp + 1];
+              dp += 2;
+            }
+          }
+          if (dp < range_len)
+            range_len = dp;
+        }
 	
 	/* If a range starts below 128, fill in the simple array */
 	for (rp = 0; rp < range_len; rp += 2) {
@@ -4817,10 +4894,12 @@ static int translate(unsigned char *s, int len, char **result, int pcre)
 	  /* Start with "(?:[...]|" for simples. */
 	  unsigned int last_end;
 	  int did_alt;
+          int start_j;
 	  r = make_room(r, j, 6 + (128 - on_count) + ((pcre && !simple_on['\\']) ? 1 : 0), &rs);
 	  r[j++] = '(';
 	  r[j++] = '?';
 	  r[j++] = ':';
+          start_j = j;
 	  if (on_count < 128) {
 	    if (!on_count) {
 	      r[j++] = '[';
@@ -4868,7 +4947,17 @@ static int translate(unsigned char *s, int len, char **result, int pcre)
 	    }
 	  }
 	  r = make_room(r, j, 1, &rs);
-	  r[j++] = ')';
+          if (j == start_j) {
+            /* no possible ranges; need to emit unmatchable */
+            r = make_room(r, j, 7, &rs);
+            r[j++] = '[';
+            r[j++] = '^';
+            r[j++] = 0;
+            r[j++] = '-';
+            r[j++] = 255;
+            r[j++] = ']';
+          }
+          r[j++] = ')';
 	} else {
 	  /* Normal mode */
 	  /* Start with "(?:[...]|" for simples. */
@@ -5115,6 +5204,7 @@ static int translate(unsigned char *s, int len, char **result, int pcre)
 
   r[j] = 0;
   *result = (char *)r;
+
   return j;
 }
 
@@ -5794,6 +5884,7 @@ static Scheme_Object *gen_replace(const char *name, int argc, Scheme_Object *arg
       if (SCHEME_CHAR_STRINGP(argv[1])) {
 	scheme_contract_error(name, "cannot replace a string with a byte string",
                               "string-matching regexp", 1, argv[0],
+                              "string", 1, argv[1],
                               "byte string", 1, argv[2],
                               NULL);
       }
@@ -6096,6 +6187,13 @@ Scheme_Object *regexp_lookbehind(int argc, Scheme_Object *argv[])
   return scheme_make_integer(((regexp *)argv[0])->maxlookback);
 }
 
+Scheme_Object *regexp_capture_group_count(int argc, Scheme_Object *argv[])
+{
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_regexp_type))
+    scheme_wrong_contract("regexp-capture-group-count", "(or/c regexp? byte-regexp?)", 0, argc, argv);
+  return scheme_make_integer(((regexp *)argv[0])->nsubexp - 1);
+}
+
 Scheme_Object *scheme_regexp_source(Scheme_Object *re)
 {
   return ((regexp *)re)->source;
@@ -6152,6 +6250,7 @@ void scheme_regexp_initialize(Scheme_Startup_Env *env)
   ADD_FOLDING_PRIM("byte-pregexp?",                         byte_pregexp_p,  1, 1, 1, env);
 
   ADD_FOLDING_PRIM("regexp-max-lookbehind",                 regexp_lookbehind, 1, 1, 1, env);
+  ADD_FOLDING_PRIM("regexp-capture-group-count",            regexp_capture_group_count, 1, 1, 1, env);
 }
 
 void scheme_init_regexp_places()

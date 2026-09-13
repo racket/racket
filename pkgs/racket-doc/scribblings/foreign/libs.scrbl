@@ -205,8 +205,8 @@ interface, including Racket callbacks.}
                            [lib (or/c ffi-lib? path-string? #f)]
                            [type ctype?]
                            [failure-thunk (or/c (-> any) #f) #f])
-         (and/c (-> any)
-                (any/c -> void?))]{
+         (case-> (-> any)
+                 (any/c . -> . void?))]{
 
 Returns a parameter-like procedure that can either references the
 specified foreign value, or set it.  The arguments are handled as in
@@ -214,7 +214,7 @@ specified foreign value, or set it.  The arguments are handled as in
 
 A parameter-like function is useful in case Racket code and library
 code interact through a library value.  Although
-@racket[make-c-parameter] can be used with any time, it is not
+@racket[make-c-parameter] can be used with any type, it is not
 recommended to use this for foreign functions, since each reference
 through the parameter will construct the low-level interface before the
 actual call.

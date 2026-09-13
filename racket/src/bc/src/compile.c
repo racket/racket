@@ -24,7 +24,9 @@ ROSYM static Scheme_Object *set_symbol;
 ROSYM static Scheme_Object *let_values_symbol;
 ROSYM static Scheme_Object *letrec_values_symbol;
 ROSYM static Scheme_Object *begin_symbol;
+ROSYM static Scheme_Object *begin_unsafe_symbol;
 ROSYM static Scheme_Object *begin0_symbol;
+ROSYM static Scheme_Object *foreign_inline_symbol;
 ROSYM static Scheme_Object *with_cont_mark_symbol;
 ROSYM static Scheme_Object *define_values_symbol;
 
@@ -45,6 +47,7 @@ static Scheme_Object *set_compile(Scheme_Object *form, Scheme_Comp_Env *env);
 static Scheme_Object *letrec_values_compile (Scheme_Object *form, Scheme_Comp_Env *env);
 static Scheme_Object *begin_compile (Scheme_Object *form, Scheme_Comp_Env *env);
 static Scheme_Object *begin0_compile (Scheme_Object *form, Scheme_Comp_Env *env);
+static Scheme_Object *foreign_inline_compile (Scheme_Object *form, Scheme_Comp_Env *env);
 static Scheme_Object *with_cont_mark_compile(Scheme_Object *form, Scheme_Comp_Env *env);
 
 static Scheme_Object *compile_expr(Scheme_Object *form, Scheme_Comp_Env *env, int app_position);
@@ -86,7 +89,9 @@ void scheme_init_compile (Scheme_Startup_Env *env)
   REGISTER_SO(let_values_symbol);
   REGISTER_SO(letrec_values_symbol);
   REGISTER_SO(begin_symbol);
+  REGISTER_SO(begin_unsafe_symbol);
   REGISTER_SO(begin0_symbol);
+  REGISTER_SO(foreign_inline_symbol);
   REGISTER_SO(with_cont_mark_symbol);
   REGISTER_SO(define_values_symbol);
 
@@ -99,9 +104,11 @@ void scheme_init_compile (Scheme_Startup_Env *env)
   let_values_symbol = scheme_intern_symbol("let-values");
   letrec_values_symbol = scheme_intern_symbol("letrec-values");
   begin_symbol = scheme_intern_symbol("begin");
+  begin_unsafe_symbol = scheme_intern_symbol("begin-unsafe");
   begin0_symbol = scheme_intern_symbol("begin0");
   with_cont_mark_symbol = scheme_intern_symbol("with-continuation-mark");
   define_values_symbol = scheme_intern_symbol("define-values");
+  foreign_inline_symbol = scheme_intern_symbol("#%foreign-inline");
 
   REGISTER_SO(compiler_inline_hint_symbol);
   REGISTER_SO(inferred_name_symbol);
@@ -1235,6 +1242,12 @@ static Scheme_Object *begin0_compile (Scheme_Object *form, Scheme_Comp_Env *env)
   return do_begin_compile("begin0", form, env, 1);
 }
 
+static Scheme_Object *foreign_inline_compile (Scheme_Object *form, Scheme_Comp_Env *env)
+{
+  form = SCHEME_STX_CDR(form);
+  return compile_expr(SCHEME_STX_CAR(form), env, 0);
+}
+
 static Scheme_Sequence *malloc_big_sequence(int count)
 {
   intptr_t sz;
@@ -1894,16 +1907,22 @@ Scheme_Object *compile_expr(Scheme_Object *form, Scheme_Comp_Env *env, int app_p
         return set_compile(form, env);
       else if (SAME_OBJ(name, if_symbol))
         return if_compile(form, env);
-      else if (SAME_OBJ(name, begin_symbol))
+      else if (SAME_OBJ(name, begin_symbol) || SAME_OBJ(name, begin_unsafe_symbol))
         return begin_compile(form, env);
       else if (SAME_OBJ(name, begin0_symbol))
         return begin0_compile(form, env);
       else if (SAME_OBJ(name, with_cont_mark_symbol))
         return with_cont_mark_compile(form, env);
+      else if (SAME_OBJ(name, foreign_inline_symbol))
+        return foreign_inline_compile(form, env);
       else if (SAME_OBJ(name, ref_symbol))
         return ref_compile(form, env);
-      else if (SAME_OBJ(name, ref_symbol))
-        return ref_compile(form, env);
+      else {
+        Scheme_Object *e_form;
+        e_form = scheme_expand_foreign_form(form);
+        if (e_form)
+          return compile_expr(e_form, env, app_position);
+      }
     }
   }
 

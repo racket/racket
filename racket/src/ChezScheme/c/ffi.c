@@ -8,11 +8,12 @@
 /* 
    Encoding of a function type:
 
-     #(cached abi fixed-arg-count adjust-active? return-type ret-is-arg? arg-type ...)
+     #(cached abi fixed-arg-count adjust-active? save-errno/last-error return-type ret-is-arg? arg-type ...)
 
    where `cached` is filled with a bytevector that starts as a
-   `ffi_cif*` and has all of its associated data, fix-arg-count is 0
-   for a non-varrags function, and a type is one of
+   `ffi_cif*` and has all of its associated data, `fix-arg-count` is 0
+   for a non-varrags function, `save-errno/last-error` is 1 for `errno`
+   and 2 for `GetlastError()`, and a `type` is one of
 
      - a fixnum for an atomic: ffi_typerep_void, ffi_typerep_uint8, ...
      - a boxed fixnum representing a pointer to an atomic
@@ -25,9 +26,10 @@
 # define ABI_INDEX         1
 # define FIXED_COUNT_INDEX 2
 # define ADJ_ACTIVE_INDEX  3
-# define RET_TYPE_INDEX    4
-# define RET_IS_ARG_INDEX  5
-# define ARG_TYPE_START_INDEX 6
+# define SAVE_ERRNO_INDEX  4
+# define RET_TYPE_INDEX    5
+# define RET_IS_ARG_INDEX  6
+# define ARG_TYPE_START_INDEX 7
 
 typedef struct alloc_state {
   /* to allocate exactly as much as needed in a single bytevector,
@@ -144,6 +146,12 @@ ffi_type *decode_type(alloc_state *alloc, ptr type, ffi_abi abi, IBOOL *all_floa
         
         type = Scdr(type);
       }
+
+# ifdef __s390x__
+      /* s390x: unions containing only floats are not treated the
+         same as structs containing only floats */
+      union_all_float = 0;
+# endif
 
       if (!union_all_float)
         *all_float = 0;
@@ -470,6 +478,16 @@ void S_ffi_call(ptr types, ptr proc, ptr *arena) {
 
   ffi_call(cif, TO_VOIDP(proc), rvalue, args);
 
+  if (Svector_ref(types, SAVE_ERRNO_INDEX) != Sfalse) {
+    ptr tc = get_thread_context();
+#ifdef WIN32
+    if (Svector_ref(types, SAVE_ERRNO_INDEX) == Sfixnum(2))
+      U(tc) = S_save_last_error();
+    else
+#endif
+      U(tc) = S_save_errno();
+  }
+
 #ifdef PTHREADS
   if (Svector_ref(types, ADJ_ACTIVE_INDEX) != Sfalse) {
     (void)S_activate_thread();
@@ -509,9 +527,9 @@ void S_ffi_call(ptr types, ptr proc, ptr *arena) {
         if (sizeof(I64) > sizeof(ptr)) {
 #         ifdef PORTABLE_BYTECODE_BIGENDIAN
           {
-            ptr lo = arena[0];
-            arena[0] = arena[1];
-            arena[1] = lo;
+            ptr lo = arena_start[0];
+            arena_start[0] = arena_start[1];
+            arena_start[1] = lo;
           }
 #         endif
         }
@@ -584,7 +602,7 @@ ptr S_ffi_closure(ptr types, ptr proc) {
 
 static void closure_callback(UNUSED ffi_cif *cif, void *ret, void **args, void *user_data) {
   ptr caller_saved[4]; /* first four registers are preserved */
-  ptr vec = (ptr)user_data;
+  ptr vec = TO_PTR(user_data);
   ptr types = Svector_ref(vec, 1), type;
   ptr tc;
   ptr *arena_start, *arena;
@@ -638,16 +656,16 @@ static void closure_callback(UNUSED ffi_cif *cif, void *ret, void **args, void *
         break;
       case ffi_typerep_uint64:
         if (sizeof(U64) > sizeof(ptr)) {
-          arena[0] = (ptr)((*(U64 *)args[i]) >> 32);
-          arena[1] = (ptr)*(U64 *)args[i];
+          arena[1] = (ptr)((*(U64 *)args[i]) >> 32);
+          arena[0] = (ptr)*(U64 *)args[i];
           arena++;
         } else
           *arena = *(U64*)args[i];
         break;
       case ffi_typerep_sint64:
         if (sizeof(I64) > sizeof(ptr)) {
-          arena[0] = (ptr)((*(I64 *)args[i]) >> 32);
-          arena[1] = (ptr)*(I64 *)args[i];
+          arena[1] = (ptr)((*(I64 *)args[i]) >> 32);
+          arena[0] = (ptr)*(I64 *)args[i];
           arena++;
         } else
           *arena = *(I64*)args[i];
@@ -680,6 +698,9 @@ static void closure_callback(UNUSED ffi_cif *cif, void *ret, void **args, void *
   memcpy(&PBREGS(tc, 0), caller_saved, sizeof(caller_saved));
 
   if (!ret_is_arg) {
+    /* in case GC moved `types` (but `vec` is immobile) */
+    types = Svector_ref(vec, 1);
+
     /* move result to "arena" */
     type = Svector_ref(types, RET_TYPE_INDEX);
 
@@ -691,11 +712,11 @@ static void closure_callback(UNUSED ffi_cif *cif, void *ret, void **args, void *
       case ffi_typerep_sint64:
         if (sizeof(U64) > sizeof(ptr)) {
 #        ifdef PORTABLE_BYTECODE_BIGENDIAN
-          ((U32 *)ret)[0] = arena_start[0];
-          ((U32 *)ret)[1] = arena_start[1];
-#        else
           ((U32 *)ret)[1] = arena_start[0];
           ((U32 *)ret)[0] = arena_start[1];
+#        else
+          ((U32 *)ret)[0] = arena_start[0];
+          ((U32 *)ret)[1] = arena_start[1];
 #        endif
         } else {
           *(ptr *)ret = *arena_start;

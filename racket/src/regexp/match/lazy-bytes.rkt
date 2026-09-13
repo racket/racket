@@ -24,7 +24,8 @@
                     max-lookbehind   ; bytes before current counter to preserve, if `out`
                     [failed? #:mutable] ; set to #t if `progress-evt` fires or read blocks
                     [discarded-count #:mutable] ; bytes discarded, if not `peek?`
-                    max-peek))       ; maximum number of bytes to peek or #f
+                    max-peek)        ; maximum number of bytes to peek or #f
+  #:authentic)
 
 (define (make-lazy-bytes in skip-amt prefix
                          peek? immediate-only? progress-evt

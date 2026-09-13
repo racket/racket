@@ -38,6 +38,10 @@
   (or (current-pkg-network-retries)
       (read-pkg-cfg/def 'network-retries)))
 
+(define (get-network-timeout)
+  (or (current-pkg-network-timeout)
+      (read-pkg-cfg/def 'network-timeout)))
+
 (define (get-git-checkout-credentials)
   (define format+creds
     (or (current-pkg-git-checkout-credentials)
@@ -76,6 +80,7 @@
       ['trash-max-packages 512]
       ['trash-max-seconds (* 60 60 24 2)] ; 2 days
       ['network-retries 5]
+      ['network-timeout (* 30 60)] ; 30 minutes
       ['git-checkout-credentials '(basic)]
       [_ #f]))
   (define c (read-pkg-file-hash (pkg-config-file)))
@@ -175,7 +180,8 @@
                        "doc-open-url"
                        "trash-max-packages"
                        "trash-max-seconds"
-                       "network-retries")))
+                       "network-retries"
+                       "network-timeout")))
         (pkg-error (~a "missing value for config key\n"
                        "  config key: ~a")
                    key)]
@@ -188,7 +194,8 @@
                         "doc-open-url"
                         "trash-max-packages"
                         "trash-max-seconds"
-                        "network-retries"))
+                        "network-retries"
+                        "network-timeout"))
                val
                another-val
                more-vals)
@@ -232,7 +239,8 @@
                            "download-cache-max-bytes"
                            "trash-max-packages"
                            "trash-max-seconds"
-                           "network-retries"))
+                           "network-retries"
+                           "network-timeout"))
               val)
         (unless (real? (string->number val))
           (pkg-error (~a "invalid value for config key\n"
@@ -302,7 +310,8 @@
                  "download-cache-max-bytes"
                  "trash-max-packages"
                  "trash-max-seconds"
-                 "network-retries")
+                 "network-retries"
+                 "network-timeout")
              (printf "~a~a\n" indent (read-pkg-cfg/def (string->symbol key)))]
             ["doc-open-url"
              (printf "~a~a\n" indent (or (read-pkg-cfg/def 'doc-open-url) ""))]
@@ -329,7 +338,8 @@
                               "git-checkout-credentials"
                               "trash-max-packages"
                               "trash-max-seconds"
-                              "network-retries"))])
+                              "network-retries"
+                              "network-timeout"))])
           (printf "~a:\n" key)
           (show (list key) "  "))]
        [_ (show key+vals "")])]))

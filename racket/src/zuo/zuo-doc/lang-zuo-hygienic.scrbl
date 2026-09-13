@@ -57,10 +57,10 @@ These differences particularly affect the functions that operate on
 @tech{syntax objects}:
 
 @deftogether[(
-@defproc[(identifier? [v any?]) boolean?]
+@defproc[(identifier? [v any/c]) boolean?]
 @defproc[(syntax-e [v identifier?]) symbol?]
-@defproc[(syntax->datum [v any?]) any?]
-@defproc[(datum->syntax [ctx identifier?] [v any?]) any?]
+@defproc[(syntax->datum [v any/c]) any/c]
+@defproc[(datum->syntax [ctx identifier?] [v any/c]) any/c]
 @defproc[(bound-identifier=? [id1 identifier?]
                              [id2 identifier?]) boolean?]
 )]{

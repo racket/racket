@@ -82,7 +82,7 @@
            (and (subtype-of-base-rtd? super)))))
 
 
-(define (do-$make-record-type in-base-rtd in-super in-name fields sealed? opaque? more
+(define (do-$make-record-type in-base-rtd in-super in-name fields sealed? opaque? alt-pm more
                               #:uid [in-uid #f])
   (define name (cond
                  [(string? in-name) (string->symbol in-name)]
@@ -108,13 +108,15 @@
   (when (or opaque?
             (and super (hash-ref rtd-opaque?s super #f)))
     (hash-set! rtd-opaque?s struct:name #t))
+  (when alt-pm
+    (hash-set! rtd-alt-pms struct:name #t))
   struct:name)
 
-(define ($make-record-type in-base-rtd super in-name fields sealed? opaque? . more)
-  (do-$make-record-type in-base-rtd super in-name fields sealed? opaque? more))
+(define ($make-record-type in-base-rtd super in-name fields sealed? opaque? alt-pm . more)
+  (do-$make-record-type in-base-rtd super in-name fields sealed? opaque? alt-pm more))
 
 (define ($make-record-type-descriptor base-rtd name parent uid sealed? opaque? fields who . extras)
-  (do-$make-record-type base-rtd parent name (vector->list fields) sealed? opaque? extras #:uid uid))
+  (do-$make-record-type base-rtd parent name (vector->list fields) sealed? opaque? #f extras #:uid uid))
 
 (define ($record rtd . args)
   (cond
@@ -128,7 +130,7 @@
 (define make-record-type
   (case-lambda
     [(parent in-name fields)
-     ($make-record-type base-rtd parent in-name fields #f #f)]
+     ($make-record-type base-rtd parent in-name fields #f #f #f)]
     [(name fields)
      (make-record-type #f name fields)]))
 
@@ -377,6 +379,8 @@
         (lambda (rtd)
           (define flds ((csv7:record-field-accessor base-rtd 'flds) rtd))
           (cond
+            [(record-type-alt-pm rtd)
+             => (lambda (alt-pm) alt-pm)]
             [(for/and ([fld (in-list flds)])
                (ptr-type? (fld-type fld)))
              -1]
@@ -569,6 +573,10 @@
 (define (record-type-opaque? rtd)
   (hash-ref rtd-opaque?s rtd #f))
 
+(define rtd-alt-pms (make-weak-hasheq))
+(define (record-type-alt-pm rtd)
+  (hash-ref rtd-alt-pms rtd #f))
+
 (define (record-writer . args)
   (void))
 
@@ -606,8 +614,14 @@
        [else (error "unrecognized floating-point access" type offset)])]
     [else
      (unless (or (eq? type 'scheme-object)
-                 (eq? type 'ptr))
+                 (eq? type 'ptr)
+                 (eq? type 'integer-64)
+                 (eq? type 'integer-32))
        (error '$object-ref "unrecognized type: ~e" type))
+     (when (eq? type 'integer-64)
+       (unless (= ptr-bytes 8) (error '$object-ref "cannot 'integer-64 for a 32-bit platform")))
+     (when (eq? type 'integer-32)
+       (unless (= ptr-bytes 4) (error '$object-ref "cannot 'integer-32 for a 64-bit platform")))
      (define i (quotient (- offset (+ record-ptr-offset ptr-bytes)) ptr-bytes))
      (cond
        [(struct-type? v)

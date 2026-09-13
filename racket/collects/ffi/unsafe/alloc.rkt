@@ -1,5 +1,8 @@
 #lang racket/base
-(require ffi/unsafe
+(require (only-in '#%foreign
+                  make-late-weak-hasheq
+                  make-late-weak-box)
+         "private/finalizer.rkt"
          (only-in '#%unsafe
                   unsafe-add-post-custodian-shutdown
                   unsafe-start-atomic
@@ -59,11 +62,12 @@
   (unless (procedure-arity-includes? proc 1)
     (raise-argument-error who expected proc)))
 
-(define ((allocator d) proc)
+(define ((allocator d #:merely-uninterruptible? [merely-uninterruptible? #f]) proc)
   (check-arity-includes-1 'allocator d)
   (cond
     [(not proc) #f]
     [else
+     (define call-as-atomic* (if merely-uninterruptible? call-as-uninterruptible call-as-atomic))
      (rename
       (let-values ([(_ allowed-kws) (procedure-keywords proc)])
         (define (register v)
@@ -76,19 +80,22 @@
         (cond
           [(null? allowed-kws)
            (lambda args
-             (call-as-atomic
+             (call-as-atomic*
               (lambda ()
                 (register (apply proc args)))))]
           [else
            (make-keyword-procedure
             (λ (kws kw-args . rest)
-              (call-as-atomic
+              (call-as-atomic*
                (lambda ()
                  (register (keyword-apply proc kws kw-args rest))))))]))
       proc)]))
 
-(define ((deallocator [get-arg car]) proc)
+(define ((deallocator [get-arg car]
+                      #:merely-uninterruptible? [merely-uninterruptible? #f])
+         proc)
   (check-arity-includes-1 'deallocator get-arg "(-> list/c any/c)")
+  (define call-as-atomic* (if merely-uninterruptible? call-as-uninterruptible call-as-atomic))
   (rename
    (let-values ([(_ allowed-kws) (procedure-keywords proc)])
      (define (handle v)
@@ -102,21 +109,23 @@
      (cond
        [(null? allowed-kws)
         (lambda args
-          (call-as-atomic
+          (call-as-atomic*
            (lambda ()
              (begin0 (apply proc args)
                      (handle (get-arg args))))))]
        [else
         (make-keyword-procedure
          (λ (kws kw-args . rest)
-           (call-as-atomic
+           (call-as-atomic*
             (lambda ()
               (begin0
                 (keyword-apply proc kws kw-args rest)
                 (handle (get-arg rest)))))))]))
    proc))
 
-(define ((retainer d [get-arg car]) proc)
+(define ((retainer d [get-arg car]
+                   #:merely-uninterruptible? [merely-uninterruptible? #f])
+         proc)
   (check-arity-includes-1 'retainer d)
   (check-arity-includes-1 'retainer get-arg "(-> list/c any/c)")
   (rename
@@ -128,17 +137,18 @@
        (hash-set! allocated v ds)
        (unless next-ds
          (register-finalizer v deallocate)))
+     (define call-as-atomic* (if merely-uninterruptible? call-as-uninterruptible call-as-atomic))
      (cond
        [(null? allowed-kws)
         (lambda args
-          (call-as-atomic
+          (call-as-atomic*
            (lambda ()
              (begin0 (apply proc args)
                      (handle (get-arg args))))))]
        [else
         (make-keyword-procedure
          (λ (kws kw-args . rest)
-           (call-as-atomic
+           (call-as-atomic*
             (lambda ()
               (begin0
                 (keyword-apply proc kws kw-args rest)
@@ -167,21 +177,26 @@
 ;; ----------------------------------------
 
 (define all-nodes #f)
+(define nodes-lock (make-uninterruptible-lock))
 
 (define (add-node! ds)
+  (uninterruptible-lock-acquire nodes-lock)
   (set-node-next! ds all-nodes)
   (when all-nodes
     (set-node-prev! all-nodes ds))
-  (set! all-nodes ds))
+  (set! all-nodes ds)
+  (uninterruptible-lock-release nodes-lock))
 
 (define (remove-node! ds)
+  (uninterruptible-lock-acquire nodes-lock)
   (define prev (node-prev ds))
   (define next (node-next ds))
   (if prev
       (set-node-next! prev next)
       (set! all-nodes next))
   (when next
-    (set-node-prev! next prev)))
+    (set-node-prev! next prev))
+  (uninterruptible-lock-release nodes-lock))
 
 (define (release-all)
   (define ds all-nodes)

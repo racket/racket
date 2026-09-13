@@ -29,7 +29,8 @@
          syntax-transforming-with-lifts?
          syntax-transforming-module-expression?
          syntax-local-transforming-module-provides?
-         
+         syntax-local-compiling-module?
+
          syntax-local-context
          syntax-local-introduce
          syntax-local-identifier-as-binding
@@ -86,7 +87,14 @@
   (and ctx
        (expand-context-requires+provides ctx)
        #t))
-  
+
+(define (syntax-local-compiling-module?)
+  (define ctx (get-current-expand-context #:fail-ok? #t))
+  (and ctx
+       (eq? (expand-context-context ctx) 'module-begin)
+       (expand-context-to-parsed? ctx)
+       (module-path-index-resolved (root-expand-context-self-mpi ctx))))
+
 ;; ----------------------------------------
 
 (define (syntax-local-context)

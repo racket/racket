@@ -1,16 +1,17 @@
 #lang racket/base
-(require racket/contract/base
-         racket/match
+
+(require file/gunzip
+         openssl
+         racket/contract/base
          racket/list
-         racket/string
+         racket/match
          racket/port
+         racket/string
          (rename-in racket/tcp
                     [tcp-connect plain-tcp-connect]
                     [tcp-abandon-port plain-tcp-abandon-port])
-         openssl
-         "win32-ssl.rkt"
-         "osx-ssl.rkt"
-         file/gunzip)
+         "platform-ssl.rkt"
+         net/base64)
 
 (define tolerant? #t)
 (define eol-type
@@ -37,7 +38,10 @@
 (define (read-bytes-line/not-eof ip kind)
   (define bs (read-bytes-line ip kind))
   (when (eof-object? bs)
-    (error 'http-client "Connection ended early"))
+    (raise
+     (exn:fail:network
+      "http-client: Connection ended early"
+      (current-continuation-marks))))
   bs)
 
 (define (regexp-member rx l)
@@ -176,8 +180,15 @@
   (define body (->bytes data))
   (cond [(procedure? body)
          (fprintf to "Transfer-Encoding: chunked\r\n")]
-        [(and body
-              (not (regexp-member #rx"^(?i:Content-Length:)[\t ]*.+$" headers-bs)))
+        [(and
+          ;; Some hosts fail when given a Content-Length of 0. So, avoid
+          ;; sending the header if there isn't any content and the
+          ;; method doesn't expect a body.
+          ;;
+          ;; xref: https://github.com/racket/racket/pull/5200
+          (or (expects-body? method-bss)
+              (not (bytes=? body #"")))
+          (not (regexp-member #rx"^(?i:Content-Length:)[\t ]*.+$" headers-bs)))
          (fprintf to "Content-Length: ~a\r\n" (bytes-length body))])
   (when close?
     (unless (regexp-member #rx"^(?i:Connection:)[\t ]*.+$" headers-bs)
@@ -188,14 +199,15 @@
   (cond [(procedure? body)
          (body (λ (data) (write-chunk to data)))
          (fprintf to "0\r\n\r\n")]
-        [body (display body to)])
+        [(not (bytes=? body #""))
+         (display body to)])
   (flush-output to))
 
 (define (http-conn-status! hc)
   (read-bytes-line/not-eof (http-conn-from hc) eol-type))
 
 (define (http-conn-headers! hc)
-  (define top (read-bytes-line/not-eof (http-conn-from hc) eol-type))  
+  (define top (read-bytes-line/not-eof (http-conn-from hc) eol-type))
   (if (bytes=? top #"")
     empty
     (cons top (http-conn-headers! hc))))
@@ -205,7 +217,7 @@
   (define buffer (make-bytes BUFFER-SIZE))
   (let loop ([count count])
     (when (positive? count)
-      (define r 
+      (define r
         (read-bytes-avail! buffer in 0
                            (if (< count BUFFER-SIZE)
                              count
@@ -217,57 +229,128 @@
 (define (http-conn-response-port/rest! hc)
   (http-conn-response-port/length! hc +inf.0 #:close? #t))
 
-(define (http-conn-response-port/length! hc count #:close? [close? #f])
-  (define-values (in out) (make-pipe PIPE-SIZE))
-  (thread
-   (λ ()
-     (copy-bytes (http-conn-from hc) out count)
-     (when close?
-       (http-conn-close! hc))
-     (close-output-port out)))
-  in)
+(define (http-conn-response-port/length! hc n #:close? [close? #f])
+  (make-conn-response-port
+   hc close?
+   (lambda (in out)
+     (copy-bytes in out n))))
 
 (define (http-conn-response-port/chunked! hc #:close? [close? #f])
-  (define (http-pipe-chunk ip op)
-    (define (done) (void))
-    (define crlf-bytes (make-bytes 2))
-    (let loop ([last-bytes #f])
-      (define in-v (read-line ip eol-type))
-      (cond
-        [(eof-object? in-v)
-         (done)]
-        [else
-         (define size-str (string-trim in-v))
-         (define chunk-size (string->number size-str 16))
-         (unless chunk-size
-           (error 'http-conn-response/chunked 
-                  "Could not parse ~S as hexadecimal number"
-                  size-str))
-         (define use-last-bytes?
-           (and last-bytes (<= chunk-size (bytes-length last-bytes))))
-         (if (zero? chunk-size)
-             (done)
-             (let* ([bs (if use-last-bytes?
-                            (begin
-                              (read-bytes! last-bytes ip 0 chunk-size)
-                              last-bytes)
-                            (read-bytes chunk-size ip))]
-                    [crlf (read-bytes! crlf-bytes ip 0 2)])
-               (write-bytes bs op 0 chunk-size)
-               (loop bs)))])))
+  (make-conn-response-port
+   hc close?
+   (lambda (in out)
+     (http-pipe-chunk in out))))
 
-  (define-values (in out) (make-pipe PIPE-SIZE))
-  (define chunk-t
-    (thread
-     (λ ()
-       (http-pipe-chunk (http-conn-from hc) out))))
+(define (http-pipe-chunk ip op)
+  (define crlf-bytes
+    (make-bytes 2))
+  (let loop ([last-bytes #f])
+    (define in-v (read-line ip eol-type))
+    (cond
+      [(eof-object? in-v)
+       (void)]
+      [else
+       (define size-str
+         (string-trim in-v))
+       (define chunk-size
+         (string->number size-str 16))
+       (unless chunk-size
+         (error 'http-pipe-chunk
+                "Could not parse ~S as hexadecimal number"
+                size-str))
+       (define use-last-bytes?
+         (and last-bytes (<= chunk-size (bytes-length last-bytes))))
+       (cond
+         [(zero? chunk-size)
+          (void)]
+         [else
+          (define bs
+            (cond
+              [use-last-bytes?
+               (read-bytes! last-bytes ip 0 chunk-size)
+               last-bytes]
+              [else
+               (read-bytes chunk-size ip)]))
+          (when (eof-object? bs)
+            (error 'http-pipe-chunk "Unexpected EOF while reading chunk"))
+          (read-bytes! crlf-bytes ip 0 2)
+          (write-bytes bs op 0 chunk-size)
+          (loop bs)])])))
+
+;; The other end can hang up while we're reading the response, so we
+;; have to ensure that reading from the port doesn't deadlock and that
+;; the thread reading the port we return is notified of the exn.
+(define (make-conn-response-port hc close? copy)
+  (define-values (in out set-err!)
+    (make-pipe/err PIPE-SIZE))
   (thread
-   (λ ()
-     (thread-wait chunk-t)
-     (when close?
-       (http-conn-close! hc))
-     (close-output-port out)))
+   (lambda ()
+     (with-handlers ([exn:fail?
+                      (lambda (e)
+                        (set-err! e)
+                        (http-conn-close! hc)
+                        (close-output-port out))])
+       (copy (http-conn-from hc) out)
+       (when close? (http-conn-close! hc))
+       (close-output-port out))))
   in)
+
+;; Like make-pipe, but returns 3 values: the input port, the output port
+;; and a procedure to signal that an error has ocurred while piping
+;; data. When an error a signaled, in-progress and subsequent reads from
+;; the input port raise that error.
+(define (make-pipe/err size)
+  (define-values (in out)
+    (make-pipe size))
+  (define err #f)
+  (define (make-ready-or-err-evt)
+    ;; When an error has already been signaled, raise immediately.
+    (when err
+      (raise err))
+    ;; Otherwise wait for the port to make progress or be closed.
+    ;; Assumes the user of make-pipe/err will close the output port
+    ;; after signaling an error.
+    (wrap-evt
+     in
+     (lambda (ip)
+       (when err
+         (raise err))
+       ip)))
+  (define (set-err! e)
+    (set! err e))
+  (define custom-in
+    (make-input-port
+     #;name
+     'http-conn-response-port
+     #;read-in
+     (lambda (bs)
+       (wrap-evt
+        (make-ready-or-err-evt)
+        (lambda (ip)
+          (read-bytes-avail! bs ip))))
+     #;peek
+     (lambda (bs s progress)
+       (wrap-evt
+        (make-ready-or-err-evt)
+        (lambda (ip)
+          (peek-bytes-avail! bs s progress ip))))
+     #;close
+     (lambda ()
+       (close-input-port in))
+     #;get-progress-evt
+     (lambda ()
+       (port-progress-evt in))
+     #;commit
+     (lambda (amt progress evt)
+       (port-commit-peeked amt progress evt in))
+     #;get-location
+     (lambda ()
+       (port-next-location in))
+     #;count-lines!
+     (lambda ()
+       (port-count-lines! in))
+     #;init-position 1))
+  (values custom-in out set-err!))
 
 ;; Derived
 
@@ -277,13 +360,20 @@
   (http-conn-open! hc host-bs #:ssl? ssl? #:port port #:auto-reconnect? auto-reconnect?)
   hc)
 
-(define (http-conn-CONNECT-tunnel proxy-host proxy-port target-host target-port #:ssl? [ssl? #f])
+(define (http-conn-CONNECT-tunnel proxy-host proxy-port target-host target-port
+                                  #:ssl? [ssl? #f]
+                                  #:proxy-auth [proxy-auth #f])
   (define hc (http-conn-open proxy-host #:port proxy-port #:ssl? #f))
   (define connect-string (format "~a:~a" target-host target-port))
-  (http-conn-send! hc #:method "CONNECT" connect-string #:headers
-                   (list (format "Host: ~a" connect-string)
-                         "Proxy-Connection: Keep-Alive"
-                         "Connection: Keep-Alive"))
+  (http-conn-send! hc #:method "CONNECT" connect-string
+                   #:headers (append (if proxy-auth
+                                         (list (format "Proxy-Authorization: Basic ~a"
+                                                       (bytes->string/utf-8
+                                                        (base64-encode (string->bytes/utf-8 proxy-auth) #""))))
+                                         null)
+                                     (list (format "Host: ~a" connect-string)
+                                           "Proxy-Connection: Keep-Alive"
+                                           "Connection: Keep-Alive")))
 
   (let ((tunnel-status (http-conn-status! hc))
         (tunnel-headers (http-conn-headers! hc)))
@@ -325,10 +415,28 @@
           (define abandon-p ssl-abndn-p)
           (values clt-ctx r:from r:to abandon-p)]))
 
+(define (delete? method-bss)
+  (or (equal? method-bss #"DELETE")
+      (equal? method-bss "DELETE")
+      (equal? method-bss 'DELETE)))
+
+(define (get? method-bss)
+  (or (equal? method-bss #"GET")
+      (equal? method-bss "GET")
+      (equal? method-bss 'GET)))
+
 (define (head? method-bss)
   (or (equal? method-bss #"HEAD")
       (equal? method-bss "HEAD")
       (equal? method-bss 'HEAD)))
+
+;; https://www.rfc-editor.org/rfc/rfc9110.html#name-get
+;; https://www.rfc-editor.org/rfc/rfc9110.html#name-head
+;; https://www.rfc-editor.org/rfc/rfc9110.html#name-delete
+(define (expects-body? method-bss)
+  (and (not (get? method-bss))
+       (not (head? method-bss))
+       (not (delete? method-bss))))
 
 ;; https://datatracker.ietf.org/doc/html/rfc2616#section-10.1
 ;; https://datatracker.ietf.org/doc/html/rfc2616#section-10.2.5
@@ -377,13 +485,15 @@
   (define decoded-response-port
     (let ([decode-response
            (λ (raw-response-port decode-function)
-             (define-values (in out) (make-pipe PIPE-SIZE))
+             (define-values (in out set-err!)
+               (make-pipe/err PIPE-SIZE))
              (define decode-t
                (thread
-                (λ ()
-                  (decode-function raw-response-port out))))
+                (lambda ()
+                  (with-handlers ([exn:fail? set-err!])
+                    (decode-function raw-response-port out)))))
              (thread
-              (λ ()
+              (lambda ()
                 (thread-wait decode-t)
                 (when wait-for-close?
                   ;; Wait for an EOF from the raw port before we send an
@@ -419,7 +529,7 @@
                    #:headers headers-bs
                    #:content-decode decodes
                    #:data data)
-  (http-conn-recv! hc 
+  (http-conn-recv! hc
                    #:method method-bss
                    #:content-decode decodes
                    #:close? close?))
@@ -489,7 +599,7 @@
      #:method (or/c bytes? string? symbol?)
      #:close? boolean?
      #:headers (listof (or/c bytes? string?))
-     #:content-decode (listof symbol?)                           
+     #:content-decode (listof symbol?)
      #:data (or/c false/c bytes? string? data-procedure/c))
     void)]
   ;; Derived
@@ -504,7 +614,8 @@
           (between/c 1 65535)
           (or/c bytes? string?)
           (between/c 1 65535))
-         (#:ssl? base-ssl?/c)
+         (#:ssl? base-ssl?/c
+          #:proxy-auth (or/c #f string?))
          (values base-ssl?/c input-port? output-port? (-> port? void?)))]
   [http-conn-recv!
    (->* (http-conn-liveable?)
@@ -518,7 +629,7 @@
          #:method (or/c bytes? string? symbol?)
          #:headers (listof (or/c bytes? string?))
          #:data (or/c false/c bytes? string? data-procedure/c)
-         #:content-decode (listof symbol?) 
+         #:content-decode (listof symbol?)
          #:close? boolean?)
         (values bytes? (listof bytes?) input-port?))]
   [http-sendrecv

@@ -149,33 +149,33 @@
 
 (define (set-contract-check cmp kind b neg-party x)
   (unless (generic-set? x)
-    (raise-blame-error b #:missing-party neg-party x "expected a set"))
+    (raise-blame-error b #:missing-party neg-party x '(expected: "a set" given: "~e") x))
   (case cmp
     [(equal)
      (unless (set-equal? x)
-       (raise-blame-error b #:missing-party neg-party x "expected an equal?-based set"))]
+       (raise-blame-error b #:missing-party neg-party x '(expected: "an equal?-based set" given: "~e") x))]
     [(equal-always)
      (unless (set-equal-always? x)
-       (raise-blame-error b #:missing-party neg-party x "expected an equal-always?-based set"))]
+       (raise-blame-error b #:missing-party neg-party x '(expected: "an equal-always?-based set" given: "~e") x))]
     [(eqv)
      (unless (set-eqv? x)
-       (raise-blame-error b #:missing-party neg-party x "expected an eqv?-based set"))]
+       (raise-blame-error b #:missing-party neg-party x '(expected: "an eqv?-based set" given: "~e") x))]
     [(eq)
      (unless (set-eq? x)
-       (raise-blame-error b #:missing-party neg-party x "expected an eq?-based set"))])
+       (raise-blame-error b #:missing-party neg-party x '(expected: "an eq?-based set" given: "~e") x))])
   (case kind
     [(mutable-or-weak)
      (unless (or (set-mutable? x) (set-weak? x))
-       (raise-blame-error b #:missing-party neg-party x "expected a mutable or weak set"))]
+       (raise-blame-error b #:missing-party neg-party x '(expected: "a mutable or weak set" given: "~e") x))]
     [(mutable)
      (unless (set-mutable? x)
-       (raise-blame-error b #:missing-party neg-party x "expected a mutable set"))]
+       (raise-blame-error b #:missing-party neg-party x '(expected: "a mutable set" given: "~e") x))]
     [(weak)
      (unless (set-weak? x)
-       (raise-blame-error b #:missing-party neg-party x "expected a weak set"))]
+       (raise-blame-error b #:missing-party neg-party x '(expected: "a weak set" given: "~e") x))]
     [(immutable)
      (unless (set? x)
-       (raise-blame-error b #:missing-party neg-party x "expected an immutable set"))]))
+       (raise-blame-error b #:missing-party neg-party x '(expected: "an immutable set" given: "~e") x))]))
 
 (define (set-contract-late-neg-projection chaperone-ctc?)
   (lambda (ctc)

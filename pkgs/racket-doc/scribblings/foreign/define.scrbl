@@ -1,5 +1,8 @@
 #lang scribble/doc
-@(require "utils.rkt" (for-label ffi/unsafe/define ffi/unsafe/alloc))
+@(require "utils.rkt"
+          (for-label ffi/unsafe/define
+                     ffi/unsafe/alloc
+                     ffi/unsafe/define/conventions))
 
 @title{Defining Bindings}
 
@@ -115,12 +118,14 @@ is reported only when @racket[gtk_rc_parse] is called.
 
 @defproc[(make-not-available [name symbol?]) procedure?]{
 
-Returns a procedure that takes any number of arguments, including keyword arguments, and reports an
-error message from @racket[name]. This function is intended for using
+Returns a procedure that takes any number of arguments, including keyword arguments, and
+raises and @racket[exn:fail:unsupported]
+exception from @racket[name]. This function is intended for using
 with @racket[#:make-fail] or @racket[#:default-make-fail] in
 @racket[define-ffi-definer]
 
-@history[#:changed "8.3.0.5" @elem{Added support for keyword arguments.}]}
+@history[#:changed "8.3.0.5" @elem{Added support for keyword arguments.}
+         #:changed "9.2.0.2" @elem{Changed to raise @racket[exn:fail:unsupported].}]}
 
 @defform[(provide-protected provide-spec ...)]{
 
@@ -144,25 +149,62 @@ that converts one identifier to another.
 @defidform[convention:hyphen->underscore]{
 
  A convention that converts hyphens in an identifier to
- underscores. For example, the identifier
- @racket[gtk-rc-parse] will transform to @racket[gkt_rc_parse].
+ underscores.
+ For example, the identifier @racket[underscore-variable] will
+ transform to @racket[underscore_variable].
 
 @racketblock[
-  (define-ffi-definer define-gtk gtk-lib
+  (define-ffi-definer define-unlib underscore-lib
     #:make-c-id convention:hyphen->underscore)
- (define-gtk gtk-rc-parse (_fun _path -> _void))]
+  (define-unlib underscore-variable (_fun -> _void))
+]
+
+}
+
+@defidform[convention:hyphen->camelCase]{
+
+ Similar to @racket[convention:hyphen->underscore], but
+ converts the identifier to ``camelCase,'' following the
+ @racket[string-downcase] and @racket[string-titlecase] functions.
+ For example, the identifier @racket[camel-case-variable]
+ (or even @racket[cAmeL-CAsE-vaRiaBlE]) will
+ transform to @racket[camelCaseVariable].
+
+@racketblock[
+  (define-ffi-definer define-calib camel-lib
+    #:make-c-id convention:hyphen->camelCase)
+  (define-calib camel-case-variable (_fun -> _void))
+]
+
+@history[#:added "8.11.1.8"]
+}
+
+@defidform[convention:hyphen->PascalCase]{
+
+ Like @racket[convention:hyphen->camelCase], but
+ converts the identifier to ``PascalCase,'' following the
+ @racket[string-titlecase] function.
+ For example, the identifier @racket[pascal-case-variable]
+ (or even @racket[paSCaL-CAsE-vaRiaBlE]) will
+ transform to @racket[PascalCaseVariable].
+
+@racketblock[
+  (define-ffi-definer define-palib pascal-lib
+    #:make-c-id convention:hyphen->PascalCase)
+  (define-palib pascal-case-variable (_fun -> _void))
+]
+
+@history[#:added "8.11.1.8"]
 }
 
 @defidform[convention:hyphen->camelcase]{
-                                         
- Similar to @racket[convention:hyphen->underscore], but
- converts the identifier to camel case instead, following the
- @racket[string-titlecase] function. For example, the
- identifier @racket[camelCaseVariable] will transform to
- @racket[came-case-variable].
- 
- @racketblock[
- (define-ffi-definer define-calib camel-lib
-   #:make-c-id convention:hyphen->camelcase)
- (define-calib camel-case-variable (_fun -> _void))]
+
+ @deprecated[#:what "convention"
+             @racket[convention:hyphen->PascalCase]]{
+  This convention unfortunately converts to ``PascalCase'' as opposed
+  to what its name suggests.
+ }
+
+@history[#:changed "8.11.1.8" @elem{Deprecated due to the wrong
+           behavior.}]
 }

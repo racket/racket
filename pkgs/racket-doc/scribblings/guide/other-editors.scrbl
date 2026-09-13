@@ -52,7 +52,8 @@ popular among Racketeers as well.
        @hyperlink["http://www.nongnu.org/geiser/"]{Geiser manual}.
 
        Debian and Ubuntu packages for Geiser are available under the
-       name @tt{geiser}.}
+       name @tt{geiser}. A Gentoo port is also available (under the
+       name @tt{app-emacs/geiser}).}
 
  @item{Emacs ships with a major mode for Scheme, @tt{scheme-mode},
        that while not as featureful as the above options, works
@@ -89,6 +90,11 @@ popular among Racketeers as well.
        is a minor mode for editing s-expressions, keeping parentheses
        balanced, etc.  Similar to Paredit.}
 
+ @item{@hyperlink["https://github.com/drym-org/symex.el"]{Symex} is an
+       intuitive modal (Vim-like) way of editing code with minimum
+       keystrokes, built on top of a DSL providing advanced structural
+       editing features, and runtime integration with Racket Mode.}
+
  @item{Alex Shinn's
        @hyperlink["http://synthcode.com/wiki/scheme-complete"]{scheme-complete}
        provides intelligent, context-sensitive code completion. It
@@ -112,6 +118,12 @@ popular among Racketeers as well.
        should be displayed. Choosing an alternate face makes it
        possible to make ``tone down'' parentheses.}
 
+ @item{@hyperlink["https://github.com/countvajhula/mindstream"]{Mindstream}
+       lets you enter an interactive programming session (similar
+       to DrRacket's Definitions and Interactions workflow) at any time,
+       starting from templates you provide. Sessions are implicitly
+       versioned, freeing you to experiment without fear of losing work,
+       growing organically from throwaway scratch buffers to full projects.}
 ]
 
 @subsection{Packages specific to Evil Mode}
@@ -137,91 +149,69 @@ popular among Racketeers as well.
 @section{Vim}
 
 Many distributions of Vim ship with support for Scheme, which will mostly work
-for Racket. As of @hyperlink["https://github.com/vim/vim/commit/1aeaf8c0e0421f34e51ef674f0c9a182debe77ae"]{version 7.3.518},
-Vim detects files with the extension @tt{.rkt} as having the
-@tt{scheme} filetype. @hyperlink["https://github.com/vim/vim/commit/9cd91a1e8816d727fbdbf0b3062288e15abc5f4d"]{Version 8.2.3368}
-added support for @tt{.rktd} and @tt{.rktl}.
+for Racket. Vim also ships with some special support for Racket.
 
-In older versions, you can enable filetype detection of Racket
-files as Scheme with the following:
-
-@verbatim[#:indent 2]|{
-if has("autocmd")
-  autocmd filetypedetect BufReadPost *.rkt,*.rktl,*.rktd set filetype=scheme
-endif
-}|
-
-If your Vim supports the ftdetect system, in which case it's likely new enough
-to support Racket already, you can nevertheless put the following in
-@filepath{~/.vim/ftdetect/racket.vim}
-(@filepath{$HOME/vimfiles/ftdetect/racket.vim} on MS-Windows; see @tt{:help runtimepath}).
-
-@verbatim[#:indent 2]|{
-" :help ftdetect
-" If you want to change the filetype only if one has not been set
-autocmd BufRead,BufNewFile *.rkt,*.rktl,*.rktd setfiletype scheme
-" If you always want to set this filetype
-autocmd BufRead,BufNewFile *.rkt,*.rktl,*.rktd set filetype=scheme
-}|
-
-@subsection[#:tag "vim-plugins"]{Plugins}
-
-Alternatively, you can use a plugin such as @itemlist[
-    @item{@hyperlink["https://github.com/wlangstroth/vim-racket"]{wlangstroth/vim-racket}}
-    @item{@hyperlink["https://github.com/benknoble/vim-racket"]{benknoble/vim-racket}}
-]@margin-note{The major difference between the two is that the
-@tt{benknoble/vim-racket} fork supports more features out of the box and is
-updated more frequently.}
-to enable auto-detection, indentation, and syntax highlighting specifically for
-Racket files.
-
-These plugins work by setting the @tt{filetype} option based on the @(hash-lang)
-line. For example:@itemlist[
-    @item{A file starting with @code{#lang racket} or @code{#lang racket/base}
-    has @tt{filetype} equal to @tt{racket}.}
-    @item{A file starting with @code{#lang scribble/base} or @code{#lang scribble/manual}
-    has @tt{filetype} equal to @tt{scribble}.}
+The @tt{racket} filetype comes with
+@itemlist[
+  @item{syntax highlighting}
+  @item{custom indentation for Racket forms}
+  @item{and other support including comments and @tt{raco fmt}}
 ]
-Depending on which plugin you have, modifiers like @code{at-exp} may also be
-ignored, so that @code{#lang at-exp racket} is still a @tt{filetype} of
-@tt{racket}.
 
-This approach is more flexible but may lead to more work. Since each
-@(hash-lang) has its own @tt{filetype}, options, syntax highlighting, and other
-features need to be configured for each filetype. This can be done via the
-standard @tt{ftplugin} mechanism. See for example @tt{:help ftplugin-overrule}
-and @tt{:help ftplugin}: place your options for @tt{<lang>} in
-@filepath{~/.vim/after/ftplugin/<lang>.vim}
-(@filepath{$HOME/vimfiles/after/ftplugin/<lang>.vim} on MS-Windows). Similarly,
-syntax files follow the standard mechanism documented in @tt{:help syntax}.
+There is also support for several @seclink["top" #:doc '(lib "scribblings/raco/raco.scrbl")]{raco commands}
+in the form of builtin @tt{compiler} plugins; see @tt{:help compiler} for more
+information.
 
-Both plugins come with configuration for Racket
-(and possibly other @(hash-lang)s) as @tt{ftplugin}s. To enable them, use the
-@tt{:filetype} command as documented in @tt{:help :filetype}. You likely want to
-turn on filetype plugins (@tt{:help :filetype-plugin-on}) and filetype indent
-plugins (@tt{:help :filetype-indent-on}).
+For information about older Vim versions, see @secref{vim-versions}.
+
+@subsection[#:tag "vim-racket"]{Enhanced Racket Support}
+
+Vim will detect your Racket files as Scheme out of the box. To get the
+additional features of the Racket filetype, consider installing the
+@tt{vim-racket} plugin from
+@hyperlink["https://github.com/benknoble/vim-racket"]{benknoble/vim-racket}. It
+enables auto-detection of Racket files on top of enhanced indentation and syntax
+highlighting. Vim's default support comes from a subset of this plugin;
+installing it yourself provides additional features.
+
+The @tt{vim-racket} plugin detects the @tt{filetype} option based on the @(hash-lang)
+line. For example:@itemlist[
+    @item{A file starting with @code{#lang racket} or @code{#lang racket/base} has @tt{filetype} equal to @tt{racket}.}
+    @item{A file starting with @code{#lang scribble/base} or @code{#lang scribble/manual} has @tt{filetype} equal to @tt{scribble}.}
+]
+
+The @tt{vim-racket} plugin comes with configuration for Racket and some other
+standard Racket languages.
+
+Many Racket languages still need syntax and indent support. If you create Vim
+support for other Racket languages, please consider contributing them to
+@hyperlink["https://github.com/benknoble/vim-racket"]{benknoble/vim-racket} so
+other Vim users will benefit.
 
 @subsection{Indentation}
 
-You can enable indentation for Racket by setting both the @tt{lisp} and
-@tt{autoindent} options in Vim. You will want to customize the buffer-local
-@tt{lispwords} option to control how special forms are indented. See @tt{:help
-'lispwords'}. Both plugins mentioned in @secref{vim-plugins} set this option for
-you.
+If you use @secref{vim-racket} and Vim version 9 or greater, improved
+indentation for the @tt{racket} filetype is configured out of the box.
 
-However, the indentation can be limited and may not be as complete as what you
-can get in Emacs. You can also use Dorai Sitaram's
+Otherwise, you can manually enable indentation for Racket by setting both the
+@tt{lisp} and @tt{autoindent} options in Vim. You will want to customize the
+buffer-local @tt{lispwords} option to control how special forms are indented.
+See @tt{:help 'lispwords'}. However, using @tt{lispwords} for indentation can be
+limited and may not be as complete as what you can get in Emacs. You can also
+use Dorai Sitaram's
 @hyperlink["https://github.com/ds26gte/scmindent"]{scmindent} for better
 indentation of Racket code. The instructions on how to use the indenter are
 available on the website.
 
 @subsection{Highlighting}
 
+Syntax highlighting for Scheme and Racket is shipped with Vim on many platforms.
+You will want to use the @tt{racket} filetype for the best syntax experience;
+see @secref{vim-racket} for enhanced syntax highlighting for Racket languages.
+
 The @hyperlink["http://www.vim.org/scripts/script.php?script_id=1230"]{Rainbow
 Parenthesis} script for Vim can be useful for more visible parenthesis
-matching. Syntax highlighting for Scheme is shipped with Vim on many platforms,
-which will work for the most part with Racket. The vim-racket script
-provides good default highlighting settings for you.
+matching.
 
 @subsection{Structured Editing}
 
@@ -248,11 +238,8 @@ support Racket out of the box: @itemlist[
 
 @subsection{Scribble}
 
-Vim support for writing scribble documents is provided by @itemlist[
-    @item{@hyperlink["https://github.com/wilbowma/scribble.vim"]{wilbowma/scribble.vim}}
-    @item{@hyperlink["https://github.com/benknoble/scribble.vim"]{benknoble/scribble.vim}}
-]@margin-note{Again, @tt{benknoble/scribble.vim} is updated more frequently and
-is somewhat more modern.}
+Vim support for writing scribble documents is provided by
+@hyperlink["https://github.com/benknoble/scribble.vim"]{benknoble/scribble.vim}.
 
 @subsection{Miscellaneous}
 
@@ -271,6 +258,45 @@ One relatively up-to-date reference on the various managers is
 @hyperlink["https://vi.stackexchange.com/q/388/10604"]{What are the differences between the vim plugin managers?}.
 The same site, @hyperlink["https://vi.stackexchange.com"]{Vi & Vim} is a great
 place to get help from Vimmers.
+
+@subsection[#:tag "vim-versions"]{Older Versions of Vim}
+
+As of
+@hyperlink["https://github.com/vim/vim/commit/9b03d3e75b4274493bbe76772d7b92238791964c"]{Version 9.0.0336},
+Vim ships with runtime files from @secref{vim-racket}, but these exclude
+filetype detection for the @tt{racket} filetype. If you are using this version
+or versions newer than this you probably want to tweak the suggestions in this
+document to use the @tt{racket} filetype instead of @tt{scheme}. You should also
+consider installing the plugin yourself to get the latest changes, since Ben is
+slow to sync changes upstream to Vim and since the plugin contains improved
+filetype detection.
+
+As of @hyperlink["https://github.com/vim/vim/commit/1aeaf8c0e0421f34e51ef674f0c9a182debe77ae"]{version 7.3.518},
+Vim detects files with the extension @tt{.rkt} as having the
+@tt{scheme} filetype. @hyperlink["https://github.com/vim/vim/commit/9cd91a1e8816d727fbdbf0b3062288e15abc5f4d"]{Version 8.2.3368}
+added support for @tt{.rktd} and @tt{.rktl}.
+
+In older versions, you can enable filetype detection of Racket
+files as Scheme with the following:
+
+@verbatim[#:indent 2]|{
+if has("autocmd")
+  autocmd filetypedetect BufReadPost *.rkt,*.rktl,*.rktd set filetype=scheme
+endif
+}|
+
+If your Vim supports the ftdetect system, in which case it's likely new enough
+to support Racket already, you can nevertheless put the following in
+@filepath{~/.vim/ftdetect/racket.vim}
+(@filepath{$HOME/vimfiles/ftdetect/racket.vim} on MS-Windows; see @tt{:help runtimepath}).
+
+@verbatim[#:indent 2]|{
+" :help ftdetect
+" If you want to change the filetype only if one has not been set
+autocmd BufRead,BufNewFile *.rkt,*.rktl,*.rktd setfiletype scheme
+" If you always want to set this filetype
+autocmd BufRead,BufNewFile *.rkt,*.rktl,*.rktd set filetype=scheme
+}|
 
 @; ------------------------------------------------------------
 

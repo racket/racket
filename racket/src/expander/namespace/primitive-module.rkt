@@ -12,7 +12,7 @@
 (provide declare-primitive-module!)
 
 (define (declare-primitive-module! name inst in-ns protected cross-phase-persistent?)
-  (define mpi (module-path-index-join (list 'quote name) #f))
+  (define mpi (module-path-index-join* (list 'quote name) #f))
   (declare-module!
    in-ns
    (make-module #:source-name (current-module-declare-source)

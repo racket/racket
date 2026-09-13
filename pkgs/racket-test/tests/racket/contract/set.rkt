@@ -58,6 +58,13 @@
   (test/pos-blame 'set/c.0.15
                   '(contract (set/c any/c #:cmp 'equal-always) (set) 'pos 'neg))
   
+  (test/spec-passed/result
+   'set/c.0.16
+   '(with-handlers ([exn:fail? (λ (x)
+                                 (regexp-match? #rx"promised: a set\n  produced: \"wrong\""
+                                                (exn-message x)))])
+      (contract (set/c any/c) "wrong" 'pos 'neg))
+   #t)
   
 
   (test/spec-passed/result

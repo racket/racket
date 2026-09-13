@@ -1,11 +1,10 @@
 #lang racket/base
+(require '#%flfxnum)
 
 (provide hash-code-combine
          hash-code-combine*
          hash-code-combine-unordered
          hash-code-combine-unordered*)
-
-(require racket/fixnum)
 
 ;; Adapted from racket/src/cs/rumble/hash-code.ss
 ;; which is adapted from ChezScheme/s/newhash.ss

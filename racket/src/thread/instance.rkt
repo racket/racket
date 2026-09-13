@@ -32,6 +32,8 @@
           'semaphore-peek-evt semaphore-peek-evt
           'make-channel make-channel
           'channel-put-evt channel-put-evt
+          'channel-get-poll-or-semaphore channel-get-poll-or-semaphore
+          'channel-put-poll-or-semaphore channel-put-poll-or-semaphore
           'wrap-evt wrap-evt
           'handle-evt handle-evt
           'always-evt always-evt
@@ -48,6 +50,7 @@
           'poll-ctx-select-proc poll-ctx-select-proc
           'poll-ctx-sched-info poll-ctx-sched-info
           'set-poll-ctx-incomplete?! set-poll-ctx-incomplete?!
+          'delayed-poll delayed-poll
           'control-state-evt control-state-evt
           'async-evt async-evt
           'current-sandman current-sandman
@@ -55,8 +58,10 @@
           'schedule-info-did-work! schedule-info-did-work!
           'unsafe-start-atomic unsafe-start-atomic
           'unsafe-end-atomic unsafe-end-atomic
-          'start-atomic/no-interrupts start-atomic/no-interrupts
-          'end-atomic/no-interrupts end-atomic/no-interrupts
+          'start-atomic/no-gc-interrupts start-atomic/no-gc-interrupts
+          'end-atomic/no-gc-interrupts end-atomic/no-gc-interrupts
+          'start-uninterruptible/no-gc-interrupts start-uninterruptible/no-gc-interrupts
+          'end-uninterruptible/no-gc-interrupts end-uninterruptible/no-gc-interrupts
           'in-atomic-mode? in-atomic-mode?
           'current-custodian current-custodian
           'custodian-shut-down? custodian-shut-down?

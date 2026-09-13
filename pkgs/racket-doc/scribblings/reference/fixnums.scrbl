@@ -24,6 +24,8 @@ The expected use of the @racketmodname[racket/fixnum] library is for
 code where the @racket[require] of @racketmodname[racket/fixnum] is
 replaced with
 
+@margin-note{See the documentation of @racket[filtered-in] for use with @racket[@#,(hash-lang) @#,racketmodname[racket/base]].}
+
 @racketblock[(require (filtered-in
                        (λ (name)
                          (and (regexp-match #rx"^unsafe-fx" name)
@@ -100,7 +102,7 @@ known to be no more than 32 or 16, respectively.
 
 @deftogether[(
 @defproc[(fx+/wraparound [a fixnum?] [b fixnum?]) fixnum?]
-@defproc[(fx-/wraparound [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(fx-/wraparound [a fixnum? 0] [b fixnum?]) fixnum?]
 @defproc[(fx*/wraparound [a fixnum?] [b fixnum?]) fixnum?]
 @defproc[(fxlshift/wraparound [a fixnum?] [b fixnum?]) fixnum?]
 )]{
@@ -114,7 +116,8 @@ that do not fit in a fixnum representation. The result is negative if
 the highest of the retained bits is set---even, for example, if the
 value was produced by adding two positive fixnums.
 
-@history[#:added "7.9.0.6"]}
+@history[#:added "7.9.0.6"
+         #:changed "8.15.0.12" @elem{Changed @racket[fx-/wraparound] to accept a single argument.}]}
 
 @defproc[(fxrshift/logical [a fixnum?] [b fixnum?]) fixnum?]{
 

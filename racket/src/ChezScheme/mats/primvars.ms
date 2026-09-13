@@ -18,7 +18,7 @@
     (define (mat-id? x)
       (memq x
         '(equivalent-expansion? mat-run mat mat/cf
-           mat-file mat-output enable-cp0 windows? embedded? pb?
+           mat-file mat-output enable-cp0 windows? embedded? pb? haiku?
            *scheme* *mats-dir*
            *fuzz* ~= fl~= cfl~= == nan pi +pi +pi/2 +pi/4 -pi -pi/2 -pi/4 +e -e
            separate-eval-tools separate-compile separate-eval run-script patch-exec-path $record->vector
@@ -28,7 +28,7 @@
            heap-check-interval
            preexisting-profile-dump-entry?
            coverage-table record-run-coverage load-coverage-files combine-coverage-files coverage-percent
-           parameters)))
+           parameters retry-for-spurious)))
     (define (canonical-label x)
       (let ([s (symbol->string x)])
         (#%$intern3 (format "~a*top*:~a" s s) (string-length s) (+ 6 (* 2 (string-length s))))))
@@ -405,11 +405,14 @@
               [(cost-center) *cost-center '(a) #f]
               [(source-table) (make-source-table) *time #f]
               [(date) *date *time #f]
+              [(dreal) 0 1/2 1 1+2i +nan.0 #f]
               [(endianness) 'big 'giant #f]
               [(enum-set) (file-options compressed) 0 #f]
               [(environment) *env '((a . b)) #f]
               [(eq-hashtable) *eq-hashtable *symbol-hashtable #f]
+              [(even) 2 1 .5 1/2 2+2i #f]
               [(exact-integer) (- (most-negative-fixnum) 1) 2.0 1/2 #f]
+              [(exact-real) 1/2 1+1i 2.0 #f]
               [(exact-uinteger) (+ (most-positive-fixnum) 1) -10 2.0 1/2 #f]
               [(exception-state) (current-exception-state) 0 #f]
               [(eof/char) #\a 0 #f]
@@ -417,10 +420,19 @@
               [(fasl-strip-options) (fasl-strip-options inspector-source) (file-options compressed) #f]
               [(file-options) (file-options compressed) 1/2 #f]
               [(fixnum) -1 'q (+ (most-positive-fixnum) 1) (- (most-negative-fixnum) 1) #f]
+              [(fleven) 2.0 2 2.0+2.0i 'a #f]
+              [(flinteger) 0.0 0 0.5 0.0+1.0i 'a #f]
+              [(flodd) 1.0 1 1.0+1.0i 'a #f]
               [(flonum) 0.0 0 0.0+1.0i 'a #f]
-              [(ftype-pointer) *ftype-pointer 0 *time #f]
-              [(fxvector) '#vfx(0) "a" #f]
+              [(flrational) 0.5 1/2 1+2i +inf.0 #f]
               [(flvector) '#vfl(0.0) "a" #f]
+              [(flzero) 0.0 0 "a" #f]
+              [(ftype-pointer) *ftype-pointer 0 *time #f]
+              [(sub-ftype-pointer) no-good]
+              [(fxeven) 2 2.0 2+2i 'a #f]
+              [(fxodd) 1 1.0 1+1i 'a #f]
+              [(fxvector) '#vfx(0) "a" #f]
+              [(fxzero) 0 0.0 "a" #f]
               [(gensym) *genny 'sym #f]
               [(guardian) (make-guardian) values "oops" #f]
               [(hashtable) *eq-hashtable '((a . b)) #f]
@@ -430,8 +442,10 @@
               [(immutable-string) *immutable-string "a" 'a #f]
               [(immutable-vector) *immutable-vector '#(a) "a" #f]
               [(import-spec) '(chezscheme) 0 '(a . b) #f]
+              [(infinite) +inf.0 +nan.0 +inf.0+inf.0i 0.0 0 "a" #f]
               [(input-port) (current-input-port) 0 *binary-output-port *textual-output-port #f]
               [(integer) 0.0 1/2 1.0+0.0i 'a #f]
+              [(integer-valued) 0.0+0.0i 1/2 1.0+1.0i 'a #f]
               [(i/o-encoding-error) (make-i/o-encoding-error 17 23) (make-who-condition 'who) 1/2 #f]
               [(i/o-filename-error) (make-i/o-filename-error 17) (make-who-condition 'who) 3 #f]
               [(i/o-invalid-position-error) (make-i/o-invalid-position-error 17) (make-who-condition 'who) "" #f]
@@ -460,26 +474,36 @@
               [(maybe-who) 'who 17]
               [(maybe-timeout) *time 371]
               [(message-condition) (make-message-condition 17) (make-who-condition 'who) 'q #f]
+              [(nan) +nan.0 +inf.0 +nan.0+nan.0i 0.0 0 "a" #f]
+              [(nfixnum) -1 'q (+ (most-positive-fixnum) 1) (- (most-negative-fixnum) 1) #f]
+              [(nflonum) -1.0 0.0 0 0.0+1.0i 'a #f]
               [(nonempty-bytevector) '#vu8(0) '#vu8() "a" #f]
               [(nonempty-flvector) '#vfl(0.0) '#vfl() "a" #f]
               [(nonempty-fxvector) '#vfx(0) '#vfx() "a" #f]
               [(nonempty-string) "a" "" 'a #f]
               [(nonempty-vector) '#(a) '#() "a" #f]
-              [(number) 1+2i 'oops #f]
-              [(nzuint) 1 0 'a #f]
+              [(nreal) -1/2 0 1 1+2i +nan.0 #f]
+              [(number) 1+2i 'oops #f]           
+              [(odd) 1 2 .5 1/2 2+2i #f]
               [(old-hash-table) *old-hash-table '((a . b)) #f]
               [(output-port) (current-output-port) 0 *binary-input-port *textual-input-port #f]
               [(pair) '(a . b) 'a #f]
               [(pathname) "a" 'a #f]
+              [(pbignum) (+ (most-positive-fixnum) 1) -1 (most-positive-fixnum) 2.0 1/2 #f]
               [(pfixnum) 1 0 #f]
+              [(pflonum) 1.0 0.0 0 0.0+1.0i 'a #f]
               [(phantom-bytevector) *phantom-bytevector '#vu8(0) #f]
-              [(pseudo-random-generator) *pseudo-random-generator #f]
+              [(pint) 1 0 'a #f]
               [(port) (current-input-port) 0 #f]
+              [(preal) 1/2 0 -1 1+2i +nan.0 #f]
               [(procedure) values 0 #f]
+              [(pseudo-random-generator) *pseudo-random-generator #f]
               [(ptr) 1.0+2.0i]
               [(rational) 1/2 1+2i #f]
+              [(rational-valued) 0.5+0.0i 1+2i #f]
               [(rcd) *rcd *rtd "" #f]
               [(real) 1/2 1+2i #f]
+              [(real-valued) +inf.0+0.0i 1+2i #f]
               [(record) *record '#(a) #f]
               [(rtd) *rtd *record "" #f]
               [(s16) -1 'q (expt 2 15) (- -1 (expt 2 15)) #f]
@@ -523,10 +547,13 @@
               [(uinteger) 9.0 -1 -1.0 'a #f]
               [(uptr) 0 -1 'a (+ *max-uptr 1) #f]
               [(uptr/iptr) -1 'q (+ *max-uptr 1) (- *min-iptr 1) #f]
+              [(ureal) 0 -1/2 -1 1+2i +nan.0 #f]
               [(vector) '#(a) "a" #f]
               [(stencil-vector) (stencil-vector 7 1 2 3) "a" #f]
               [(who-condition) (make-who-condition 'me) (make-message-condition "hello") 'the-who #f]
-              [(who) 'who 17])
+              [(zero) 0 1 1.0 "a" #f]
+              [($exactnum) 1+1i 1.0+1.0i 1 1.0 'a #f]
+              [($inexactnum) 1.0+1.0i 1+1i 1 1.0 'a #f])
             (meta-cond
               [(memq 'pthreads feature*)
                (declare-types

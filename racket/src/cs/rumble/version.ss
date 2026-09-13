@@ -38,4 +38,12 @@
                    (loop 0)]))]))]))))))
 
 (define (version) (extract-version-string))
-(define (banner) (string-append "Welcome to Racket v" (version) " [cs].\n"))
+
+(define build-stamp #f)
+(define (set-build-stamp! stamp)
+  (set! build-stamp stamp))
+
+(define (banner)
+  (if build-stamp
+      (string-append-immutable "Welcome to Racket v" (version) "-" build-stamp " [cs].\n")
+      (string-append-immutable "Welcome to Racket v" (version) " [cs].\n")))

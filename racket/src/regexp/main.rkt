@@ -30,6 +30,7 @@
          byte-pregexp?
          
          regexp-max-lookbehind
+         regexp-capture-group-count
 
          regexp-place-init!)
 
@@ -52,9 +53,16 @@
 (define/who (regexp-max-lookbehind rx)
   (check who
          #:test (or (regexp? rx) (byte-regexp? rx))
-         #:contract "(or regexp? byte-regexp?)"
+         #:contract "(or/c regexp? byte-regexp?)"
          rx)
   (rx:regexp-max-lookbehind rx))
+
+(define/who (regexp-capture-group-count rx)
+  (check who
+         #:test (or (regexp? rx) (byte-regexp? rx))
+         #:contract "(or/c regexp? byte-regexp?)"
+         rx)
+  (rx:regexp-num-groups rx))
 
 ;; ----------------------------------------
 

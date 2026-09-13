@@ -23,7 +23,7 @@
 
 ;; Gather all of the linklets need to run phase 0 of the specified
 ;; module while keeping the module's variables that are provided from
-;; phase 0. In other words, keep enogh to produce any value or effect
+;; phase 0. In other words, keep enough to produce any value or effect
 ;; that `dynamic-require` would produce.
 (define (extract start-mod-path cache
                  #:print-extracted-to print-extracted-to
@@ -124,7 +124,8 @@
                                    #:compiled-modules compiled-modules
                                    #:cache cache))
 
-    ;; Generate the flattened linklet
+    ;; Generate the flattened linklet; each binding in this
+    ;; merged linklet will have a distinct symbolic name
     (define-values (variable-names flattened-linklet-expr)
       (flatten! start-link
                 #:linklets linklets
@@ -134,7 +135,9 @@
                 #:instance-knot-ties instance-knot-ties
                 #:primitive-table-directs primitive-table-directs
                 #:check-later-vars check-later-vars))
-    
+
+    ;; Apply simplifying optimizations that can enable removal of more
+    ;; unreferenced definitions
     (define simplified-expr
       (simplify-definitions flattened-linklet-expr))
 

@@ -276,6 +276,14 @@
 
 ;; ----------------------------------------
 
+(define-syntax (expand-to-syntax-local-name stx)
+  #`(quote #,(syntax-local-name)))
+
+(test 'f 'name (let ([f (expand-to-syntax-local-name)]) f))
+(test #f (let ([f (lambda () (expand-to-syntax-local-name))]) f))
+
+;; ----------------------------------------
+
 (require (for-syntax racket/struct-info))
 
 (define-syntax (et-struct-info stx)
@@ -523,22 +531,31 @@
   (provide v))
 (test 1 dynamic-require ''uses-internal-definition-context-around-id 'v)
 
-;; Make sure `syntax-local-make-definition-context` can be called
+;; Make sure `syntax-local-make-definition-context{,-introducer}` can be called
 ;; at unusual times, where the scope that is otherwise captured
 ;; for `quote-syntax` isn't or can't be recorded
-(let-syntax ([x (syntax-local-make-definition-context)])
+(let-syntax ([x (syntax-local-make-definition-context)]
+             [y (syntax-local-make-definition-context-introducer 'intdef-outside)]
+             [z (syntax-local-make-definition-context-introducer)])
   (void))
-(module makes-definition-context-at-compile-time-begin racket
+(module makes-definition-context-at-compile-time-begin racket/base
+  (require (for-syntax racket/base))
   (begin-for-syntax
-    (syntax-local-make-definition-context)))
+    (syntax-local-make-definition-context)
+    (syntax-local-make-definition-context-introducer 'intdef-outside)
+    (syntax-local-make-definition-context-introducer)))
 (require 'makes-definition-context-at-compile-time-begin)
 
 
 (module create-definition-context-during-visit racket/base
   (require (for-syntax racket/base))
-  (provide (for-syntax ds))
-  ;; won't be stipped for `quote-syntax`
-  (define-for-syntax ds (syntax-local-make-definition-context)))
+  (provide (for-syntax ds
+                       outside-intro
+                       inside-intro))
+  ;; won't be pruned for `quote-syntax`
+  (define-for-syntax ds (syntax-local-make-definition-context))
+  (define-for-syntax outside-intro (syntax-local-make-definition-context-introducer 'intdef-outside))
+  (define-for-syntax inside-intro (syntax-local-make-definition-context-introducer)))
 
 (module create-definition-context-during-expand racket/base
   (require (for-syntax racket/base)
@@ -546,24 +563,40 @@
   (provide results
            get-results)
 
-  ;; will be stipped for `quote-syntax`
+  ;; will be pruned for `quote-syntax`
   (define-for-syntax ds2 (syntax-local-make-definition-context))
+  (define-for-syntax outside-intro2 (syntax-local-make-definition-context-introducer 'intdef-outside))
+  (define-for-syntax inside-intro2 (syntax-local-make-definition-context-introducer))
 
   (define-syntax (m stx)
     (syntax-case stx ()
       [(_ body)
-       (internal-definition-context-introduce ds #'body)]))
+       (outside-intro
+        (inside-intro
+         (internal-definition-context-introduce ds #'body 'add)
+         'add)
+        'add)]))
 
   (define-syntax (m2 stx)
     (syntax-case stx ()
       [(_ body)
-       (internal-definition-context-introduce ds2 #'body)]))
+       (outside-intro2
+        (inside-intro2
+         (internal-definition-context-introduce ds2 #'body 'add)
+         'add)
+        'add)]))
 
   (define-syntax (m3 stx)
     (syntax-case stx ()
       [(_ body)
-       (let ([ds3 (syntax-local-make-definition-context)])
-         (internal-definition-context-introduce ds3 #'body))]))
+       (let ([ds3 (syntax-local-make-definition-context)]
+             [outside-intro3 (syntax-local-make-definition-context-introducer 'intdef-outside)]
+             [inside-intro3 (syntax-local-make-definition-context-introducer)])
+         (outside-intro3
+          (inside-intro3
+           (internal-definition-context-introduce ds3 #'body 'add)
+           'add)
+          'add))]))
 
   (define results
     (list
@@ -856,6 +889,37 @@
       [v (syntax-e #'v)]))
   (test 1 extract (identifier-binding-portal-syntax id))
   (test 2 extract (identifier-binding-portal-syntax (intro id))))
+
+;; make sure provide at label phase is ok for a local portal binding
+;; and that we can look up the binding while expanding
+(module provide-portal-binding-at-label-phase '#%kernel
+  (#%require (for-syntax racket/base)
+             (for-meta #f (portal bread-and-butter (bread butter))))
+  (#%provide (for-meta #f bread-and-butter))
+  (begin-for-syntax
+    (identifier-binding-portal-syntax #'bread-and-butter #f)))
+
+;; check that `for-label` portal doesn't double-shift to the label phase
+(module has-for-label-portal-syntax racket/base
+  (#%require
+   (for-label
+    racket/promise
+    (portal x delay)))
+
+  (unless (identifier-binding-portal-syntax #'x #f)
+    (error "portl binding not found"))
+
+  (unless (equal?
+           (hash-ref (syntax-debug-info #'delay #f) 'context)
+           (hash-ref (syntax-debug-info (identifier-binding-portal-syntax #'x #f) #f) 'context))
+    (error "portal binding contexts differ"))
+
+  (unless (free-identifier=? (identifier-binding-portal-syntax #'x #f)
+                             #'delay
+                             #f)
+    (error "portal binding mismatch")))
+
+(test (void) dynamic-require ''has-for-label-portal-syntax #f)
 
 ;; ----------------------------------------
 
@@ -1555,6 +1619,57 @@
                #'id
                (portal-syntax? (syntax-local-value #'id #f)))])))
  (test #t eval '(lift)))
+
+;; ----------------------------------------
+;; Check portal and label-phase shifting
+
+(module defines-portals-at-two-phases racket/base
+  (require (for-syntax racket/base))
+
+  (#%require
+   (portal r1 r2))
+  (#%require
+   (portal r2 dr))
+  (define dr 'ok)
+  (provide r1)
+
+  (begin-for-syntax
+    (#%require
+     (portal p0 d0))
+    (define d0 'ok)
+    (provide p0))
+
+  (begin-for-syntax
+    (#%require
+     (portal p1 p2))
+    (#%require
+     (portal p2 dp))
+    (define dp 'ok)
+    (provide p1)))
+
+(module uses-portals-at-two-phases racket/base
+  (require (for-label 'defines-portals-at-two-phases))
+  (provide results)
+
+  (define r1-id (identifier-binding-portal-syntax #'r1 #f))
+  (define p0-id (identifier-binding-portal-syntax #'p0 #f))
+  (define p1-id (identifier-binding-portal-syntax #'p1 #f))
+
+  (define results
+    (list
+     (and r1-id
+          (identifier-binding-portal-syntax
+           r1-id
+           #f))
+     (and p0-id
+          (syntax-shift-phase-level p0-id -1))
+     (and p1-id
+          (identifier-binding-portal-syntax
+           (syntax-shift-phase-level p1-id -1)
+           #f)))))
+
+(test '(dr d0 dp) map (lambda (id) (and id (syntax-e id)))
+      (dynamic-require ''uses-portals-at-two-phases 'results))
 
 ;; ----------------------------------------
 ;; Check module lifting in a top-level context
@@ -3326,6 +3441,62 @@
       (define (step) (return #:arg 1))
       (define (return #:arg x) 'done)
       step))))
+
+;; ----------------------------------------
+;; Regression test for `identifier-binding` and a `free-identifier=?` chain
+;; via a phase-shifted syntax object
+
+(module module-with-a-rename-transformer-at-phase-0 racket/base
+  (require (for-syntax racket/base))
+  (provide n)
+
+  (define real-m 10)
+  (define-syntax m (make-rename-transformer #'real-m))
+  (define (n) #'m))
+
+(module module-import-rename-transformer-at-phase-1 racket/base
+  (require (for-syntax racket/base
+                       'module-with-a-rename-transformer-at-phase-0))
+  (provide result)
+
+  (define-syntax (check stx)
+    (if (identifier-binding (n) 1)
+        #''yes
+        #''no))
+
+  (define result (check)))
+
+(test 'yes dynamic-require ''module-import-rename-transformer-at-phase-1 'result)
+
+;; ----------------------------------------
+;; Regression test for use-site scopes incorrectly added in an
+;; expression context
+
+(module check-for-too-many-use-site-scopes racket/base
+  (require (for-syntax racket/base))
+  (provide result)
+
+  (define-syntax (m stx)
+    (define-syntax-rule (m2 a)
+      a)
+    (define-syntax-rule (m3 a)
+      (let () a))
+
+    (define id1 (m2 #'x))
+    (define id2 (let () #'x))
+    (define id3 (m3 #'x))
+
+    #`(list
+       (let ([#,id1 5])
+         x)
+       (let ([#,id2 5])
+         x)
+       (let ([#,id3 5])
+         x)))
+
+  (define result (m)))
+
+(test '(5 5 5) dynamic-require ''check-for-too-many-use-site-scopes 'result)
 
 ;; ----------------------------------------
 

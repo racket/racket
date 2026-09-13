@@ -430,6 +430,8 @@
          [use-librktdir? (if alt-exe
                              alt-exe-is-gracket?
                              (eq? kind 'mred))]
+         [use-guibin? (and alt-exe
+                           (not use-librktdir?))]
          [addon? (let ([im (assoc 'install-mode aux)])
                    (and im (eq? (cdr im) 'addon-tethered)))]
          [config? (let ([im (assoc 'install-mode aux)])
@@ -490,8 +492,11 @@
         (newline)
         ;; comments needed to rehack launchers when paths change
         ;; (see setup/unixstyle-install.rkt)
-        (when use-librktdir?
-          (display "# unixstyle-install: use librktdir\n"))
+        (cond
+          [use-librktdir?
+           (display "# unixstyle-install: use librktdir\n")]
+          [use-guibin?
+           (display "# unixstyle-install: use guibindir\n")])
         (display "# {{{ bindir\n")
         (display dir-finder)
         (display "# }}} bindir\n")

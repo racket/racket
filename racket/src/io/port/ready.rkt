@@ -4,6 +4,7 @@
          "../host/thread.rkt"
          "../string/utf-8-decode.rkt"
          "port.rkt"
+         "lock.rkt"
          "parameter.rkt"
          "input-port.rkt"
          "read-and-peek.rkt"
@@ -21,11 +22,11 @@
     (cond
       [(input-port? byte-ready) (loop (->core-input-port byte-ready))]
       [else
-       (start-atomic)
+       (port-lock in)
        (prepare-change in)
        (check-not-closed who in)
        (define r (byte-ready in void))
-       (end-atomic)
+       (port-unlock in)
        (or (eq? #t r)
            (and r (sync/timeout 0 r) #t))])))
 

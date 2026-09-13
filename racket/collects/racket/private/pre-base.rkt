@@ -3,10 +3,10 @@
 (module pre-base '#%kernel
   (#%require (for-syntax '#%kernel
                          "stx.rkt"
-                         "qq-and-or.rkt"))
+                         "core-syntax.rkt"))
   (#%require "more-scheme.rkt"
              "misc.rkt"
-             (all-except "define.rkt" define define-syntax define-for-syntax)
+             (all-except "core-syntax.rkt" define define-syntax define-for-syntax)
              "letstx-scheme.rkt"
              "kw.rkt"
              "define-struct.rkt"
@@ -14,7 +14,7 @@
              (prefix printing: "modbeg.rkt")
              "for.rkt"
              "map.rkt" ; shadows #%kernel bindings
-             "member.rkt"
+             (only "pico.rkt" member memw)
              "kernstruct.rkt"
              "performance-hint.rkt"
              "top-int.rkt"
@@ -31,23 +31,41 @@
 
   (define-syntaxes (new-apply)
     ;; Convert (apply ...) without keyword args to primitive `apply',
-    ;;  so that oher optimizations are available.
+    ;;  so that other optimizations are available.
     (lambda (stx)
       (let-values ([(here) (quote-syntax here)])
-        (if (symbol? (syntax-e stx))
-            (datum->syntax here 'new-apply-proc stx)
-            (let-values ([(l) (syntax->list stx)])
-              (let-values ([(app) (if (if l
-                                          (ormap (lambda (x) (keyword? (syntax-e x))) l)
-                                          #t)
-                                      'new-apply-proc
-                                      'apply)]
-                           [(fst) (car (syntax-e stx))])
-                (datum->syntax
-                 stx
-                 (cons (datum->syntax here app fst fst)
-                       (cdr (syntax-e stx)))
-                 stx)))))))
+	(let-values ([(l) (syntax->list stx)])
+	  ; a real application with at least a function and argument
+	  (if (and l (pair? (cdr l)) (pair? (cdr (cdr l))))
+	      (let-values ([(keywords?) (ormap (lambda (x) (keyword? (syntax-e x))) l)]
+			   [(fst) (car l)]
+			   [(tail) (cdr l)])
+		(datum->syntax
+		 stx
+		 (cons (datum->syntax here
+				      (if keywords? 'new-apply-proc 'apply)
+				      fst
+				      fst)
+			       ;; Recognize `(apply apply ...)` and rewrite the
+			       ;; second `apply` to the kernel binding so it
+			       ;; doesn't expand to `new-apply-proc`.
+			       (if (and (not keywords?)
+					(identifier? (car tail))
+					(free-identifier=? (car tail) fst))
+				   (cons (datum->syntax here 'apply (car tail) (car tail))
+					 (cdr tail))
+				   tail))
+		 stx
+		 stx))
+	      (if (pair? (syntax-e stx))
+		  (let-values ([(fst) (car (syntax-e stx))]
+			       [(tail) (cdr (syntax-e stx))])
+		    (datum->syntax
+		     stx
+		     (cons (datum->syntax here 'new-apply-proc fst fst)
+			   tail)
+		     stx))
+		  (datum->syntax here 'new-apply-proc stx)))))))
 
   (define-values (new-keyword-apply)
     (make-keyword-procedure
@@ -184,11 +202,12 @@
                         (cdr l)))
              stx)
             (raise-syntax-error #f "bad syntax" stx)))))
-  
+
   (#%provide (all-from-except "more-scheme.rkt" old-case fluid-let)
              (all-from-except "misc.rkt" collection-path collection-file-path)
-             (all-from "define.rkt")
-             (all-from-except "letstx-scheme.rkt" -define -define-syntax -define-struct old-cond)
+             (all-from "core-syntax.rkt")
+             (all-from-except "letstx-scheme.rkt"
+                              define define-syntax define-for-syntax)
              (rename new-lambda lambda)
              (rename new-λ λ)
              (rename new-define define)
@@ -200,6 +219,7 @@
              (rename new-prop:procedure prop:procedure)
              (rename #%app #%plain-app)
              (rename lambda #%plain-lambda)
+             (rename case-lambda case-λ)
              (rename #%module-begin #%plain-module-begin)
              (rename printing:module-begin #%printing-module-begin)
              (rename module-begin #%module-begin)
@@ -211,10 +231,10 @@
              (rename new:chaperone-procedure chaperone-procedure)
              (rename new:impersonate-procedure impersonate-procedure)
              (rename new:chaperone-procedure* chaperone-procedure*)
-             (rename new:impersonate-procedure* impersonate-procedure*)             
+             (rename new:impersonate-procedure* impersonate-procedure*)
              (rename new:collection-path collection-path)
              (rename new:collection-file-path collection-file-path)
-             (all-from-except '#%kernel lambda λ #%app #%module-begin apply prop:procedure 
+             (all-from-except '#%kernel lambda λ #%app #%module-begin apply prop:procedure
                               procedure-reduce-arity procedure-reduce-arity-mask
                               procedure->method procedure-rename procedure-realm
                               chaperone-procedure impersonate-procedure
@@ -230,7 +250,10 @@
                               immutable-hash? immutable-box?
                               mutable-string? mutable-bytes? mutable-vector?
                               mutable-hash? mutable-box?
-                              syntax-srcloc)
+                              syntax-srcloc
+                              vector-copy vector-append vector-set/copy
+                              vector*-copy vector*-set/copy vector*-append
+                              vector-extend vector*-extend)
              (all-from "reqprov.rkt")
              (all-from-except "for.rkt"
                               define-in-vector-like
@@ -242,7 +265,7 @@
                               split-for-body
                               expand-for-clause)
              (all-from "kernstruct.rkt")
-             (all-from "member.rkt")
+             (all-from "pico.rkt")
              #%top-interaction
 
              map for-each andmap ormap

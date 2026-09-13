@@ -13,6 +13,7 @@
 
 (define force? #f)
 (define to-linklets? #f)
+(define skip-syntax-literals? #f)
 
 (define source-files
   (command-line
@@ -30,6 +31,8 @@
     (set! to-linklets? #t)]
    [("--no-disassemble") "Show machine code as-is"
     (current-can-disassemble #f)]
+   [("--no-syntax") "Skip decompilation of syntax contants"
+    (set! skip-syntax-literals? #t)]
    [("--partial-fasl") "Show more detail on fasl structure"
     (current-partial-fasl #t)]
    #:args source-or-bytecode-file
@@ -94,6 +97,7 @@
           (pretty-write
            (decompile
             #:to-linklets? to-linklets?
+            #:skip-syntax-literals? skip-syntax-literals?
             (call-with-input-file*
              (if (file-exists? alt-file) alt-file zo-file)
              (lambda (in)

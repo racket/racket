@@ -2397,3 +2397,51 @@
     mats/io.ms release_notes/release_notes.stex s/io.ss
 - reduce allocation and copying for certain cases in bytevector->string
     mats/io.ms release_notes/release_notes.stex s/io.ss
+- update zlib to version 1.3
+- repair collector handling of weak pairs when the max target generation
+  is greater than the minimum target generation
+    c/gc.c mats/4.ms
+- repair collector handling of ephemeron pairs that refer to objects in
+  younger generations
+    c/gc.c mats/4.ms
+
+9.6.0 changes:
+- updated version to 9.6.0
+    BUILDING NOTICE makefiles/Mf-install.in makefiles/Makefile-csug.in
+    scheme.1.in c/Makefile.a6nt c/Makefile.i3nt c/Makefile.ta6nt
+    c/Makefile.ti3nt mats/Mf-a6nt mats/Mf-i3nt mats/Mf-ta6nt
+    mats/Mf-ti3nt workarea c/scheme.rc s/7.ss s/cmacros.ss
+    release_notes/release_notes.stex csug/copyright.stex csug/csug.stex
+    bintar/Makefile rpm/Makefile pkg/Makefile wininstall/Makefile
+    wininstall/a6nt.wxs wininstall/i3nt.wxs wininstall/ta6nt.wxs
+    wininstall/ti3nt.wxs
+- removed Microsoft C Runtime library merge module redistribution as
+  recommended by Microsoft
+- specify version of WiX required to build the Windows installer
+
+9.6.2 changes:
+- The make install target of 9.6.0 was broken by the version string being 9.6.
+- updated version to 9.6.2
+    BUILDING NOTICE makefiles/Mf-install.in scheme.1.in c/Makefile.a6nt
+    c/Makefile.i3nt c/Makefile.ta6nt c/Makefile.ti3nt mats/Mf-a6nt
+    mats/Mf-i3nt mats/Mf-ta6nt mats/Mf-ti3nt workarea c/scheme.rc
+    s/cmacros.ss release_notes/release_notes.stex csug/copyright.stex
+    csug/csug.stex bintar/Makefile rpm/Makefile pkg/Makefile
+    wininstall/Makefile wininstall/a6nt.wxs wininstall/i3nt.wxs
+    wininstall/ta6nt.wxs wininstall/ti3nt.wxs
+- fix (library <library reference>) import syntax
+    mats/8.ms release_notes/release_notes.stex s/syntax.ss
+- add Sint32_t, Suint32_t, Sint64_t, Suint64_t types for cross-platform
+  code that uses scheme.h exports
+    boot/*/scheme.h c/number.c csug/foreign.stex
+    release_notes/release_notes.stex s/mkheader.ss
+- fix handling of most-negative-fixnum in Sinteger32 and Sinteger64
+    c/number.c mats/foreign1.c mats/foreign.ms release_notes/release_notes.stex
+- fix 32-bit C integer/unsigned to bignum conversion
+    c/number.c release_notes/release_notes.stex
+- add functions that try to convert from Scheme to C signed and unsigned
+  integers without throwing exceptions; use the new functions in Sscheme_start
+  and run_script
+    boot/*/scheme.h c/externs.h c/number.c c/scheme.c csug/foreign.stex
+    mats/foreign1.c mats/foreign.ms release_notes/release_notes.stex
+    s/mkheader.ss

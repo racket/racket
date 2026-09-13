@@ -48,7 +48,9 @@
 (define-struct glob-desc (vars))
 
 ;; Main entry:
-(define (decompile top #:to-linklets? [to-linklets? #f])
+(define (decompile top
+                   #:to-linklets? [to-linklets? #f]
+                   #:skip-syntax-literals? [skip-syntax-literals? #f])
   (cond
     [(linkl-directory? top)
      (cond
@@ -64,7 +66,8 @@
         (cond
           [(and main
                 (hash-ref (linkl-bundle-table main) 'decl #f))
-           (decompile-module-with-submodules top '() main)]
+           (decompile-module-with-submodules top '() main
+                                             #:skip-syntax-literals? skip-syntax-literals?)]
           [main
            (decompile-single-top main)]
           [else
@@ -83,7 +86,7 @@
               [else
                (list '#:key k '#:value (decompile v #:to-linklets? to-linklets?))]))))]
        [else
-        (decompile-module top)])]
+        (decompile-module top #:skip-syntax-literals? skip-syntax-literals?)])]
     [(or (linkl? top)
          (linklet? top))
      (decompile-linklet top)]
@@ -91,7 +94,8 @@
      (strip-correlated (faslable-correlated-linklet-expr top))]
     [else `(quote ,top)]))
 
-(define (decompile-module-with-submodules l-dir name-list main-l)
+(define (decompile-module-with-submodules l-dir name-list main-l
+                                          #:skip-syntax-literals? [skip-syntax-literals? #f])
   (decompile-module main-l
                     (lambda ()
                       (for/list ([(k l) (in-hash (linkl-directory-table l-dir))]
@@ -100,15 +104,18 @@
                                               (for/and ([s1 (in-list name-list)]
                                                         [s2 (in-list k)])
                                                 (eq? s1 s2))))
-                        (decompile-module-with-submodules l-dir k l)))))
+                        (decompile-module-with-submodules l-dir k l
+                                                          #:skip-syntax-literals? skip-syntax-literals?)))
+                    #:skip-syntax-literals? skip-syntax-literals?))
 
-(define (decompile-module l [get-nested (lambda () '())])
+(define (decompile-module l [get-nested (lambda () '())]
+                          #:skip-syntax-literals? [skip-syntax-literals? #f])
   (define ht (linkl-bundle-table l))
   (define phases (sort (for/list ([k (in-hash-keys ht)]
                                   #:when (exact-integer? k))
                          k)
                        <))
-  (define-values (mpi-vector requires recur-requires provides phase-to-link-modules)
+  (define-values (mpi-vector requires recur-requires flattened-requires provides phase-to-link-modules)
     (deserialize-requires-and-provides l))
   (define (phase-wrap phase l)
     (case phase
@@ -117,66 +124,80 @@
       [(-1) `((for-template ,@l))]
       [(#f) `((for-label ,@l))]
       [else `((for-meta ,phase ,@l))]))
-  `(module ,(hash-ref ht 'name 'unknown) ....
-     (require ,@(apply
-                 append
-                 (for/list ([phase+mpis (in-list requires)])
-                   (phase-wrap (car phase+mpis)
-                               (map collapse-module-path-index (cdr phase+mpis))))))
-     (quote (recurs: ,@(apply
-                        append
-                        (for/list ([phase+mpis (in-list requires)]
-                                   [recurs (in-list recur-requires)])
-                          (phase-wrap (car phase+mpis)
-                                      (for/list ([mpi (cdr phase+mpis)]
-                                                 [recur? (in-list recurs)]
-                                                 #:when recur?)
-                                        (collapse-module-path-index mpi)))))))
-     (provide ,@(apply
-                 append
-                 (for/list ([(phase ht) (in-hash provides)])
-                   (phase-wrap phase (hash-keys ht)))))
-     ,@(let loop ([phases phases] [depth 0])
-         (cond
-           [(null? phases) '()]
-           [(= depth (car phases))
-            (append
-             (decompile-linklet (hash-ref ht (car phases)) #:just-body? #t)
-             (loop (cdr phases) depth))]
-           [else
-            (define l (loop phases (add1 depth)))
-            (define (convert-syntax-definition s wrap)
-              (match s
-                [`(let ,bindings ,body)
-                 (convert-syntax-definition body
-                                            (lambda (rhs)
-                                              `(let ,bindings
-                                                 ,rhs)))]
-                [`(begin (.set-transformer! ',id ,rhs) ',(? void?))
-                 `(define-syntaxes ,id ,(wrap rhs))]
-                [`(begin (.set-transformer! ',ids ,rhss) ... ',(? void?))
-                 `(define-syntaxes ,ids ,(wrap `(values . ,rhss)))]
-                [_ #f]))
-            (let loop ([l l] [accum '()])
-              (cond
-                [(null? l) (if (null? accum)
-                               '()
-                               `((begin-for-syntax ,@(reverse accum))))]
-                [(convert-syntax-definition (car l) values)
-                 => (lambda (s)
-                      (append (loop null accum)
-                              (cons s (loop (cdr l) null))))]
-                [else
-                 (loop (cdr l) (cons (car l) accum))]))]))
-     ,@(get-nested)
-     ,@(let ([l (hash-ref ht 'stx-data #f)])
-         (if l
-             `((begin-for-all
-                 (define (.get-syntax-literal! pos)
-                   ....
-                   ,@(decompile-data-linklet l)
-                   ....)))
-             null))))
+  (define the-mod
+    `(module ,(hash-ref ht 'name 'unknown) ....
+       (require ,@(apply
+                   append
+                   (for/list ([phase+mpis (in-list requires)])
+                     (phase-wrap (car phase+mpis)
+                                 (map collapse-module-path-index (cdr phase+mpis))))))
+       (quote (recurs: ,@(apply
+                          append
+                          (for/list ([phase+mpis (in-list requires)]
+                                     [recurs (in-list recur-requires)])
+                            (phase-wrap (car phase+mpis)
+                                        (for/list ([mpi (cdr phase+mpis)]
+                                                   [recur? (in-list recurs)]
+                                                   #:when recur?)
+                                          (collapse-module-path-index mpi)))))))
+       ,@(if flattened-requires
+             `((quote (flattened: ,@(for/list ([mpi+phases (in-list flattened-requires)])
+                                      (define mpi (vector-ref mpi+phases 0))
+                                      (cons (collapse-module-path-index mpi)
+                                            (vector-ref mpi+phases 1))))))
+             null)
+       (provide ,@(apply
+                   append
+                   (for/list ([(phase ht) (in-hash provides)])
+                     (phase-wrap phase (for/list ([(k v) (in-hash ht)])
+                                         (define b (if (provided? v) (provided-binding v) v))
+                                         (match (binding-content b)
+                                           [`(,_ ,name . ,_) (if (eq? name k)
+                                                                 k
+                                                                 `(rename-out [,name ,k]))]
+                                           [_ k]))))))
+       ,@(let loop ([phases phases] [depth (apply min 0 phases)])
+           (cond
+             [(null? phases) '()]
+             [(= depth (car phases))
+              (append
+               (decompile-linklet (hash-ref ht (car phases)) #:just-body? #t)
+               (loop (cdr phases) depth))]
+             [else
+              (define l (loop phases (add1 depth)))
+              (define (convert-syntax-definition s wrap)
+                (match s
+                  [`(let ,bindings ,body)
+                   (convert-syntax-definition body
+                                              (lambda (rhs)
+                                                `(let ,bindings
+                                                     ,rhs)))]
+                  [`(begin (.set-transformer! ',id ,rhs) ',(? void?))
+                   `(define-syntaxes ,id ,(wrap rhs))]
+                  [`(begin (.set-transformer! ',ids ,rhss) ... ',(? void?))
+                   `(define-syntaxes ,ids ,(wrap `(values . ,rhss)))]
+                  [_ #f]))
+              (let loop ([l l] [accum '()])
+                (cond
+                  [(null? l) (if (null? accum)
+                                 '()
+                                 `((begin-for-syntax ,@(reverse accum))))]
+                  [(convert-syntax-definition (car l) values)
+                   => (lambda (s)
+                        (append (loop null accum)
+                                (cons s (loop (cdr l) null))))]
+                  [else
+                   (loop (cdr l) (cons (car l) accum))]))]))
+       ,@(get-nested)
+       ,@(let ([l (hash-ref ht 'stx-data #f)])
+           (if (and l (not skip-syntax-literals?))
+               `((begin-for-all
+                   (define (.get-syntax-literal! pos)
+                     ....
+                     ,@(decompile-data-linklet l)
+                     ....)))
+               null))))
+  the-mod)
 
 (define (decompile-single-top b)
   (define forms (let ([l (hash-ref (linkl-bundle-table b) 0 #f)])
@@ -231,7 +252,9 @@
         body-l])]
     [(? linklet?)
      (case (system-type 'vm)
-       [(chez-scheme)
+       [(racket linklet)
+        `(....)]
+       [else
         (define-values (fmt code literals) ((vm-primitive 'linklet-fasled-code+arguments) l))
         (cond
           [code
@@ -539,6 +562,7 @@
                                                'mutable
                                                'shared)
                                            i))))
+  
   (define (infer-name! d i)
     (when (pair? d)
       (define new-name
@@ -701,6 +725,8 @@
      (decode* (deserialize-multi-scope name scopes))]
     [(#:shifted-multi-scope)
      (decode* (deserialize-shifted-multi-scope phase multi-scope))]
+    [(#:interned-scope)
+     (decode* (make-interned-scope id))]
     [(#:table-with-bulk-bindings)
      (decode* (deserialize-table-with-bulk-bindings syms bulk-bindings))]
     [(#:bulk-binding-at)
@@ -723,6 +749,10 @@
      (decode* (deserialize-full-local-binding key free=id))]
     [(#:bulk-binding)
      (decode* (deserialize-bulk-binding prefix excepts mpi provide-phase-level phase-shift bulk-binding-registry))]
+    [(#:like-ambiguous-binding)
+     (decode* (like-ambiguous-binding))]
+    [(#:bulk-binding+provides)
+     (decode* (deserialize-bulk-binding+provides provides self prefix excepts mpi provide-phase-level phase-shift bulk-binding-registry))]    
     [(#:provided)
      (decode* (deserialize-provided binding protected? syntax?))]
     [else

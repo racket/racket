@@ -2,6 +2,7 @@
 
   (provide real->decimal-string
            regexp-quote
+           pregexp-quote
            regexp-replace-quote
            regexp-match*
            regexp-match-positions*
@@ -41,17 +42,35 @@
   (define regexp-quote-chars:s #rx"[][.*?+|(){}\\$^]")
   (define regexp-quote-chars:b #rx#"[][.*?+|(){}\\$^]")
 
-  (define (regexp-quote s [case-sens? #t])
+  (define (do-regexp-quote who pat:b pat:s s case-sens?)
     (let* ([b? (cond [(bytes? s) #t]
                      [(string? s) #f]
-                     [else (raise-argument-error 'regexp-quote
-                                                 "(or/c string? bytes?)" s)])]
+                     [else (raise-argument-error who "(or/c string? bytes?)" s)])]
            [s (if b?
-                (regexp-replace* regexp-quote-chars:b s #"\\\\&")
-                (regexp-replace* regexp-quote-chars:s s "\\\\&"))])
+                  (regexp-replace* pat:b s #"\\\\&")
+                  (regexp-replace* pat:s s "\\\\&"))])
       (cond [case-sens? s]
             [b?   (bytes-append #"(?i:" s #")")]
             [else (string-append "(?i:" s ")")])))
+
+  (define (regexp-quote s [case-sens? #t])
+    (do-regexp-quote
+     'regexp-quote
+     regexp-quote-chars:b
+     regexp-quote-chars:s
+     s
+     case-sens?))
+
+  (define pregexp-quote-chars:s #rx"[^0-9A-Za-z_]")
+  (define pregexp-quote-chars:b #rx#"[^0-9A-Za-z_]")
+
+  (define (pregexp-quote s [case-sens? #t])
+    (do-regexp-quote
+     'pregexp-quote
+     pregexp-quote-chars:b
+     pregexp-quote-chars:s
+     s
+     case-sens?))
 
   (define (regexp-replace-quote s)
     (cond [(bytes?  s) (regexp-replace* #rx#"[&\\]" s #"\\\\&")]
@@ -155,10 +174,11 @@
                       [(bytes?  string) (bytes-length  string)]
                       [else #f])]
            [orig-rx
-            (cond [(bytes? pattern) (byte-regexp pattern)]
+            (cond [(or (regexp? pattern)
+                       (byte-regexp? pattern))
+                   pattern]
                   [(string? pattern) (regexp pattern)]
-                  [(regexp? pattern) pattern]
-                  [(byte-regexp? pattern) pattern]
+                  [(bytes? pattern) (byte-regexp pattern)]
                   [else (raise-argument-error
                          'name
                          "(or/c regexp? byte-regexp? string? bytes?)"
@@ -428,33 +448,68 @@
                 (regexp-replace* pattern string orig-replacement ipre)]
                [else
                 ;; general implementation
-                (define-values [buf sub] (get-buf+sub string pattern start ipre))
+                (unless (or (regexp? pattern)
+                            (byte-regexp? pattern)
+                            (string? pattern)
+                            (bytes? pattern))
+                  (raise-argument-error 'regexp-replace*
+                                        "(or/c regexp? byte-regexp? string? bytes?)"
+                                        pattern))
+                (unless (or (string? string)
+                            (bytes? string))
+                  (raise-argument-error 'regexp-replace*
+                                        "(or/c string? bytes?)"
+                                        string))
+                (unless (or (string? orig-replacement)
+                            (bytes? orig-replacement)
+                            (procedure? orig-replacement))
+                  (raise-argument-error 'regexp-replace*
+                                        "(or/c string? bytes? procedure?)"
+                                        orig-replacement))
+
                 (define needs-string?
-                  (and (or (string? pattern) (regexp? pattern)) (string? string)))
+                  (and (or (string? pattern) (regexp? pattern))
+                       (string? string)))
+                (when (and needs-string? (bytes? orig-replacement))
+                  (raise-arguments-error 'regexp-replace*
+                                         "cannot replace a string with a byte string"
+                                         "string-matching regexp" pattern
+                                         "string" string
+                                         "byte string" orig-replacement))
+
                 (define replacement
-                  (if (and (not needs-string?) (string? orig-replacement))
+                  (if (and (not needs-string?)
+                           (string? orig-replacement))
                       (string->bytes/utf-8 orig-replacement)
                       orig-replacement))
-                (define (check proc args)
-                  (let ([v (apply proc args)])
-                    (unless (if needs-string? (string? v) (bytes? v))
-                      (raise-mismatch-error
-                       '|regexp-replace* (calling given filter procedure)|
-                       (if needs-string?
-                           "expected a string result: "
-                           "expected a byte string result: ")
-                       v))
-                    v))
-                (define need-replac?
-                  (and (not (procedure? replacement))
-                       (regexp-match? #rx#"[\\&]" replacement)))
-                (define (replac ms str)
-                  (if need-replac?
-                      ((if (string? str) bytes->string/utf-8 values)
+
+                (define-values [buf sub] (get-buf+sub string pattern start ipre))
+
+                (define (checked-apply proc args)
+                  (define v (apply proc args))
+                  (define (do-raise expected)
+                    (raise-result-error
+                     '|regexp-replace* (calling given filter procedure)|
+                     expected
+                     v))
+                  (if needs-string?
+                      (unless (string? v) (do-raise "string?"))
+                      (unless (bytes? v) (do-raise "bytes?")))
+                  v)
+
+                (define process-ms
+                  (cond
+                    [(procedure? replacement)
+                     (lambda (ms)
+                       (checked-apply
+                        replacement
+                        (for/list ([m ms])
+                          (and m (sub buf (car m) (cdr m))))))]
+                    [(regexp-match? #rx#"[\\&]" replacement)
+                     (define ((make-do-replac str) ms)
                        (apply
                         bytes-append
-                        (let ([str (if (string? str) (string->bytes/utf-8 str) str)]
-                              [get-match
+                        (let ([get-match
                                (lambda (n)
                                  (if (n . < . (length ms))
                                      (let* ([p (list-ref ms n)]
@@ -495,34 +550,19 @@
                                                  (cons (get-match 0)
                                                        (loop (cdar m)))))]))
                                   (list (subbytes str pos))))))))
-                      str))
-                (when (or (string? pattern) (bytes? pattern)
-                          (regexp? pattern) (byte-regexp? pattern))
-                  (unless (or (string? string)
-                              (bytes? string))
-                    (raise-argument-error 'regexp-replace* "(or/c string? bytes?)"
-                                          string))
-                  (unless (or (string? replacement)
-                              (bytes? replacement)
-                              (procedure? replacement))
-                    (raise-argument-error 'regexp-replace*
-                                          "(or/c string? bytes? procedure?)"
-                                          replacement))
-                  (when (and needs-string? (bytes? replacement))
-                    (raise-mismatch-error
-                     'regexp-replace*
-                     "cannot replace a string with a byte string: "
-                     replacement)))
+                     (cond
+                       [(string? replacement)
+                        (define do-replac
+                          (make-do-replac (string->bytes/utf-8 replacement)))
+                        (lambda (ms) (bytes->string/utf-8 (do-replac ms)))]
+                       [else (make-do-replac replacement)])]
+                    [else (lambda (_) replacement)]))
+
                 (define r
                   (regexp-loop regexp-replace* loop start end pattern buf ipre
                                ;; success-choose:
                                (lambda (start ms acc)
-                                 (list* (if (procedure? replacement)
-                                            (check
-                                             replacement
-                                             (for/list ([m ms])
-                                               (and m (sub buf (car m) (cdr m)))))
-                                            (replac ms replacement))
+                                 (list* (process-ms ms)
                                         (sub buf start (caar ms))
                                         acc))
                                ;; failure-k:
@@ -532,11 +572,19 @@
                                #f #f #f
                                ;; flags
                                #t #f))
-                (apply
-                 (if (bytes? buf) bytes-append string-append)
-                 (cond [(and (= start 0) (not end)) r]
-                       [(not end) (cons (sub string 0 start) r)]
-                       [else `(,(sub string 0 start) ,@r ,(sub string end #f))]))]))])
+
+                (let-values ([(app sub)
+                              (if (bytes? buf)
+                                  (values bytes-append subbytes)
+                                  (values string-append substring))])
+                  (apply app
+                         (let* ([r (if end
+                                       (append r (list (sub buf end)))
+                                       r)]
+                                [r (if (eqv? start 0)
+                                       r
+                                       (cons (sub buf 0 start) r))])
+                           r)))]))])
       regexp-replace*))
 
   ;; Returns all the matches for the pattern in the string, optionally

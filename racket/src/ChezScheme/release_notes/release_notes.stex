@@ -1,9 +1,20 @@
 \documentclass{releasenotes}
 
-\thisversion{Version 9.5.9}
+\thisversion{Version 10.5.0}
 \thatversion{Version 8.4}
-\pubmonth{April}
-\pubyear{2022}
+\pubmonth{May}
+\pubyear{2026}
+
+\iflatex
+\usepackage{enumitem}
+\setitemize{noitemsep,topsep=0pt,parsep=0pt,partopsep=0pt}
+\newenvironment{itemizeC}%
+  {\begin{itemize}[noitemsep,topsep=0pt,parsep=0pt,partopsep=0pt]}%
+  {\end{itemize}}
+\fi
+\ifhtml
+  \newenvironment{itemizeC}{\begin{itemize}}{\end{itemize}}
+\fi
 
 \begin{document}
 
@@ -21,50 +32,86 @@ The Chez Scheme machine type (returned by the \scheme{machine-type}
 procedure) is given in parentheses.
 
 \begin{itemize}
-\item Linux x86, nonthreaded (i3le) and threaded (ti3le)
-\item Linux x86\_64, nonthreaded (a6le) and threaded (ta6le)
-\item Linux AArch64 including Android, nonthreaded (arm64le) and threaded (tarm64le)
-\item Linux ARMv6 (32-bit) including Android, nonthreaded (arm32le) and threaded (tarm32le)
-\item Linux RV64G (64-bit RISC-V), nonthreaded (rv64le) and threaded (trv64le)
-\item Linux PowerPC (32-bit), nonthreaded (ppc32le) and threaded (tppc32le)
-\item Mac OS x86, nonthreaded (i3osx) and threaded (ti3osx)
-\item Mac OS x86\_64, nonthreaded (a6osx) and threaded (ta6osx)
-\item Mac OS AArch64 and iOS, nonthreaded (arm64osx) and threaded (tarm64osx)
-\item Mac OS PowerPC (32-bit) (ppc2osx) and threaded (tppc32osx)
-\item Windows x86, nonthreaded (i3nt) and threaded (ti3nt)
-\item Windows x86\_64, nonthreaded (a6nt) and threaded (ta6nt)
-\item Windows AArch64, nonthreaded (arm64nt) and threaded (tarm64nt)
-\item OpenBSD x86, nonthreaded (i3ob) and threaded (ti3ob)
-\item OpenBSD x86\_64, nonthreaded (a6ob) and threaded (ta6ob)
-\item OpenBSD AArch64, nonthreaded (arm64ob) and threaded (tarm64ob)
-\item OpenBSD ARMv6 (32-bit), nonthreaded (arm32ob) and threaded (tarm32ob)
-\item OpenBSD PowerPC (32-bit), nonthreaded (ppc32ob) and threaded (tppc32ob)
-\item FreeBSD x86, nonthreaded (i3fb) and threaded (ti3fb)
-\item FreeBSD x86\_64, nonthreaded (a6fb) and threaded (ta6fb)
-\item FreeBSD AArch64, nonthreaded (arm64fb) and threaded (tarm64fb)
-\item FreeBSD ARMv6 (32-bit), nonthreaded (arm32fb) and threaded (tarm32fb)
-\item FreeBSD PowerPC (32-bit), nonthreaded (ppc32fb) and threaded (tppc32fb)
-\item NetBSD x86, nonthreaded (i3nb) and threaded (ti3nb)
-\item NetBSD x86\_64, nonthreaded (a6nb) and threaded (ta6nb)
-\item NetBSD AArch64, nonthreaded (arm64nb) and threaded (tarm64nb)
-\item NetBSD ARMv6 (32-bit), nonthreaded (arm32nb) and threaded (tarm32nb)
-\item NetBSD PowerPC (32-bit), nonthreaded (ppc32nb) and threaded (tppc32nb)
-\item GNU Hurd x86, nonthreaded (i3gnu) and threaded (ti3gnu)
-\item OpenSolaris x86, nonthreaded (i3s2) and threaded (ti3s2)
-\item OpenSolaris x86\_64, nonthreaded (a6s2) and threaded (ta6s2)
-\item Other platforms via bytecode interpretation (pb, tpb, pb32l, tpb32l, pb32b, tpb32b, pb64l, tpb64l, pb64b, tpb64b)
+\item Linux
+     \begin{itemizeC}
+     \item x86, nonthreaded (i3le) and threaded (ti3le)
+     \item x86\_64, nonthreaded (a6le) and threaded (ta6le)
+     \item AArch64 including Android, nonthreaded (arm64le) and threaded (tarm64le)
+     \item ARMv6 (32-bit armhf), nonthreaded (arm32le) and threaded (tarm32le)
+     \item ARMv7 (32-bit armel) including Android, nonthreaded (armv7le) and threaded (tarmv7le)
+     \item RV64G (64-bit RISC-V), nonthreaded (rv64le) and threaded (trv64le)
+     \item LoongArch64 (64-bit LoongArch), nonthreaded (la64le) and threaded (tla64le)
+     \item PowerPC (32-bit), nonthreaded (ppc32le) and threaded (tppc32le)
+     \end{itemizeC}
+\item Mac OS
+     \begin{itemizeC}
+     \item x86, nonthreaded (i3osx) and threaded (ti3osx)
+     \item x86\_64, nonthreaded (a6osx) and threaded (ta6osx)
+     \item AArch64, nonthreaded (arm64osx) and threaded (tarm64osx)
+     \item PowerPC (32-bit) (ppc32osx) and threaded (tppc32osx)
+     \end{itemizeC}
+\item Windows
+     \begin{itemizeC}
+     \item x86, nonthreaded (i3nt) and threaded (ti3nt)
+     \item Windows x86\_64, nonthreaded (a6nt) and threaded (ta6nt)
+     \item AArch64, nonthreaded (arm64nt) and threaded (tarm64nt)
+     \end{itemizeC}
+\item OpenBSD
+     \begin{itemizeC}
+     \item x86, nonthreaded (i3ob) and threaded (ti3ob)
+     \item x86\_64, nonthreaded (a6ob) and threaded (ta6ob)
+     \item AArch64, nonthreaded (arm64ob) and threaded (tarm64ob)
+     \item ARMv6 (32-bit), nonthreaded (arm32ob) and threaded (tarm32ob)
+     \item PowerPC (32-bit), nonthreaded (ppc32ob) and threaded (tppc32ob)
+     \end{itemizeC}
+\item FreeBSD
+     \begin{itemizeC}
+     \item x86, nonthreaded (i3fb) and threaded (ti3fb)
+     \item x86\_64, nonthreaded (a6fb) and threaded (ta6fb)
+     \item AArch64, nonthreaded (arm64fb) and threaded (tarm64fb)
+     \item ARMv6 (32-bit), nonthreaded (arm32fb) and threaded (tarm32fb)
+     \item PowerPC (32-bit), nonthreaded (ppc32fb) and threaded (tppc32fb)
+     \end{itemizeC}
+\item NetBSD
+     \begin{itemizeC}
+     \item x86, nonthreaded (i3nb) and threaded (ti3nb)
+     \item x86\_64, nonthreaded (a6nb) and threaded (ta6nb)
+     \item AArch64, nonthreaded (arm64nb) and threaded (tarm64nb)
+     \item ARMv6 (32-bit), nonthreaded (arm32nb) and threaded (tarm32nb)
+     \item PowerPC (32-bit), nonthreaded (ppc32nb) and threaded (tppc32nb)
+     \end{itemizeC}
+\item GNU Hurd
+     \begin{itemizeC}
+     \item x86, nonthreaded (i3gnu) and threaded (ti3gnu)
+     \item x86\_64, nonthreaded (a6gnu) and threaded (ta6gnu)
+     \end{itemizeC}
+\item OpenSolaris
+     \begin{itemizeC}
+     \item x86, nonthreaded (i3s2) and threaded (ti3s2)
+     \item x86\_64, nonthreaded (a6s2) and threaded (ta6s2)
+     \end{itemizeC}
+\item Haiku
+     \begin{itemizeC}
+     \item x86\_64, nonthreaded (a6hk) and threaded (ta6hk)
+     \end{itemizeC}
+\item Other platforms
+     \begin{itemizeC}
+     \item bytecode interpretation (pb, tpb, pb32l, tpb32l, pb32b, tpb32b, pb64l, tpb64l, pb64b, tpb64b)
+     \end{itemizeC}
 \end{itemize}
 
+{\thisversion} supports iOS natively to a limited extent. See
+\href[static]{section:ios-machine-types}{``New machine types for iOS''} for details.
+
 This document contains three sections describing significant
-(1) \href[static]{section:racket}{changes specific to the Racket variant},
-(2) \href[static]{section:functionality}{functionality changes},
-(3) \href[static]{section:bugfixes}{bugs fixed}, and
-(4) \href[static]{section:performance}{performance enhancements}.
+(1) \href[static]{section:functionality}{functionality changes},
+(2) \href[static]{section:bugfixes}{bugs fixed}, and
+(3) \href[static]{section:performance}{performance enhancements}.
 A version number listed in parentheses in the header for a change
 indicates the first minor release or internal prerelease to support
 the change.
 
-More information on {\ChezScheme} and {\PetiteChezScheme} can 
+More information on {\ChezScheme} and {\PetiteChezScheme} can
 \scheme{be} found at \hyperlink{http://www.scheme.com/}{http://www.scheme.com},
 and extensive documentation is available in
 \TSPL{4}{th} (available directly from MIT Press or from online and local retailers)
@@ -73,16 +120,296 @@ Online versions of both books can be found at
 \hyperlink{http://www.scheme.com/}{http://www.scheme.com}.
 
 %-----------------------------------------------------------------------------
-\section{Racket Changes}\label{section:racket}
+\section{Functionality Changes}\label{section:functionality}
 
-In addition to changes listed in the remaining sections, the Racket
-version of Chez Scheme adds further functionality changes and
-performance improvements.
+\subsection{Exact zeros and \scheme{lcm} (10.5.0)}
 
+Supplying an exact \scheme{0} to \scheme{lcm} produces exact
+\scheme{0}, even if other arguments are inexact integers. This change
+is in line with previous changes described in
+Section~\ref{section:transcendentals-and-zero}.
 
-\subsection{Supported Platforms and Portable Bytecode}
+\subsection{Anonymous fields in struct and union ftypes (10.5.0)}
 
-AArch64 (64-bit Arm) and RV64G (64-bit RISC-V) architectures are
+Struct and union ftypes now support anonymous fields, which mirror anonymous
+struct/union members as defined by C11 and later. Anonymous fields have arrow
+(\scheme{=>}) as their name and must themselves be of a struct, union, or bits
+ftype, whose fields are accessible directly from the containing ftype
+(recursively from the innermost named parent when nested).
+
+\subsection{New machine type for ARMv7 armel (10.5.0)}
+
+The armv7le and tarmv7le machine types correspond to a 32-bit ARM
+compilation target using the armel ABI, which is consistent with (old)
+Android devices.
+
+\subsection{Named Cost Center (10.4.0)}
+
+The procedure \scheme{make-cost-center} now
+accepts an optional argument \scheme{name}, which must be a symbol
+that identifies the object or \scheme{#f} for no name. The name is
+printed every time the cost center is printed.
+
+\subsection{Unicode 17.0.0 support (10.4.0)}
+
+The character sets, character classes, and word-breaking algorithms for character, string,
+and Unicode-related bytevector operations have now been updated to Unicode 17.0.0.
+
+The \scheme{char-indic-break-property} function was added to support decoding grapheme
+clusters with Indic conjuncts.
+
+\subsection{Foreign procedure \scheme{__errno}, \scheme{__alloc}, and \scheme{__disable_interrupts} (10.4.0)}
+
+The new \scheme{__errno} foreign-procedure convention makes each call
+return two values: the foreign procedure's direct result and the value
+of \scheme{errno} just after the foreign procedure returns. On
+Windows, the \scheme{current-errno-source} parameter selects the
+runtime C library whose \scheme{errno} is consulted, or instead of
+\scheme{__errno} use \scheme{__get_last_error} to get a result
+from \scheme{GetLastError} instead of \scheme{errno}.
+
+The new \scheme{__alloc} foreign-procedure convention modifies a preceding
+\scheme{__atomic} to allow a foreign procedure to call back into
+Scheme's C library routines to allocate Scheme values, such as
+allocating a string or pair.
+
+The new \scheme{__disable_interrupts} convention disables interupts
+during a foreign call or during the invocation of a foreign callable.
+A foreign call could be wrapped just as well with
+\scheme{with-interrupts-disabled}; the
+\scheme{__disable_interrupts} convention is intended more for foreign
+callables. For a callable, interrupts are disabled just before the
+first point that a callable would otherwise allow interrupt handling,
+and interrupts after reenabled after the last point where the callable
+would otherwise allow interrupt handling.
+
+\subsection{New machine types for GNU/Hurd and Haiku on x86\_64 (10.4.0)}
+
+GNU/Hurd on x86\_64 is now supported as machine types a6gnu (nonthreaded) and ta6gnu (threaded).
+
+Haiku on x86\_64 is now supported as machine types a6nk (nonthreaded) and ta6hk (threaded).
+
+\subsection{Interrupts and large-vector operations (10.4.0)}
+
+Vector and string operations such as \scheme{make-vector},
+\scheme{make-bytevector}, \scheme{make-string},
+\scheme{string-append}, and \scheme{vector-append}---whose run times
+depend on the length of the vector, bytevector, or string---were
+treated for the purposes of scheduling interrupt checking as
+essentially constant-time operations. As a result, garbage collections
+and timer expirations could be too infrequent. These operations still
+will not be interrupted during their execution, but they are treated
+as taking time proportional to their work for the purpose of
+scheduling interrupts.
+
+List operations such as \scheme{length}, \scheme{list-ref},
+\scheme{list-tail}, \scheme{append}, \scheme{reverse}, \scheme{assq},
+and \scheme{memq} suffer from the same problem only in unsafe mode.
+Direct use of these procedures in unsafe mode continues to be treated
+as essentialy constant-time.
+
+\subsection{Type recovery improvements (10.4.0)}
+
+The compiler now avoids moving predicates from tail position when they may raise an error,
+even if the result is known in case of a success; and it records must-error information
+that is inferred by type recovery so that it can be used by other optimization passes.
+
+The type recovery pass has improved support for \scheme{exact}, \scheme{inexact},
+and similar functions; improved support for \scheme{quotient},
+\scheme{remainder}, \scheme{div}, \scheme{mod}, and similar functions;
+and partial support for more numeric predicates,
+including \scheme{even?}, \scheme{odd?}, \scheme{positive?}, \scheme{negative?}
+and \scheme{real-valued?}.
+
+\subsection{Nongenerative ftype definitions (10.4.0)}
+
+The \scheme{define-ftype} form allows a \scheme{(nongenerative \var{uid})}
+clause, which is analogous to the same kind of clause in
+\scheme{define-record-type}. Supplying \var{uid} binds an ftype name
+as equivalent to any previous definition declaring the same \var{uid}, or
+it reports an error if the new definition is incompatible with a
+previous definition declaring \var{uid}.
+
+The \scheme{(& \var{ftype-name} \var{ftype-name})} argument or result
+type for a foreign procedure or callable now allows any pointer ftype
+for the second \var{ftype-name}, instead of allowing only the name
+\scheme{ftype-pointer} or the name \scheme{ftype-scheme-object-pointer}.
+
+The \scheme{make-ftype-scheme-object-pointer} form now supports an
+optional ftype to be used for the constructed pointer, analogous to
+specifying a pointer type for \scheme{make-ftype-pointer}. When constructing
+a pointer using \scheme{make-ftype-scheme-object-pointer}, the specified
+ftype must be a Scheme-object pointer type, while
+\scheme{make-ftype-pointer} now rejects such types.
+
+\subsection{In-place vector copying (10.3.0)}
+
+The \scheme{vector-copy!} procedure copies a subsequence
+from one vector to another, just like \scheme{fxvector-copy!} and others.
+
+\subsection{New \scheme{CHEZSCHEME_HISTORY} environment variable (10.3.0)}
+
+If the environment variable \scheme{CHEZSCHEME_HISTORY} is set during startup, and the
+\scheme{--eehistory} command-line option isn't used, the value of said environment
+variable will determine the history file location.
+
+\subsection{Inlined numeric predicates during compilation (10.3.0)}
+
+The compiler now inlines more numeric predicates, in particular \scheme{real?},
+\scheme{rational?}, \scheme{exact?}, and \scheme{inexact?}.
+
+\subsection{Type recovery improvements (10.3.0)}
+
+The type recovery pass has improved support for \scheme{cfl+} and similar functions,
+\scheme{integer?}, \scheme{zero?}, and similar predicates, and \scheme{+} and \scheme{-}.
+
+\subsection{Unicode 16.0.0 support (10.3.0)}
+
+The character sets, character classes, and word-breaking algorithms for character, string,
+and Unicode-related bytevector operations have now been updated to Unicode 16.0.0.
+
+\subsection{Improved \scheme{expt} on a flonum and a large exact power (10.3.0)}
+
+The \scheme{expt} function produces a more accurate result when its first argument is a
+flonum and its second argument is an exact integer that has no equivalent flonum
+representation.
+
+\subsection{Atomic foreign-procedure calls (10.3.0)}
+
+A new \scheme{__atomic} foreign-procedure convention indicates that the foreign function
+will not call back into Scheme, such as through a foreign callable. Calls to atomic
+foreign functions may be compiled to a more efficient form, particularly if the function
+accepts or returns flonums that may be unboxed (in the sense of
+Section~\ref{sec:unbox-floats}).
+
+\subsection{Improved flonum unboxing for \scheme{ftype-ref} and \scheme{ftype-set!} (10.3.0)}
+
+Unboxing optimizations (in the sense of Section~\ref{sec:unbox-floats}) are more
+consistently applied for \scheme{ftype-ref} and \scheme{ftype-set!} on \scheme{double} and
+\scheme{float} fields.
+
+\subsection{Atomic compare-and-set for pairs (10.3.0)}
+
+The new procedures \scheme{car-cas!} and \scheme{cdr-cas!} atomically update a pair,
+analogous to \scheme{box-cas!} on a box.
+
+\subsection{Black-box procedure (10.3.0)}
+
+The new procedure \scheme{black-box} simply returns its argument, but optimization passes
+make no assumptions about how \scheme{black-box} uses its argument, whether
+\scheme{black-box} has side effects, or what \scheme{black-box} returns beyond the fact
+that it is a single value.
+
+The intended use of \scheme{black-box} is for benchmarking and testing tasks that need to
+simulate an arbitrary consumption context for a computation, but without otherwise adding
+overhead to the computation by adding a non-inlined function call or other obfuscating
+work.
+
+\subsection{Command-line options \scheme{--version} and \scheme{--help} write to stdout
+(10.2.0)}
+
+Calling \scheme{scheme} or \scheme{petite} with \scheme{--version} or \scheme{--help} now
+writes output to stdout, not stderr.
+
+\subsection{Efficient in-place fxvector and flvector copying (10.2.0)}
+
+The \scheme{fxvector-copy!} and \scheme{flvector-copy!} functions
+copy a subsequence from one fxvector (resp. flvector) to another
+in an efficient manner similar to \scheme{bytevector-copy!},
+avoiding the overhead of repeated accesses to individual vector positions.
+
+\subsection{Type recovery improvements (10.2.0)}
+
+The type recovery pass has improved support for \scheme{abs},
+\scheme{add1} and \scheme{sub1}  with a fixnum argument
+and added support for \scheme{1+}, \scheme{1-}, and \scheme{-1+}.
+
+\subsection{Single-argument \scheme{fx-/wraparound} (10.2.0)}
+
+The \scheme{fx-/wraparound} function changed to accept a single
+argument, which makes it more consistent with the R6RS \scheme{fx-}
+function.
+
+\subsection{Foreign pointers to Scheme objects (10.2.0)}
+
+The \scheme{make-ftype-scheme-object-pointer} function facilitates a
+unified view of foreign-allocated addresses and addresses that are
+under control of the memory manager---especially addresses for
+bytevector and flvector content. Unlike extracting an address via
+\scheme{object->reference-address} and using it to construct a regular
+ftype pointer, the \scheme{make-ftype-scheme-object-pointer} function
+creates an ftype pointer that cooperates with the memory manager to
+ensure that the encapsulated address does not go stale. When the
+pointer is passed in a call to a foreign function, its address can be
+extracted after the point where garbage collections can occur,
+assuming that \scheme{__collect_safe} is not used.
+
+To make this unified pointer representation at the ftype pointer layer
+(\scheme{ftype-ref}, \scheme{ftype-set!}, etc.) as flexible as the raw
+address layer (\scheme{foreign-ref}, \scheme{foreign-set!}, etc.), new
+forms such as \scheme{ftype-any-ref} use generic pointers independent
+of the pointer's ftype. This flexibility comes at the cost of
+consistency checking, which means that the new operations are less
+safe than operations that are sensitive to a pointer's ftype.
+
+Additions:
+
+\schemedisplay
+make-ftype-scheme-object-pointer
+ftype-scheme-object-pointer?
+ftype-scheme-object-pointer-object
+ftype-scheme-object-pointer-offset
+ftype-any-ref
+ftype-any-set!
+ftype-pointer               ; as \var{ftype-name}
+ftype-scheme-object-pointer ; as \var{ftype-name}
+(& \var{ftype-name} ftype-pointer) ; as call argument or result
+(& \var{ftype-name} ftype-scheme-object-pointer) ; as argument/result
+\endschemedisplay
+
+\subsection{Constrain signal delivery to the main thread (10.1.0)}
+
+Signals are now always delivered to the main Scheme thread to avoid crashes when a signal
+is delivered to a thread that may not even be running Scheme.
+
+\subsection{Improved support for lists in type recovery (10.1.0)}
+
+The type recovery pass has improved support for lists by classifying pairs as mutable or
+immutable. Type recovery is enabled with the \scheme{enable-type-recovery} parameter.
+
+\subsection{New machine types for iOS (10.1.0)}\label{section:ios-machine-types}
+
+The a6ios, ta6ios, arm64ios and tarm64ios machine types correspond to an
+iOS compilation target. Native-code support for iOS is currently limited
+to applications attached to a debugger as the platform does not allow
+executable code to be loaded at runtime.
+
+\subsection{Standard boolean foreign type (10.1.0)}
+
+The \scheme{stdbool} foreign type corresponds to \scheme{bool} as
+defined by the host machine's \scheme{stdbool.h} include file.
+
+\subsection{Optimization for \scheme{call/cc} (10.1.0)}
+
+When \scheme{call/cc} is applied to an immediate function that does
+not use its argument, then the application is replaced with the body
+of that function, which avoids the potential work of capturing a
+continuation at run time.
+
+\subsection{New procedure \scheme{flbit-field} (10.1.0)}
+
+The \scheme{flbit-field} procedure extracts bits from an IEEE 64-bit
+floating-point representation in a way that is analogous to
+\scheme{bitwise-bit-field} on an exact integer.
+
+\subsection{Unicode 15.1 support (10.0.0)}
+
+The character sets, character classes, and word-breaking algorithms for character, string,
+and Unicode-related bytevector operations have now been updated to Unicode 15.1.
+
+\subsection{New supported platforms and portable bytecode (10.0.0)}
+
+AArch64 (64-bit Arm), RV64G (64-bit RISC-V), and LoongArch64 architectures are
 supported. Threads are supported on architectures with weak memory
 models while preserving the safety guarantee described in the
 documentation for variables and primitive datatypes.
@@ -106,8 +433,7 @@ bytecode interpretation. In particular, since Chez Scheme is mostly
 written in Chez Scheme, a pbchunk conversion of its boot files
 improves performance of primitives and compilation.
 
-
-\subsection{Threaded Default and Build System Changes}
+\subsection{Threaded default and build system changes (10.0.0)}
 
 Running \scheme{configure} assumes a threaded target machine type,
 unless \scheme{--nothreads} or a non-threaded machine type is
@@ -134,8 +460,7 @@ The new \scheme{scheme-build-number} function complements
 during development. The \scheme{scheme-build-number} procedure always
 returns zero for a released version of Chez Scheme.
 
-
-\subsection{Compiler Improvements}\label{sec:unbox-floats}
+\subsection{Compiler improvements (10.0.0)}\label{sec:unbox-floats}
 
 The compiler generates code that locally unboxes floating-point
 operations, so that compositions of floating-point operations can be
@@ -146,14 +471,14 @@ by an expression, and it uses that information to eliminate run-time
 checks or conditionals. For example, within
 \scheme{(if (flonum? x) \var{E1} \var{E2})},
 assuming that the variable \scheme{x} is never
-mutated, then it holds a flonum value within \var{E2}, so
+mutated, then it holds a flonum value within \var{E1}, so
 arithmetic can be specialized to flonum operations. Type inference
 requires an additional pass for compilation, but when compiling in
 safe mode, the pass tends to more than pay for itself; reduced checks
 and error handling create less work for later compilation passes.
 Even when many checks are removed, run-time performance may improve
 only modestly on modern hardware, since the removed branches are
-perfectly predicatble. Inference can be disabled by setting
+perfectly predictable. Inference can be disabled by setting
 \scheme{enable-type-recovery} to \scheme{#f}.
 
 The compiler can infer more than previously about procedures that
@@ -191,12 +516,11 @@ The compiler reduces code size by using a more compact representation
 for most call-return sites and by using a more compact dispatch to
 interrupt checking in most cases.
 
-The internal representation of record types has changed to that a
+The internal representation of record types has changed so that a
 record-type predicate is a constant-time operation, instead of
 proportional to the subtype depth.
 
-
-\subsection{Garbage-Collector Improvements}
+\subsection{Garbage-collector improvements (10.0.0)}
 
 Garbage collection takes advantage of machine parallelism. Parallel
 collection is automatically enabled when a program has multiple Scheme
@@ -225,8 +549,7 @@ previous versions of Chez Scheme.
 See also Sections~\ref{sec:gc-reflect} and \ref{sec:ffi-storage} for
 related new functionality.
 
-
-\subsection{Continuation Marks}\label{sec:cont-marks}
+\subsection{Continuation marks (10.0.0)}\label{sec:cont-marks}
 
 \emph{Continuation marks} add key--value information to continuations.
 The \scheme{with-continuation-mark} form associates a key--value pair
@@ -250,8 +573,7 @@ similar to calling a procedure as a function, but instead of a value
 to deliver to the continuation, it takes a procedure of no arguments
 to call within the continuation.
 
-
-\subsection{Fixnums}
+\subsection{New fixnum operations (10.0.0)}
 
 New operations support common bit-related operations on fixnums:
 
@@ -274,8 +596,7 @@ mutable-fxvector?               ; removed
 immutable-fxvector?             ; removed
 \endschemedisplay
 
-
-\subsection{Flonums}
+\subsection{New flonum operations (10.0.0)}
 
 The \scheme{eq?} operator works on flonums in the sense that two
 flonums values that are \scheme{eq?} at some point (such as creation
@@ -307,7 +628,7 @@ efficient.
 Flonum printing can be controlled by new parameters:
 
 \schemedisplay
-print-submornal-precision
+print-subnormal-precision
 print-positive-exponent-sign
 print-select-flonum-exponential-format
 \endschemedisplay
@@ -317,8 +638,7 @@ The \scheme{fl=}, \scheme{fl<}, , \scheme{fl>}, \scheme{fl<=}, and
 that's \scheme{+nan.0}, which makes them consistent with \scheme{=},
 \scheme{<}, \scheme{>}, \scheme{<=}, and \scheme{>=}.
 
-
-\subsection{Bignums}
+\subsection{Improved bignum arithmetic (10.0.0)}
 
 Multiplication of very large numbers uses Karatsuba, Toom-3, or
 Toom-4, while division (including GCD) uses Burnikel-Ziegler. These
@@ -326,20 +646,22 @@ changes make arithmetic and number-to-string conversions faster for
 large values, and they avoid unbounded delays between interrupt
 polling.
 
+\subsection{Exact zeros, transcendentals, and exponentials (10.0.0)}\label{section:transcendentals-and-zero}
 
-\subsection{Exact Zeros, Transcendentals, and Exponentials}
-
-Division of an inexact number by an exact \scheme{0} now raises
-exception instead of producing \scheme{+inf.0} or \scheme{-inf.0}.
-This makes division more consistent with with the existing behavior of
+Division of an exact \scheme{0} by an inexact number now always
+produces exact \scheme{0}, and
+division of an inexact number by an exact \scheme{0} now raises an
+exception instead of producing \scheme{+inf.0} or \scheme{-inf.0},
+This change makes division more consistent with the existing behavior of
 multiplication, where multiplication of an inexact number by an exact
-\scheme{0} produces an exact \scheme{0}.
+\scheme{0} produces an exact \scheme{0}. It should be noted, however, that
+this change takes \scheme{/} out of compliance with R6RS.
 
 Small changes to transcendental functions help improve consistency for
 derived compositions. The \scheme{expt} function with two
 \scheme{+inf.0} or \scheme{-inf.0} arguments now produces
 \scheme{+nan.0+nan.0i} instead of a complex number with infinite
-components. The \scheme{sqrt} and \scheme{log} functions changes to
+components. The \scheme{sqrt} and \scheme{log} functions change so
 that \scheme{(sqrt -0.0)} and \scheme{(log -0.0)} produce real
 numbers, instead of complex numbers, on the grounds that
 \scheme{(negative? -0.0)} produces \scheme{#f}.
@@ -348,8 +670,7 @@ The \scheme{expt} function recognizes an exact \scheme{1/2} as its
 second argument, and in that case it behaves like \scheme{sqrt}, which
 may produce an exact result.
 
-
-\subsection{Characters, Strings, and Unicode}
+\subsection{New character, string, and Unicode functions (10.0.0)}
 
 New functions support decoding grapheme clusters within strings or
 character streams and expose the underlying new character classifiers:
@@ -369,9 +690,7 @@ creating an intermediate mutable string.
 The \scheme{path-build} procedure combines two path strings to form a
 path, adding a directory separator between them if necessary.
 
-
-\subsection{Hash Tables}
-
+\subsection{Hashtable changes (10.0.0)}
 
 Operations returning hashtable cells (\scheme{hashtable-cell},
 \scheme{eq-hashtable-cell}, \scheme{symbol-hashtable-cell}, and
@@ -397,17 +716,16 @@ symbol-hashtable-ref-cell
 The \scheme{eq-hashtable-try-atomic-cell} procedure supports lock-free
 use of an \scheme{eq?}-based hash table, but with constraints on
 concurrent operations and resizing. Clean-up resizing can be performed
-within a collect-request handler, since only on thread can run at that
+within a collect-request handler, since only one thread can run at that
 time.
 
 A weak or ephemeron \scheme{eqv?} hash table now retains non-fixnum
 numbers only weakly, instead of strongly. This change is related to
-changes to \scheme{eq?} for flonum values and the availablity of weak
+changes to \scheme{eq?} for flonum values and the availability of weak
 and ephemeron hash tables with arbitrary equality and hashing
 functions.
 
-
-\subsection{Stencil Vectors}
+\subsection{Stencil vectors (10.0.0)}
 
 Stencil vectors provide support in the compiler and runtime for
 implementing data structures such as persistent maps:
@@ -424,8 +742,29 @@ stencil-vector-truncate!
 stencil-vector-mask-width
 \endschemedisplay
 
+\subsection{New vector functions (10.0.0)}
 
-\subsection{Symbols}
+New and extended (in the case of \scheme{vector-copy}) vector functions
+support creating a vector from the content of others and creating immutable
+vectors:
+
+\schemedisplay
+vector-copy
+vector-append
+vector-set/copy
+immutable-vector
+immutable-vector-copy
+immutable-vector-append
+immutable-vector-set/copy
+\endschemedisplay
+
+Although the mutable-vector variants of these functions could be
+implemented with \scheme{make-vector} and \scheme{vector-set!}, the
+new versions can avoid redundant initialization and write barriers.
+The immutable-vector functions similarly can avoid allocating an
+intermediate mutable vector.
+
+\subsection{New symbol functions (10.0.0)}
 
 While gensyms support most symbol-generation needs, uninterned symbols
 are useful for purposes where properties must not prevent a symbol
@@ -438,8 +777,7 @@ uninterned-symbol?
 
 The string returned by \scheme{symbol->string} is always immutable.
 
-
-\subsection{Records}
+\subsection{Record anonymous fields (10.0.0)}
 
 Records can have anonymous fields, which can save memory in the
 representation when many record types need to be created (as opposed
@@ -458,8 +796,7 @@ The new \scheme{record-instance?} predicate is a specialization of
 An unsafe \scheme{record-instance?} test can be faster than an unsafe
 \scheme{record?} test.
 
-
-\subsection{Lists}
+\subsection{Lists assuming immutability (10.0.0)}
 
 In a context where pairs are not mutated, the new
 \scheme{list-assuming-immutable?} predicate is useful as a variant of
@@ -468,8 +805,7 @@ efficient, amortized constant-time decision on whether a value
 represents a list, but its behavior is unspecified if the
 \scheme{cdr} or any pair relevant to the result is mutated.
 
-
-\subsection{Random Number Generation}
+\subsection{New random number generation (10.0.0)}
 
 A new random-number API implements the MRG32K3A algorithm:
 
@@ -482,8 +818,7 @@ pseudo-random-generator->vector
 vector->pseudo-random-generator
 \endschemedisplay
 
-
-\subsection{Wrapper Procedures}
+\subsection{Wrapper procedures (10.0.0)}
 
 A \emph{wrapper procedure} provides an inexpensive way to an adjust a
 procedure's name, constrain its arity, or associate extra data to the
@@ -501,8 +836,7 @@ set-wrapper-procedure-data!
 set-wrapper-procedure!
 \endschemedisplay
 
-
-\subsection{Threads}\label{sec:threads}
+\subsection{New thread functions (10.0.0)}\label{sec:threads}
 
 The new \scheme{thread-join} operator can be used to wait for a thread
 to terminate. Waiting for termination in this sense can be useful to
@@ -524,14 +858,17 @@ implement fencing operators suitable for abstractions that acquire
 (load-load and load-store fence) or release (store-store and
 store-load fence) shared resources.
 
+When a new thread is created, it now starts with the default
+exception-handler stack instead of inheriting the stack of the
+creating thread.
 
-\subsection{Garbage Collection Introspection}\label{sec:gc-reflect}
+\subsection{Garbage collection introspection (10.0.0)}\label{sec:gc-reflect}
 
 Similar to \scheme{enable-object-counts}, the
 \scheme{enable-object-backreferences} parameter enables recording of
 information about reachability. After a collection with backreferences
 enabled, \scheme{object-backreferences} reports an association for
-each objects to the a referencing object---one that caused the storage
+each object to the a referencing object---one that caused the storage
 manager to consider the former object reachable.
 
 A new \scheme{bytes-finalized} procedure reports the number of bytes
@@ -560,14 +897,13 @@ later in the list, while objects later the list are not considered
 reachable by objects earlier in the list. For example, given a list of
 threads, \scheme{compute-size-increments} effectively treats each
 thread as an accounting domain, where memory is charged to an earlier
-threads rather than a later thread when objects are reachable from
+thread rather than a later thread when objects are reachable from
 both. Since this computation involves the same sort of traversal as a
 garbage collection, the \scheme{collect} function takes a list as
 an optional last argument to fuse a garbage collection with size
 accounting.
 
-
-\subsection{Storage Management and Foreign Interfaces}\label{sec:ffi-storage}
+\subsection{Storage management and foreign interfaces (10.0.0)}\label{sec:ffi-storage}
 
 The \scheme{make-guardian} function accepts an option to create an
 \emph{ordered guardian}. An ordered guardian treats each of its
@@ -577,9 +913,9 @@ considered accessible. Ordered finalization is error-prone and cannot
 handle reference cycles, but it can be necessary to implement certain
 storage-management interfaces and abstractions.
 
-\emph{Immobile objects} are ones that the storage manager will not
-relocated as a long as it is referenced, in the same way that locked
-objects are never relocated. Unlike a locked object, an immobile
+An \emph{immobile object} is one that the storage manager will not
+relocate as a long as it is referenced, in the same way that a locked
+object is never relocated. Unlike a locked object, an immobile
 object can be reclaimed by the storage manager.
 
 \schemedisplay
@@ -598,8 +934,9 @@ be updated by the garbage collector if the referenced object is
 relocated. Using the reference-bytevector interface requires care, but
 it can greatly simplify certain foreign-library interactions. An
 object reference in a bytevector takes the form of a \emph{reference
-address} for a Scheme object, which matches the address of the first
-byte within a bytevector (including a reference bytevector).
+address} for a Scheme object.  The reference address of a bytevector
+(including a reference bytevector) or flvector is the address of the
+first byte of its content.
 
 \schemedisplay
 make-reference-bytevector
@@ -623,8 +960,7 @@ internal changes that make allocation thread-local, which in turn
 makes the size of a thread's representation proportional to the
 maximum number of generations.
 
-
-\subsection{Foreign Interface}
+\subsection{Foreign interface extensions (10.0.0)}
 
 Some ABIs treat functions with varargs (i.e., specified with
 \scheme{...} in the C prototype) differently than functions without
@@ -660,15 +996,14 @@ file descriptor and offset. This form of boot-file registration is
 useful for loading boot files that are embedded with an executable
 segment.
 
-
-\subsection{Fasl and Vfasl}
+\subsection{Fasl and vfasl (10.0.0)}
 
 Reading fasl data has been made safe no matter how deeply nested the
 structure of the data.
 
 For reading and writing fasl data, the \scheme{fasl-write} procedure
 accepts a predicate to detect ``external'' values for which only a
-placeholder is saved, and \scheme{fasl-real} accepts a table of
+placeholder is saved, and \scheme{fasl-read} accepts a table of
 external values to substitute for placeholders. These ``external''
 values can then have their own serialization and deserialization. The
 \scheme{fasl-write} function also accepts an option to save a record
@@ -684,8 +1019,7 @@ for boot files to load directly into a static generation can make
 startup much faster; otherwise, the time--space tradeoff rarely pays
 off. Convert from fasl to vfasl using \scheme{vfasl-convert-file}.
 
-
-\subsection{Compiler Options}
+\subsection{New compiler options (10.0.0)}
 
 Two new parameters skip safety checks in specific situations:
 \scheme{enable-unsafe-application} assumes that the target of a
@@ -735,10 +1069,56 @@ The \scheme{enable-error-source-expression} parameter determines
 whether error messages that become embedded in code can refer to the
 original source file's path.
 
-%-----------------------------------------------------------------------------
-\section{Functionality Changes}\label{section:functionality}
+\subsection{Executable-relative boot files (10.0.0)}
 
-\subsection{Unicode 15.0 Support (9.6.0)}
+When searching for boot files, the two-character escape sequence
+``\scheme{%x}'' is now supported on more platforms. By default, Chez
+Scheme is configured to use this facility to find boot files relative
+to the executable, even when installed.
+
+\subsection{Syntax quoting (10.0.0)}
+
+The new \scheme{quote-syntax} form is like the R$^6$RS \scheme{syntax}
+form except that pattern variables are not substituted.  It can be
+useful for macro transformers that need to embed syntax objects based
+on the input in the output.
+
+\subsection{New conversions from Scheme to C signed and unsigned integers (9.6.4)}
+
+The following new functions
+allow foreign code to try converting Scheme
+values to signed or unsigned integer values
+without triggering a \scheme{longjmp} in the Scheme runtime
+as can happen when calling the corresponding functions
+\scheme{Sinteger_value}, etc:
+\schemedisplay
+Stry_integer_value
+Stry_integer32_value
+Stry_integer64_value
+Stry_unsigned_value
+Stry_unsigned32_value
+Stry_unsigned64_value
+\endschemedisplay
+
+\subsection{New types for code that uses C exports (9.6.4)}
+
+The header file scheme.h distributed with Chez Scheme now defines
+\scheme{Sint32_t}, \scheme{Suint32_t}, \scheme{Sint64_t}, and \scheme{Suint64_t}
+types for 32-bit and 64-bit signed and unsigned integers that are compatible
+with the types for exports such as \scheme{Sinteger64}.
+
+\subsection{New transcoded port buffer-size parameters (9.6.0)}
+
+The new parameter \scheme{transcoded-port-buffer-size} specifies the size
+of the string buffer that is allocated when creating a new transcoded port.
+If the underlying binary port implements \scheme{port-position},
+a transcoded input port allocates an internal fxvector the same size
+as its string buffer for use by \scheme{port-position}.
+The new parameter \scheme{make-codec-buffer} can be used to supply an appropriately
+sized internal bytevector buffer for the codec used by a new transcoded port.
+The size of these string and bytevector buffers was previously hardcoded at 1024.
+
+\subsection{Unicode 15.0 support (9.6.0)}
 
 The character sets, character classes, and word-breaking algorithms for character, string,
 and Unicode-related bytevector operations have now been updated to Unicode 15.0.
@@ -751,14 +1131,14 @@ creating a syntactic binding for one of the built-in types, such as
 As of 9.5.8, syntactic bindings that do not bind an ftype descriptor are no
 longer considered when defining ftypes.
 
-This change also allows a base ftype to be bound using `define-ftype`, though
+This change also allows a base ftype to be bound using \scheme{define-ftype}, though
 this fixes the endianness of the type.  For instance:
 
 \schemedisplay
 (define-ftype integer-32 integer-32)
 \endschemedisplay
 
-This binds the ftype `integer-32` to the native-endian `integer-32`.  It is possible to bind both endiannesses by using explicit names:
+This binds the ftype \scheme{integer-32} to the native-endian \scheme{integer-32}.  It is possible to bind both endiannesses by using explicit names:
 
 \schemedisplay
 (define-ftype integer-32-be (endian big integer-32))
@@ -1281,7 +1661,7 @@ leaves all imported libraries visible.
 \subsection{24-, 40-, 48-, and 56-bit bit-field containers (9.3.3)}
 
 The total size of the fields within an ftype \scheme{bits} can now be
-24, 40, 48, or 56 (as well as 8, 16, 32, and 64). 
+24, 40, 48, or 56 (as well as 8, 16, 32, and 64).
 
 \subsection{Object-counting for static-generation collections (9.3.3)}
 
@@ -2306,7 +2686,7 @@ the registers.
 
 \subsection{24-, 40-, 48-, and 56-bit integer values (8.9.3)}
 
-Support for storing and extracting 24-, 40-, 48-, and 56-bit integers 
+Support for storing and extracting 24-, 40-, 48-, and 56-bit integers
 to and from records, bytevectors, and foreign types (ftypes) has been
 added.
 For records and ftypes, this is accomplished by declaring a field
@@ -2632,19 +3012,338 @@ by macros) into code to be compiled via \scheme{compile-file},
 Ftype-pointer fields are not supported, since storing addresses
 in fasl files does not generally make sense.
 
-\subsection{New transcoded port buffer-size parameters}
-
-The new parameter \scheme{transcoded-port-buffer-size} specifies the size
-of the string buffer that is allocated when creating a new transcoded port.
-If the underlying binary port implements \scheme{port-position},
-a transcoded input port allocates an internal fxvector the same size
-as its string buffer for use by \scheme{port-position}.
-The new parameter \scheme{make-codec-buffer} can be used to supply an appropriately
-sized internal bytevector buffer for the codec used by a new transcoded port.
-The size of these string and bytevector buffers was previously hardcoded at 1024.
-
 %-----------------------------------------------------------------------------
 \section{Bug Fixes}\label{section:bugfixes}
+
+\subsection{Error message fixes (10.5.0)}
+
+A bug in the error produced by \scheme{bytevector-ieee-double-native-set!}---when the last
+argument raises and error and the offset is out of bounds---has been fixed.
+
+When \scheme{log} is called with exact \scheme{1} as the second argument, the error is now
+reported in terms of \scheme{log} instead of a divide-by-zero error in \scheme{/}.
+
+\subsection{Repairs for 32-bit ARM foreign call and callables (10.5.0)}
+
+Several problems with floating-point values for foreign calls and
+callables on 32-bit ARM (arm32 and tarm32 machine types) have been
+fixed. Foreign calls in \scheme{__collect_safe} mode that have
+multiple floating-point arguments could deliver the wrong values. When
+a callable has both floating-point arguments and a struct result that
+does not fit into registers, then the argument was not received
+correctly. When a foreign-call argument or result is a multi-element
+\scheme{union} or a \scheme{struct} type that contains multi-element
+\scheme{union}s and has only \scheme{double} or \scheme{float}
+members, the argument or result could be passed incorrectly. A varargs
+foreign call's struct result was not received correctly when it was
+small and with only \scheme{double} or \scheme{float} members.
+
+\subsection{Repair allocation in \scheme{logtest} (10.4.1)}
+
+In Version 10.4.0, the \scheme{logtest} procedure could allocate incorrectly when given a
+mixture of fixnum and bignum arguments. The problem has been fixed by adding a missing
+\scheme{__alloc} annotation on the internal implementation.
+
+\subsection{Repair \scheme{__alloc} mode for ppc32 (10.4.1)}
+
+In Version 10.4.0 on ppc32, an \scheme{__atomic __alloc} foreign-procedure annotation was
+not handled correctly. The problem has been fixed by migrating the end-of-allocation
+pointer between a register and the thread context during an allocating foreign call.
+
+\subsection{Declare \scheme{Spopcount} in scheme.h (10.4.0)}
+
+A bug where the header file scheme.h refers to an undeclared \scheme{Spopcount} function
+has been fixed.
+
+\subsection{Eager port closing on error in \scheme{open-source-file} (10.4.0)}
+
+When \scheme{open-source-file} failed on a non-seekable device, the file descriptor port
+was kept open until the garbage collector eventually closed it. It now closes the port on
+error.
+
+\subsection{Signals in non-Scheme threads (10.4.0)}
+
+A bug in threaded Chez Scheme where some signals raised in non-Scheme threads could cause
+a segmentation fault in the signal handler has been fixed.
+
+\subsection{LZ4 library updated (10.4.0)}
+
+The LZ4 compression library was updated from v1.9.4 to v1.10.0.
+
+\subsection{Out-of-memory improvements for \scheme{expt}, \scheme{logbit0}, and \scheme{logbit1} (10.4.0)}
+
+A call to \scheme{expt} with an exact rational base and an integer exponent too large
+to allow the result to fit into a number representation now raises a catchable exception
+rather than exhausting memory and aborting the process. A call to
+\scheme{logbit0} with a large bit index and a non-negative second argument
+now returns the second argument directly, since the indicated bit is
+already clear, and \scheme{logbit1} with a large bit index and a
+negative second argument returns the second argument directly, since
+the indicated bit is already set.
+
+\subsection{Unicode Indic\_Conjunct\_Break support (10.4.0)}
+
+A bug where the grapheme cluster break algorithm neglected to consider the
+Indic\_Conjunct\_Break property available since Unicode 15 has been fixed.
+
+\subsection{Corrections and refinements to error reporting (10.4.0)}
+
+A bug in the error message produced when \scheme{list*} and \scheme{cons*} are called with
+zero arguments has been fixed.
+
+When \scheme{>} and \scheme{>=} are applied to two non-real arguments, the first argument
+is now reported as incorrect instead of the second. In general, when two or more arguments
+are invalid, there is no guarantee about which one is reported invalid.
+
+\subsection{Fix \scheme{remainder} and \scheme{modulo} for inexact/exact mixtures (10.4.0)}
+
+When \scheme{remainder} and \scheme{modulo} receive an inexact first
+argument and exact \scheme{1} or \scheme{-1} as a second argument, the
+result is now inexact \scheme{0.0} instead of exact \scheme{0}.
+
+When \scheme{remainder} and \scheme{modulo} receive an exact first
+argument and an inexact second argument, the computation is now
+performed as exact and then converted to inexact, instead of
+converting the first argument to inexact. The new approach ensures
+that the result is an inexact integer, and not sometimes
+\scheme{+nan.0}.
+
+\subsection{Type recovery repairs (10.4.0)}
+
+A bug that incorrectly determined the type of \scheme{(- x)} has been fixed.
+
+The compiler avoids transforming an expression like \scheme{(+ -inf.0 x)}, where
+\scheme{x} is known to be real, into \scheme{(fl+ -inf.0 (real->flonum x))}
+in case \scheme{x} is a bignum that would be converted into \scheme{+inf.0}.
+
+\subsection{Fix 32-bit ARM floating-point dereference offset (10.4.0)}
+
+A bug that affects compilation on 32-bit ARM systems has been fixed. The bug was triggered
+when an offset to a floating-point field or array element was unaligned or too large to
+fit into the 12-bit encoding used for immediate offsets.
+
+\subsection{Fix x86\_64 foreign callables with in-register struct results (10.4.0)}
+
+A bug that affects compilation for foreign callables on x86\_64
+systems has been fixed. The bug was triggered when a callable returns
+a \scheme{struct} that is small enough to fit into return registers,
+and when arguments to the callable include floating-point values. In
+that case, arguments were not delivered correctly to the callable.
+
+\subsection{Generic \protect\scheme{+} misoptimized with \protect\scheme{+nan.0} and non-real arguments (10.4.0)}
+
+A bug in the source optimizer (cp0) treated flonum NaN as a bottom value
+too aggressively when partially folding \scheme{+}. In expressions such as
+\scheme{(+ x +nan.0)} where \scheme{x} can be non-real, optimization could
+discard non-real contributions. The fold now uses a complex-NaN predicate for
+the generic \scheme{+} case so non-real contributions are preserved.
+
+\subsection{Fix interaction of pbchunk and atomic foreign procedures (10.4.0)}
+
+A bug where the output of \scheme{pbchunk-convert-file} could be incorrect in the case of
+an inlined foreign call within certain blocks was fixed. The generated source was
+ill-formed in the case of a block that has too many entries and exits around unconvertible
+code to productively compile via C.
+
+\subsection{Exit with failure on error from boot file (10.3.0)}
+
+When an error is encountered within a boot file---either raised
+explicitly by the boot file's code or due to certain kinds of problems
+with a boot file's content---then exit with a non-0 code (meaning
+failure) instead of a 0 exit code.
+
+\subsection{Respect constraint on \scheme{make-record-constructor-descriptor} (10.2.0)}
+
+The source optimizer (cp0) overlooked the constraint that, when forming a
+record-constructor descriptor, one must specify a protocol if the parent
+record-constructor descriptor has a protocol.
+
+\subsection{Restore immediate table of marks where \scheme{call-in-continuation} is used (10.2.0)}
+
+Tests have been added that test that the (immediate) table of marks is set
+correctly when expressions are evaluated in the various continuations
+specified by the \scheme{guard} form.  Necessary fixes to uses of
+\scheme{call-in-continuation} have been applied in the implementation.
+
+\subsection{Treat \scheme{#} as a delimiter when reading numbers in R$^6$RS mode}
+
+A bug in the reader didn't treat the character \scheme{#} as a
+delimiter when reading numbers. In R$^6$RS, a string like
+\scheme{"3#f"} has to be read as two tokens, \scheme{3} and
+\scheme{#f}.
+
+\subsection{Fix \scheme{fx-/wraparound} with \scheme{0} first argument (10.2.0)}
+
+When \scheme{fx-/wraparound} was called with \scheme{0} as its first
+argument, the call could be rewritten to have a single argument, even though
+\scheme{fx-/wraparound} required two arguments. As part of the repair,
+\scheme{fx-/wraparound} changed to accept a single argument.
+
+\subsection{Performance regression for \scheme{fxdiv-and-mod} at optimize-level 3 (10.2.0)}
+
+At optimize-level 3, the source optimizer (cp0) could replace calls to
+\scheme{fxdiv-and-mod}, where the second argument is constant, with calls to
+\scheme{fxdiv} and \scheme{fxmod} that the back-end would choose not to inline
+because the constant was not a power of two.
+
+\subsection{Link to system libraries for some math functions with MinGW (10.2.0)}
+
+When building with MinGW, the C libraries for i3nt and a6nt implement
+less precise versions of \scheme{pow}, \scheme{sin}, and \scheme{cos},
+so link instead to the MSVCRT or UCRT implementations of those
+functions.
+
+\subsection{Repair executable-relative search for NetBSD (10.2.0)}
+
+An incorrect approach to finding the current executable's path on
+NetBSD meant that boot files could not be found relative to the
+executable.
+
+\subsection{Invalid memory access in \scheme{path-build} (10.2.0)}
+
+When the \scheme{dir-path} argument is the empty string, the \scheme{path-build}
+procedure now returns the \scheme{path} argument instead of performing an invalid memory access.
+
+\subsection{Incorrect assembly code for threaded ARMv5 and earlier (10.1.0)}
+
+A bug that generated incorrect assembly code in threaded mode for ARMv5 and earlier
+architectures has been fixed.
+
+\subsection{Index checks in bytevector-reference procedures (10.1.0)}
+
+Bugs that caused an invalid memory reference in \scheme{bytevector-reference-ref},
+\scheme{bytevector-reference*-ref}, and \scheme{bytevector-reference-set!} have been
+fixed.
+
+\subsection{Repairs for pb32 foreign interface (10.1.0)}
+
+Bugs in the handling of callable addresses and 64-bit arguments and results in pb32 when
+using libffi have been fixed.
+
+\subsection{Bytecode endianness handling on s390x, m68k, and hppa (10.1.0)}
+
+The bytecode endianness on s390x, m68k, and hppa architectures has been fixed.
+
+\subsection{Error message fixes (10.1.0)}
+
+A bug where \scheme{flvector} incorrectly reports ``non-flonum found'' errors as
+``non-fixnum found'' errors has been fixed.
+
+Errors for invalid indices in bit operations \scheme{bitwise-bit-set?},
+\scheme{bitwise-copy-bit}, \scheme{logbit?}, \scheme{logbit0}, and \scheme{logbit1} now
+report ``invalid bit index'' instead of ``not an exact integer''.
+
+\subsection{\scheme{with-continuation-mark} key and value expressions (10.1.0)}
+
+A bug in \scheme{with-continuation-mark} positioned the key and
+value expressions outside of the current continuation marks, which
+meant that attempting to look up a continuation mark in the key or
+value expression would fail.
+
+\subsection{\scheme{quote-syntax} incorrectly applies wrap (10.1.0)}
+
+A bug in \scheme{quote-syntax} that caused \scheme{(identifier? (quote-syntax \var{symbol}))}
+to report the wrong result has been fixed.
+
+\subsection{Repair R$^5$RS and IEEE environments (10.1.0)}
+
+The environments returned by \scheme{(scheme-report-environment 5)}
+and \scheme{(ieee-environment)} had some names incorrectly
+prefixed with \scheme{r6rs:}, such as \scheme{r6rs:<} instead of
+\scheme{<}.
+
+\subsection{Non-empty mantissa widths (10.1.0)}
+
+Non-empty mantissa widths are now taken into account.  For example,
+\scheme{(string->number "#e0.1|1")} now evaluates to \scheme{1/8}.
+
+\subsection{Case-insensitive ``V'' format directive (10.1.0)}
+
+The ``V'' format directive is now recognized in uppercase as well as lowercase.
+
+\subsection{Optimization and \scheme{debug-level} $\geq$ 2 (10.1.0)}
+
+When \scheme{debug-level} is 2 or higher and \scheme{enable-type-recovery} is \scheme{#t}
+(the default), the compiler could move a call to error from non-tail position to tail
+position, which eliminates the stack frame and makes debugging more difficult.
+Furthermore, the compiler could also move a call to error from tail position to non-tail
+position by optimizations that aim to expose non-error paths.
+
+Instead of guaranteeing any specific behavior, a \scheme{debug-level} value of 2 or higher
+is now defined to \emph{discourage} optimizations that affect the continuation structure
+as revealed by the inspector, where the goal is to produce more informative stack traces
+at the point where an exception is raised. The implementation produces results that are
+more consistent with Chez Scheme 9. Meanwhile, continuation marks support predictable and
+well-defined reflection on continuations in a way that is compatible with compiler
+optimizations.
+
+\subsection{Random number generation for large exact integers (10.1.0)}
+
+Given an exact integer greater than 4294967087,
+\scheme{pseudo-random-generator-next!} did not produce a valid result.
+Generated results did not cover the intended range uniformly, and by
+mistreating the largest part of the integer, it could always produce
+\scheme{0} (e.g., for \scheme{(expt 2 32)}).
+
+\subsection{Missing memory fences for some platforms (10.1.0)}
+
+Compilation for tppc32le lacked memory fences that are needed to
+ensure safety on multicore machines. The pb machine variant also
+needed a more portable approach to memory fences via compiler
+intrinsics (as needed for MIPS, for example).
+
+\subsection{Bounds checking and collection for some reference-bytevector lengths (10.1.0)}
+
+When a reference bytevector's length is smaller than the machine's
+word size, then bounds checking was incorrect in
+\scheme{bytevector-reference-ref}, \scheme{bytevector-reference*-ref},
+and \scheme{bytevector-reference-set!}. In addition, the garbage
+collector would fail to preserve the last few bytes of a reference
+bytevector whose length is not a multiple of the word size.
+
+\subsection{Missing C implementation for \scheme{Smake_flvector} (10.1.0)}
+
+The header file scheme.h Scheme defines \scheme{Smake_flvector}, but
+Chez Scheme does not provide an implmentation. The
+\scheme{Smake_flvector} function is now implemented.
+
+\subsection{\scheme{library-exports} for library that is not yet imported (10.0.0)}
+
+When visiting or loading a separately compiled library,
+\scheme{library-exports} raised an exception if the library was not
+yet imported.
+
+\subsection{Incorrect code for \scheme{record?} at optimize-level 3 (10.0.0)}
+
+At optimize-level 3, the \scheme{record?} predicate could short circuit without
+evaluating the \var{rtd} expression.
+
+\subsection{Incorrect result from \scheme{Sinteger64} on 32-bit platforms (9.6.4)}
+
+On 32-bit platforms, calling \scheme{Sinteger64} or \scheme{Sunsigned64}
+with \scheme{0x8000000000000000} could return the wrong value.
+
+\subsection{\scheme{Sinteger32} and \scheme{Sinteger64} return unexpected bignum (9.6.4)}
+
+When called on a C value equal to \scheme{most-negative-fixnum}, \scheme{Sinteger32}
+and \scheme{Sinteger64} could return a bignum where a fixnum is expected.
+The values have the same printed representation, yet comparing the resulting bignum with
+\scheme{most-negative-fixnum} via Scheme's \scheme{=} returned false.
+
+\subsection{Library-reference import syntax (9.6.4)}
+
+A bug where \scheme{import} did not recognize a \var{library-spec}
+of the form \scheme{(library \var{library-reference})} has been fixed.
+
+\subsection{Garbage collector incorrectly handles emphemerons (9.6.0)}
+
+A bug where the garbage collector sometimes incorrectly handles epehemeron pairs has
+been fixed.
+
+\subsection{Garbage collector incorrectly handles mutated weak pairs (9.6.0)}
+
+A bug where the garbage collector sometimes incorrectly handles mutated weak pairs has
+been fixed.
 
 \subsection{Division by an infinite complex number sometimes incorrectly returns +nan.0 (9.6.0)}
 
@@ -2662,7 +3361,7 @@ store raw data on the stack and whose operands contain calls.
   \protect\scheme{member} and \protect\scheme{assoc} (9.6.0)}
 
 When \scheme{remove}, \scheme{member} or \scheme{assoc} were used in
-\scheme{optimize-level} 3 in a position where the result was discarded,
+optimize-level 3 in a position where the result was discarded,
 a bug in the source code optimizer could drop the call even though the first
 argument may be a record with a custom equality predicate that has side effects.
 
@@ -2984,7 +3683,7 @@ A bug in the source optimizer that caused pariah forms to be ignored
 has been fixed.
 [This bug dated back to at least Version 9.3.1.]
 
-\subsection{Invalid memory references involving complex numbers (9.5)} 
+\subsection{Invalid memory references involving complex numbers (9.5)}
 
 A bug on 64-bit platforms that occasionally caused invalid memory
 references when operating on inexact complex numbers or the imaginary parts
@@ -3184,6 +3883,22 @@ x86\_64 has been fixed.
 %-----------------------------------------------------------------------------
 \section{Performance Enhancements}\label{section:performance}
 
+\subsection{Reduced allocation and copying (9.6.0)}
+
+When given a bytevector whose length is less than \scheme{file-buffer-size},
+\scheme{bytevector->string} now allocates the minimum size string buffer,
+internal ioffsets fxvector, and internal codec buffer.
+The size of each was formerly hardcoded at 1024.
+The
+\scheme{bytevector->string},
+\scheme{get-bytevector-all},
+\scheme{get-bytevector-n},
+\scheme{get-string-all}, and
+\scheme{get-string-n} procedures
+may avoid extra allocation and copying when the result is not more than
+\scheme{file-buffer-size} and no intermediate reads need to be stitched
+together to form the result.
+
 \subsection{Special-cased basic arithmetic operations (9.5.4)}
 
 The basic arithmetic operations (addition, subtraction, multiplication,
@@ -3232,7 +3947,7 @@ a large number of libraries.
 
 \scheme{profile-release-counters} is now generation-friendly, meaning
 it does not incur any overhead for code objects in generations that
-have not been collected since the last call to\scheme{profile-release-counters}. 
+have not been collected since the last call to\scheme{profile-release-counters}.
 Also, it no longer allocates memory when counters are released.
 
 \subsection{Reduced cost for obtaining profile counts (9.5.4)}
@@ -3610,21 +4325,5 @@ predicates, accessors, mutators, and (depending on protocols)
 constructors created by a record definition in one library and exported
 by another are inlined in the importing library, just as if the record
 type were defined in the importing library.
-
-\subsection{Reduced allocation and copying}
-
-When given a bytevector whose length is less than \scheme{file-buffer-size},
-\scheme{bytevector->string} now allocates the minimum size string buffer,
-internal ioffsets fxvector, and internal codec buffer.
-The size of each was formerly hardcoded at 1024.
-The
-\scheme{bytevector->string},
-\scheme{get-bytevector-all},
-\scheme{get-bytevector-n},
-\scheme{get-string-all}, and
-\scheme{get-string-n} procedures
-may avoid extra allocation and copying when the result is not more than
-\scheme{file-buffer-size} and no intermediate reads need to be stitched
-together to form the result.
 
 \end{document}

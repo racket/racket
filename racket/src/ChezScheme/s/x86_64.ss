@@ -679,6 +679,16 @@
      (safe-assert (eq? x %Carg1))
      `(asm ,info ,asm-unactivate-thread ,x)])
 
+  (define-instruction value save-errno
+    [(op (z ur))
+     (safe-assert (eq? z %rax)) ; see get-tc
+     `(set! ,(make-live-info) ,z (asm ,info ,asm-save-errno))])
+
+  (define-instruction value save-last-error
+    [(op (z ur))
+     (safe-assert (eq? z %rax)) ; see get-tc
+     `(set! ,(make-live-info) ,z (asm ,info ,asm-save-last-error))])
+
   ; TODO: risc architectures will have to take info-asmlib-save-ra? into account
   (define-instruction value asmlibcall
     [(op (z ur))
@@ -896,6 +906,7 @@
                      asm-cpuid
                      ; threaded version specific
                      asm-get-tc asm-activate-thread asm-deactivate-thread asm-unactivate-thread
+                     asm-save-errno asm-save-last-error
                      ; machine dependent exports
                      asm-sext-rax->rdx asm-store-single->double asm-kill asm-get-double)
 
@@ -1623,7 +1634,7 @@
                    (and maybe-reg (rex-required? maybe-reg)))
                b)))
       (record-case ea
-        [(index) (size index-reg base-reg) 
+        [(index) (size index-reg base-reg)
          (build-rex
            (fxsrl (reg-mdinfo index-reg) 3)
            (fxsrl (reg-mdinfo base-reg) 3))]
@@ -2298,6 +2309,16 @@
       (lambda (code* arg-reg)
         (asm-helper-call code* target %rax))))
 
+  (define asm-save-errno
+    (let ([target `(x86_64-call 0 (entry ,(lookup-c-entry save-errno)))])
+      (lambda (code* dest-reg) ; dest is %rax
+        (asm-helper-call code* target %rax))))
+
+  (define asm-save-last-error
+    (let ([target `(x86_64-call 0 (entry ,(lookup-c-entry save-last-error)))])
+      (lambda (code* dest-reg) ; dest is %rax
+        (asm-helper-call code* target %rax))))
+
   (define asm-indirect-call
     (lambda (code* t . ignore)
       ; NB: c-call is already required to be a register or memory operand, so
@@ -2473,65 +2494,65 @@
 
     (define (classify-type type)
       (nanopass-case (Ltype Type) type
-        [(fp-ftd& ,ftd) (classify-eightbytes ftd)]
+        [(fp-ftd& ,ftd ,fptd) (classify-eightbytes ftd)]
         [else #f]))
 
     (define (classified-size type)
       (nanopass-case (Ltype Type) type
-        [(fp-ftd& ,ftd) ($ftd-size ftd)]
+        [(fp-ftd& ,ftd ,fptd) ($ftd-size ftd)]
         [else #f]))
 
     ;; classify-eightbytes: returns '(memory) or a nonemtpy list of 'integer/'sse
     (if-feature windows
       ;; Windows: either passed in one register or not
       (define (classify-eightbytes ftd)
-	(cond
-	 [($ftd-compound? ftd)
-	  (if (memv ($ftd-size ftd) '(1 2 4 8))
-	      '(integer)
-	      '(memory))]
-	 [(eq? 'float (caar ($ftd->members ftd)))
-	  '(sse)]
-	 [else '(integer)]))
+        (cond
+         [($ftd-compound? ftd)
+          (if (memv ($ftd-size ftd) '(1 2 4 8))
+              '(integer)
+              '(memory))]
+         [(eq? 'float (caar ($ftd->members ftd)))
+          '(sse)]
+         [else '(integer)]))
       ;; Non-Windows: SYSV ABI is a more general classification of
       ;; 8-byte segments into 'integer, 'sse, or 'memory modes
       (define (classify-eightbytes ftd)
-	(define (merge t1 t2)
-	  (cond
-	   [(eq? t1 t2) t1]
-	   [(eq? t1 'no-class) t2]
-	   [(eq? t2 'no-class) t1]
-	   [(eq? t1 'memory) 'memory]
-	   [(eq? t2 'memory) 'memory]
-	   [else 'integer]))
-	(cond
-	 [(or (> ($ftd-size ftd) 16) ; more than 2 eightbytes => passed in memory
-	      (fx= 0 ($ftd-size ftd)))
-	  '(memory)]
-	 [else
-	  (let ([classes (make-vector (fxsrl (align ($ftd-size ftd) 8) 3) 'no-class)])
-	    (let loop ([mbrs ($ftd->members ftd)])
-	      (cond
-	       [(null? mbrs)
-		(vector->list classes)]
-	       [else
-		(let ([kind (caar mbrs)]
-		      [size (cadar mbrs)]
-		      [offset (caddar mbrs)])
-		  (cond
-		   [(not (fx= offset (align offset size)))
-		    ;; misaligned
-		    '(memory)]
-		   [else
-		    (let* ([pos (fxsrl offset 3)]
-			   [class (vector-ref classes pos)]
-			   [new-class (merge class (if (eq? kind 'float) 'sse 'integer))])
-		      (cond
-		       [(eq? new-class 'memory)
-			'(memory)]
-		       [else
-			(vector-set! classes pos new-class)
-			(loop (cdr mbrs))]))]))])))])))
+        (define (merge t1 t2)
+          (cond
+           [(eq? t1 t2) t1]
+           [(eq? t1 'no-class) t2]
+           [(eq? t2 'no-class) t1]
+           [(eq? t1 'memory) 'memory]
+           [(eq? t2 'memory) 'memory]
+           [else 'integer]))
+        (cond
+         [(or (> ($ftd-size ftd) 16) ; more than 2 eightbytes => passed in memory
+              (fx= 0 ($ftd-size ftd)))
+          '(memory)]
+         [else
+          (let ([classes (make-vector (fxsrl (align ($ftd-size ftd) 8) 3) 'no-class)])
+            (let loop ([mbrs ($ftd->members ftd)])
+              (cond
+               [(null? mbrs)
+                (vector->list classes)]
+               [else
+                (let ([kind (caar mbrs)]
+                      [size (cadar mbrs)]
+                      [offset (caddar mbrs)])
+                  (cond
+                   [(not (fx= offset (align offset size)))
+                    ;; misaligned
+                    '(memory)]
+                   [else
+                    (let* ([pos (fxsrl offset 3)]
+                           [class (vector-ref classes pos)]
+                           [new-class (merge class (if (eq? kind 'float) 'sse 'integer))])
+                      (cond
+                       [(eq? new-class 'memory)
+                        '(memory)]
+                       [else
+                        (vector-set! classes pos new-class)
+                        (loop (cdr mbrs))]))]))])))])))
 
     (define (count v l)
       (cond
@@ -2593,6 +2614,8 @@
            ,e
            (set! ,%sp ,(%inline + ,%sp (immediate 32)))))
         e))
+
+    (include "ffi-help.ss")
 
     (define asm-foreign-call
       (with-output-language (L13 Effect)
@@ -2740,7 +2763,7 @@
                                    (loop (cdr types)
                                      (cons (load-single-stack isp) locs)
                                      regs fp-regs i (fx+ isp 8)))]
-                              [(fp-ftd& ,ftd)
+                              [(fp-ftd& ,ftd ,fptd)
                                (cond
                                 [(memv ($ftd-size ftd) '(1 2 4 8))
                                  ;; pass as value in register or as value on the stack
@@ -2808,7 +2831,7 @@
                                    (loop (cdr types)
                                      (cons (load-single-stack isp) locs)
                                      regs fp-regs iint ifp (fx+ isp 8)))]
-                              [(fp-ftd& ,ftd)
+                              [(fp-ftd& ,ftd ,fptd)
                                (let* ([classes (classify-eightbytes ftd)]
                                       [ints (count 'integer classes)]
                                       [fps (count 'sse classes)])
@@ -2834,20 +2857,40 @@
                                    (loop (cdr types)
                                      (cons (load-int-stack isp) locs)
                                      regs fp-regs iint ifp (fx+ isp 8)))])))))])
-          (define (add-deactivate adjust-active? t0 live* result-live* e)
-            (cond
-             [adjust-active?
-              (let ([save-and-restore
-                     (lambda (regs e)
-                       (cond
-                        [(null? regs) e]
-                        [else (%seq ,(push-registers regs) ,e ,(pop-registers regs))]))])
+          (define (add-deactivate/errno adjust-active? save-last-error? maybe-errno-lvalue t0 live* result-live* e)
+            (let ([save-and-restore
+                   (lambda (regs e)
+                     (cond
+                       [(null? regs) e]
+                       [else (%seq ,(push-registers regs) ,e ,(pop-registers regs))]))])
+              (cond
+               [adjust-active?
                 (%seq
                  (set! ,%deact ,t0)
                  ,(save-and-restore (cons %deact live*) (as-c-call (%inline deactivate-thread)))
                  ,e
-                 ,(save-and-restore result-live* (as-c-call `(set! ,%rax ,(%inline activate-thread))))))]
-             [else e]))
+                 ,(save-and-restore result-live* (as-c-call
+                                                  (let ([e (as-c-call `(set! ,%rax ,(%inline activate-thread)))])
+                                                    (cond
+                                                      [maybe-errno-lvalue
+                                                       (%seq
+                                                        ,(as-c-call
+                                                          `(set! ,%rax ,(if save-last-error?
+                                                                            (%inline save-last-error)
+                                                                            (%inline save-errno))))
+                                                        ,(save-and-restore (list %rax) e)
+                                                        (set! ,maybe-errno-lvalue ,%rax))]
+                                                      [else e])))))]
+               [maybe-errno-lvalue
+                (%seq
+                 ,e
+                 ,(save-and-restore result-live* (as-c-call
+                                                  `(seq
+                                                    (set! ,%rax ,(if save-last-error?
+                                                                     (%inline save-last-error)
+                                                                     (%inline save-errno)))
+                                                    (set! ,maybe-errno-lvalue ,%rax)))))]
+               [else e])))
           (define (add-save-fill-target fill-result-here? frame-size locs)
             (cond
              [fill-result-here?
@@ -2951,17 +2994,26 @@
                    [result-size (classified-size result-type)]
                    [fill-result-here? (result-fits-in-registers? result-classes)]
                    [result-reg* (get-result-regs fill-result-here? result-type result-classes)]
-                   [adjust-active? (if-feature pthreads (memq 'adjust-active conv*) #f)])
+                   [adjust-active? (if-feature pthreads (memq 'adjust-active conv*) #f)]
+                   [save-last-error? (if-feature windows (memq 'save-last-error conv*) #f)]
+                   [varargs-after (extract-varargs-after-conv conv*)])
               (with-values (do-args (if fill-result-here? (cdr arg-type*) arg-type*))
                 (lambda (frame-size nfp locs live* fp-live*)
                   (with-values (add-save-fill-target fill-result-here? frame-size locs)
                     (lambda (frame-size locs)
                       (returnem frame-size locs
-                        (lambda (t0 not-varargs?)
+                        (lambda (t0 atomic? maybe-errno-lvalue)
                           (let* ([t (if adjust-active? %deact t0)] ; need a register if `adjust-active?`
-                                 [kill* (add-caller-save-registers result-reg*)]                                 
+                                 [kill* (add-caller-save-registers result-reg*)]
+                                 [set-varargs-reg?
+                                  ;; System V ABI varargs functions require count of fp regs used in %al register.
+                                  ;; To avoid breaking old programs that don't specify varargs precisely, assume
+                                  ;; we don't know if a non-atomic callee may be a varargs function, so we always set it.
+                                  (not (and atomic? (not varargs-after)))]
                                  [c-call
-                                  (add-deactivate adjust-active? t0 (append fp-live* live*)
+                                  (add-deactivate/errno
+                                   adjust-active? save-last-error? maybe-errno-lvalue
+                                   t0 (append fp-live* live*)
                                    result-reg*
                                    (if-feature windows
                                      (%seq
@@ -2969,13 +3021,11 @@
                                        (inline ,(make-info-kill*-live* kill* (append fp-live* live*)) ,%c-call ,t)
                                        (set! ,%sp ,(%inline + ,%sp (immediate 32))))
                                      (%seq
-                                      ,(if not-varargs?
-                                           `(nop)
-                                           ;; System V ABI varargs functions require count of fp regs used in %al register.
-                                           ;; since we don't know if the callee is a varargs function, we always set it.
-                                           `(set! ,%rax (immediate ,nfp)))
+                                      ,(if set-varargs-reg?
+                                           `(set! ,%rax (immediate ,nfp))
+                                           `(nop))
                                       ,(let ([live* (append fp-live* live*)])
-                                         `(inline ,(make-info-kill*-live* kill* (if not-varargs? live* (cons %rax live*))) ,%c-call ,t)))))])
+                                         `(inline ,(make-info-kill*-live* kill* (if set-varargs-reg? (cons %rax live*) live*)) ,%c-call ,t)))))])
                             (cond
                              [fill-result-here?
                               (add-fill-result c-call (fx- frame-size (constant ptr-bytes)) result-classes result-size)]
@@ -3030,16 +3080,16 @@ incoming           |   incoming return address | one quad
                    +---------------------------+
                    | pad word / indirect space | one quad
              sp+0: +---------------------------+<- 16-byte boundary
-      
-      
+
+
       Standard:
                    Frame Layout
                    +---------------------------+
                    |                           |
                    |    incoming stack args    |
            sp+192: |                           |
-                   +---------------------------+ <- 16-byte boundary
-                   |   incoming return address | one quad
+incoming           +---------------------------+ <- 16-byte boundary
+      sp-> sp+184: |   incoming return address | one quad
                    +---------------------------+
            sp+176: |  pad word / active state  | one quad
                    +---------------------------+
@@ -3116,7 +3166,7 @@ incoming           |   incoming return address | one quad
                                ,(%inline store-single ,(%mref ,%sp ,%zero ,isp fp) ,(vector-ref vfp i))
                                ,(f (cdr types) (fx+ i 1) (fx+ isp 8)))
                              (f (cdr types) i isp))]
-                        [(fp-ftd& ,ftd)
+                        [(fp-ftd& ,ftd ,fptd)
                          (cond
                           [(memv ($ftd-size ftd) '(1 2 4 8))
                            ;; receive as value in register or on the stack
@@ -3171,7 +3221,7 @@ incoming           |   incoming return address | one quad
                                ,(%inline store-single ,(%mref ,%sp ,%zero ,isp fp) ,(vector-ref vfp ifp))
                                ,(f (cdr types) iint (fx+ ifp 1) (fx+ isp 8)))
                              (f (cdr types) iint ifp isp))]
-                        [(fp-ftd& ,ftd)
+                        [(fp-ftd& ,ftd ,fptd)
                          (let* ([classes (classify-eightbytes ftd)]
                                 [ints (count 'integer classes)]
                                 [fps (count 'sse classes)])
@@ -3212,14 +3262,14 @@ incoming           |   incoming return address | one quad
                            (nanopass-case (Ltype Type) (car types)
                              [(fp-double-float) (load-double-stack isp)]
                              [(fp-single-float) (load-single-stack isp)]
-			     [(fp-ftd& ,ftd)
-			      (cond
-			       [(memq ($ftd-size ftd) '(1 2 4 8))
-				;; passed by value
-				(load-stack-address isp)]
-			       [else
-				;; passed by reference
-				(load-int-stack (car types) isp)])]
+                             [(fp-ftd& ,ftd ,fptd)
+                              (cond
+                               [(memq ($ftd-size ftd) '(1 2 4 8))
+                                ;; passed by value
+                                (load-stack-address isp)]
+                               [else
+                                ;; passed by reference
+                                (load-int-stack (car types) isp)])]
                              [else (load-int-stack (car types) isp)])
                            locs)
                          (fx+ isp 8))))
@@ -3248,7 +3298,7 @@ incoming           |   incoming return address | one quad
                              (f (cdr types)
                                (cons (load-single-stack risp) locs)
                                iint (fx+ ifp 1) (fx+ risp 8) sisp))]
-                        [(fp-ftd& ,ftd)
+                        [(fp-ftd& ,ftd ,fptd)
                          (let* ([classes (classify-eightbytes ftd)]
                                 [ints (count 'integer classes)]
                                 [fps (count 'sse classes)])
@@ -3275,7 +3325,7 @@ incoming           |   incoming return address | one quad
                                (fx+ iint 1) ifp (fx+ risp 8) sisp))]))))))
           (define (do-result result-type result-classes adjust-active?)
             (nanopass-case (Ltype Type) result-type
-              [(fp-ftd& ,ftd)
+              [(fp-ftd& ,ftd ,fptd)
                (cond
                 [(result-fits-in-registers? result-classes)
                  ;; Copy content of result area on stack into
@@ -3356,7 +3406,8 @@ incoming           |   incoming return address | one quad
                      [adjust-active? (if-feature pthreads (memq 'adjust-active conv*) #f)]
                      [synthesize-first? (and result-classes
                                              (result-fits-in-registers? result-classes))]
-                     [locs (do-stack (if synthesize-first? (cdr arg-type*) arg-type*) adjust-active?)])
+                     [save-arg-type* (if synthesize-first? (cdr arg-type*) arg-type*)]
+                     [locs (do-stack save-arg-type* adjust-active?)])
                 (let-values ([(get-result result-regs result-fp-regs) (do-result result-type result-classes adjust-active?)])
                   (values
                    (lambda ()
@@ -3381,7 +3432,7 @@ incoming           |   incoming return address | one quad
                            (set! ,(%mref ,%sp ,%zero 32 fp) ,%fp7)
                            (set! ,(%mref ,%sp ,%zero 40 fp) ,%fp8)
                            (set! ,%sp ,(%inline - ,%sp (immediate 8)))
-                           ,(save-arg-regs arg-type*))
+                           ,(save-arg-regs save-arg-type*))
                          (%seq
                            (set! ,%sp ,(%inline - ,%sp (immediate 136)))
                            ,(%inline push ,%rbx)
@@ -3390,7 +3441,7 @@ incoming           |   incoming return address | one quad
                            ,(%inline push ,%r13)
                            ,(%inline push ,%r14)
                            ,(%inline push ,%r15)
-                           ,(save-arg-regs arg-type*)))
+                           ,(save-arg-regs save-arg-type*)))
                       ,(if-feature pthreads
                          ((lambda (e)
                             (if adjust-active?
@@ -3399,7 +3450,7 @@ incoming           |   incoming return address | one quad
                                  (set! ,(%mref ,%sp ,active-state-offset) ,%rax)
                                  ,e)
                                 e))
-                          (%seq 
+                          (%seq
                            (set! ,%rax ,(%inline get-tc))
                            (set! ,%tc ,%rax)))
                          `(set! ,%tc (literal ,(make-info-literal #f 'entry (lookup-c-entry thread-context) 0))))))

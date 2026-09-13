@@ -56,7 +56,8 @@
                         (choose-file-to-load path expect-module #t expect-module
                                              #f
                                              (current-compiled-file-roots)
-                                             (use-compiled-file-paths))])
+                                             (use-compiled-file-paths)
+                                             (use-compiled-file-check))])
             (when the-path
               (define-values (_base orig-file dir?) (split-path path))
               (define base (if (eq? _base 'relative) 'same _base))
@@ -117,8 +118,7 @@
 
 (define -loading-filename (gensym))
 (define -loading-prompt-tag (make-continuation-prompt-tag 'module-loading))
-(define-place-local -prev-relto #f)
-(define-place-local -prev-relto-dir #f)
+(define-place-local -prev-relto-dir (cons #f #f))
 
 (define (split-relative-string s coll-mode?)
   (let ([l (let loop ([s s])
@@ -262,15 +262,15 @@
        [else
         (let ([get-dir (lambda ()
                          (or (and relto
-                                  (if (eq? relto -prev-relto)
-                                      -prev-relto-dir
-                                      (let ([p (resolved-module-path-name relto)])
-                                        (let ([p (if (pair? p) (car p) p)])
-                                          (and (path? p)
-                                               (let-values ([(base n d?) (split-path p)])
-                                                 (set! -prev-relto relto)
-                                                 (set! -prev-relto-dir base)
-                                                 base))))))
+                                  (let ([prev-relto-dir -prev-relto-dir])
+                                    (if (eq? relto (car prev-relto-dir))
+                                        (cdr prev-relto-dir)
+                                        (let ([p (resolved-module-path-name relto)])
+                                          (let ([p (if (pair? p) (car p) p)])
+                                            (and (path? p)
+                                                 (let-values ([(base n d?) (split-path p)])
+                                                   (set! -prev-relto-dir (cons relto base))
+                                                   base)))))))
                              (current-load-relative-directory)
                              (current-directory)))]
               [get-reg (lambda ()
@@ -284,8 +284,10 @@
                                                  ": "
                                                  (regexp-replace #rx"\n" 
                                                                  msg
-                                                                 (format "\n  for module path: ~s\n"
-                                                                         s)))])
+                                                                 (format "\n  for module path: ~a\n"
+                                                                         ((error-module-path->string-handler)
+                                                                          s
+                                                                          (error-print-width)))))])
                                        (raise
                                         (if stx
                                             (exn:fail:syntax:missing-module

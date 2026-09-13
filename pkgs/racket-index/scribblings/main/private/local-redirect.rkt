@@ -102,12 +102,22 @@
                                                  |@|prefix|link_dirs,
                                                  0,
                                                  |@|prefix|link_dirs.length);
-                     if (pos) {
+                     if (pos !== false) {
                        var p = |@|prefix|link_dirs[pos][1];
                        if (|@|prefix|link_target_prefix) {
                          p = |@|prefix|link_target_prefix + p;
                        }
-                       elem.href = p + "/" + decodeURIComponent(rel[0].substring(4));
+                       const new_href = p + "/" + decodeURIComponent(rel[0].substring(4));
+                       const new_url = new URL(new_href, window.location.href);
+                       const old_href = elem.href
+                       const old_url = old_href && new URL(old_href, window.location.href);
+                       if (old_url.searchParams) {
+                         for (const [key, val] of old_url.searchParams) {
+                           if (key != "tag" && key != "doc" && key != "rel")
+                             new_url.searchParams.append(key, val)
+                         }
+                       }
+                       elem.href = new_url.href;
                        tag = false;
                      }
                  }
@@ -120,12 +130,12 @@
                                                |@|prefix|link_targets|@|lt-suffix|,
                                                0,
                                                |@|prefix|link_targets|@|lt-suffix|.length);
-                   if (pos) {
+                   if (pos !== false) {
                      var p = |@|prefix|link_targets|@|lt-suffix|[pos][1];
                      if (|@|prefix|link_target_prefix) {
                        p = |@|prefix|link_target_prefix + p;
                      }
-                     elem.href = p;
+                     elem.href = MergePageArgsIntoUrl(p);
                    }
                  }|
                  @indent[7]|{
@@ -159,7 +169,7 @@
     var rel = getParameterByName("rel");
     if (doc && rel) {
        var pos = bsearch(doc, link_dirs, 0, link_dirs.length);
-       if (pos) {
+       if (pos !== false) {
           window.onload = function() {
             window.location = link_dirs[pos][1] + "/" + rel;
           }
@@ -193,7 +203,10 @@
     #f
     null
     (lambda (renderer p ri)
-      (define doc-dirs (get-rendered-doc-directories (not user?) user?))
+      (define doc-dirs (get-rendered-doc-directories
+                        (not user?) user?
+                        ;; allow indirect links to "search", for example
+                        #:keep-omit? #t))
       (define keys (if (and main-at-user? (not user?))
                        ;; If there's no installation-scope "doc", then
                        ;; the "main" redirection table is useless.
@@ -276,6 +289,13 @@
                                                     (path->url
                                                      (path->directory-path
                                                       (build-path (find-doc-dir) "local-redirect")))))
+           ;; When defined, `user_doc_root` points to the directory containing
+           ;; "search/index.html", which is usd to run a search entered on the search
+           ;; box at the top left of an individual document's page
+           (fprintf o "user_doc_root = ~s;\n" (url->string
+                                               (path->url
+                                                (path->directory-path
+                                                 (find-user-doc-dir)))))
            (newline o))
          (fprintf o "var ~alink_dirs = [" (if user? "user_" ""))
          (define (extract-name e)
@@ -290,7 +310,7 @@
                                            (url->string (path->url e))
                                            (format "../~a" name))))
          (fprintf o "];\n\n")
-         (fprintf o (rewrite-code prefix here-url num-bins))
+         (fprintf o "~a" (rewrite-code prefix here-url num-bins))
          (newline o)))
       (unless (file-exists? alt-dest)
         ;; make empty alternate file; in `user?` mode, this

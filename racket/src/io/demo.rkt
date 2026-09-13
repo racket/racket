@@ -396,6 +396,18 @@
         (error))
       (loop (add1 x) (cdr content) (list* bstr bstr accum))])))
 
+(test #t (equal? (build-path "a" "b") (build-path "a" "b")))
+(test #t (equal-always? (build-path "a" "b") (build-path "a" "b")))
+
+(let ([exn (with-handlers ([void values])
+             (open-input-file "surely-this-file-does-not-exist"))])
+  (unless (and (exn:fail:filesystem:errno? exn)
+               (eq? 'ENOENT (exn-classify-errno (exn:fail:filesystem:errno-errno exn))))
+    (error "not ENOENT")))
+(when (or (exn-classify-errno (cons (expt 2 63) 'posix))
+          (exn-classify-errno (cons 2 'gai)))
+  (error "suprising classification"))
+
 (let ()
   (define path (build-path "compiled" "demo-out"))
   (define o (open-output-file path 'truncate))
@@ -948,3 +960,29 @@
              (seconds->date (expt 2 60))))
   (test #t (with-handlers ([exn:fail? out-of-range])
              (seconds->date (expt 2 80)))))
+
+(time
+ (let ()
+   (define-values (i o) (make-pipe 4096))
+   (for-each
+    thread-wait
+    (for/list ([k (in-range 10)])
+      (thread #:pool 'own
+              (lambda ()
+                (for ([j (in-range 1000)])
+                  (write-bytes #"a" o)
+                  (read-bytes 1 i))))))))
+
+(time
+ (let ()
+   (define o (open-output-bytes))
+   (for-each
+    thread-wait
+    (for/list ([k (in-range 10)])
+      (thread #:pool 'own
+              (lambda ()
+                (for ([j (in-range 1000)])
+                  (write-bytes #"a" o))))))
+   (bytes-length (get-output-bytes o))))
+
+(terminal-file-position)

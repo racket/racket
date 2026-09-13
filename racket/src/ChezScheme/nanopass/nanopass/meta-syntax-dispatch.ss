@@ -26,7 +26,7 @@
   ;;;   (p1 . p2)                          pair (list)
   ;;;   each-any                           any proper list
   ;;;   #(each p)                          (p*)
-  ;;;   #(each+ p1 (p2_1 ...p2_n) p3)      (p1* (p2_n ... p2_1) . p3) 
+  ;;;   #(each+ p1 (p2_1 ... p2_n) p3)     (p1* (p2_n ... p2_1) . p3)
   
   (define match-each
     (lambda (e p)

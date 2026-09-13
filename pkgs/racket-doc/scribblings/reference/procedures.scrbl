@@ -131,8 +131,8 @@ supplied keyword arguments in the @racket[#:<kw> kw-arg] sequence,
 where @racket[#:<kw>] stands for any keyword.
 
 The given @racket[kw-lst] must be sorted using @racket[keyword<?].  No
-keyword can appear twice in @racket[kw-lst] or in both
-@racket[kw-list] and as a @racket[#:<kw>], otherwise, the
+keyword can appear twice in @racket[kw-lst] or both in
+@racket[kw-lst] and as a @racket[#:<kw>], otherwise, the
 @exnraise[exn:fail:contract]. The given @racket[kw-val-lst] must have
 the same length as @racket[kw-lst], otherwise, the
 @exnraise[exn:fail:contract]. The given @racket[proc] must accept all
@@ -312,7 +312,7 @@ list is also in the second list.
 }
 
 @defproc[(make-keyword-procedure
-          [proc (((listof keyword?) list?) () #:rest list? . ->* . any)]
+          [proc ((listof keyword?) list? any/c ... . -> . any)]
           [plain-proc procedure? (lambda args (apply proc null null args))])
          procedure?]{
 
@@ -335,7 +335,12 @@ the first two arguments, but that correspondence is in no way
 enforced.
 
 The result of @racket[procedure-arity] and @racket[object-name] on the
-new procedure is the same as for @racket[plain-proc]. See also
+new procedure is the same as for @racket[plain-proc], if
+@racket[plain-proc] is provided. Otherwise, the result of
+@racket[object-name] is the same as for @racket[proc],
+but the result of @racket[procedure-arity] is derived from that of
+@racket[proc] by reducing its arity by 2 (i.e., without the two prefix
+arguments that handle keyword arguments). See also
 @racket[procedure-reduce-keyword-arity] and @racket[procedure-rename].
 
 @examples[
@@ -619,7 +624,7 @@ other low-level code.
 Returns @racket[#t] if @racket[v] is a primitive procedure,
 @racket[#f] otherwise.}
 
-@defproc[(primitive-closure? [v any/c]) boolean]{
+@defproc[(primitive-closure? [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is internally implemented as a
 primitive closure rather than a simple primitive procedure,

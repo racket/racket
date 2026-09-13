@@ -13,6 +13,7 @@
                             original-self
                             requires
                             recur-requires
+                            flattened-requires
                             provides
                             phase-to-link-module-uses
                             ;; Maybe provide more capability than the module's declaration inspector:

@@ -1,5 +1,6 @@
 #lang racket/base
 (require "../compile/serialize-property.rkt"
+         "../compile/serialize-state.rkt"
          "full-binding.rkt"
          "../common/phase+space.rkt")
 
@@ -16,6 +17,8 @@
          module-binding-nominal-require-phase+space-shift
          module-binding-extra-inspector
          module-binding-extra-nominal-bindings
+
+         module-binding-maybe-intern
          
          deserialize-full-module-binding
          deserialize-simple-module-binding)
@@ -95,8 +98,12 @@
       [(full-module-binding? simplified-b)
        (ser-push! 'tag '#:module-binding)
        (ser-push! (full-module-binding-module b))
-       (ser-push! (full-module-binding-sym b))
-       (ser-push! (full-module-binding-phase b))
+       (define-values (sym phase)
+         ((serialize-state-map-binding-symbol state) (full-module-binding-module b)
+                                                     (full-module-binding-sym b)
+                                                     (full-module-binding-phase b)))
+       (ser-push! sym)
+       (ser-push! phase)
        (ser-push! (full-module-binding-nominal-module b))
        (ser-push! (full-module-binding-nominal-phase+space b))
        (ser-push! (full-module-binding-nominal-sym b))
@@ -107,7 +114,14 @@
            (ser-push! #f))
        (ser-push! (full-module-binding-extra-nominal-bindings b))]
       [else
-       (ser-push! simplified-b)])))
+       (ser-push! simplified-b)]))
+  #:property prop:binding-shift-report
+  (lambda (b bulk-shifts report-shifts)
+    (report-shifts (full-module-binding-module b) bulk-shifts)
+    (report-shifts (full-module-binding-nominal-module b) bulk-shifts)
+    (for ([b (in-list (full-module-binding-extra-nominal-bindings b))])
+      (when (binding-shift-report? b)
+        ((binding-shift-report-ref b) b bulk-shifts report-shifts)))))
 
 (struct simple-module-binding (module phase sym nominal-module)
   #:authentic
@@ -116,9 +130,17 @@
   (lambda (b ser-push! state)
     (ser-push! 'tag '#:simple-module-binding)
     (ser-push! (simple-module-binding-module b))
-    (ser-push! (simple-module-binding-sym b))
-    (ser-push! (simple-module-binding-phase b))
-    (ser-push! (simple-module-binding-nominal-module b))))
+    (define-values (sym phase)
+      ((serialize-state-map-binding-symbol state) (simple-module-binding-module b)
+                                                  (simple-module-binding-sym b)
+                                                  (simple-module-binding-phase b)))
+    (ser-push! sym)
+    (ser-push! phase)
+    (ser-push! (simple-module-binding-nominal-module b)))
+  #:property prop:binding-shift-report
+  (lambda (b bulk-shifts report-shifts)
+    (report-shifts (simple-module-binding-module b) bulk-shifts)
+    (report-shifts (simple-module-binding-nominal-module b) bulk-shifts)))
 
 (define (deserialize-full-module-binding module sym phase
                                          nominal-module
@@ -139,6 +161,49 @@
 
 (define (deserialize-simple-module-binding module sym phase nominal-module)
   (simple-module-binding module phase sym nominal-module))
+
+;; ----------------------------------------
+
+(define (module-binding-to-intern? v)
+  (or (module-binding? v) (full-module-binding? v)))
+
+;; Binding resolution might or might not use cache, so we need to intern
+;; for serialization to make the result deterministic
+(define (module-binding-maybe-intern v interns map-binding-symbol mpi->index)
+  (define key
+    (cond
+      [(simple-module-binding? v)
+       (define-values (sym phase)
+         (map-binding-symbol (simple-module-binding-module v)
+                             (simple-module-binding-sym v)
+                             (simple-module-binding-phase v)))
+       (list (mpi->index (simple-module-binding-module v))
+             phase
+             sym
+             (mpi->index (simple-module-binding-nominal-module v)))]
+      [(full-module-binding? v)
+       (define-values (sym phase)
+         (map-binding-symbol (full-module-binding-module v)
+                             (full-module-binding-sym v)
+                             (full-module-binding-phase v)))
+       (list (mpi->index (full-module-binding-module v))
+             phase
+             sym
+             (mpi->index (full-module-binding-nominal-module v))
+             (full-module-binding-nominal-phase+space v)
+             (full-module-binding-nominal-sym v)
+             (full-module-binding-nominal-require-phase+space-shift v)
+             (full-module-binding-extra-inspector v)
+             (for/list ([b (full-module-binding-extra-nominal-bindings v)])
+               (or (module-binding-maybe-intern b interns map-binding-symbol mpi->index)
+                   b)))]))
+  (define new-v (hash-ref interns key #f))
+  (cond
+    [(not new-v)
+     (hash-set! interns key v)
+     #f]
+    [(eq? new-v v) #f]
+    [else new-v]))
 
 ;; ----------------------------------------
 

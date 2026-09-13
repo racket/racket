@@ -6,12 +6,12 @@
   ;; `define-generics' to build these generic interfaces. Thus we must
   ;; forge them.
 
-  (#%require (for-syntax '#%kernel) "generic-methods.rkt")
+  (#%require (for-syntax '#%kernel) '#%unsafe "generic-methods.rkt")
 
   (#%provide gen:equal+hash gen:equal-mode+hash gen:custom-write)
 
   (define-values (prop:gen:equal+hash equal+hash? gen:equal+hash-acc)
-    (make-struct-type-property
+    (unsafe-make-struct-type-property/guard-calls-no-arguments
      'prop:gen:equal+hash
      (lambda (v si)
        (if (and (vector? v)

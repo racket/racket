@@ -26,6 +26,7 @@
                                      [(regexp-match? #rx"^t?arm64" target-machine) "arm64"]
                                      [(regexp-match? #rx"^t?ppc32" target-machine) "ppc32"]
                                      [(regexp-match? #rx"^t?rv64" target-machine) "rv64"]
+                                     [(regexp-match? #rx"^t?la64" target-machine) "la64"]
                                      [(regexp-match? #rx"^t?pb" target-machine) "pb"]
                                      [else (error "machine.def: cannot infer architecture")]))]
                [s (regexp-replace* #rx"[$][(]Mend[)]" s

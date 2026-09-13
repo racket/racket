@@ -7,6 +7,22 @@
 (test #f (current-error-message-adjuster) 'i-just-made-up-this-new-mode)
 (err/rt-test ((current-error-message-adjuster) "oops"))
 
+(err/rt-test (error "message")
+             exn:fail?
+             #rx"message")
+(err/rt-test (error "message" 'argument)
+             exn:fail?
+             #rx"message 'argument")
+(err/rt-test (error 'who "message: ~a" "argument")
+             exn:fail?
+             #rx"who: message: argument")
+(err/rt-test (error 'who "message: ~s" "argument")
+             exn:fail?
+             #rx"who: message: \"argument\"")
+(err/rt-test (error 'who "message: ~v" 'argument)
+             exn:fail?
+             #rx"who: message: 'argument")
+
 (define-syntax-rule (test-error-match rx e)
   (test #t
         regexp-match?
@@ -122,12 +138,32 @@
                        (values (case (and (eq? realm 'racket/primitive)
                                           ctc)
                                  [("number?") "number/c"]
+                                 [("exact-nonnegative-integer?") "nonneg-int/c"]
+                                 [("(integer-in 0 (sub1 (expt 2 (stencil-vector-mask-width))))")
+                                  "valid-stencil-vector-mask/c"]
                                  [else ctc])
                                'mars))]
                     [else #f]))])
   (test-error-match #rx"expected: number/c" (+ 'a 'b))
+  (test-error-match #rx"expected: number[?]" (raise-argument-error 'plus "number?" 'a))
 
-  (test-error-match #rx"expected: number[?]" (raise-argument-error 'plus "number?" 'a)))
+  (test-error-match #rx"expected: nonneg-int/c"
+                    (vector-ref #(1 2 3) 'not-nonneg-int))
+  (test-error-match #rx"expected: nonneg-int/c"
+                    (vector-set! (make-vector 3) 'not-nonneg-int 0))
+  (test-error-match #rx"expected: exact-nonngative-integer[?]"
+                    (raise-argument-error 'vector-add "exact-nonngative-integer?" 'not-nonneg-int))
+
+  (test-error-match #rx"expected: valid-stencil-vector-mask/c"
+                    (stencil-vector 'invalid))
+  (test-error-match #rx"expected: valid-stencil-vector-mask/c"
+                    (stencil-vector-update (stencil-vector 0) 'invalid 0))
+  (test-error-match #rx"expected: valid-stencil-vector-mask/c"
+                    (stencil-vector-update (stencil-vector 0) 0 'invalid))
+  (test-error-match #rx"expected:.+integer-in 0.+sub1.+expt 2.+stencil-vector-mask-width"
+                    (raise-argument-error 'stencil-vector-add
+                                          "(integer-in 0 (sub1 (expt 2 (stencil-vector-mask-width))))"
+                                          'invalid)))
 
 (parameterize ([current-error-message-adjuster
                 (lambda (mode)
@@ -142,5 +178,40 @@
                     [else #f]))])
   (test-error-match #rx"^function call: bad call" (1 2))
   (test-error-match #rx"^function call: bad call" (1 #:x 2)))
-  
+
+(err/rt-test (exn-classify-errno (cons 0.5 'posix)))
+(err/rt-test (exn-classify-errno (cons 1 'x)))
+(err/rt-test (exn-classify-errno (seconds->date 0)))
+(define ENOENT-exn
+  (let ([exn (with-handlers ([void values])
+               (open-input-file "surely-this-file-does-not-exist"))])
+    (and (exn:fail:filesystem:errno? exn)
+         exn)))
+(define ENOENT-errno
+  (and ENOENT-exn
+       (exn:fail:filesystem:errno-errno ENOENT-exn)))
+(test #t exn? ENOENT-exn)
+(test #t pair? ENOENT-errno)
+(test 'ENOENT exn-classify-errno ENOENT-errno)
+(test 'ENOENT exn-classify-errno ENOENT-exn)
+(test 'ENOENT exn-classify-errno (exn:fail:network:errno "oops"
+                                                         (current-continuation-marks)
+                                                         ENOENT-errno))
+(test #f (exn-classify-errno (cons (expt 2 100) 'posix)))
+(test #f (exn-classify-errno (cons (expt 2 100) 'windows)))
+(test #f (exn-classify-errno (cons (expt 2 100) 'gai)))
+
+(unless (eq? 'windows (system-type))
+  (test 'EISDIR
+        exn-classify-errno
+        (with-handlers ([exn:fail? (lambda (e) e)])
+          (open-input-file (find-system-path 'temp-dir)))))
+
+(let ([f (make-temporary-file)])
+  (test 'EEXIST
+        exn-classify-errno
+        (with-handlers ([exn:fail? (lambda (e) e)])
+          (open-output-file f)))
+  (delete-directory/files f))
+
 (report-errs)

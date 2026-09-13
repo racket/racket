@@ -18,39 +18,50 @@
 ;; a deserialization expression
 
 (struct serialize-state (reachable-scopes       ; the set of all reachable scopes
+                         implicitly-reachable-scopes ; not necessarily reachable, but contibutes to binding scope sets
+                         all-reachable-scopes   ; union of reachable and implicitly reachable
                          bindings-intern        ; to record pruned binding tables
                          bulk-bindings-intern   ; to record pruned bulk-binding lists
                          scopes                 ; interned scope sets
                          shifted-multi-scopes   ; interned shifted multi-scope sets
                          multi-scope-tables     ; interned phase -> scope tables
                          mpi-shifts             ; interned module path index shifts
+                         drop-shifts?           ; true => shifts are flattened via `report-shifts`
                          context-triples        ; combinations of the previous three
                          props                  ; map full props to previously calculated
                          interned-props         ; intern filtered props
                          syntax-context         ; used to collapse encoding of syntax literals
                          sharing-syntaxes       ; record which syntax objects are `datum->syntax` form
                          preserve-prop-keys     ; property keys to preserve (that otherwise wouldn't be)
-                         keep-provides?)        ; non-#f => predicate for when to keep bulk provides
+                         keep-provides?         ; non-#f => predicate for when to keep bulk provides
+                         map-binding-symbol)    ; mpi symbol -> symbol, needed by demodularizer
   #:authentic)
 
 (define (make-serialize-state reachable-scopes
+                              implicitly-reachable-scopes
                               preserve-prop-keys
-                              keep-provides?)
+                              keep-provides?
+                              drop-shifts?
+                              map-binding-symbol)
   (define state
     (serialize-state reachable-scopes
+                     implicitly-reachable-scopes
+                     (set-union reachable-scopes implicitly-reachable-scopes)
                      (make-hasheq)   ; bindings-intern
                      (make-hasheq)   ; bulk-bindings-intern
                      (make-hash)     ; scopes
                      (make-hash)     ; shifted-multi-scopes
                      (make-hasheq)   ; multi-scope-tables
                      (make-hasheq)   ; mpi-shifts
+                     drop-shifts?
                      (make-hasheq)   ; context-triples
                      (make-hasheq)   ; props
                      (make-hash)     ; interned-props
                      (box null)      ; syntax-context
                      (make-hasheq)   ; sharing-syntaxes
                      preserve-prop-keys
-                     keep-provides?))
+                     keep-provides?
+                     map-binding-symbol)) ; mpi symbol phase -> symbol phase
   ;; Seed intern tables for sets and hashes to use the canonical
   ;; empty version for consistent sharing:
   (define empty-seteq (seteq))

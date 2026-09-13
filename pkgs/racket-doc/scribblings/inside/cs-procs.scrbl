@@ -62,7 +62,7 @@ Similar to @cppi{Scall0}, but these functions are used in sequence to
 apply a Chez Scheme procedure to an arbitrary number of arguments.
 First, @cppi{Sinitframe} is called with the number of arguments. Then,
 each argument is installed with @cppi{Sput_arg}, where the @var{i}
-argument indicates the argumenrt position and @var{arg} is the
+argument indicates the argument position and @var{arg} is the
 argument value. Finally, @cppi{Scall} is called with the procedure and
 the number of arguments (which must match the number provided to
 @cppi{Sinitframe}).}

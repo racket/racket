@@ -716,9 +716,6 @@ static Scheme_Object *syntax_p(int argc, Scheme_Object **argv)
 
 static Scheme_Object *syntax_to_datum(int argc, Scheme_Object **argv)
 {
-  if (!SCHEME_STXP(argv[0]))
-    scheme_wrong_contract("syntax->datum", "syntax?", 0, argc, argv);
-    
   return scheme_syntax_to_datum(argv[0]);
 }
 

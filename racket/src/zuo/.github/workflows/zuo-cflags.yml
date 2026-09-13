@@ -1,0 +1,45 @@
+---
+name: Zuo with Strict Compiler Flags
+
+# yamllint disable-line rule:truthy
+on: [push, pull_request]
+
+jobs:
+  build-gcc:
+    runs-on: ubuntu-22.04
+
+    env:
+      CFLAGS: "-Werror -Wall -Wextra -Wstrict-prototypes -Wold-style-definition -Wshadow -Wpointer-arith -Wcast-qual -pedantic -O2 -std=c11 -D_POSIX_C_SOURCE=200809L"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 100
+      - name: Compile
+        run: |
+          gcc -c $CFLAGS -DZUO_EMBEDDED zuo.c -o zuo_embed.o
+          gcc $CFLAGS zuo.c -o zuo
+      - name: Check
+        run: ./zuo build.zuo check
+
+  build-msvc:
+    runs-on: windows-2022
+
+    env:
+      CFLAGS: "/W1 /WX"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 100
+      - name: Compile
+        shell: cmd
+        run: |
+          call .github\scripts\msvcprep.bat x86_amd64
+          cl /c %CFLAGS% /DZUO_EMBEDDED /Fo:zuo_embed.obj zuo.c
+          cl %CFLAGS% zuo.c -o zuo
+      - name: Check
+        shell: cmd
+        run: |
+          call .github\scripts\msvcprep.bat x86_amd64
+          zuo build.zuo check

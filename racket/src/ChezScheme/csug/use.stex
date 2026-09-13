@@ -347,6 +347,8 @@ been redirected, or if the \scheme{--eedisable} command-line option
 (Section~\ref{SECTUSECOMMANDLINE}) has been used.
 The history is saved across sessions, by default, in the file
 ``.chezscheme\_history'' in the user's home directory.
+If the \scheme{CHEZSCHEME_HISTORY} environment variable is set during startup,
+its value becomes the default history file location.
 The \scheme{--eehistory} command-line option
 (Section~\ref{SECTUSECOMMANDLINE}) can be used to specify a different
 location for the history file or to disable the saving and restoring of
@@ -1225,7 +1227,8 @@ control parameters are described in Section~\ref{SECTSMGMTGC}.
 \index{profiling}%
 Finally, it is often useful to ``profile'' your code to determine that
 parts of the code that are executed most frequently.
-While this will not help the system optimize your code, it can help
+While this may help the system optimize your code, the primary
+benefit is to help
 you identify ``hot spots'' where you need to concentrate your own
 hand-optimization efforts.
 In these hot spots, consider using more efficient operators, like
@@ -1237,7 +1240,7 @@ These operators can make code more readable when used judiciously,
 but they can slow down time-critical code.
 
 Section~\ref{SECTMISCPROFILE} describes how to use the compiler's support
-for automatic profiling.
+for automatic profiling and profile-directed optimization.
 Be sure that profiling is not enabled when you compile your production
 code, since the code introduced into the generated code to perform the
 profiling adds significant run-time overhead.
@@ -1836,13 +1839,14 @@ arguments for which search tracing is desired.
 
 Ordinarily, the search for
 boot files is limited to a set of
-installation directories, but this may be overridden by setting
+installation directories relative to the executable, but this may be overridden by setting
 the environment variable \index{\scheme{SCHEMEHEAPDIRS}}\scheme{SCHEMEHEAPDIRS}.
 \scheme{SCHEMEHEAPDIRS} should be a colon-separated list of directories, listed in
 the order in which they should be searched.
-Within each directory, the two-character escape sequence ``\scheme{%v}''
-is replaced by the current version, and the two-character escape sequence
-``\scheme{%m}'' is replaced by the machine type.
+Within each directory, the two-character escape sequence ``\scheme{%v}'' is
+replaced by the current version, the two-character escape sequence ``\scheme{%m}''
+is replaced by the machine type, and the two-character escape sequence ``\scheme{%x}''
+is replaced by the directory in which the executable file resides.
 A percent followed by any other character is replaced by the second
 character; in particular, ``\scheme{%%}'' is replaced by ``\scheme{%}'', and
 ``\scheme{%:}'' is replaced by ``\scheme{:}''.
@@ -1850,9 +1854,7 @@ If \scheme{SCHEMEHEAPDIRS} ends in a non-escaped colon, the default directories 
 searched after those in \scheme{SCHEMEHEAPDIRS}; otherwise, only those listed in
 \scheme{SCHEMEHEAPDIRS} are searched.
 
-Under Windows, semi-colons are used in place of colons, and one additional
-escape is recognized: ``\scheme{%x},'' which is replaced by the directory in
-which the executable file resides.
+Under Windows, semi-colons are used in place of colons.
 The default search path under Windows consists of ``\scheme{%x}''
 and ``\scheme{%x\..\..\boot\%m}.''
 The registry key \scheme{HeapSearchPath} in
@@ -1867,4 +1869,3 @@ a boot header and the compiled code for one or more
 source files.
 See Section~\ref{SECTUSEAPPLICATIONS} for instructions on how to create
 boot files.
-

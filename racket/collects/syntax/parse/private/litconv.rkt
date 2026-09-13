@@ -246,20 +246,22 @@ cause an error, so don't worry about that case.)
 (define-syntax (literal-set->predicate stx)
   (syntax-case stx ()
     [(literal-set->predicate litset-id)
-     (let ([val (and (identifier? #'litset-id)
-                     (syntax-local-value/record #'litset-id literalset?))])
+     (with-disappeared-uses
+       (define val
+         (and (identifier? #'litset-id)
+              (syntax-local-value/record #'litset-id literalset?)))
        (unless val (raise-syntax-error #f "expected literal set name" stx #'litset-id))
-       (let ([lits (literalset-literals val)])
-         (with-syntax ([((lit phase-var) ...)
-                        (for/list ([lit (in-list lits)]
-                                   #:when (lse:lit? lit))
-                          (list (lse:lit-external lit) (lse:lit-phase lit)))]
-                       [(datum-lit ...)
-                        (for/list ([lit (in-list lits)]
-                                   #:when (lse:datum-lit? lit))
-                          (lse:datum-lit-external lit))])
-           #'(make-literal-set-predicate (list (list (quote-syntax lit) phase-var) ...)
-                                         '(datum-lit ...)))))]))
+       (define lits (literalset-literals val))
+       (define/with-syntax ((lit phase-var) ...)
+         (for/list ([lit (in-list lits)]
+                    #:when (lse:lit? lit))
+           (list (lse:lit-external lit) (lse:lit-phase lit))))
+       (define/with-syntax (datum-lit ...)
+         (for/list ([lit (in-list lits)]
+                    #:when (lse:datum-lit? lit))
+           (lse:datum-lit-external lit)))
+       #'(make-literal-set-predicate (list (list (quote-syntax lit) phase-var) ...)
+                                     '(datum-lit ...)))]))
 
 (define (make-literal-set-predicate lits datum-lits)
   (lambda (x [phase (syntax-local-phase-level)])

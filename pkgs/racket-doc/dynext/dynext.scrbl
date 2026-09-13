@@ -44,7 +44,7 @@ directories are added automatically.}
 
 @defparam[current-extension-compiler 
           compiler
-          (or/c path-string? false/c)]{
+          (or/c path-string? #f)]{
 
 A parameter that determines the executable for the compiler. 
 
@@ -131,7 +131,7 @@ and without non-@racket["-D"] flags.}
 
 @defparam[compile-variant
           variant-symbol
-          (one-of/c 'normal 'cgc '3m)]{
+          (or/c 'normal 'cgc '3m)]{
 
 A parameter that indicates the target for compilation, where
 @racket['normal] is an alias for the result of @racket[(system-type
@@ -140,7 +140,7 @@ A parameter that indicates the target for compilation, where
 
 @subsection{Helper functions}
 
-@defproc[(use-standard-compiler (name (apply one-of/c (get-standard-compilers)))) any]{
+@defproc[(use-standard-compiler (name (apply or/c (get-standard-compilers)))) any]{
 
 Sets the parameters described in @secref["compile-params"] for a
 particular known compiler. The acceptable names are
@@ -204,7 +204,7 @@ destination extension filename.}
 
 @defparam[current-extension-linker
           linker
-          (or/c path-string? false/c)]{
+          (or/c path-string? #f)]{
 
 A parameter that determines the executable used as a linker.
 
@@ -283,7 +283,7 @@ resulting file to be loaded via @racket[load-extension].  Defaults to
 
 @defparam[link-variant
           variant-symbol
-          (one-of/c 'normal 'cgc '3m)]{
+          (or/c 'normal 'cgc '3m)]{
 
 A parameter that indicates the target for linking, where
 @racket['normal] is an alias for the result of @racket[(system-type
@@ -292,7 +292,7 @@ A parameter that indicates the target for linking, where
 
 @subsection{Helper Functions}
 
-@defproc[(use-standard-linker (name (one-of/c 'cc 'gcc 'msvc 'borland 'cw)))
+@defproc[(use-standard-linker (name (or/c 'cc 'gcc 'msvc 'borland 'cw)))
          void?]{
 
 Sets the parameters described in @secref["link-params"] for a
@@ -357,7 +357,7 @@ Appends the platform-standard dynamic-extension file suffix to
 
 @defproc[(extract-base-filename/ss (s path-string?) 
                                    (program any/c #f))
-         (or/c path? false/c)]{
+         (or/c path? #f)]{
 
 Strips the Racket file suffix from @racket[s] and returns a stripped
 path. The recognized suffixes are the ones reported by
@@ -371,7 +371,7 @@ Unlike the other functions below, when @racket[program] is not
 
 @defproc[(extract-base-filename/c (s path-string?) 
                                   (program any/c #f)) 
-         (or/c path? false/c)]{
+         (or/c path? #f)]{
 
 Strips the Racket file suffix from @racket[s] and
 returns a stripped path. If @racket[s] is not a Racket file name and
@@ -379,17 +379,17 @@ returns a stripped path. If @racket[s] is not a Racket file name and
 not a Racket file and @racket[program] is @racket[#f], @racket[#f] is
 returned.}
 
-@defproc[(extract-base-filename/kp (s path-string?) (program any/c #f)) (or/c path? false/c)]{
+@defproc[(extract-base-filename/kp (s path-string?) (program any/c #f)) (or/c path? #f)]{
 
 Same as @racket[extract-base-filename/c], but for constant-pool
 files.}
 
-@defproc[(extract-base-filename/o (s path-string?) (program any/c #f)) (or/c path? false/c)]{
+@defproc[(extract-base-filename/o (s path-string?) (program any/c #f)) (or/c path? #f)]{
 
 Same as @racket[extract-base-filename/c], but for compiled-object
 files.}
 
-@defproc[(extract-base-filename/ext (s path-string?) (program any/c #f)) (or/c path? false/c)]{
+@defproc[(extract-base-filename/ext (s path-string?) (program any/c #f)) (or/c path? #f)]{
 
 Same as @racket[extract-base-filename/c], but for extension files.}
 

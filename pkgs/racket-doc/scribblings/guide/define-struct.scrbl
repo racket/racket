@@ -88,8 +88,7 @@ modified.
 ]
 
 The @racket[_struct-id] that appears after @racket[struct-copy] must
-be a structure type name bound by @racket[struct] (i.e., the
-name that cannot be used directly as an expression). The
+be a structure type name bound by @racket[struct]. The
 @racket[_struct-expr] must produce an instance of the structure type.
 The result is a new instance of the structure type that is like the old
 one, except that the field indicated by each @racket[_field-id] gets
@@ -328,7 +327,7 @@ you obtain bindings that work with the existing prefab structure type:
 
 The field name @racketidfont{kind} above does not matter for finding
 the prefab structure type; only the name @racketidfont{sprout} and the
-number of fields matters. At the same time, the prefab structure type
+number of fields matter. At the same time, the prefab structure type
 @racketidfont{sprout} with three fields is a different structure type
 than the one with a single field:
 

@@ -107,7 +107,7 @@
     (cond
       [relative-sources?
        (for/hash ([(k ht) (in-hash absolute-details)]
-                  #:when (hash-ref include-table k #f))
+                  #:when (if include-table (hash-ref include-table k #f) #t))
          (values k (source->relative-source dest-dir ht)))]
       [include-table
        (for/hash ([(k ht) (in-hash absolute-details)]

@@ -90,7 +90,7 @@
          (with-syntax ([(old-type ...) (map convert-type #'(old-type ...))])
            #'(define-ftype type (struct [field old-type] ...)))]))
 
-    ;; Wrap foreign-pointer addressed in a record so that
+    ;; Wrap foreign-pointer addresses in a record so that
     ;; the value can be finalized
     (define-record ptr (address))
     (define (ptr->address v) (if (eqv? v NULL) v (ptr-address v)))
@@ -157,32 +157,56 @@
 
     (define-syntax (define-function*/errno stx)
       (syntax-case stx ()
-        [(_ err-val err-expr flags ret-type name ([rktio-type rktio] [arg-type arg] ...))
+        [(_ err? make-err make-val flags ret-type name ([rktio-type rktio] [arg-type arg] ...))
          (with-syntax ([rhs (convert-function
                              #'(define-function flags ret-type name ([rktio-type rktio] [arg-type arg] ...)))])
            #'(define name
                (let ([proc rhs])
                  (lambda (rktio arg ...)
                    (let ([v (proc rktio arg ...)])
-                     (if (eqv? v err-val)
-                         err-expr
-                         v))))))]))
+                     (if (err? v)
+                         (make-err v)
+                         (make-val v)))))))]))
 
     (define-syntax define-function/errno
       (syntax-rules ()
         [(_ err-val flags ret-type name ([rktio-type rktio] [arg-type arg] ...))
-         (define-function*/errno err-val
-           (vector (rktio_get_last_error_kind rktio)
-                   (rktio_get_last_error rktio))
+         (define-function*/errno (lambda (v) (eqv? v err-val))
+           (lambda (v) (vector (rktio_get_last_error_kind rktio)
+                               (rktio_get_last_error rktio)))
+           (lambda (v) v)
            flags ret-type name ([rktio-type rktio] [arg-type arg] ...))]))
     
     (define-syntax define-function/errno+step
       (syntax-rules ()
         [(_ err-val flags ret-type name ([rktio-type rktio] [arg-type arg] ...))
-         (define-function*/errno err-val
-           (vector (rktio_get_last_error_kind rktio)
-                   (rktio_get_last_error rktio)
-                   (rktio_get_last_error_step rktio))
+         (define-function*/errno (lambda (v) (eqv? v err-val))
+           (lambda (v) (vector (rktio_get_last_error_kind rktio)
+                               (rktio_get_last_error rktio)
+                               (rktio_get_last_error_step rktio)))
+           (lambda (v) v)
+           flags ret-type name ([rktio-type rktio] [arg-type arg] ...))]))
+
+    (define-syntax define-function/result_t
+      (syntax-rules ()
+        [(_ success-accessor flags ret-type name ([rktio-type rktio] [arg-type arg] ...))
+         (define-function*/errno (lambda (res) (not (rktio_result_is_success res)))
+           (lambda (res) (vector (rktio_get_error_kind res)
+                                 (rktio_get_error res)))
+           (lambda (res) (success-accessor res))
+           flags ret-type name ([rktio-type rktio] [arg-type arg] ...))]))
+
+    (define-syntax define-function/alloc_result_t
+      (syntax-rules ()
+        [(_ success-accessor flags ret-type name ([rktio-type rktio] [arg-type arg] ...))
+         (define-function*/errno (lambda (res) (not (rktio_result_is_success res)))
+           (lambda (res) (let ([vec (vector (rktio_get_error_kind res)
+                                            (rktio_get_error res))])
+                           (rktio_free res)
+                           vec))
+           (lambda (res) (let ([val (success-accessor res)])
+                           (rktio_free res)
+                           val))
            flags ret-type name ([rktio-type rktio] [arg-type arg] ...))]))
 
     (define loaded-librktio
@@ -221,6 +245,17 @@
     (define (rktio_recv_address_ref fs)
       (make-ptr
        (ftype-ref rktio_length_and_addrinfo_t (address) (make-ftype-pointer rktio_length_and_addrinfo_t (ptr->address fs)) 0)))
+
+    (define (rktio_recv_with_addr_bytes_length_ref fs)
+      (ftype-ref rktio_length_and_addr_bytes_t (len) (make-ftype-pointer rktio_length_and_addr_bytes_t (ptr->address fs)) 0))
+
+    (define (rktio_recv_with_addr_bytes_to_bytes fs)
+      (let* ([addr (ptr->address fs)]
+             [len (ftype-ref rktio_length_and_addr_bytes_t (addr_len) (make-ftype-pointer rktio_length_and_addr_bytes_t addr) 0)]
+             [x (ftype-ref rktio_length_and_addr_bytes_t (addr_bytes) (make-ftype-pointer rktio_length_and_addr_bytes_t addr) 0)]
+             [addr-bytes (copy-bytes x len)])
+        (rktio_free (make-ptr x))
+        addr-bytes))
 
     (define (rktio_stat_to_vector p)
       (let ([p (make-ftype-pointer rktio_stat_t (ptr->address p))])
@@ -266,36 +301,33 @@
         (vector RKTIO_ERROR_KIND_RACKET
                 RKTIO_ERROR_TIME_OUT_OF_RANGE)]
        [else
-        (unsafe-start-atomic)
-        (begin0
-          (let ([p (rktio_seconds_to_date rktio si nsecs get-gmt)])
-            (cond
-             [(vector? p) p]
-             [else
-              (let* ([dt (make-ftype-pointer rktio_date_t (ptr->address p))]
-                     [tzn (address->ptr (ftype-ref rktio_date_t (zone_name) dt))])
-                (begin0
-                  (date*
-                   (ftype-ref rktio_date_t (second) dt)
-                   (ftype-ref rktio_date_t (minute) dt)
-                   (ftype-ref rktio_date_t (hour) dt)
-                   (ftype-ref rktio_date_t (day) dt)
-                   (ftype-ref rktio_date_t (month) dt)
-                   (ftype-ref rktio_date_t (year) dt)
-                   (ftype-ref rktio_date_t (day_of_week) dt)
-                   (ftype-ref rktio_date_t (day_of_year) dt)
-                   (if (fx= 0 (ftype-ref rktio_date_t (is_dst) dt))
-                       #f
-                       #t)
-                   (ftype-ref rktio_date_t (zone_offset) dt)
-                   (ftype-ref rktio_date_t (nanosecond) dt)
-                   (if (eqv? tzn NULL)
-                       unknown-zone-name
-                       (string->immutable-string (utf8->string (rktio_to_bytes tzn)))))
-                  (unless (eqv? tzn NULL)
-                    (rktio_free tzn))
-                  (rktio_free p)))]))
-          (unsafe-end-atomic))]))
+        (let ([p (rktio_seconds_to_date rktio si nsecs get-gmt)])
+          (cond
+            [(vector? p) p]
+            [else
+             (let* ([dt (make-ftype-pointer rktio_date_t (ptr->address p))]
+                    [tzn (address->ptr (ftype-ref rktio_date_t (zone_name) dt))])
+               (begin0
+                (date*
+                 (ftype-ref rktio_date_t (second) dt)
+                 (ftype-ref rktio_date_t (minute) dt)
+                 (ftype-ref rktio_date_t (hour) dt)
+                 (ftype-ref rktio_date_t (day) dt)
+                 (ftype-ref rktio_date_t (month) dt)
+                 (ftype-ref rktio_date_t (year) dt)
+                 (ftype-ref rktio_date_t (day_of_week) dt)
+                 (ftype-ref rktio_date_t (day_of_year) dt)
+                 (if (fx= 0 (ftype-ref rktio_date_t (is_dst) dt))
+                     #f
+                     #t)
+                 (ftype-ref rktio_date_t (zone_offset) dt)
+                 (ftype-ref rktio_date_t (nanosecond) dt)
+                 (if (eqv? tzn NULL)
+                     unknown-zone-name
+                     (string->immutable-string (utf8->string (rktio_to_bytes tzn)))))
+                (unless (eqv? tzn NULL)
+                  (rktio_free tzn))
+                (rktio_free p)))]))]))
 
     (define (rktio_convert_result_to_vector p)
       (let ([p (make-ftype-pointer rktio_convert_result_t (ptr->address p))])
@@ -383,11 +415,11 @@
     (define (null-to-false v) (if (eqv? v NULL) #f v))
 
     (define (rktio_process_result_stdin_fd r)
-      (null-to-false (address->ptr (ftype-ref rktio_process_result_t (stdin_fd) (make-ftype-pointer rktio_process_result_t (ptr->address r))))))
+      (null-to-false (address->ptr (ftype-ref rktio_process_result_t (stdin_rfd) (make-ftype-pointer rktio_process_result_t (ptr->address r))))))
     (define (rktio_process_result_stdout_fd r)
-      (null-to-false (address->ptr (ftype-ref rktio_process_result_t (stdout_fd) (make-ftype-pointer rktio_process_result_t (ptr->address r))))))
+      (null-to-false (address->ptr (ftype-ref rktio_process_result_t (stdout_rfd) (make-ftype-pointer rktio_process_result_t (ptr->address r))))))
     (define (rktio_process_result_stderr_fd r)
-      (null-to-false (address->ptr (ftype-ref rktio_process_result_t (stderr_fd) (make-ftype-pointer rktio_process_result_t (ptr->address r))))))
+      (null-to-false (address->ptr (ftype-ref rktio_process_result_t (stderr_rfd) (make-ftype-pointer rktio_process_result_t (ptr->address r))))))
     (define (rktio_process_result_process r)
       (address->ptr (ftype-ref rktio_process_result_t (process) (make-ftype-pointer rktio_process_result_t (ptr->address r)))))
 
@@ -415,7 +447,9 @@
                           define-struct-type
                           define-function
                           define-function/errno
-                          define-function/errno+step)
+                          define-function/errno+step
+                          define-function/result_t
+                          define-function/alloc_result_t)
             [(_ accum) (hasheq . accum)]
             [(_ accum (define-constant . _) . rest)
              (extract-functions accum . rest)]
@@ -428,6 +462,10 @@
             [(_ accum (define-function/errno _ _ _ id . _) . rest)
              (extract-functions ('id id . accum) . rest)]
             [(_ accum (define-function/errno+step _ _ _ id . _) . rest)
+             (extract-functions ('id id . accum) . rest)]
+            [(_ accum (define-function/result_t _ _ _ id . _) . rest)
+             (extract-functions ('id id . accum) . rest)]
+            [(_ accum (define-function/alloc_result_t _ _ _ id . _) . rest)
              (extract-functions ('id id . accum) . rest)]))
         (define-syntax begin
           (syntax-rules ()
@@ -439,6 +477,8 @@
                                  'rktio_is_timestamp rktio_is_timestamp
                                  'rktio_recv_length_ref rktio_recv_length_ref
                                  'rktio_recv_address_ref rktio_recv_address_ref
+                                 'rktio_recv_with_addr_bytes_length_ref rktio_recv_with_addr_bytes_length_ref
+                                 'rktio_recv_with_addr_bytes_to_bytes rktio_recv_with_addr_bytes_to_bytes
                                  'rktio_stat_to_vector rktio_stat_to_vector
                                  'rktio_identity_to_vector rktio_identity_to_vector
                                  'rktio_seconds_to_date* rktio_seconds_to_date*
@@ -583,6 +623,7 @@
                                 (apply 1/fprintf (|#%app| 1/current-error-port) fmt args))
                               1/srcloc->string
                               1/error-print-source-location)
+  (set-error-value->string! error-value->string)
   (set-ffi-get-lib-and-obj! ffi-get-lib ffi-get-obj ffi-unload-lib ptr->address)
   (set-make-async-callback-poll-wakeup! 1/unsafe-make-signal-received)
   (set-get-machine-info! get-machine-info)

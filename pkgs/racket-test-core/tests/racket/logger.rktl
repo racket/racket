@@ -1,5 +1,6 @@
 
 (load-relative "loadtest.rktl")
+(require compiler/find-exe)
 
 (Section 'logger)
 
@@ -107,6 +108,8 @@
   (test #t log-level? test-logger 'info 'test2)
   (test #f log-level? test-logger 'info 'not-test)
   (test #f log-level? test-logger 'debug 'test2)
+  (test #f log-level? test-logger 'none 'test2)
+  (test #f log-level? test-logger 'none)
   (test 'info log-max-level test-logger)
   (test 'info log-max-level test-logger 'test2)
   (test 'warning log-max-level test-logger 'not-test)
@@ -144,6 +147,8 @@
   (define (get)
     (define m (sync/timeout 0 r))
     (and m (vector-ref m 1)))
+  (log-message root 'none "message" 'data)
+  (test #f get)
   (log-message root 'debug "message" 'data)
   (test #f get)
   (log-message sub1 'info "message" 'data)
@@ -167,6 +172,7 @@
   (log-message sub4 'warning "message" 'data)
   (log-message sub4 'error "message" 'data)
   (log-message sub4 'fatal "message" 'data)
+  (log-message sub4 'none "message" 'data)
   (test #f get))
 
 ; --------------------
@@ -273,6 +279,35 @@
       'warning)
     warning-counter))
 (test 2 test-intercepted-logging2)
+
+;; From issue #3167
+(define (test-intercepted-logging3)
+  (define-logger bar)
+  (define ok? #t)
+  (with-intercepted-logging
+    (λ (l) (set! ok? #f))
+    (λ () (log-warning "hello"))
+    #:logger bar-logger
+    'warning)
+  ok?)
+(test #t test-intercepted-logging3)
+
+(define (test-intercepted-logging4)
+  (define msg #f)
+  (define kont #f)
+  (call-with-continuation-prompt
+   (λ ()
+     (with-intercepted-logging
+       (λ (l) (set! msg l))
+       (λ ()
+         (when (call-with-composable-continuation
+                (λ (k)
+                  (set! kont k) #f))
+           (log-warning "hello")))
+       'warning)))
+  (kont #t)
+  (and msg #t))
+(test #t test-intercepted-logging4)
 
 ; --------------------
 ;; Check that a blocked log receiver is not GCed if
@@ -387,6 +422,21 @@
           [end-cpu (current-process-milliseconds)])
       (test #t <= start (gc-info-start-time (vector-ref msg 2)) (gc-info-end-time (vector-ref msg 2)) end)
       (test #t <= start-cpu (gc-info-start-process-time (vector-ref msg 2)) (gc-info-end-process-time (vector-ref msg 2)) end-cpu))))
+
+;; --------------------
+
+;; This shouldn't take long
+(parameterize ([current-environment-variables
+                (environment-variables-copy (current-environment-variables))])
+  (printf "Long PLTSTDERR...\n")
+  (putenv "PLTSTDERR" (string-join (for/list ([i 10000]) (format "none@~a" i)) " "))
+  (test #t system* (find-exe) "-e" "1"))
+
+(parameterize ([current-environment-variables
+                (environment-variables-copy (current-environment-variables))])
+  (printf "Bad PLTSTDERR...\n")
+  (putenv "PLTSTDERR" "oops")
+  (test #t system* (find-exe) "-e" "1"))
 
 ;; --------------------
 

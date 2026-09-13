@@ -13,6 +13,7 @@
 @title[#:tag "classes"]{Classes and Objects}
 
 @margin-note{This chapter is based on a paper @cite["Flatt06"].}
+@hash-lang-note[racket/class #:lang racket/base]
 
 A @racket[class] expression denotes a first-class value,
 just like a @racket[lambda] expression:
@@ -790,6 +791,8 @@ a new name, but it does not change any references to the old method.
 
 @subsection{The @racket[trait] Form}
 
+@hash-lang-note[racket/trait]
+
 The general-purpose trait pattern is clearly too complex for a
 programmer to use directly, but it is easily codified in a
 @racket[trait] macro:
@@ -986,47 +989,45 @@ thus can only be used, for methods where no Beta-style augmentation has taken
 place. The following example shows this difference:
 
 @racketblock[
+(define/contract glutton%
+  (class/c (override [eat (->m edible/c void?)]))
+  (class animal%
+    (super-new)
+    (inherit eat)
+    (define/public (gulp food-list)
+      (for ([f food-list])
+        (eat f)))))
 (define/contract sloppy-eater%
   (class/c [eat (->m edible/c edible/c)])
-  (begin
-    (define/contract glutton%
-      (class/c (override [eat (->m edible/c void?)]))
-      (class animal%
-        (super-new)
-        (inherit eat)
-        (define/public (gulp food-list)
-          (for ([f food-list])
-            (eat f)))))
-    (class glutton%
-      (super-new)
-      (inherit-field size)
-      (define/override (eat f)
-        (let ([food-size (get-field size f)])
-          (set! size (/ food-size 2))
-          (set-field! size f (/ food-size 2))
-          f)))))]
+  (class glutton%
+    (super-new)
+    (inherit-field size)
+    (define/override (eat f)
+      (let ([food-size (get-field size f)])
+        (set! size (/ food-size 2))
+        (set-field! size f (/ food-size 2))
+        f))))]
 
 @interaction-eval[
 #:eval class-eval
+(define/contract glutton%
+  (class/c (override [eat (->m edible/c void?)]))
+  (class animal%
+    (super-new)
+    (inherit eat)
+    (define/public (gulp food-list)
+      (for ([f food-list])
+        (eat f)))))
 (define/contract sloppy-eater%
   (class/c [eat (->m edible/c edible/c)])
-  (begin
-    (define/contract glutton%
-      (class/c (override [eat (->m edible/c void?)]))
-      (class animal%
-        (super-new)
-        (inherit eat)
-        (define/public (gulp food-list)
-          (for ([f food-list])
-            (eat f)))))
-    (class glutton%
-      (super-new)
-      (inherit-field size)
-      (define/override (eat f)
-        (let ([food-size (get-field size f)])
-          (set! size (/ food-size 2))
-          (set-field! size f (/ food-size 2))
-          f)))))]
+  (class glutton%
+    (super-new)
+    (inherit-field size)
+    (define/override (eat f)
+      (let ([food-size (get-field size f)])
+        (set! size (/ food-size 2))
+        (set-field! size f (/ food-size 2))
+        f))))]
 
 @interaction[
 #:eval class-eval

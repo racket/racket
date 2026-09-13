@@ -164,7 +164,12 @@ reachability of @racket[v] (in the sense of garbage collection; see
 @racket[v] is an @tech{impersonator}. That is, the value @racket[v]
 will be considered reachable as long as the result ephemeron is
 reachable in addition to any value that @racket[v] impersonates
-(including itself).}
+(including itself).
+
+In the terminology of @tech{ephemerons}, @racket[v] is the
+value of the ephemeron and all of the values that @racket[v]
+impersonates are keys.
+}
 
 @defproc[(procedure-impersonator*? [v any/c]) boolean?]{
 
@@ -320,7 +325,8 @@ that are overridden by further impersonators, for example.
 
 @defproc[(impersonate-struct [v any/c]
                              [struct-type struct-type? _unspecified]
-                             [orig-proc (or/c struct-accessor-procedure?
+                             [orig-proc (or/c (and/c struct-accessor-procedure?
+                                                     (not/c struct-metaaccessor-procedure?))
                                               struct-mutator-procedure?
                                               struct-type-property-accessor-procedure?)]
                              [redirect-proc (or/c procedure? #f)] ... ...
@@ -599,6 +605,7 @@ or override impersonator-property values of @racket[channel].}
                                  [abort-proc procedure?]
                                  [cc-guard-proc procedure? values]
                                  [callcc-impersonate-proc (procedure? . -> . procedure?) (lambda (p) p)]
+                                 [comp-guard-proc procedure? values]
                                  [prop impersonator-property?]
                                  [prop-val any/c] ... ...)
           (and/c continuation-prompt-tag? impersonator?)]{
@@ -639,6 +646,15 @@ application time is a thread's built-in initial prompt,
 @racket[callcc-impersonate-proc] is ignored (partly on the grounds
 that the initial prompt's result is ignored).
 
+The @racket[comp-guard-proc] procedure is similar to
+@racket[cc-guard-proc], but it is applied to the result of a
+composable continuation that is captured using the impersonated
+prompt. If @racket[comp-guard-proc] is procedure other than
+@racket[values], a composable continuation captured with
+the impersonated prompt will not be applied in tail position with
+respect to its call site, since the continuation's result will be
+passed to @racket[comp-guard-proc].
+
 Pairs of @racket[prop] and @racket[prop-val] (the number of arguments
 to @racket[impersonate-prompt-tag] must be odd) add impersonator properties
 or override impersonator-property values of @racket[prompt-tag].
@@ -656,7 +672,8 @@ or override impersonator-property values of @racket[prompt-tag].
     tag
     (lambda (n) n))
 ]
-}
+
+@history[#:changed "9.2.0.6" @elem{Added the @racket[comp-guard-proc] argument.}]}
 
 
 @defproc[(impersonate-continuation-mark-key
@@ -793,7 +810,8 @@ an extra argument as with @racket[impersonate-procedure*].
                            [orig-proc (or/c struct-accessor-procedure?
                                             struct-mutator-procedure?
                                             struct-type-property-accessor-procedure?
-                                            (one-of/c struct-info))]
+                                            (lambda (proc)
+                                              (eq? proc struct-info)))]
                            [redirect-proc (or/c procedure? #f)] ... ...
                            [prop impersonator-property?]
                            [prop-val any/c] ... ...)
@@ -832,6 +850,12 @@ a @racket[orig-proc] is originally applied:
        @racket[orig-proc] can be @racket[struct-info] only if
        @racket[struct-type] or some other @racket[orig-proc] is supplied.}
 
+ @item{A metatype accessor from @racket[make-struct-metatype] can be
+      supplied as @racket[orig-proc]. The corresponding
+      @racket[redirect-proc] must accept two arguments, @racket[_self]
+      and its structure type @racket[_struct:t]; it must return a
+      chaperone of @racket[_struct:t].}
+
  @item{Any accessor or mutator @racket[orig-proc] that is an
        @tech{impersonator} must be specifically a @tech{chaperone}.}
 
@@ -861,7 +885,7 @@ of the original value, and @racket[set-proc] must produce the value
 that is given or a chaperone of the value. The @racket[set-proc] will
 not be used if @racket[vec] is immutable.}
 
-@defproc[(chaperone-vector* [vec (and/c vector? (not/c immutable?))]
+@defproc[(chaperone-vector* [vec vector?]
                             [ref-proc (or/c (vector? vector? exact-nonnegative-integer? any/c . -> . any/c) #f)]
                             [set-proc (or/c (vector? vector? exact-nonnegative-integer? any/c . -> . any/c) #f)]
                             [prop impersonator-property?]
@@ -1014,6 +1038,7 @@ or override impersonator-property values of @racket[channel].}
                                [abort-proc procedure?]
                                [cc-guard-proc procedure? values]
                                [callcc-chaperone-proc (procedure? . -> . procedure?) (lambda (p) p)]
+                               [comp-guard-proc procedure? values]
                                [prop impersonator-property?]
                                [prop-val any/c] ... ...)
           (and/c continuation-prompt-tag? chaperone?)]{
@@ -1021,11 +1046,12 @@ or override impersonator-property values of @racket[channel].}
 Like @racket[impersonate-prompt-tag], but produces a chaperoned value.
 The @racket[handle-proc] procedure must produce the same values or
 chaperones of the original values, @racket[abort-proc] must produce
-the same values or chaperones of the values that it is given, and
+the same values or chaperones of the values that it is given,
 @racket[cc-guard-proc] must produce the same values or chaperones of
-the original result values, and @racket[callcc-chaperone-proc] must
+the original result values, @racket[callcc-chaperone-proc] must
 produce a procedure that is a chaperone or the same as the given
-procedure.
+procedure, and @racket[comp-guard-proc] must produce the same values
+or chaperones of the original result values.
 
 @examples[
   (define bad-chaperone
@@ -1053,7 +1079,8 @@ procedure.
     good-chaperone
     (lambda (n) n))
 ]
-}
+
+@history[#:changed "9.2.0.6" @elem{Added the @racket[comp-guard-proc] argument.}]}
 
 
 @defproc[(chaperone-continuation-mark-key
@@ -1138,6 +1165,13 @@ Creates a new @tech{impersonator property} and returns three values:
 
 Returns @racket[#t] if @racket[v] is a @tech{impersonator property
 descriptor} value, @racket[#f] otherwise.}
+
+@defproc[(impersonator-property-predicate-procedure? [v any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[v] is a predicate procedure produced
+by @racket[make-impersonator-property], @racket[#f] otherwise.
+
+@history[#:added "9.1.0.6"]}
 
 @defproc[(impersonator-property-accessor-procedure? [v any/c]) boolean?]{
 

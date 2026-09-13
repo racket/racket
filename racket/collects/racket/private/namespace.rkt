@@ -1,7 +1,6 @@
 (module namespace "pre-base.rkt"
-  (require (for-syntax '#%kernel "define.rkt"
-                       "member.rkt"
-                       "stx.rkt" "stxcase-scheme.rkt" "define-et-al.rkt" "qq-and-or.rkt"
+  (require (for-syntax '#%kernel "core-syntax.rkt"
+                       "stx.rkt" "stxcase-scheme.rkt"
                        "stxloc.rkt"))
 
   (provide make-base-empty-namespace
@@ -10,7 +9,7 @@
            namespace-anchor?
            namespace-anchor->empty-namespace
            namespace-anchor->namespace)
-  
+
   ;; ----------------------------------------
 
   (define orig-varref (#%variable-reference orig-varref))
@@ -19,9 +18,12 @@
     (let* ([this-ns (variable-reference->empty-namespace orig-varref)]
            [ns (parameterize ([current-namespace this-ns]) ; ensures correct phase
                  (make-empty-namespace))])
-      (namespace-attach-module this-ns
-                               'racket/base 
-                               ns)
+      (namespace-call-with-registry-lock
+       this-ns
+       (lambda ()
+         (namespace-attach-module this-ns
+                                  'racket/base 
+                                  ns)))
       ns))
 
   (define (make-base-namespace)
@@ -33,23 +35,27 @@
   ;; ----------------------------------------
   
   (define-syntax (define-namespace-anchor stx)
-    (unless (memq (syntax-local-context) '(top-level module))
-      (raise-syntax-error #f
-                          "allowed only in a top-level or module context"
-                          stx))
-    (syntax-case stx ()
-      [(_ id)
-       (let ([id-stx #'id])
-         (unless (identifier? id-stx)
-           (raise-syntax-error #f
-                               "expected an identifier"
-                               stx
-                               id-stx))
-         (syntax/loc stx
-           ;; two-step definition allows this to work in for-syntax contexts:
-           (begin
-             (define tmp #f)
-             (define id (make-namespace-anchor (#%variable-reference tmp))))))]))
+    (define ctx (syntax-local-context))
+    (if (eq? ctx 'module-begin)
+        (datum->syntax stx (list #'begin stx) stx)
+        (let ()
+          (unless (memq ctx '(top-level module))
+            (raise-syntax-error #f
+                                "allowed only in a top-level or module context"
+                                stx))
+          (syntax-case stx ()
+            [(_ id)
+             (let ([id-stx #'id])
+               (unless (identifier? id-stx)
+                 (raise-syntax-error #f
+                                     "expected an identifier"
+                                     stx
+                                     id-stx))
+               (syntax/loc stx
+                 ;; two-step definition allows this to work in for-syntax contexts:
+                 (begin
+                   (define tmp #f)
+                   (define id (make-namespace-anchor (#%variable-reference tmp))))))]))))
 
   (define-struct namespace-anchor (var))
   

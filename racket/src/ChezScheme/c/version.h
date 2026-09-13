@@ -33,10 +33,18 @@
 #define FORCEINLINE static inline
 #endif
 
+/* GCC 10 and later and all versions of Clang provide `__has_builtin` for
+   checking for builtins. */
+#ifdef __has_builtin
+# define C_COMPILER_HAS_BUILTIN(x) __has_builtin(x)
+#else
+# define C_COMPILER_HAS_BUILTIN(x) 0
+#endif
+
 /*****************************************/
 /* Architectures                         */
 
-#if defined(__powerpc__) || defined(__POWERPC__) || defined(__sparc__)
+#if defined(__powerpc__) || defined(__POWERPC__) || defined(__sparc__) || defined(__s390x__) || defined(__m68k__) || defined(__hppa__)
 # if !(defined(__LITTLE_ENDIAN__) || defined(_LITTLE_ENDIAN))
 #  define PORTABLE_BYTECODE_BIGENDIAN
 #  define BIG_ENDIAN_IEEE_DOUBLE
@@ -44,8 +52,17 @@
 # define FLUSHCACHE
 #endif
 
-#if defined(__arm__) || defined(__arm64__) || defined(__aarch64__) || defined(_M_ARM64) || defined(__riscv)
+#if defined(__arm__) || defined(__arm64__) || defined(__aarch64__) || defined(_M_ARM64) || defined(__riscv) || defined(__loongarch64)
 # define FLUSHCACHE
+#endif
+
+#if defined(__s390__) || defined(__s390x__) || defined(__zarch__)
+# define PORTABLE_BYTECODE_BIGENDIAN
+# define BIG_ENDIAN_IEEE_DOUBLE
+#endif
+
+#if defined(__arm64__) && defined(__clang__) && (__clang_major__ == 15) && defined(__apple_build_version__)
+# define USE_PAR_SWEEPERS_WORKAROUND
 #endif
 
 #ifdef PORTABLE_BYTECODE
@@ -81,9 +98,13 @@ FORCEINLINE void store_unaligned_uptr(uptr *addr, uptr val) {
 /*****************************************/
 /* Operating systems                     */
 
-#if defined(__linux__) || defined(__GNU__) /* Hurd */
+#if defined(__linux__) || defined(__COSMOPOLITAN__) || defined(__GNU__) /* Hurd */
 #define NOBLOCK O_NONBLOCK
-#define LOAD_SHARED_OBJECT
+/* cosmo dylib support is experimental, disable when using cosmo libc
+   https://github.com/jart/cosmopolitan/blob/3.3.10/libc/dlopen/dlopen.c#L801 */
+#ifndef __COSMOPOLITAN__
+# define LOAD_SHARED_OBJECT
+#endif
 #define USE_MMAP
 #define MMAP_HEAP
 #define IEEE_DOUBLE
@@ -120,7 +141,37 @@ typedef int tputsputcchar;
 #endif
 #endif
 
-#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+#if  defined(__HAIKU__)
+#define NOBLOCK O_NONBLOCK
+#define LOAD_SHARED_OBJECT
+#define USE_MMAP
+#define MMAP_HEAP
+#define IEEE_DOUBLE
+#define LDEXP
+#define ARCHYPERBOLIC
+#define GETPAGESIZE() getpagesize()
+typedef char *memcpy_t;
+#define MAKE_NAN(x) { x = 0.0; x = x / x; }
+#define GETWD(x) getcwd((x),PATH_MAX)
+typedef int tputsputcchar;
+#define LOCKF
+#define DIRMARKERP(c) ((c) == '/')
+#ifndef DISABLE_X11
+#define LIBX11 "libX11.so"
+#endif
+#define SECATIME(sb) (sb).st_atime
+#define SECCTIME(sb) (sb).st_ctime
+#define SECMTIME(sb) (sb).st_mtime
+#define NSECATIME(sb) 0
+#define NSECCTIME(sb) 0
+#define NSECMTIME(sb) 0
+#define ICONV_INBUF_TYPE char **
+#define USE_OSSP_UUID
+#endif
+
+
+
+#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__) || defined(__DragonFly__)
 #define NOBLOCK O_NONBLOCK
 #define LOAD_SHARED_OBJECT
 #define USE_MMAP
@@ -196,7 +247,7 @@ typedef int tputsputcchar;
 typedef char *memcpy_t;
 struct timespec;
 #ifdef __MINGW32__
-# if defined(__aarch64__)
+# if defined(__aarch64__) && !defined(PORTABLE_BYTECODE)
 #  define HAND_CODED_SETJMP_SIZE 32
 # endif
 #else
@@ -290,9 +341,10 @@ typedef int tputsputcchar;
 #define MMAP_HEAP
 #define IEEE_DOUBLE
 /* for both iPhone and iPhoneSimulator */
-#if defined(TARGET_OS_IPHONE)
+#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
 # define SYSTEM(s) ((void)s, -1)
 # define WRITE_XOR_EXECUTE_CODE
+# define S_TARGET_OS_IPHONE
 #endif
 #if defined(__arm64__)
 # if !defined(WRITE_XOR_EXECUTE_CODE)
@@ -328,6 +380,8 @@ typedef int tputsputcchar;
 #define NSECCTIME(sb) (sb).st_ctimespec.tv_nsec
 #define NSECMTIME(sb) (sb).st_mtimespec.tv_nsec
 #define ICONV_INBUF_TYPE char **
+/* workaround issue in macOS 14.2.1 iconv: */
+#define DISTRUST_ICONV_PROGRESS
 #endif
 
 #if defined(__QNX__)

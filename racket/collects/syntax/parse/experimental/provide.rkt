@@ -86,11 +86,11 @@
                       (rename-contract
                        (->* (any/c any/c any/c any/c any/c any/c any/c any/c any/c
                              mpc-id ... mkw-c-part ... ...)
-                            (okw-c-part ... ...)
+                            (opc-id ... okw-c-part ... ...)
                             any)
                        `(,(if 'splicing? 'splicing-syntax-class/c 'syntax-class/c)
                          [,(contract-name mpc-id) ... mkw-name-part ... ...]
-                         [okw-name-part ... ...]))))
+                         [,(contract-name opc-id) ... okw-name-part ... ...]))))
                   (define-module-boundary-contract contracted-parser
                     parser parser-contract #:pos-source #,pos-module-source)
                   (define-syntax contracted-scname

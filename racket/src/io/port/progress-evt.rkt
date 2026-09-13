@@ -6,7 +6,8 @@
          "port.rkt"
          "input-port.rkt"
          "count.rkt"
-         "check.rkt")
+         "check.rkt"
+         "lock.rkt")
 
 (provide (rename-out [progress-evt?* progress-evt?])
          port-provides-progress-evts?
@@ -56,12 +57,12 @@
   (check who input-port? in)
   (check-progress-evt who progress-evt in)
   (let ([in (->core-input-port in)])
-    (atomically
+    (with-lock in
      ;; We specially skip a check on whether the port is closed,
      ;; since that's handled as the progress evt becoming ready
      (send core-input-port in commit
            amt (progress-evt-evt progress-evt) evt
-           ;; in atomic mode (but maybe leaves atomic mode in between)
+           ;; in atomic mode and with the port lock (but maybe leaves atomic mode in between)
            (lambda (bstr)
              (port-count! in (bytes-length bstr) bstr 0))))))
 

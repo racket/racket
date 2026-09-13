@@ -5,6 +5,7 @@
          "port.rkt"
          "input-port.rkt"
          "custom-port.rkt"
+         "lock.rkt"
          "pipe.rkt"
          "peek-via-read-port.rkt"
          "count.rkt")
@@ -60,14 +61,15 @@
   (define (protect-in dest-bstr dest-start dest-end copy? user-read-in)
     ;; We don't trust `user-read-in` to refrain from modifying its
     ;; byte-string argument after it returns, and the `user-read-in`
-    ;; interface doesn't deal with start and end positions, so copy`
-    ;; dest-bstr` if needed
+    ;; interface doesn't deal with start and end positions, so copy
+    ;; `dest-bstr` if needed. But because we have to make this copy,
+    ;; we may limit how much we ask for.
     (define len (- dest-end dest-start))
     (define user-bstr
       (if (or copy?
               (not (zero? dest-start))
               (not (= len dest-end)))
-          (make-bytes len)
+          (make-bytes (min len 8192))
           dest-bstr))
     (define n (user-read-in user-bstr))
     (cond
@@ -84,32 +86,36 @@
          (bytes-copy! dest-bstr dest-start user-bstr 0 n))
        n]))
 
-  ;; in atomic mode
-  (define (check-read-result who r dest-start dest-end #:peek? [peek? #f] #:ok-false? [ok-false? #f])
+  ;; with lock held, but may release and reacquire the lock if `r` is a pipe
+  (define (check-read-result who r self dest-start dest-end #:peek? [peek? #f] #:ok-false? [ok-false? #f])
     (cond
       [(exact-nonnegative-integer? r)
        (unless (r . <= . (- dest-end dest-start))
-         (end-atomic)
+         (port-unlock self)
          (raise-arguments-error who "result integer is larger than the supplied byte string"
                                 "result" r
                                 "byte-string length" (- dest-end dest-start)))]
       [(eof-object? r) (void)]
       [(and (procedure? r) (procedure-arity-includes? r 4))
        (unless user-peek-in
-         (end-atomic)
+         (port-unlock self)
          (raise-arguments-error who
                                 (string-append "the port has no specific peek procedure, so"
                                                " a special read result is not allowed")
                                 "special result" r))]
       [(pipe-input-port? r)
-       (set! input-pipe r)]
+       (port-lock-require-atomic! self #t)
+       (set! input-pipe r)
+       (when (port-lock-just-became-atomic? self)
+         (port-unlock self)
+         (port-lock self))]
       [(evt? r) r]
       [(and peek? (not r))
        (unless ok-false?
-         (end-atomic)
+         (port-unlock self)
          (raise-arguments-error who "returned #f when no progress evt was supplied"))]
       [else
-       (end-atomic)
+       (port-unlock self)
        (raise-result-error who
                            (string-append
                             "(or/c exact-nonnegative-integer? eof-object? evt? pipe-input-port?"
@@ -122,19 +128,20 @@
                             ")")
                            r)]))
 
-  ;; possibly in atomic mode
-  (define (wrap-check-read-evt-result who evt dest-start dest-end peek? ok-false?)
+  ;; possibly with lock held
+  (define (wrap-check-read-evt-result who evt self dest-start dest-end peek? ok-false?)
     (wrap-evt evt (lambda (r)
-                    (start-atomic)
-                    (check-read-result who r dest-start dest-end #:peek? peek? #:ok-false? ok-false?)
-                    (end-atomic)
+                    ;; in atomic mode
+                    (port-lock self)
+                    (check-read-result who r self dest-start dest-end #:peek? peek? #:ok-false? ok-false?)
+                    (port-unlock self)
                     (cond
                       [(pipe-input-port? r) 0]
                       [(evt? r)
-                       (wrap-check-read-evt-result who r dest-start dest-end peek? ok-false?)]
+                       (wrap-check-read-evt-result who r self dest-start dest-end peek? ok-false?)]
                       [else r]))))
 
-  ;; possibly in atomic mode
+  ;; possibly with lock held
   (define (wrap-procedure-result r)
     (define called? #f)
     (define (called!)
@@ -155,7 +162,7 @@
       [else
        four-args]))
 
-  ;; in atomic mode
+  ;; with lock held, which implies in atomic mode if `input-pipe` is a pipe
   (define (read-in self dest-bstr dest-start dest-end copy?)
     (cond
       [input-pipe
@@ -168,23 +175,23 @@
       [else
        (define r
          (parameterize-break #f
-           (non-atomically
-            (protect-in dest-bstr dest-start dest-end copy? user-read-in))))
-       (check-read-result '|user port read| r dest-start dest-end)
+           (with-no-lock self
+             (protect-in dest-bstr dest-start dest-end copy? user-read-in))))
+       (check-read-result '|user port read| r self dest-start dest-end)
        (cond
          [(pipe-input-port? r)
           (read-in self dest-bstr dest-start dest-end copy?)]
          [(evt? r)
-          (wrap-check-read-evt-result '|user port read| r dest-start dest-end #f #f)]
+          (wrap-check-read-evt-result '|user port read| r self dest-start dest-end #f #f)]
          [(procedure? r)
           (wrap-procedure-result r)]
          [else r])]))
 
-  ;; in atomic mode
+  ;; with lock held, which implies in atomic mode if `input-pipe` is a pipe
   (define (read-in/inner self dest-bstr dest-start dest-end copy? to-buffer)
     (read-in self dest-bstr dest-start dest-end copy?))
 
-  ;; in atomic mode
+  ;; with lock held, which implies in atomic mode if `input-pipe` is a pipe
   ;; Used only if `user-peek-in` is a function:
   (define (peek-in self dest-bstr dest-start dest-end skip-k progress-evt copy?)
     (cond
@@ -198,20 +205,20 @@
       [else
        (define r
          (parameterize-break #f
-           (non-atomically
-            (protect-in dest-bstr dest-start dest-end copy?
-                        (lambda (user-bstr) (user-peek-in user-bstr skip-k progress-evt))))))
-       (check-read-result '|user port peek| r dest-start dest-end #:peek? #t #:ok-false? progress-evt)
+           (with-no-lock self
+             (protect-in dest-bstr dest-start dest-end copy?
+                         (lambda (user-bstr) (user-peek-in user-bstr skip-k progress-evt))))))
+       (check-read-result '|user port peek| r self dest-start dest-end #:peek? #t #:ok-false? progress-evt)
        (cond
          [(pipe-input-port? r)
           (peek-in self dest-bstr dest-start dest-end skip-k progress-evt copy?)]
          [(evt? r)
-          (wrap-check-read-evt-result '|user port peek| r dest-start dest-end #t progress-evt)]
+          (wrap-check-read-evt-result '|user port peek| r self dest-start dest-end #t progress-evt)]
          [(procedure? r)
           (wrap-procedure-result r)]
          [else r])]))
 
-  ;; in atomic mode
+  ;; with lock held, which implies in atomic mode if `input-pipe` is a pipe
   ;; Used only if `user-peek-in` is a function:
   (define (byte-ready self work-done!)
     (cond
@@ -226,40 +233,44 @@
          [(evt? v) v]
          [else (not (eqv? v 0))])]))
 
-  ;; in atomic mode
+  ;; with lock held, which implies in atomic mode if `input-pipe` is a pipe
   (define (close self)
-    (end-atomic)
+    (port-unlock self)
     (user-close)
-    (start-atomic))
+    (port-lock self))
 
+  ;; lock *not* held
   (define (get-progress-evt self)
     (define r (user-get-progress-evt))
     (unless (evt? r)
       (raise-result-error '|user port progress-evt| "evt?" r))
     r)
 
-  ;; in atomic mode
+  ;; with lock held, which implies in atomic mode if `input-pipe` is a pipe
   (define (commit self amt evt ext-evt finish)
     (define r
       (parameterize-break #f
-        (non-atomically
-         (user-commit amt evt ext-evt))))
+        (with-no-lock self
+          (user-commit amt evt ext-evt))))
     (cond
       [(not r) #f]
       [(bytes? r) (finish r) #t]
       [else (finish (make-bytes amt (char->integer #\x))) #t]))
 
+  ;; with lock held
   (define get-location
     (and user-get-location
          (make-get-location user-get-location)))
 
+  ;; with lock held
   (define count-lines!
     (and user-count-lines!
-         (lambda (self) (end-atomic) (user-count-lines!) (start-atomic))))
+         (lambda (self) (port-unlock self) (user-count-lines!) (port-lock self))))
 
   (define-values (init-offset file-position)
     (make-init-offset+file-position user-init-position))
 
+  ;; with lock held
   (define buffer-mode
     (and user-buffer-mode
          (make-buffer-mode user-buffer-mode)))

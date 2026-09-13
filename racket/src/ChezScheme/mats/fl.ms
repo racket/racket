@@ -1068,27 +1068,103 @@
       (0.0 . 4.0) (0.0 . -4.0) (-0.0 . 4.0) (0.0 . -4.0)))
 )
 
+(mat flbit-field
+  (error? (flbit-field))
+  (error? (flbit-field 0.0))
+  (error? (flbit-field 0.0 1))
+  (error? (flbit-field 0 1 2))
+  (error? (flbit-field 0.0 -1 2))
+  (error? (flbit-field 0.0 2 1))
+  (error? (flbit-field 0.0 2 -1))
+  (error? (flbit-field 0.0 65 65))
+  (error? (flbit-field 0.0 32 65))
+  (error? (flbit-field 0.0 (expt 2 100) (add1 (expt 2 100))))
+  (error? (flbit-field 0.0 0 (expt 2 100)))
+
+  (let loop ([i 0])
+    (or (= i 65)
+        (and (eqv? 0 (flbit-field 3.14 i i))
+             (loop (add1 i)))))
+
+  ;; all 0 bits
+  (let loop ([i 0])
+    (or (= i 64)
+        (and (eqv? 0 (flbit-field 0.0 i (add1 i)))
+             (loop (add1 i)))))
+
+  ;; all 0 bits except high bit for sign
+  (let loop ([i 0])
+    (if (= i 63)
+        (eqv? 1 (flbit-field -0.0 i (add1 i)))
+        (and (eqv? 0 (flbit-field -0.0 i (add1 i)))
+             (loop (add1 i)))))
+
+  ;; all 0-bit ranges
+  (let loop ([i 0])
+    (or (= i 64)
+        (and (eqv? 0 (flbit-field 0.0 0 (add1 i)))
+             (loop (add1 i)))))
+
+ (eqv? (flbit-field 3.141579e132 0 64)
+       #x5B71B43544F260A6)
+ (eqv? (flbit-field 3.141579e132 0 63)
+       #x5B71B43544F260A6)
+ (eqv? (flbit-field 3.141579e132 1 64)
+       #x2db8da1aa2793053)
+ (eqv? (flbit-field 3.141579e132 4 60)
+       #xB71B43544F260A)
+ (eqv? (flbit-field 3.141579e132 8 56)
+       #x71B43544F260)
+ (eqv? (flbit-field 3.141579e132 32 64)
+       #x5B71B435)
+ (eqv? (flbit-field 3.141579e132 0 32)
+        #x44F260A6)
+ (eqv? (flbit-field 3.141579e132 16 48)
+        #xB43544F2)
+ (let iloop ([i 0])
+   (or (= i 64)
+       (let jloop ([j i])
+         (if (= j 64)
+             (iloop (add1 i))
+             (and
+              (eqv? (flbit-field 3.141579e132 i j)
+                    (bitwise-bit-field #x5B71B43544F260A6 i j))
+              (jloop (add1 j)))))))
+
+  (let iloop ([i 0])
+   (or (= i 64)
+       (let jloop ([j i])
+         (if (= j 64)
+             (iloop (add1 i))
+             (and
+              (eqv? ((eval `(lambda (x) (flbit-field x ,i ,j))) 3.141579e132)
+                    (bitwise-bit-field #x5B71B43544F260A6 i j))
+              (jloop (add1 j)))))))
+
+)
+
 (mat fp-unboxing
   (begin
     (define-syntax check-loop-allocation
       (syntax-rules ()
-        [(_ proc) ; proc should allocate only its result flonum
+        [(_ proc val-example) ; proc should allocate only its result flonum
          (or (eq? (current-eval) interpret)
              (#%$suppress-primitive-inlining)
              (let ([before (+ (bytes-allocated) (bytes-deallocated))]
                    [N 100000])
                (and
                 (box?
-                 (let loop ([i N] [bx (box 0.0)])
+                 (let loop ([i N] [bx (box val-example)])
                    (if (zero? i)
                        bx
                        (loop (sub1 i) (let ([v (unbox bx)])
                                         (box (proc v)))))))
                 (let ([allocated (- (+ (bytes-allocated) (bytes-deallocated)) before)]
-                      [expected (* N (+ (compute-size 1.0)
+                      [expected (* N (+ (compute-size val-example)
                                         (compute-size (box #f))))])
                   (printf "~s ~s\n" allocated expected)
-                  (<= expected allocated (* 1.2 expected))))))]))
+                  (<= expected allocated (* 1.2 expected))))))]
+        [(_ proc) (check-loop-allocation proc 1.0)]))
     #t)
 
   (check-loop-allocation (lambda (v) (fl+ v v)))
@@ -1131,6 +1207,11 @@
   (check-loop-allocation (lambda (v) (fllog v v)))
   (check-loop-allocation (lambda (v) (flexpt v v)))
 
+  (check-loop-allocation (lambda (v) (exact->inexact (flbit-field v 1 23))))
+  (check-loop-allocation (lambda (v) (exact->inexact (flbit-field (fl+ v 2.0) 1 23))))
+  (check-loop-allocation (lambda (v) (exact->inexact (flbit-field v 40 63))))
+  (check-loop-allocation (lambda (v) (exact->inexact (flbit-field (fl+ v 2.0) 40 63))))
+
   (let ([i 0])
     (check-loop-allocation (lambda (v) (begin
                                          (set! i (add1 i))
@@ -1158,6 +1239,13 @@
   (check-loop-allocation (lambda (v) (if (fl>= (fl+ v v) v)
                                          (fl+ v 1.0)
                                          (fl- v 1.0))))
+
+  (or (and (not (enable-cp0))
+           (not (= 3 (optimize-level))))
+      (check-loop-allocation (lambda (v)
+                               (fl-make-rectangular (fl- (cfl-real-part v) 1.0)
+                                                    (fl+ 1.0 (cfl-imag-part v))))
+                             1.0-3.0i))
 
   (check-loop-allocation (lambda (v)
                            ;; The two single-argument `fl+`s here should work as
@@ -1194,6 +1282,45 @@
                                                (set-pseudo-random-generator-x11! s v)
                                                (set-pseudo-random-generator-x12! s v)
                                                (pseudo-random-generator-x20 s)))))))
+
+  (let ()
+    (define-ftype V2d
+      (struct (x double) (y double)))
+    (define v2d (make-ftype-pointer V2d (foreign-alloc (ftype-sizeof V2d))))
+    (check-loop-allocation (lambda (v)
+                             (fl+ (ftype-ref V2d (x) v2d)
+                                  (ftype-ref V2d (y) v2d)))))
+
+  (let ()
+    (define-ftype V2d
+      (struct (x double) (y double)))
+    (define v2d (make-ftype-pointer V2d (foreign-alloc (ftype-sizeof V2d))))
+    (check-loop-allocation (lambda (v)
+                             (ftype-set! V2d (x) v2d v)
+                             (ftype-set! V2d (y) v2d v)
+	                     (fl- v))))
+
+  (let ()
+    (define-ftype V2f
+      (struct (x float) (y float)))
+    (define v2f (make-ftype-pointer V2f (foreign-alloc (ftype-sizeof V2f))))
+    (check-loop-allocation (lambda (v)
+                             (ftype-set! V2f (x) v2f v)
+	                     (ftype-set! V2f (y) v2f v)
+                             (fl- v))))
+
+  (let ()
+    (define-ftype V2f
+      (struct (x float) (y float)))
+    (define v2f (make-ftype-pointer V2f (foreign-alloc (ftype-sizeof V2f))))
+    (check-loop-allocation (lambda (v)
+                             (fl+ (ftype-ref V2f (x) v2f)
+	                          (ftype-ref V2f (y) v2f)))))
+
+  (or (not (enable-cp0))
+      (let ([my-flsin (foreign-procedure __atomic "(cs)sin" (double) double)])
+        (check-loop-allocation (lambda (v)
+                                 (my-flsin (my-flsin v))))))
 
   (begin
     (define many-compare

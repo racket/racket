@@ -1,12 +1,12 @@
-;; Needs to implements the same record API as the current Chez Scheme
+;; Needs to implement the same record API as the current Chez Scheme
 ;; implementation. It doesn't have to be too fast, so it can just use
 ;; vectors and extra wrappers. Use `define-record-type/orig` here to
 ;; get the host Scheme's `define-record-type`, and otherwise use `#%`
 ;; to access host Scheme primitives.
 
 (define-record-type/orig re:rtd
-  (fields base-rtd name parent uid fields count sealed? opaque? extras)
-  (nongenerative #{re:rtd bxw8uzjdge5u6o5xp0kovyiun-0}))
+  (fields base-rtd name parent uid fields count sealed? opaque? alt-pm extras)
+  (nongenerative #{re:rtd bxw8uzjdge5u6o5xp0kovyiun-5}))
 
 (define-record-type/orig re:record
   (fields rtd vec)
@@ -51,6 +51,7 @@
                                 (make-field (cadr f) 'immutable 'scheme-object))
                               fields)
                          (length fields)
+                         #f
                          #f
                          #f
                          '()))]
@@ -100,22 +101,23 @@
            (handle x (+ (lookup-constant 'header-size-record)
                         (* (re:rtd-count (subst-base-rtd x)) (lookup-constant 'ptr-bytes))))]
           [(pm)
-           (handle x (let ([fields (all-fields (subst-base-rtd x))])
-                       (cond
-                         [(andmap (lambda (f)
-                                    (ptr-type? (field-type f)))
-                                  fields)
-                          -1]
-                         [else
-                          (let loop ([pm 1]
-                                     [m 2] ; start after base-rtd
-                                     [fields fields])
-                            (cond
-                              [(null? fields) pm]
-                              [else
-                               (loop (if (ptr-type? (field-type (car fields))) (bitwise-ior pm m) pm)
-                                     (bitwise-arithmetic-shift-left m 1)
-                                     (cdr fields))]))])))]
+           (handle x (or (and (re:rtd? x) (re:rtd-alt-pm x))
+                         (let ([fields (all-fields (subst-base-rtd x))])
+                           (cond
+                             [(andmap (lambda (f)
+                                        (ptr-type? (field-type f)))
+                                      fields)
+                              -1]
+                             [else
+                              (let loop ([pm 1]
+                                         [m 2] ; start after base-rtd
+                                         [fields fields])
+                                (cond
+                                  [(null? fields) pm]
+                                  [else
+                                   (loop (if (ptr-type? (field-type (car fields))) (bitwise-ior pm m) pm)
+                                         (bitwise-arithmetic-shift-left m 1)
+                                         (cdr fields))]))]))))]
           [(mpm)
            (handle x (let ([fields (all-fields (subst-base-rtd x))])
                        (let loop ([pm 0]
@@ -263,7 +265,7 @@
 
 (define all-rtds (make-eq-hashtable))
 
-(define-primitive ($make-record-type-descriptor base-rtd name parent uid sealed? opaque? fields . extras)
+(define-primitive ($make-record-type-descriptor* base-rtd name parent uid sealed? opaque? alt-pm fields . extras)
   (unless (or (eq? #!base-rtd base-rtd)
               (re:rtd? base-rtd))
     (error '$make-record-type-descriptor "bad base-rtd ~s" base-rtd))
@@ -283,12 +285,17 @@
                                 sealed?
                                 (or opaque? (and parent
                                                  (re:rtd-opaque? (subst-base-rtd parent))))
+                                alt-pm
                                 extras)])
           (hashtable-set! all-rtds uid rtd)
           rtd))))
 
-(define-primitive ($make-record-type base-rtd parent name fields sealed? opaque? . extras)
-  (apply $make-record-type-descriptor base-rtd name parent (if (#%gensym? name) name (gensym)) sealed? opaque?
+(define-primitive ($make-record-type-descriptor base-rtd name parent uid sealed? opaque? fields . extras)
+  (apply $make-record-type-descriptor* base-rtd name parent uid sealed? opaque? #f fields extras))
+
+(define-primitive ($make-record-type base-rtd parent name fields sealed? opaque? alt-pm . extras)
+  (apply $make-record-type-descriptor* base-rtd name parent (if (#%gensym? name) name (gensym)) sealed? opaque?
+         alt-pm
          (list->vector (map (lambda (f)
                               (if (symbol? f)
                                   (list 'mutable f)
@@ -297,10 +304,10 @@
          extras))
 
 (define-primitive (make-record-type-descriptor name parent uid sealed? opaque? fields)
-  ($make-record-type-descriptor #!base-rtd name parent uid sealed? opaque? fields))
+  ($make-record-type-descriptor* #!base-rtd name parent uid sealed? opaque? #f fields))
 
 (define-primitive (r6rs:make-record-type-descriptor name parent uid sealed? opaque? fields)
-  ($make-record-type-descriptor #!base-rtd name parent uid sealed? opaque? fields))
+  ($make-record-type-descriptor* #!base-rtd name parent uid sealed? opaque? #f fields))
 
 (define-primitive record-type-descriptor?
   (lambda (v)
@@ -316,7 +323,7 @@
                                   (make-field 'mutable 'scheme-object f)
                                   f))
                             fields)
-                       #f #f)]))
+                       #f #f #f)]))
 
 (define-primitive ($remake-rtd rtd compute-field-offsets)
   ;; We don't have to do anything here, because `base-rtd-accessor`
@@ -416,7 +423,11 @@
        (lambda (v)
          (cond
            [(re:rtd? v)
-            (error 'csv7:record-field-accessor "need more rtd support ~s ~s" v idx)]
+            (cond
+              [(< idx (re:rtd-count new-base-rtd))
+               ((base-rtd-accessor idx) v)]
+              [else
+               (list-ref (re:rtd-extras v) (- idx (re:rtd-count new-base-rtd)))])]
            [(re:record? v)
             (vector-ref (re:record-vec v) idx)]
            [else
@@ -505,7 +516,7 @@
             [(< i (re:rtd-count new-base-rtd))
              ((base-rtd-accessor i) v)]
             [else
-             (error '$object-ref "not yet supported for base-rtd subtypes")])]
+             (list-ref (re:rtd-extras v) (- i (re:rtd-count new-base-rtd)))])]
          [(re:record? v) (vector-ref (re:record-vec v) i)]
          [else
           (check-allowed-host-record v)

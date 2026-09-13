@@ -1812,6 +1812,52 @@ fi
   eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
 
 } # ac_fn_c_check_header_mongrel
+
+# ac_fn_c_check_decl LINENO SYMBOL VAR INCLUDES
+# ---------------------------------------------
+# Tests whether SYMBOL is declared in INCLUDES, setting cache variable VAR
+# accordingly.
+ac_fn_c_check_decl ()
+{
+  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
+  as_decl_name=`echo $2|sed 's/ *(.*//'`
+  as_decl_use=`echo $2|sed -e 's/(/((/' -e 's/)/) 0&/' -e 's/,/) 0& (/g'`
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $as_decl_name is declared" >&5
+$as_echo_n "checking whether $as_decl_name is declared... " >&6; }
+if eval \${$3+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+$4
+int
+main ()
+{
+#ifndef $as_decl_name
+#ifdef __cplusplus
+  (void) $as_decl_use;
+#else
+  (void) $as_decl_name;
+#endif
+#endif
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  eval "$3=yes"
+else
+  eval "$3=no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+eval ac_res=\$$3
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+  eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
+
+} # ac_fn_c_check_decl
 cat >config.log <<_ACEOF
 This file contains any messages produced by compilers while
 running configure, to aid debugging if configure makes a mistake.
@@ -4554,6 +4600,15 @@ if test "${LFS_CFLAGS}" != "" && test "${LFS_CFLAGS}" != "undefined"; then
   CFLAGS="${CFLAGS} ${LFS_CFLAGS}"
 fi
 
+ac_fn_c_check_decl "$LINENO" "O_CLOEXEC" "ac_cv_have_decl_O_CLOEXEC" "#include <fcntl.h>
+"
+if test "x$ac_cv_have_decl_O_CLOEXEC" = xyes; then :
+
+$as_echo "#define RKTIO_HAS_CLOEXEC 1" >>confdefs.h
+
+fi
+
+
 ############### pthread ###################
 
 if test "${enable_pthread}" = "" ; then
@@ -4671,6 +4726,8 @@ CPPFLAGS="$CPPFLAGS $PREFLAGS"
 
 
 makefiles="Makefile"
+
+cp ${srcdir}/buildmain.zuo main.zuo
 
 ac_config_files="$ac_config_files $makefiles"
 

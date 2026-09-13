@@ -189,6 +189,7 @@
 
       [(quote . _) #f]
       [(quote-syntax . _) #f]
+      [(#%foreign-inline . _) #f]
       
       [(with-continuation-mark key val exp)
        (loop #'(begin key val exp))]
@@ -210,10 +211,13 @@
                                       (syntax-column expr)
                                       (syntax-position expr)
                                       (syntax-span expr))))
-    (log-message (make-logger 'optimizer (current-logger))
-                 'debug
-                 (format "chaperoning to prevent undefined access due to: ~.s~a~a"
-                         (syntax->datum expr)
-                         (if s " at: " "")
-                         (or s ""))
-                 expr)))
+    (define logger (current-logger))
+    (when (log-level? logger 'debug 'optimizer)
+      (log-message logger
+                   'debug
+                   'optimizer
+                   (format "chaperoning to prevent undefined access due to: ~.s~a~a"
+                           (syntax->datum expr)
+                           (if s " at: " "")
+                           (or s ""))
+                   expr))))

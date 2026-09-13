@@ -124,7 +124,8 @@
                          root-strs
                          (if (list? sub-path/kw)
                              sub-path/kw
-                             (list sub-path/kw))))
+                             (list sub-path/kw))
+                         (use-compiled-file-check)))
   (unless the-path
     (raise (make-exn:get-module-code
             (format "get-module-code: no such file: ~e" path0-str)

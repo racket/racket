@@ -11,7 +11,7 @@
          expand-for-clause*)
 
 (define (expand-for-clause orig-stx clause)
-  (define new-stx (orig:expand-for-clause orig-stx clause))
+  (define new-stx (orig:expand-for-clause orig-stx clause (lambda () #t)))
   (syntax-case new-stx ()
     [(outer-bind
       outer-check
@@ -42,4 +42,4 @@
                              #'inner-check))]))
 
 (define (expand-for-clause* orig-stx clause)
-  (orig:expand-for-clause orig-stx clause))
+  (orig:expand-for-clause orig-stx clause (lambda () #t)))

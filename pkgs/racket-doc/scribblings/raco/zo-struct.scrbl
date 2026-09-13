@@ -61,7 +61,7 @@ structures that are produced by @racket[zo-parse] and consumed by
  top-level form; for a linklet directory that corresponds to a
  sequence of top-level forms, however, there is no ``main'' linklet
  bundle, and symbol forms of integers are used to order the linkets.
- 
+
  For a module with submodules, the linklet directory maps submodule
  paths (as lists of symbols) to linklet bundles for the corresponding
  submodules.
@@ -75,8 +75,8 @@ structures that are produced by @racket[zo-parse] and consumed by
 @defstruct+[(linkl zo)
             ([name symbol?]
              [importss (listof (listof symbol?))]
-             [import-shapess (listof (listof  (or/c #f 'constant 'fixed 
-                                                    function-shape? 
+             [import-shapess (listof (listof  (or/c #f 'constant 'fixed
+                                                    function-shape?
                                                     struct-shape?)))]
              [exports (listof symbol?)]
              [internals (listof (or/c symbol? #f))]
@@ -197,7 +197,7 @@ binding, constructor, etc.}
 
 @defstruct+[(lam expr)
             ([name (or/c symbol? vector?)]
-             [flags (listof (or/c 'preserves-marks 'is-method 'single-result 
+             [flags (listof (or/c 'preserves-marks 'is-method 'single-result
                                   'only-rest-arg-not-used 'sfs-clear-rest-args))]
              [num-params exact-nonnegative-integer?]
              [param-types (listof (or/c 'val 'ref 'flonum 'fixnum 'extflonum))]
@@ -213,10 +213,10 @@ binding, constructor, etc.}
   argument; the @racket[rest?] field indicates whether extra arguments
   are accepted and collected into a ``rest'' variable.  The
   @racket[param-types] list contains @racket[num-params] symbols
-  indicating the type of each argumet, either @racket['val] for a normal
+  indicating the type of each argument, either @racket['val] for a normal
   argument, @racket['ref] for a boxed argument (representing a mutable
   local variable), @racket['flonum] for a flonum argument,
-  or @racket['extflonum] for an extflonum argument. 
+  or @racket['extflonum] for an extflonum argument.
 
   The
   @racket[closure-map] field is a vector of stack positions that are
@@ -241,7 +241,7 @@ binding, constructor, etc.}
   consecutively by position in the prefix starting from
   @racket[0], but the number equal to the number of non-lifted
   variables corresponds to syntax objects (i.e., the number is
-  include if any syntax-object constant is used). Lifted variables 
+  include if any syntax-object constant is used). Lifted variables
   are numbered immediately
   afterward---which means that, if the prefix contains any syntax
   objects, lifted-variable numbers are shifted down relative to a
@@ -417,7 +417,7 @@ binding, constructor, etc.}
 
 @defstruct+[(beg0 expr) ([seq (listof (or/c expr? seq? any/c))])]{
   Represents a @racket[begin0] expression.
-  
+
   After each expression in @racket[seq] is evaluated, the stack is
   restored to its depth from before evaluating the expression.
 
@@ -425,7 +425,7 @@ binding, constructor, etc.}
   @racket[seq] is never in tail position, even if it is the only
   expression in the list.}
 
-@defstruct+[(varref expr) ([toplevel (or/c toplevel? #t #f symbol?)] 
+@defstruct+[(varref expr) ([toplevel (or/c toplevel? #t #f symbol?)]
                            [dummy (or/c toplevel? #f)]
                            [constant? boolean?]
                            [from-unsafe? boolean?])]{
@@ -484,4 +484,3 @@ binding, constructor, etc.}
             ([id exact-nonnegative-integer?])]{
   Represents a direct reference to a variable imported from the run-time
   kernel.}
-

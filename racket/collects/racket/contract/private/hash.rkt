@@ -197,7 +197,7 @@
   (define this-rng (base-hash/c-rng ctc))
   (define this-immutable (base-hash/c-immutable ctc))
   (λ (fuel)
-    (define rnd (random fuel)) ;; used to return empty hashes from time to time
+    (define rnd (if (zero? fuel) 0 (rand fuel))) ;; used to return empty hashes from time to time
     (define gen-key (contract-random-generate/choose this-dom fuel))
     (define gen-val (contract-random-generate/choose this-rng fuel))
     (λ ()
@@ -233,7 +233,7 @@
        (for ([(k v) (in-hash h)])
          (exercise-list-dom-rng (list k v))
          (contract-random-generate-stash env dom k)
-         (contract-random-generate-stash env dom v)))
+         (contract-random-generate-stash env rng v)))
      (cons dom (cons rng available-ctcs)))))
 
 (define-struct (flat-hash/c base-hash/c) ()

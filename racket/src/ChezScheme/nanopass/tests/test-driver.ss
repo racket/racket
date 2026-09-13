@@ -174,7 +174,8 @@
          (reset-seed)
          (let ([expr (run original-input-expr (car (passes)) (cadr (passes)))])
            (when (and emit? (memq 'generate-code pass-names))
-             (run-code expr))))]))
+             (run-code expr))
+	   #t))]))
   
   (define assemble-and-run
     (lambda (asm-file err-file out-file)

@@ -27,3 +27,5 @@
 
 (define-values (prop:legacy-match-expander legacy-match-expander? legacy-match-expander-proc)
   (make-struct-type-property/accessor 'prop:legacy-match-expander ))
+
+(define current-form-name (make-parameter #f))

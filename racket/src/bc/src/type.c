@@ -238,6 +238,9 @@ scheme_init_type ()
   set_name(scheme_thread_cell_type, "<thread-cell>");
   set_name(scheme_thread_cell_values_type, "<thread-cell-values>");
 
+  set_name(scheme_parallel_pool_type, "<parallel-thread-pool>");
+  set_name(scheme_cache_wrap_type, "<cache-wrapper>");
+
   set_name(scheme_prompt_tag_type, "<continuation-prompt-tag>");
   set_name(scheme_continuation_mark_key_type, "<continuation-mark-key>");
 
@@ -274,6 +277,8 @@ scheme_init_type ()
   set_name(scheme_unquoted_printing_string_type, "<unquoted-printing-string>");
 
   set_name(scheme_thunk_for_continue_type, "<thunk-for-continue>");
+
+  set_name(scheme_parallel_pool_type, "<parallel-pool>");
 
 #ifdef MZ_PRECISE_GC
   set_name(scheme_rt_runstack, "<runstack>");
@@ -544,6 +549,7 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_ir_let_header_type, let_header);
 
   GC_REG_TRAV(scheme_quote_compilation_type, small_object);
+  GC_REG_TRAV(scheme_cache_wrap_type, twoptr_obj);
 
   GC_REG_TRAV(scheme_linklet_type, linklet_val);
   GC_REG_TRAV(scheme_instance_type, instance_val);
@@ -678,6 +684,8 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_plumber_handle_type, twoptr_obj);
 
   GC_REG_TRAV(scheme_unquoted_printing_string_type, small_object);
+
+  GC_REG_TRAV(scheme_parallel_pool_type, small_atomic_obj);
 }
 
 END_XFORM_SKIP;

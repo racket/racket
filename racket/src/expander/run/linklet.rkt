@@ -311,11 +311,12 @@
 
 (define orig-eval (current-eval))
 (define orig-compile (current-compile))
+(define orig-code-inspector (current-code-inspector))
 
 (define linklet-compile-to-s-expr (make-parameter #f #f 'linklet-compile-to-s-expr))
 
 ;; Compile to a serializable form
-(define (compile-linklet c [name #f] [import-keys #f] [get-import (lambda (key) (values #f #f))] [options '(serializable)])
+(define (compile-linklet c [info #f] [import-keys #f] [get-import (lambda (key) (values #f #f))] [options '(serializable)])
   (define l
     (cond
       [(linklet-compile-to-s-expr)
@@ -324,7 +325,8 @@
        (define plain-c (desugar-linklet c))
        (parameterize ([current-namespace cu-namespace]
                       [current-eval orig-eval]
-                      [current-compile orig-compile])
+                      [current-compile orig-compile]
+                      [current-code-inspector orig-code-inspector])
          ;; Use a vector to list the exported variables
          ;; with the compiled bytecode
          (compiled-linklet (compile plain-c)
@@ -335,10 +337,17 @@
       l))
 
 ;; For re-optimizing:
-(define (recompile-linklet linklet name [import-keys #f] [get-import (lambda (key) (values #f #f))])
+(define (recompile-linklet linklet info [import-keys #f] [get-import (lambda (key) (values #f #f))])
   (if import-keys
       (values linklet import-keys)
       linklet))
+
+;; For adding cross-module optimization info for an extra target
+(define (linklet-add-target-machine-info linklet other-linklet)
+  linklet)
+
+(define (linklet-summarize-target-machine-info linklet)
+  (hash))
 
 ;; Intended for JIT preparation
 ;; (and we could compile to a function here)
@@ -348,10 +357,13 @@
 (define (linklet-virtual-machine-bytes)
   #"exp")
 
+(define (linklet-cross-machine-type ht)
+  #f)
+
 (define (write-linklet-bundle-hash ld in)
   (write ld in))
 
-(define (read-linklet-bundle-hash in)
+(define (read-linklet-bundle-hash in cross-machine)
   (read in))
 
 ;; Convert linklet to a procedure

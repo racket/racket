@@ -50,6 +50,7 @@
                         #f ; self
                         #f ; requires
                         #f ; recur-requires
+                        #f ; flattened-requires
                         #f ; provides
                         #hasheqv()
                         #f

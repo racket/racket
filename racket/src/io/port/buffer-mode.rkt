@@ -3,6 +3,7 @@
          "../common/class.rkt"
          "../host/thread.rkt"
          "port.rkt"
+         "lock.rkt"
          "input-port.rkt"
          "output-port.rkt"
          "check.rkt")
@@ -18,7 +19,7 @@
                 [else
                  (raise-argument-error 'file-stream-buffer-mode "port?" p)])])
        (define buffer-mode (method core-port p buffer-mode))
-       (atomically
+       (with-lock p
         (check-not-closed who p)
         (and buffer-mode
              (buffer-mode p))))]
@@ -32,7 +33,7 @@
                               "'line buffering not supported for an input port"
                               "port" p))
      (define (set-buffer-mode p)
-       (atomically
+       (with-lock p
         (check-not-closed who p)
         (define buffer-mode (method core-port p buffer-mode))
         (cond

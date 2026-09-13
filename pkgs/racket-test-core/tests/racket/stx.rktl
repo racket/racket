@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.rktl")
 
-(require racket/syntax-srcloc)
+(require racket/syntax-srcloc racket/private/stx)
 
 (Section 'stx)
 
@@ -2436,6 +2436,20 @@
 (test "(lambda (x) x)" (error-syntax->string-handler) '(lambda (x) x) #f)
 (test "(lambda..." (error-syntax->string-handler) '(lambda (x) x) 10)
 
+(test #t procedure? error-syntax->name-handler)
+(test 'lambda (error-syntax->name-handler) #'(lambda (x) x))
+(test #f (error-syntax->name-handler) #'((lambda (x) x)))
+(parameterize ([error-syntax->name-handler (lambda (stx)
+                                             'whatever)])
+  (err/rt-test (raise-syntax-error #f "oops" #'(bad syntax))
+               exn:fail:syntax?
+               #rx"whatever: "))
+
+(test #t procedure? error-syntax->srcloc-handler)
+(test #f (error-syntax->srcloc-handler) 'anything)
+(let ([stx #'(hello world)])
+  (test (syntax-srcloc stx) (error-syntax->srcloc-handler) stx))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test prop:rename-transformer with procedure content
 
@@ -2881,6 +2895,20 @@
 (test '() syntax-bound-symbols ((make-syntax-introducer) (datum->syntax #f 'nothing)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; syntax-bound-interned-scope-symbols
+
+(define-syntax (define-weird stx)
+  (syntax-case stx ()
+    [(_ id)
+     #`(define #,((make-interned-syntax-introducer 'racket/weird) #'id) "weird")]))
+
+(define-weird lambda)
+
+(test '(racket/weird) syntax-bound-interned-scope-symbols #'lambda)
+(test '() syntax-bound-interned-scope-symbols #'lambda 1)
+(test '() syntax-bound-interned-scope-symbols #'non-weird-lambda)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; syntax-bound-phases
 
 (let ([check (lambda (reqs phase shift)
@@ -2896,6 +2924,17 @@
   (check '((require (for-label racket/base))) #f 0)
   (check '() 1 1)
   (check '() #f  #f))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; test some helper functions
+
+(test #f check-duplicate-identifier empty)
+(test #f check-duplicate-identifier (list #'a #'b))
+(test/compare bound-identifier=? #'a check-duplicate-identifier (list #'a #'a))
+(test/compare bound-identifier=? #'a check-duplicate-identifier (list #'a #'b #'a))
+(test/compare bound-identifier=? #'a check-duplicate-identifier (list #'b #'a #'a))
+(test #f check-duplicate-identifier (list #'a ((make-syntax-introducer) #'a)))
+
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

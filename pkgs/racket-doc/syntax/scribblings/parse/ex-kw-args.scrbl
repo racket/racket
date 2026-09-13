@@ -36,11 +36,11 @@ Here's one way to do it:
 
 (define-syntax mycond*
   (syntax-rules ()
-    [(mycond error? who [question answer] . clauses)
+    [(mycond* error? who [question answer] . clauses)
      (if question answer (mycond* error? who . clauses))]
-    [(mycond #t who)
+    [(mycond* #t who)
      (error who "no clauses matched")]
-    [(mycond #f _)
+    [(mycond* #f _)
      (void)]))
 ]
 

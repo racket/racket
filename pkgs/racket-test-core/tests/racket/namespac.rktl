@@ -240,6 +240,10 @@
   (eval '(define-namespace-anchor anchor))
   (test 1 eval '(eval 1 (namespace-anchor->namespace anchor))))
 
+;; regression test to make sure `module-begin` context is handled
+(module module-that-just-has-a-namespace-anchor racket/base
+  (define-namespace-anchor ar))
+
 ;; ----------------------------------------
 
 (module va->ms racket/base

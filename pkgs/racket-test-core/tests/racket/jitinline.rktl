@@ -576,6 +576,8 @@
     (bin-exact 25 'fx+/wraparound 10 15)
     (bin-exact 3.4 'fl+ 1.1 2.3 #t)
     (tri-exact 7.4 'fl+ (lambda () 1.1) 2.3 4.0 void #f)
+    ;; 4.1995579896506e-322 has only its low byte as non-zero
+    (bin-exact 4.1995579896506e-322 'fl+ 4.1995579896506e-322 0.0 #t)
 
     (un -3 '- 3)
     (bin 3 '- 7 4)
@@ -593,6 +595,7 @@
     (un-exact -3.6 'fl- 3.6)
     (bin-exact -0.75 'fl- 1.5 2.25 #t)
     (tri-exact -1.5 'fl- (lambda () 1.5) 2.25 0.75 void #f)
+    (un-exact -4.1995579896506e-322 'fl- 4.1995579896506e-322 #t)
 
     (un 4 '* 4)
     (bin 4 '* 1 4)
@@ -611,6 +614,7 @@
     (bin-exact 253 'fx* 11 23)
     (bin-exact 253 'fx*/wraparound 11 23)
     (bin-exact 2.53 'fl* 1.1 2.3 #t)
+    (bin-exact 4.1995579896506e-322 'fl* 4.1995579896506e-322 1.0 #t)
     (tri-exact 506 'fx* (lambda () 11) 23 2 void #f)
     (tri-exact 7.59 'fl* (lambda () 1.1) 2.3 3.0 void #f)
 
@@ -775,6 +779,8 @@
     (bin-exact #t 'bitwise-bit-set? (expt 2 40) 40)
     (bin-exact #f 'bitwise-bit-set? (expt 2 40) 41)
     (bin-exact #t 'bitwise-bit-set? (- (expt 2 40)) 41)
+
+    (tri-exact #xB43544F2 'flbit-field (lambda () 3.141579e132) 16 48 void #f)
 
     (un 1 'real-part 1+2i)
     (un 105 'real-part 105)
@@ -1298,6 +1304,34 @@
 
   (void (brot (make-ticks '-1.5 '0.5 '300)
               (make-ticks '-1.0 '1.0 '300))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Try to trigger copying of arguments to a JITted
+;; `case-lambda` into the runstack before the cases
+;; of the `case-lambda` have been compiled. This
+;; is intended as a regression test for a bug that
+;; led to a runstack overflow in that case.
+
+(let ()
+  (define procs
+    (parameterize ([current-namespace (make-base-namespace)])
+      (for/list ([i 4096])
+        (chaperone-procedure
+         (case-lambda
+           [(a b c d e f g h) 8]
+           [(a b c) 3])
+         (eval '(case-lambda
+                  [(a b c d e f g h) (values a b c d e f g h)]
+                  [(a b c) (values a b c)]))))))
+
+  (define args '(1 2 3 4 5 6 7 8))
+  (set! args args)
+
+  (let loop ([procs procs])
+    (if (null? procs)
+        0
+        (+ (loop (cdr procs))
+           (apply (car procs) args)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

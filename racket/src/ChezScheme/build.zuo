@@ -105,7 +105,7 @@
   ;; or `--host-workarea <dir>", and recognizes `SCHEME=...` if neither
   ;; flag is provided; also recognizes "--xpatch" before anything else
   ;; to request that "xpatch" is left in an "xc-" directory
-  (define (parse-boot-args orig-args k)
+  (define (parse-boot-args orig-args default-m-key k)
     (define xpatch?
       (and (pair? orig-args)
            (equal? "--xpatch" (car orig-args))))
@@ -132,7 +132,7 @@
                           args))
     (unless (<= (length rest-args) 1) (error "expected optional <machine>" args))
     (define xm (if (null? rest-args)
-                   (hash-ref config 'defaultm m)
+                   (hash-ref config default-m-key m)
                    (car rest-args)))
     (define host-m (if host-scheme
                        (ask-scheme-machine host-scheme)
@@ -145,6 +145,7 @@
   (define (cross-build-boot token args ccopts make-targets record-dep?)
     (parse-boot-args
      args
+     'defaultm
      (lambda (xm m host-scheme host-workarea xpatch?)
        (unless (or host-scheme host-workarea)
          (check-not-kernel-only))
@@ -152,9 +153,8 @@
        (boot:cross-build-boot token ccopts make-targets xpatch?
                               xm host-scheme host-workarea
                               at-dir config vars m)
-       ;; record success so boot files will not be rebuilt from pb
-       (when (and record-from-pb? record-dep?)
-         (build-boot-target token xm m host-scheme host-workarea void)))))
+       (when record-dep?
+         (record-build-success token xm m host-scheme host-workarea)))))
 
   (define (cross-build-boot/safe+examples token args)
     (cross-build-boot token args (hash 'o "2" 'd "3" 'i "t") '("all" "examples") #t))
@@ -162,10 +162,13 @@
   (define (cross-reboot token args)
     (parse-boot-args
      args
+     'm
      (lambda (xm m host-scheme host-workarea xpatch?)
        (when xpatch? (error "cannot generate xpatch in reboot mode"))
        (define scheme (or host-scheme
-                          (build-path host-workarea m "bin" m (.exe "scheme"))))
+                          (if host-workarea
+                              (build-path host-workarea m "bin" m (.exe "scheme"))
+                              (.exe "scheme"))))
        (define options (if host-workarea
                            (hash 'env
                                  (cons "SCHEMEHEAPDIRS"
@@ -173,7 +176,14 @@
                            (hash)))
        (reboot m xm scheme (hash 'shell-options options
                                  'out-dir (at-dir "..")
-                                 'work-dir (at-dir ".."))))))
+                                 'work-dir (at-dir "..")))
+       (record-build-success token xm m host-scheme host-workarea))))
+
+  (define (record-build-success token xm m host-scheme host-workarea)
+    ;; record success so boot files will not be rebuilt from pb
+    (when (and record-from-pb?
+               (not (equal? xm "pb")))
+      (build-boot-target token xm m host-scheme host-workarea void)))
 
   ;; used to create a target for "quickboot", or just record dependency for other modes
   ;; of building boot files
@@ -214,10 +224,15 @@
            token))
 
   (define stexlib
-    (let ((found (assoc "STEXLIB" (hash-ref (runtime-env) 'env))))
-      (if found
-          (cdr found)
-          (at-source "stex"))))
+    (let ([configured (hash-ref config 'STEXLIB "")]
+          [env (assoc "STEXLIB" (hash-ref (runtime-env) 'env))])
+      (cond
+        [(not (equal? "" configured))
+         configured]
+        [env
+         (cdr env)]
+        [else
+         (at-source "stex")])))
   (define stex-sources
     (source-tree stexlib))
 
@@ -256,7 +271,16 @@
                   (run-make ""))]
       [:target ,(string->symbol (~a "install-" name)) (,name-sym)
                ,(lambda (token . args)
-                  (run-make "install"))]))
+                  (run-make "install"))]
+      [:target ,(string->symbol (~a "clean-" name)) (,mf-out)
+               ,(lambda (token . args)
+                  (run-make (~a name ".clean"))
+                  (for-each (lambda (name)
+                              (when (member (car (reverse (string-split name ".")))
+                                            '("tex" "html" "aux" "bbl" "out" "pdf"
+                                                    "firstrun" "secondrun" "thirdrun" "idx"))
+                                (rm* (build-path doc-dir name))))
+                            (ls doc-dir)))]))
 
   (define (check-boot-file-version)
     (define src-ver (source-version))
@@ -285,7 +309,8 @@
                 ,(lambda (token)
                    (check-not-kernel-only)
                    ((dynamic-require (at-source "makefiles/install.zuo") 'install)
-                    at-dir))]
+                    at-dir
+                    (hash 'DESTDIR (hash-ref config 'DESTDIR ""))))]
 
        [:target uninstall ()
                 ,(lambda (token)
@@ -321,12 +346,13 @@
                    (check-not-kernel-only)
                    (parse-boot-args
                     args
+                    'defaultm
                     (lambda (xm m host-scheme host-workarea xpatch?)
-                      (unless (or host-scheme host-workarea)
-                        (build/dep (find-target "kernel" the-targets) token))
                       (build-boot-target
                        token xm m host-scheme host-workarea
                        (lambda ()
+                         (unless (or host-scheme host-workarea)
+                           (build/dep (find-target "kernel" the-targets) token))
                          (cross-build-boot token args (hash) '("all") #f))))))
                 :command]
 
@@ -358,6 +384,7 @@
                 :command]
 
        [:target test-one (build) ,(lambda (token) (run-tests token "test-one"))]
+       [:target test-one-safe (build) ,(lambda (token) (run-tests token "test-one-safe"))]
        [:target test-some-fast (build) ,(lambda (token) (run-tests token "test-some-fast"))]
        [:target test-some (build) ,(lambda (token) (run-tests token "test-some"))]
        [:target test (build) ,(lambda (token) (run-tests token "test"))]
@@ -390,7 +417,8 @@
                 ,void]
        [:target install-docs (install-csug install-release_notes)
                 ,void]
-
+       [:target clean-docs (clean-csug clean-release_notes)
+                ,void]
 
        [:target rpm ()
                 ,(lambda (token)
@@ -485,14 +513,23 @@
                            (alert (~a "checking boot files for " m " against pb"))
                            (define pb-dir (at-dir ".." "pb"))
                            (mkdir-p pb-dir)
-                           (define config (map (lambda (s) (string-trim (string-trim s "\r")))
-                                               (string-split (file->string (at-dir "Mf-config")) "\n")))
+                           (define cross? #t)
+                           (define Mf-config
+                             (cond
+                               [(string=? (hash-ref config 'crossCompile "no") "yes")
+                                (shell/wait (build-raw-path (at-source ".") "configure")
+                                            "--nomakefile"
+                                            "--pb")
+                                (build-path pb-dir "Mf-config")]
+                               [else (at-dir "Mf-config")]))
+                           (define old-config (map (lambda (s) (string-trim (string-trim s "\r")))
+                                                   (string-split (file->string Mf-config) "\n")))
                            (define m-line (~a "m=" m))
                            (define mboot-line (~a "mboot=" mboot))
                            (define new-config (cons "m=pb"
                                                     (filter (lambda (s) (not (or (string=? s m-line)
                                                                                  (string=? s mboot-line))))
-                                                            config)))
+                                                            old-config)))
                            (display-to-file (string-join new-config "\n") (build-path pb-dir "Mf-config")
                                             :truncate)
                            (build (command-target->target (find-target "bootquick"

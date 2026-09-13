@@ -1,20 +1,25 @@
 #lang racket/base
 (require "../host/thread.rkt"
          "../error/message.rkt"
+         "../error/value-string.rkt"
          "port.rkt"
+         "lock.rkt"
          "input-port.rkt"
          "output-port.rkt"
          "close.rkt")
 
 (provide check-not-closed)
 
-;; in atomic mode
-;; Atomic mode is required on entry because an operation
+;; with p lock held or in atomic mode with lock requires atomic
+;; ... and `unlock` required in the latter case
+;; Some uninterrupted mode is required on entry because an operation
 ;; that is prefixed when a port-closed check normally needs
 ;; to happen atomically with respect to the check.
-(define (check-not-closed who cp)
+(define (check-not-closed who cp #:unlock [unlock #f])
   (when (core-port-closed? cp)
-    (end-atomic)
+    (if unlock
+        (unlock)
+        (port-unlock cp))
     (define input? (core-input-port? cp))
     (raise
      (exn:fail
@@ -27,5 +32,5 @@
                       (if input?
                           "input port: "
                           "output port: ")
-                      ((error-value->string-handler) cp (error-print-width))))
+                      (error-value->string cp)))
       (current-continuation-marks)))))

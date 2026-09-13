@@ -11,10 +11,11 @@
          "main.rkt")
 
 (provide dynamic-require
-         dynamic-require-for-syntax
-         default-dynamic-require-fail-thunk)
+         dynamic-require-for-syntax)
 
-(define (do-dynamic-require who mod-path sym [fail-k default-dynamic-require-fail-thunk])
+(define (do-dynamic-require who mod-path sym
+                            [fail-k 'error]
+                            [syntax-k 'eval])
   (unless (or (module-path? mod-path)
               (module-path-index? mod-path)
               (resolved-module-path? mod-path))
@@ -26,8 +27,12 @@
               (equal? sym 0)
               (void? sym))
     (raise-argument-error who "(or/c symbol? #f 0 void?)" sym))
-  (unless (and (procedure? fail-k) (procedure-arity-includes? fail-k 0))
-    (raise-argument-error who "(-> any)" fail-k))
+  (unless (or (eq? fail-k 'error)
+              (and (procedure? fail-k) (procedure-arity-includes? fail-k 0)))
+    (raise-argument-error who "(or/c 'error (-> any))" fail-k))
+  (unless (or (eq? syntax-k 'eval)
+              (and (procedure? syntax-k) (procedure-arity-includes? syntax-k 0)))
+    (raise-argument-error who "(or/c 'eval (-> any))" syntax-k))
   (define ns (current-namespace))
   (define mpi
     (cond
@@ -59,7 +64,7 @@
                                 #f))
     (cond
      [(not binding/p)
-      (if (eq? fail-k default-dynamic-require-fail-thunk)
+      (if (eq? fail-k 'error)
           (raise-arguments-error 'dynamic-require
                                  "name is not provided"
                                  "name" sym
@@ -93,7 +98,7 @@
                                "name" sym
                                "module" mod-name))
       (define (fail)
-        (if (eq? fail-k default-dynamic-require-fail-thunk)
+        (if (eq? fail-k 'error)
             (raise-arguments-error 'dynamic-require
                                    "name's binding is missing"
                                    "name" sym
@@ -102,6 +107,8 @@
       (cond
        [(not (provided-as-transformer? binding/p))
         (namespace-get-variable m-ns ex-phase ex-sym fail)]
+       [(not (eq? syntax-k 'eval))
+        (syntax-k)]
        [else
         (define missing (gensym 'missing))
         (namespace-module-visit! ns mpi phase #:visit-phase phase)
@@ -117,16 +124,15 @@
           (parameterize ([current-namespace tmp-ns])
             (eval sym tmp-ns))])])])]))
 
-;; The `dynamic-require` function cheats by recognizing this failure
-;; thunk and substituting a more specific error:
-(define (default-dynamic-require-fail-thunk)
-  (error "failed"))
+(define/who (dynamic-require mod-path sym
+                             [fail-k 'error]
+                             [syntax-k 'eval])
+  (do-dynamic-require who mod-path sym fail-k syntax-k))
 
-(define/who (dynamic-require mod-path sym [fail-k default-dynamic-require-fail-thunk])
-  (do-dynamic-require who mod-path sym fail-k))
-
-(define/who (dynamic-require-for-syntax mod-path sym [fail-k default-dynamic-require-fail-thunk])
+(define/who (dynamic-require-for-syntax mod-path sym
+                                        [fail-k 'error]
+                                        [syntax-k 'eval])
   (parameterize ([current-namespace
                   (let ([ns (current-namespace)])
                     (namespace->namespace-at-phase ns (add1 (namespace-phase ns))))])
-    (do-dynamic-require who mod-path sym fail-k)))
+    (do-dynamic-require who mod-path sym fail-k syntax-k)))

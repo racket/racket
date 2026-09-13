@@ -17,7 +17,7 @@
 
 #ifdef RKTIO_SYSTEM_UNIX
 static rktio_fd_t *finish_unix_fd_creation(rktio_t *rktio, int fd, int modes, rktio_fd_t *existing_rfd,
-                                           int perm_bits, int replace_perms);
+                                           int perm_bits, int replace_perms, rktio_err_t *err);
 #endif
 
 #ifdef RKTIO_USE_PENDING_OPEN
@@ -37,7 +37,7 @@ static rktio_fd_t *open_read(rktio_t *rktio, const char *filename, int modes)
   struct stat buf;
 
   do {
-    fd = open(filename, O_RDONLY | RKTIO_NONBLOCKING | RKTIO_BINARY);
+    fd = open(filename, O_RDONLY | RKTIO_NONBLOCKING | RKTIO_BINARY | RKTIO_CLOEXEC);
   } while ((fd == -1) && (errno == EINTR));
 
   if (fd == -1) {
@@ -132,25 +132,25 @@ static rktio_fd_t *open_write(rktio_t *rktio, const char *filename, int modes, i
     flags |= O_EXCL;
 
   do {
-    fd = open(filename, flags | RKTIO_NONBLOCKING | RKTIO_BINARY, perm_bits);
+    fd = open(filename, flags | RKTIO_NONBLOCKING | RKTIO_BINARY | RKTIO_CLOEXEC, perm_bits);
   } while ((fd == -1) && (errno == EINTR));
 
   if (errno == ENXIO) {
     /* FIFO with no reader? */
 #ifdef RKTIO_USE_PENDING_OPEN
-    return open_via_thread(rktio, filename, modes, flags | RKTIO_BINARY,
+    return open_via_thread(rktio, filename, modes, flags | RKTIO_BINARY | RKTIO_CLOEXEC,
                            perm_bits, modes & RKTIO_OPEN_REPLACE_PERMS);
 #else
     /* Try opening in RW mode: */
     flags -= O_WRONLY;
     flags |= O_RDWR;
     do {
-      fd = open(filename, flags | RKTIO_NONBLOCKING | RKTIO_BINARY, perm_bits);
+      fd = open(filename, flags | RKTIO_NONBLOCKING | RKTIO_BINARY | RKTIO_CLOEXEC, perm_bits);
     } while ((fd == -1) && (errno == EINTR));
 #endif
   }
 
-  return finish_unix_fd_creation(rktio, fd, modes, NULL, perm_bits, modes & RKTIO_OPEN_REPLACE_PERMS);
+  return finish_unix_fd_creation(rktio, fd, modes, NULL, perm_bits, modes & RKTIO_OPEN_REPLACE_PERMS, &rktio->err);
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
   HANDLE fd;
@@ -248,25 +248,25 @@ static rktio_fd_t *open_write(rktio_t *rktio, const char *filename, int modes, i
 
 #ifdef RKTIO_SYSTEM_UNIX
 static rktio_fd_t *finish_unix_fd_creation(rktio_t *rktio, int fd, int modes, rktio_fd_t *existing_rfd,
-                                           int perm_bits, int replace_perms)
+                                           int perm_bits, int replace_perms, rktio_err_t *err)
 {
   struct stat buf;
   int cr;
 
   if (fd == -1) {
     if (errno == EISDIR) {
-      set_racket_error(RKTIO_ERROR_IS_A_DIRECTORY);
+      rktio_set_racket_error(err, RKTIO_ERROR_IS_A_DIRECTORY);
       return NULL;
     } else if (errno == EEXIST) {
-      set_racket_error(RKTIO_ERROR_EXISTS);
+      rktio_set_racket_error(err, RKTIO_ERROR_EXISTS);
       return NULL;
     } else if (errno == EACCES) {
-      set_racket_error(RKTIO_ERROR_ACCESS_DENIED);
+      rktio_set_racket_error(err, RKTIO_ERROR_ACCESS_DENIED);
       return NULL;
     }
 
     if (fd == -1) {
-      get_posix_error();
+      rktio_get_posix_error(err);
       return NULL;
     }
   }
@@ -276,7 +276,7 @@ static rktio_fd_t *finish_unix_fd_creation(rktio_t *rktio, int fd, int modes, rk
       cr = fchmod(fd, perm_bits);
     } while ((cr == -1) && (errno == EINTR));
     if (cr == -1) {
-      get_posix_error();
+      rktio_get_posix_error(err);
       do {
         cr = close(fd);
       } while ((cr == -1) && (errno == EINTR));
@@ -289,7 +289,7 @@ static rktio_fd_t *finish_unix_fd_creation(rktio_t *rktio, int fd, int modes, rk
   } while ((cr == -1) && (errno == EINTR));
 
   if (cr) {
-    get_posix_error();
+    rktio_get_posix_error(err);
     do {
       cr = close(fd);
     } while ((cr == -1) && (errno == EINTR));
@@ -598,7 +598,7 @@ static rktio_fd_t *open_via_thread(rktio_t *rktio, const char *filename, int mod
   return rktio_pending_system_fd(rktio, data, modes);
 }
 
-int rktio_pending_open_poll(rktio_t *rktio, rktio_fd_t *existing_rfd, struct open_in_thread_t *data)
+int rktio_pending_open_poll(rktio_t *rktio, rktio_fd_t *existing_rfd, struct open_in_thread_t *data, rktio_err_t *err)
 /* non-zero result is an errno value */
 {
   int done;
@@ -615,9 +615,9 @@ int rktio_pending_open_poll(rktio_t *rktio, rktio_fd_t *existing_rfd, struct ope
       int perm_bits = data->perm_bits;
       int replace_perms = data->replace_perms;
       (void)do_pending_open_release(rktio, data, 0);
-      if (!finish_unix_fd_creation(rktio, fd, 0, existing_rfd, perm_bits, replace_perms)) {
-        /* Posix error must be saved in `rktio` */
-        return rktio->errid;
+      if (!finish_unix_fd_creation(rktio, fd, 0, existing_rfd, perm_bits, replace_perms, err)) {
+        /* Posix error must be saved in `err` */
+        return err->errid;
       }
       return 0;
     }

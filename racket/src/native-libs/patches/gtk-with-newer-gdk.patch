@@ -1,0 +1,12 @@
+diff -u -r old/gtk+-2.24.24/configure new/gtk+-2.24.24/configure
+--- old/gtk+-2.24.24/configure	2014-06-23 10:04:48
++++ new/gtk+-2.24.24/configure	2025-07-27 14:44:33
+@@ -20759,7 +20759,7 @@
+   CFLAGS="-DG_DISABLE_DEPRECATED $CFLAGS"
+ fi
+ 
+-CFLAGS="-DGDK_PIXBUF_DISABLE_DEPRECATED $CFLAGS"
++# CFLAGS="-DGDK_PIXBUF_DISABLE_DEPRECATED $CFLAGS"
+ 
+ 
+ gtk_save_LIBS=$LIBS

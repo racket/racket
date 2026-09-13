@@ -26,7 +26,7 @@ Documentation notes:
   pairs, and then uses a weak or ephemeron eq hashtable to map the key
   to its value; use the size of the eq hashtable as the generic hashtable's
   size
-- an eqv hashtabble pairs an eq hashtable and an generic hashtable
+- an eqv hashtable pairs an eq hashtable and an generic hashtable
 |#
 
 #|
@@ -94,7 +94,7 @@ Documentation notes:
 ;;; eqv-hashtable operators
 (define make-weak-eqv-hashtable)         ; [k], k >= 0
   
-;;; unsafe eq-hashtable operators
+;;; unsafe hashtable operators
 (define $make-eq-hashtable)              ; fxminlen subtype, fxminlen = 2^n, n >= 0
 (define $eq-hashtable-keys)              ; eq-hashtable
 (define $eq-hashtable-values)            ; eq-hashtable
@@ -102,6 +102,7 @@ Documentation notes:
 (define $eq-hashtable-cells)             ; eq-hashtable
 (define $eq-hashtable-copy)              ; eq-hashtable [mutableflag]
 (define $eq-hashtable-clear!)            ; eq-hashtable [fxminlen]
+(define $hashtable-cells)                ; hashtable [fxminlen]
 
 ;;; inspection
 (define $hashtable-veclen)
@@ -1062,7 +1063,7 @@ Documentation notes:
           [(generic) ($gen-hashtable-entries h (most-positive-fixnum))]
           [else ($ht-hashtable-entries h (most-positive-fixnum))])))
 
-    (set-who! hashtable-cells
+    (set-who! $hashtable-cells
       (hashtable-content-dispatch who
                                   $eq-hashtable-cells
                                   $eqv-hashtable-cells
@@ -1295,10 +1296,12 @@ Documentation notes:
   (set! $eq-hashtable-keys
     (lambda (h max-sz)
       (let ([vec (ht-vec h)] [size (fxmin max-sz (ht-size h))])
-        (let ([n (vector-length vec)] [keys (make-vector size)])
+        (let ([n (vector-length vec)] [keys ($make-vector/no-interrupt-trap size)])
           (let outer ([i 0] [j 0])
             (if (or (fx= i n) (fx= j size))
-                keys
+                (begin
+                  ($use-trap-fuel size (constant fuel-word-count-shift))
+                  keys)
                 (let inner ([b (vector-ref vec i)] [j j])
                   (if (or (fixnum? b) (fx= j size))
                       (outer (fx+ i 1) j)
@@ -1309,10 +1312,12 @@ Documentation notes:
   (set! $eq-hashtable-values
     (lambda (h max-sz)
       (let ([vec (ht-vec h)] [size (fxmin max-sz (ht-size h))])
-        (let ([n (vector-length vec)] [vals (make-vector size)])
+        (let ([n (vector-length vec)] [vals ($make-vector/no-interrupt-trap size)])
           (let outer ([i 0] [j 0])
             (if (or (fx= i n) (fx= j size))
-                vals
+                (begin
+                  ($use-trap-fuel size (constant fuel-word-count-shift))
+                  vals)
                 (let inner ([b (vector-ref vec i)] [j j])
                   (if (or (fixnum? b) (fx= j size))
                       (outer (fx+ i 1) j)
@@ -1324,11 +1329,13 @@ Documentation notes:
     (lambda (h max-sz)
       (let ([vec (ht-vec h)] [size (fxmin max-sz (ht-size h))])
         (let ([n (vector-length vec)]
-              [keys (make-vector size)]
-              [vals (make-vector size)])
+              [keys ($make-vector/no-interrupt-trap size)]
+              [vals ($make-vector/no-interrupt-trap size)])
           (let outer ([i 0] [j 0])
             (if (or (fx= i n) (fx= j size))
-                (values keys vals)
+                (begin
+                  ($use-trap-fuel size (constant fuel-word-count-shift))
+                  (values keys vals))
                 (let inner ([b (vector-ref vec i)] [j j])
                   (if (or (fixnum? b) (fx= j size))
                       (outer (fx+ i 1) j)
@@ -1340,10 +1347,12 @@ Documentation notes:
   (set! $eq-hashtable-cells
     (lambda (h max-sz)
       (let ([vec (ht-vec h)] [size (fxmin max-sz (ht-size h))])
-        (let ([n (vector-length vec)] [cells (make-vector size)])
+        (let ([n (vector-length vec)] [cells ($make-vector/no-interrupt-trap size)])
           (let outer ([i 0] [j 0])
             (if (or (fx= i n) (fx= j size))
-                cells
+                (begin
+                  ($use-trap-fuel size (constant fuel-word-count-shift))
+                  cells)
                 (let inner ([b (vector-ref vec i)] [j j])
                   (if (or (fixnum? b) (fx= j size))
                       (outer (fx+ i 1) j)
@@ -1360,7 +1369,9 @@ Documentation notes:
                [h2 (make-eq-ht 'eq mutable? vec2 (ht-minlen h1) (ht-size h1) subtype)])
           (let outer ([i 0])
             (if (fx= i n)
-                h2
+                (begin
+                  ($use-trap-fuel n (constant fuel-word-count-shift))
+                  h2)
                 (begin
                   (vector-set! vec2 i
                     (let inner ([b (vector-ref vec1 i)])
@@ -1389,7 +1400,8 @@ Documentation notes:
                   (loop next)))))
         (ht-size-set! h 0)
         (unless (fx= n minlen)
-          (ht-vec-set! h ($make-eqhash-vector minlen))))))
+          (ht-vec-set! h ($make-eqhash-vector minlen)))
+        ($use-trap-fuel n (constant fuel-word-count-shift)))))
   
   (let ()
     ;; An equal/hash mapping contains an equal or hash procedure (or #f)

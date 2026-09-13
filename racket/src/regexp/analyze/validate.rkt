@@ -38,10 +38,10 @@
         (define-values (min1 max1 lb1) (validate (rx:alts-rx1 rx)))
         (define-values (min2 max2 lb2) (validate (rx:alts-rx2 rx)))
         (values (min min1 min2) (max max1 max2) (max lb1 lb2))]
-       [(rx:sequence? rx)       
+       [(rx:sequence? rx)
         (for/fold ([min-len 0] [max-len 0] [max-lb 0]) ([rx (in-list (rx:sequence-rxs rx))])
           (define-values (min1 max1 lb1) (validate rx))
-          (values (+ min-len min1) (+ max-len max1) (max max-lb lb1)))]
+          (values (+ min-len min1) (+ max-len max1) (max max-lb (- lb1 min-len))))]
        [(rx:group? rx)
         (define-values (min1 max1 lb1) (validate (rx:group-rx rx)))
         (set! group-sizes (hash-set group-sizes (rx:group-number rx) min1))
@@ -81,7 +81,7 @@
         (define n (rx:reference-n rx))
         (unless (n . <= . num-groups)
           (regexp-error "backreference number is larger than the highest-numbered cluster"))
-        (define min-size (hash-ref group-sizes n #f))
+        (define min-size (hash-ref group-sizes (sub1 n) #f))
         (cond
          [min-size
           ;; known minimum:
@@ -92,6 +92,8 @@
           (values 1 +inf.0 0)])]
        [(rx:unicode-categories? rx)
         (values 1 4 0)]
+       [(eq? rx rx:unicode-grapheme)
+        (values 1 +inf.0 0)]
        [else (error 'validate "internal error: ~s" rx)])))
   (for ([n (in-hash-keys must-sizes)])
     (unless (positive? (hash-ref group-sizes n 0))

@@ -1,8 +1,7 @@
 
 (module stxparam-exptime '#%kernel
   (#%require "private/stxcase-scheme.rkt"
-             "private/define-et-al.rkt"
-             "private/qq-and-or.rkt"
+             "private/core-syntax.rkt"
              "private/stxparamkey.rkt")
 
   (#%provide syntax-parameter-value

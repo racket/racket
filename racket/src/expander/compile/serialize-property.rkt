@@ -21,7 +21,11 @@
 
          prop:binding-reach-scopes
          binding-reach-scopes?
-         binding-reach-scopes-ref)
+         binding-reach-scopes-ref
+
+         prop:binding-shift-report
+         binding-shift-report?
+         binding-shift-report-ref)
 
 (define-values (prop:serialize serialize? serialize-ref)
   (make-struct-type-property 'serialize))
@@ -43,3 +47,8 @@
 ;; Like `prop:reach-scopes`, but return a single value; used for bindings:
 (define-values (prop:binding-reach-scopes binding-reach-scopes? binding-reach-scopes-ref)
   (make-struct-type-property 'binding-reach-scopes))
+
+;; A property for a binding that constaints module path indexes, so an effective
+;; shift can be determined for a shift-simplifying serialization
+(define-values (prop:binding-shift-report binding-shift-report? binding-shift-report-ref)
+  (make-struct-type-property 'binding-shift-report))

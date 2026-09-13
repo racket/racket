@@ -25,10 +25,12 @@
 
 (struct exts (timeout-at fd-adders))
 
+;; the `adder` function is in atomic and rktio, must not start nested rktio
 (define (sandman-add-poll-set-adder old-exts adder)
   (exts (and old-exts (exts-timeout-at old-exts))
         (cons adder (and old-exts (exts-fd-adders old-exts)))))
 
+;; the `adder` function is in atomic and rktio, must not start nested rktio
 (define (sandman-poll-ctx-add-poll-set-adder! poll-ctx adder)
   (define sched-info (poll-ctx-sched-info poll-ctx))
   (when sched-info
@@ -63,34 +65,40 @@
      (lambda (exts)
        (define timeout-at (and exts (exts-timeout-at exts)))
        (define fd-adders (and exts (exts-fd-adders exts)))
-       (define ps (rktio_make_poll_set rktio))
-       (let loop ([fd-adders fd-adders])
-         (cond
-           [(not fd-adders) (void)]
-           [(pair? fd-adders)
-            (loop (car fd-adders))
-            (loop (cdr fd-adders))]
-           [else
-            (fd-adders ps)]))
-       (define sleep-secs (and timeout-at
-                               (/ (- timeout-at (current-inexact-monotonic-milliseconds)) 1000.0)))
-       (unless (and sleep-secs (sleep-secs . <= . 0.0))
-         (cond
-           [background-sleep
-            (rktio_start_sleep rktio (or sleep-secs 0.0) ps shared-ltps background-sleep-fd)
-            (background-sleep)
-            (rktio_end_sleep rktio)]
-           [else
-            (rktio_sleep rktio
-                         (or sleep-secs 0.0)
-                         ps
-                         shared-ltps)]))
-       (rktio_poll_set_forget rktio ps))
-     
+       ;; must not be in rktio mode, because `(maybe-start-sleep-rktio)` is not reentrant;
+       ;; we use `(maybe-start-sleep-rktio)` because some parallel threads may be running
+       ;; and want to use rktio, and so they're need the rktio mutex, and so they'll need
+       ;; to explicitly wake up this sleeper
+       (when (maybe-start-sleep-rktio)
+         (define ps (rktio_make_poll_set rktio))
+         (let loop ([fd-adders fd-adders])
+           (cond
+             [(not fd-adders) (void)]
+             [(pair? fd-adders)
+              (loop (car fd-adders))
+              (loop (cdr fd-adders))]
+             [else
+              (fd-adders ps)]))
+         (define sleep-secs (and timeout-at
+                                 (/ (- timeout-at (current-inexact-monotonic-milliseconds)) 1000.0)))
+         (unless (and sleep-secs (sleep-secs . <= . 0.0))
+           (cond
+             [background-sleep
+              (rktio_start_sleep rktio (or sleep-secs 0.0) ps shared-ltps background-sleep-fd)
+              (background-sleep)
+              (rktio_end_sleep rktio)]
+             [else
+              (rktio_sleep rktio
+                           (or sleep-secs 0.0)
+                           ps
+                           shared-ltps)]))
+         (rktio_poll_set_forget rktio ps)
+         (end-sleep-rktio)))
+
      ;; poll
      (lambda (wakeup)
        (let check-signals ()
-         (define v (rktio_poll_os_signal rktio))
+         (define v (rktioly (rktio_poll_os_signal rktio)))
          (unless (eqv? v RKTIO_OS_SIGNAL_NONE)
            ((rktio_get_ctl_c_handler) (cond
                                         [(eqv? v RKTIO_OS_SIGNAL_HUP) 'hang-up]

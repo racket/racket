@@ -24,18 +24,22 @@
                  'stdin))
 
 (define (make-stdout)
-  (open-output-fd (check-rktio-error
-                   (rktio_std_fd rktio RKTIO_STDOUT)
-                   "error initializing stdout")
-                  'stdout
-                  #:buffer-mode 'infer))
+  (let ([fd (rktio_std_fd rktio RKTIO_STDOUT)])
+    (open-output-fd (check-rktio-error
+                     fd
+                     "error initializing stdout")
+                    'stdout
+                    #:buffer-mode 'infer
+                    #:is-terminal?  (rktio_fd_is_terminal rktio fd))))
 
 (define (make-stderr)
-  (open-output-fd (check-rktio-error
-                   (rktio_std_fd rktio RKTIO_STDERR)
-                   "error initializing stderr")
-                  'stderr
-                  #:buffer-mode 'none))
+  (let ([fd (rktio_std_fd rktio RKTIO_STDERR)])
+    (open-output-fd (check-rktio-error
+                     fd
+                     "error initializing stderr")
+                    'stderr
+                    #:buffer-mode 'none
+                    #:is-terminal?  (rktio_fd_is_terminal rktio fd))))
 
 (define-place-local orig-input-port (make-stdin))
 (define-place-local orig-output-port (make-stdout))
@@ -77,11 +81,13 @@
   (current-input-port orig-input-port)
   (set! orig-output-port (open-output-fd out-fd "stdout"
                                          #:custodian cust
-                                         #:plumber plumber))
+                                         #:plumber plumber
+                                         #:is-terminal? (rktio_fd_is_terminal rktio out-fd)))
   (current-output-port orig-output-port)
   (set! orig-error-port (open-output-fd err-fd "srderr"
                                         #:custodian cust
-                                        #:plumber plumber))
+                                        #:plumber plumber
+                                        #:is-terminal? (rktio_fd_is_terminal rktio err-fd)))
   (current-error-port orig-error-port))
 
 (define (get-original-error-port)

@@ -3,6 +3,7 @@
          "thread.zuo"
          "config.zuo"
          "jobserver.zuo"
+         "dry-run.zuo"
          "private/build-db.zuo")
 
 (provide (rename-out [make-target target]
@@ -78,7 +79,7 @@
                (string=? s no-sha256)
                ;; also allow a concatenation of SHA-256s for multi-file targets
                (and (>= (string-length s) sha256-length)
-                    (= 0 (modulo (string-length s) sha256-length)))))
+                    (= 0 (remainder (string-length s) sha256-length)))))
       (eq? s phony-sha256)))
 
 ;; public constructor
@@ -115,13 +116,15 @@
     rule))
 
 ;; An input-file target has no dependencies
-(define (input-file-target path)
+(define (input-file-target path [missing-counts-as-changed? #f])
   (unless (path-string? path) (arg-error 'input-file-target "path string" path))
   (target (string->symbol path)
           path
           (lambda (path token)
             (rule '()
-                  (lambda () (error "missing input file" path))
+                  (lambda () (if missing-counts-as-changed?
+                                 #f
+                                 (error "missing input file" path)))
                   #f))
           'input
           (hash)))
@@ -207,17 +210,18 @@
 ;; Where the contracts below say "dep-sha256s", that's a hash table
 ;; mapping a dependency's key to a SHA-256.
 
-(struct build-state (ch            ; channel to hold the state while target is running
-                     target-state  ; key -> (cons sha256 dep-sha256s) | 'pending | channel
-                     target-accum  ; key -> dep-sha256s
-                     db            ; key -> (cons sha256 dep-sha256s) | #t [for db file itself]
-                     time-cache    ; key -> (cons timestamp sha256)
-                     saw-targets   ; key -> target [to detect multiple for same output]
-                     thread-count  ; channel to hold thread-scheduler state
-                     thread-seens  ; sym -> hash [to detect cycles when count goes to 0]
-                     resourcer     ; build stat's resource manager
-                     log?          ; logging enabled?
-                     uni?))        ; just one job?
+(struct build-state (ch             ; channel to hold the state while target is running
+                     target-state   ; key -> (cons sha256 dep-sha256s) | 'pending | channel
+                     target-accum   ; key -> dep-sha256s
+                     db             ; key -> (cons sha256 dep-sha256s) | #t [for db file itself]
+                     time-cache     ; key -> (cons timestamp sha256)
+                     saw-targets    ; key -> target [to detect multiple for same output]
+                     thread-count   ; channel to hold thread-scheduler state
+                     thread-seens   ; sym -> hash [to detect cycles when count goes to 0]
+                     resourcer      ; build stat's resource manager
+                     log?           ; logging enabled?
+                     uni?           ; just one job?
+                     dry-run-mode)) ; #f, 'dry-run, 'question, or 'would
 
 ;; Main entry point to build a target `t`
 (define (build t-in [token #f] [options (hash)])
@@ -255,12 +259,15 @@
                                         (make-resourcer num-jobs))
                                     (or (hash-ref options 'log? #f)
                                         (assoc "ZUO_BUILD_LOG" (hash-ref (runtime-env) 'env)))
-                                    (= num-jobs 1)))
+                                    (= num-jobs 1)
+                                    (hash-ref options 'dry-run-mode (maybe-dry-run-mode))))
          (when resourcer
            (release-resource state "nested"))
-         (do-build t state seen #t)
+         (define end-state (do-build t state seen #t))
          (when resourcer
-           (acquire-resource state "continue from nested")))))))
+           (acquire-resource state "continue from nested"))
+         (when (eq? 'would (build-state-dry-run-mode end-state))
+           (exit 1)))))))
 
 (define (build/maybe-dep t-in token add-dep?)
   (unless (token? token) (arg-error 'build/dep "build token" token))
@@ -337,8 +344,12 @@
      ;; no dependencies, not need for a thread to build, etc.
      (define r ((target-get-rule t) (target-name t) #f))
      (define sha256 (or (rule-sha256 r) (file-sha256/state (target-path t) state)))
-     (when (equal? sha256 no-sha256) ((rule-build r)))
-     (update-target-state state t (list sha256))]
+     (cond
+       [(equal? sha256 no-sha256)
+        ((rule-build r)) ; might error
+        state]
+       [else
+        (update-target-state state t (list sha256))])]
     [else (call-with-name+stack
            (target-name t)
            seen
@@ -426,8 +437,8 @@
 
   ;; calling the build step for `t` might generate more dependencies, but those
   ;; extra dependencies are supposed to be determined only by the ones declared
-  ;; so far; so, if the dependencies declares so far are consistent with recorded
-  ;; dependencies, and if the target's current hash matches the prvious result,
+  ;; so far; so, if the dependencies declared so far are consistent with recorded
+  ;; dependencies, and if the target's current hash matches the previous result,
   ;; then we can assume that the extra dependencies generated previously are still
   ;; the extra dependencies this time
   (define same-so-far?
@@ -443,11 +454,13 @@
     (if same-so-far?
         (foldl (lambda (dep-key more-sha256s)
                  ;; currently, we assume that any additional dependencies
-                 ;; added in the build phase were and would be inputs
+                 ;; added in the build phase were and will be inputs --- but
+                 ;; disppearing is ok, and just needs to trigger a rebuild
+                 ;; of dependents, which may then end up with new dependencies
                  (if (or (hash-ref dep-sha256s dep-key #f)
                          (symbol-key? dep-key))
                      more-sha256s
-                     (cons (input-file-target (symbol->string dep-key))
+                     (cons (input-file-target (symbol->string dep-key) #t)
                            more-sha256s)))
                '()
                (hash-keys prev-dep-sha256s))
@@ -482,6 +495,16 @@
      (define done-state (update-target-state newer-state t (cons sha256 all-dep-sha256s)))
      (channel-put result-ch 'done)
      done-state]
+    [(and (build-state-dry-run-mode newer-state)
+          (not (hash-ref (target-options t) 'recur? #f)))
+     (define mode (build-state-dry-run-mode newer-state))
+     (when (eq? mode 'dry-run)
+       (alert (~a "would build target: " (target-name t))))
+     (define done-state (update-target-state newer-state t (cons no-sha256 all-dep-sha256s)))
+     (channel-put result-ch 'done)
+     (if (eq? mode 'question)
+         (build-state-set-dry-run-mode done-state 'would)
+         done-state)]
     [else
      (unless to-build
        (error "build: out-of-date target has no build procedure" (target-name t)))
@@ -560,6 +583,11 @@
            (if (and v (> v 0))
                (hash-set opts 'jobs v)
                (error "not a positive integer" n)))]
+   :once-any
+   [opts ("-n" "--just-print" "--dry-run") "Print needed builds without running"
+         (hash-set opts 'dry-run-mode 'dry-run)]
+   [opts ("-q" "--question") "Check whether builds are needed without running"
+         (hash-set opts 'dry-run-mode 'question)]
    :args
    args
    (lambda (opts)
@@ -682,10 +710,9 @@
                                    [,targets-at-id targets-at]))
         `(,(quote-syntax module+)
           main
+          ;; builds to current directory by default:
           (,(quote-syntax build/command-line*)
-           ,targets-at-id
-           ;; builds to current directory by default:
-           build-path))))
+           ,targets-at-id))))
 
 (define-syntax (bounce-to-targets stx)
   (unless (and (list? stx) (= 4 (length stx)))
@@ -714,7 +741,7 @@
   (hash-ref (build-state-target-state state) (target-key t) #f))
 
 (define (add-dependent-target-state dep dep-sha256s state)
-  (define ts (target-state state dep))
+  (define ts (or (target-state state dep) (list no-sha256)))
   (define sha256 (car ts))
   (hash-set dep-sha256s (target-key dep) (if (eq? sha256 phony-sha256) no-sha256 sha256)))
 
@@ -1041,15 +1068,42 @@
                                                                   (map dep->target (reverse (hash-ref deps key '())))))
                                                               names))
                                                   (map dep->target (reverse (hash-ref deps key '())))))]
+                                  [get-deps+preamble (lambda (token)
+                                                       (define deps (get-deps))
+                                                       (define rev-deps+preamble
+                                                         (foldl (lambda (dep rev-deps+preamble)
+                                                                  (cond
+                                                                    [(hash-ref (target-options dep) 'secondary? #f)
+                                                                     (define r
+                                                                       (if (symbol? (target-name dep))
+                                                                           ((target-get-rule dep) token)
+                                                                           ((target-get-rule dep) (target-name dep) token)))
+                                                                     (define preamble (cdr rev-deps+preamble))
+                                                                     (cons (append (reverse (rule-deps r))
+                                                                                   (car rev-deps+preamble))
+                                                                           (lambda ()
+                                                                             (preamble)
+                                                                             (build/no-dep dep token)))]
+                                                                    [else
+                                                                     (cons (cons dep (car rev-deps+preamble))
+                                                                           (cdr rev-deps+preamble))]))
+                                                                (cons '() void)
+                                                                deps))
+                                                       (cons (reverse (car rev-deps+preamble))
+                                                             (cdr rev-deps+preamble)))]
                                   [t (make-target name
                                                   (if (symbol? name)
                                                       (lambda (token . args)
-                                                        (make-phony-rule (get-deps)
+                                                        (define deps+preamble (get-deps+preamble token))
+                                                        (make-phony-rule (car deps+preamble)
                                                                          (lambda ()
+                                                                           ((cdr deps+preamble))
                                                                            (apply (list-ref spec 3) (cons token args)))))
                                                       (lambda (path token)
-                                                        (make-rule (get-deps)
+                                                        (define deps+preamble (get-deps+preamble token))
+                                                        (make-rule (car deps+preamble)
                                                                    (lambda ()
+                                                                     ((cdr deps+preamble))
                                                                      ((list-ref spec 3) path token)))))
                                                   (foldl (lambda (tag options)
                                                            (hash-set options (hash-ref keyword-to-option tag) #t))
@@ -1072,4 +1126,6 @@
         ':command 'command?
         ':noisy 'noisy?
         ':quiet 'quiet?
-        ':eager 'eager?))
+        ':eager 'eager?
+        ':recur 'recur?
+        ':secondary 'secondary?))

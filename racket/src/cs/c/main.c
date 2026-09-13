@@ -93,7 +93,7 @@ static const char *get_framework_path() {
   return NULL;
 }
 
-static char *path_append(const char *p1, const char *p2) {
+static char *path_append_2(const char *p1, const char *p2) {
   int l1, l2;
   char *s;
   l1 = strlen(p1);
@@ -109,11 +109,16 @@ static char *path_append(const char *p1, const char *p2) {
 #endif
 
 #if !defined(WIN32) && !defined(OS_X)
-static long find_boot_section(const char *me)
+static long find_boot_section(const char *me, int must_find)
 {
   int start = 0, end = 0;
   
   find_elf_section_offset(me, ".rackboot", &start, &end);
+
+  if (start == 0 && must_find) {
+    fprintf(stderr, "%s: ELF section \".rackboot\" is missing\n", me);
+    exit(1);
+  }
 
   return start;
 }
@@ -197,9 +202,16 @@ static int bytes_main(int argc, char **argv,
   boot_offset = find_rktboot_section(boot_exe);
   if (!boot_offset) boot_images_in_exe = 0;
 #elif WIN32
-  boot_offset = find_resource_offset(dll_path, 259, boot_rsrc_offset);
+  if (boot1_offset || boot2_offset || boot3_offset)
+    boot_offset = find_resource_offset(dll_path, 259, boot_rsrc_offset);
+  else
+    boot_offset = 0;
 #else
-  boot_offset = find_boot_section(boot_exe);
+  boot_offset = find_boot_section(boot_exe,
+                                  /* If the first offset is 0 and the second is not,
+                                     then the intent must be for those offsets to
+                                     be relative to a boot section: */
+                                  (boot1_offset == 0) && (boot2_offset > 0));
 #endif
 
   boot1_offset += boot_offset;
@@ -213,9 +225,9 @@ static int bytes_main(int argc, char **argv,
   if (!boot_images_in_exe) {
     const char *fw_path = get_framework_path();
     if (fw_path) {
-      boot1_path = path_append(fw_path, "petite.boot");
-      boot2_path = path_append(fw_path, "scheme.boot");
-      boot3_path = path_append(fw_path, "racket.boot");
+      boot1_path = path_append_2(fw_path, "petite.boot");
+      boot2_path = path_append_2(fw_path, "scheme.boot");
+      boot3_path = path_append_2(fw_path, "racket.boot");
       boot1_offset = boot2_offset = boot3_offset = boot_end_offset = 0;
     }
   }
@@ -226,7 +238,7 @@ static int bytes_main(int argc, char **argv,
       && (boot3_offset == 0)
       && (boot1_path == boot2_path)
       && (boot1_path == boot3_path)) {
-    /* No offsets have been set, so we must be trying< to run
+    /* No offsets have been set, so we must be trying to run
        something like `raw_racketcs` during the build process.
        Look for boot files adjacent to the executable. */
     boot1_path = path_replace_filename(boot_exe, "petite-v.boot");

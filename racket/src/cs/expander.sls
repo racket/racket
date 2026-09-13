@@ -74,7 +74,7 @@
     (syntax-rules ()
       [(_ id [prim known] ...)
        (define id
-         (let ([ht (make-hasheq)])
+         (let ([ht (unsafe-make-hasheq)])
            (hash-set! ht 'prim (redirect-primitive prim))
            ...
            (unsafe-hash-seal! ht)

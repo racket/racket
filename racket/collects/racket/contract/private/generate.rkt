@@ -15,6 +15,7 @@
          contract-exercise
          contract-random-generate-fail
          contract-random-generate-fail?
+         current-contract-pseudo-random-generator
          with-definitely-available-contracts
          can-generate/env?
          try/env

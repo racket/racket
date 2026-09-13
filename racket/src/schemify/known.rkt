@@ -8,10 +8,13 @@
          known-authentic known-authentic?
          known-copy? known-copy known-copy-id
          known-literal known-literal? known-literal-value
+         known-foreign-inline known-foreign-inline? known-foreign-inline-expr
+         known-ctype known-ctype? known-ctype-rep
          known-procedure known-procedure? known-procedure-arity-mask
          known-procedure/single-valued known-procedure/single-valued?
          known-procedure/no-prompt known-procedure/no-prompt?
          known-procedure/no-prompt/multi known-procedure/no-prompt/multi?
+         known-procedure/no-prompt-up-to known-procedure/no-prompt-up-to? known-procedure/no-prompt-up-to-n
          known-procedure/no-return known-procedure/no-return?
          known-procedure/parameter known-procedure/parameter?
          known-procedure/folding known-procedure/folding?
@@ -30,8 +33,9 @@
          known-procedure/has-unsafe/folding known-procedure/has-unsafe/folding?  ; not a subtype of `known-procedure/folding`
          known-procedure/has-unsafe/folding/limited known-procedure/has-unsafe/folding/limited?
          known-procedure/has-unsafe/folding/limited-kind
-         known-struct-type known-struct-type? known-struct-type-type
+         known-struct-type known-struct-type? known-struct-type-type known-struct-type-is-meta?
          known-struct-type-field-count known-struct-type-pure-constructor? known-struct-type-sealed?
+         known-struct-type-maybe-proc? known-struct-type-maybe-arity?
          known-constructor known-constructor? known-constructor-type
          known-predicate known-predicate? known-predicate-type
          known-accessor known-accessor? known-accessor-type
@@ -39,6 +43,8 @@
          known-struct-constructor known-struct-constructor? known-struct-constructor-type-id
          known-struct-predicate known-struct-predicate? known-struct-predicate-type-id
          known-struct-predicate-authentic? known-struct-predicate-sealed?
+         known-struct-type-maker known-struct-type-maker? known-struct-type-maker-base-rtd
+         known-struct-type-maker-field-count known-struct-type-maker-auto-authentic?
          known-field-accessor known-field-accessor? known-field-accessor-type-id known-field-accessor-authentic?
          known-field-accessor-pos known-field-accessor-known-immutable?
          known-field-mutator known-field-mutator? known-field-mutator-type-id known-field-mutator-authentic?
@@ -47,7 +53,10 @@
          known-struct-predicate/need-imports known-struct-predicate/need-imports? known-struct-predicate/need-imports-needed
          known-field-accessor/need-imports known-field-accessor/need-imports? known-field-accessor/need-imports-needed
          known-field-mutator/need-imports known-field-mutator/need-imports? known-field-mutator/need-imports-needed
+         known-struct-type-maker/need-imports known-struct-type-maker/need-imports? known-struct-type-maker/need-imports-needed
          known-struct-type-property/immediate-guard known-struct-type-property/immediate-guard?
+         known-struct-metatype-ref known-struct-metatype-ref? known-struct-metatype-ref-type-id known-struct-metatype-ref-pos
+         known-struct-metatype-ref/need-imports known-struct-metatype-ref/need-imports? known-struct-metatype-ref/need-imports-needed
          a-known-constant
          a-known-consistent)
 
@@ -69,6 +78,12 @@
 ;; literal for constant propagation:
 (struct known-literal (value) #:prefab #:omit-define-syntaxes #:super struct:known-consistent)
 
+;; foreign-inline for constant propagation:
+(struct known-foreign-inline (expr) #:prefab #:omit-define-syntaxes #:super struct:known-consistent)
+
+;; ctype for constant propagation:
+(struct known-ctype (rep) #:prefab #:omit-define-syntaxes #:super struct:known-constant)
+
 ;; procedure with arity mask; the procedure has to be a procedure from the host
 ;; Scheme's perspective --- not an applicable struct or chaperoned procedure
 (struct known-procedure (arity-mask) #:prefab #:omit-define-syntaxes #:super struct:known-consistent)
@@ -83,6 +98,9 @@
 
 ;; like known-procedure/no-prompt, but not single-valued
 (struct known-procedure/no-prompt/multi () #:prefab #:omit-define-syntaxes #:super struct:known-procedure)
+
+;; like known-procedure/no-prompt, but only if the number of arguments is small enough
+(struct known-procedure/no-prompt-up-to (n) #:prefab #:omit-define-syntaxes #:super struct:known-procedure)
 
 ;; procedure that does not return, because it always escapes
 (struct known-procedure/no-return () #:prefab #:omit-define-syntaxes #:super struct:known-procedure/single-valued)
@@ -108,7 +126,7 @@
 
 ;; procedure that always succeeds, has no side effect, and would return the same value anytime later,
 ;; so can be reordered with later things, but can't be reordered before things that might raise an
-;; exception; used for unsafe accessors
+;; exception; used for unsafe accessors of immutable fields
 (struct known-procedure/then-pure () #:prefab #:omit-define-syntaxes #:super struct:known-procedure/succeeds)
 (struct known-procedure/then-pure/folding-unsafe (safe) #:prefab #:omit-define-syntaxes #:super struct:known-procedure/then-pure)
 
@@ -127,7 +145,8 @@
 (struct known-procedure/has-unsafe/folding () #:prefab #:omit-define-syntaxes #:super struct:known-procedure/has-unsafe)
 (struct known-procedure/has-unsafe/folding/limited (kind) #:prefab #:omit-define-syntaxes #:super struct:known-procedure/has-unsafe/folding)
 
-(struct known-struct-type (type field-count pure-constructor? sealed?) #:prefab #:omit-define-syntaxes #:super struct:known-consistent)
+(struct known-struct-type (type is-meta? field-count pure-constructor? sealed? maybe-proc? maybe-arity?)
+  #:prefab #:omit-define-syntaxes #:super struct:known-consistent)
 
 ;; procedures with a known connection to a structure type:
 (struct known-constructor (type) #:prefab #:omit-define-syntaxes #:super struct:known-procedure/allocates)
@@ -143,7 +162,13 @@
 (struct known-field-accessor/need-imports (needed) #:prefab #:omit-define-syntaxes #:super struct:known-field-accessor)
 (struct known-field-mutator/need-imports (needed) #:prefab #:omit-define-syntaxes #:super struct:known-field-mutator)
 
+(struct known-struct-type-maker (base-rtd field-count auto-authentic?) #:prefab #:omit-define-syntaxes #:super struct:known-procedure)
+(struct known-struct-type-maker/need-imports (needed) #:prefab #:omit-define-syntaxes #:super struct:known-struct-type-maker)
+
 (struct known-struct-type-property/immediate-guard () #:prefab #:omit-define-syntaxes)
+
+(struct known-struct-metatype-ref (type-id pos) #:prefab #:omit-define-syntaxes #:super struct:known-procedure/pure)
+(struct known-struct-metatype-ref/need-imports (needed) #:prefab #:omit-define-syntaxes #:super struct:known-struct-metatype-ref)
 
 (define a-known-constant (known-constant))
 (define a-known-consistent (known-consistent))

@@ -2,6 +2,10 @@
 
 #include <stddef.h>
 
+#if defined(__MINGW32__)
+# include <inttypes.h>
+#endif
+
 #if defined(_MSC_VER)
 typedef _int64 rktio_int64_t;
 typedef unsigned _int64 rktio_uint64_t;

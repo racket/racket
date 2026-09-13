@@ -47,7 +47,7 @@ When @racket[preserve-attributes?] is true, the hash table passed to
 @racket[entry-reader] provides additional file attributes, and
 @racket[entry-reader] must produce either @racket[#f] for a
 @racket[_post-action] thunk. All @racket[_post-action] thunks are run
-in order after the last call to @racket[entry-reader]; these acions
+in order after the last call to @racket[entry-reader]; these actions
 are useful for setting permissions on a directory after all contained
 files are written, for eample. Attributes are mapped in the hash table
 using the following keys, but either of the keys may be absent:
@@ -109,7 +109,7 @@ not a @exec{zip} archive, unless @racket[must-unzip?] is true.
           [#:dest dest-path (or/c path-string? #f) #f]
           [#:strip-count strip-count exact-nonnegative-integer? 0]
           [#:permissive? permissive? any/c #f]
-          [#:exists exists (or/c 'skip 'error 'replace 'truncate 
+          [#:exists exists (or/c 'skip 'error 'replace 'truncate
                                  'truncate/replace 'append 'update
                                  'can-update 'must-truncate)
                            'error])
@@ -147,7 +147,7 @@ When the resulting returned procedure is called, it will produce
 When given a hash table, the result is either @racket[#f] or a thunk.
 A thunk is returned on Unix and Mac OS when arguments refer to a
 directory that does not already exist and either a timestamp
-attribute, permission attribure, or both are provided.
+attribute, permission attribute, or both are provided.
 
 @history[#:changed "6.0.0.3"
          @elem{Added support for the optional timestamp argument in the result function.}

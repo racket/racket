@@ -5,6 +5,7 @@
          "port.rkt"
          "input-port.rkt"
          "output-port.rkt"
+         "lock.rkt"
          "check.rkt"
          "file-position.rkt"
          "../string/utf-8-decode.rkt")
@@ -36,7 +37,7 @@
              [(input-port? p) (->core-input-port p)]
              [(output-port? p) (->core-output-port p)]
              [else (check who #:test #f #:contract "port?" p)])])
-    (atomically
+    (with-lock p
      (check-not-closed who p)
      (unless (core-port-count p)
        (set-core-port-count! p (location #f #f 1 0 (add1 (or (core-port-offset p) 0))))
@@ -62,7 +63,7 @@
     (define loc (core-port-count p))
     (cond
       [loc
-       (atomically
+       (with-lock p
         (check-not-closed who p)
         (define get-location (method core-port p get-location))
         (cond
@@ -76,7 +77,7 @@
        (define offset (do-simple-file-position who p (lambda () #f)))
        (values #f #f (and offset (add1 offset)))]
       [else
-       (define offset (get-core-port-offset p))
+       (define offset (with-lock p (get-core-port-offset p)))
        (values #f #f (and offset (add1 offset)))])))
 
 (define/who (set-port-next-location! p line col pos)
@@ -89,14 +90,14 @@
   (let ([p (cond
              [(input-port? p) (->core-input-port p)]
              [else (->core-output-port p)])])
-    (atomically
+    (with-lock p
      (define loc (core-port-count p))
      (when (and loc (not (method core-port p get-location)))
        (set-location-line! loc line)
        (set-location-column! loc col)
        (set-location-position! loc pos)))))
 
-;; in atomic mode
+;; with lock held
 ;; When line counting is enabled, increment line, column, etc. counts
 ;; --- which involves UTF-8 decoding. To make column and position counting
 ;; interact well with decoding errors, the column and position are advanced
@@ -178,13 +179,13 @@
           ;; reverted later if decoding collapses multiple bytes:
           (loop (add1 i) (add1 span) line (and column (add1 column)) (and position (add1 position)) state #f)])]))))
 
-;; in atomic mode
+;; with lock held
 (define (port-count-all! in extra-ins amt bstr start)
   (port-count! in amt bstr start)
   (for ([in (in-list extra-ins)])
     (port-count! in amt bstr start)))
 
-;; in atomic mode
+;; with lock held
 ;; If `b` is not a byte, it is treated like
 ;; a non-whitespace byte.
 (define (port-count-byte! in b)
@@ -205,13 +206,13 @@
         (when position (set-location-position! loc (add1 position)))
         (when column (set-location-column! loc (add1 column))))])))
 
-;; in atomic mode
+;; with lock held
 (define (port-count-byte-all! in extra-ins b)
   (port-count-byte! in b)
   (for ([in (in-list extra-ins)])
     (port-count-byte! in b)))
 
-;; in atomic mode
+;; with lock held
 (define (increment-offset! in amt)
   (unless (direct-bstr (core-port-buffer in))
     (define old-offset (core-port-offset in))

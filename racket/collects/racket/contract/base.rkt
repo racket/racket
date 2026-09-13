@@ -13,6 +13,8 @@
          "private/struct-prop.rkt"
          "private/misc.rkt"
          "private/provide.rkt"
+         "private/in.rkt"
+         "private/module-boundary-ctc.rkt"
          "private/guts.rkt"
          "private/opters.rkt"       ;; required for effect to install the opters
          "private/basic-opters.rkt" ;; required for effect to install the opters
@@ -21,6 +23,7 @@
          "private/arrow-val-first.rkt"
          "private/orc.rkt"
          "private/list.rkt"
+         "private/treelist.rkt"
          "private/and.rkt"
          "private/property.rkt")
 
@@ -70,6 +73,7 @@
  integer-in
  char-in
  real-in
+ complex/c
  natural-number/c
  string-len/c
  false/c
@@ -78,6 +82,8 @@
  *list/c
  promise/c
  syntax/c
+ treelist/c
+ mutable-treelist/c
  
  parameter/c
  procedure-arity-includes/c
@@ -111,6 +117,7 @@
  ;(for-syntax make-provide/contract-transformer) ;; not documented!
  contract-out
  recontract-out
+ contract-in
  define-module-boundary-contract
  
  ;; from private/opt.rkt:

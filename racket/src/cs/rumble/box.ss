@@ -6,8 +6,12 @@
 
 ;; ----------------------------------------
 
-(define-record box-chaperone chaperone (ref set))
-(define-record box-impersonator impersonator (ref set))
+(define-racket-record-type box-chaperone chaperone
+  [fields (immutable ref)
+          (immutable set)])
+(define-racket-record-type box-impersonator impersonator
+  [fields (immutable ref)
+          (immutable set)])
 
 (define (box? v)
   (or (#%box? v)
@@ -150,11 +154,11 @@
            [else (loop next val)]))]))]))
 
 (define (set-box-impersonator-hash!)
-  (struct-set-equal+hash! (record-type-descriptor box-chaperone)
+  (struct-set-equal+hash! rtd:box-chaperone
                           #f
                           (lambda (i hash-code)
                             (hash-code (box (unbox i)))))
-  (struct-set-equal+hash! (record-type-descriptor box-impersonator)
+  (struct-set-equal+hash! rtd:box-impersonator
                           #f
                           (lambda (i hash-code)
                             (hash-code (box (unbox i))))))

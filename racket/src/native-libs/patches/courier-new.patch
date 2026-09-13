@@ -1,9 +1,9 @@
-diff -r -u old/cairo-1.12.16/src/cairo-quartz-font.c new/cairo-1.12.16/src/cairo-quartz-font.c
---- old/cairo-1.12.16/src/cairo-quartz-font.c	2014-04-15 14:39:00.000000000 -0600
-+++ new/cairo-1.12.16/src/cairo-quartz-font.c	2014-04-15 14:49:16.000000000 -0600
-@@ -101,6 +101,10 @@
- static cairo_bool_t _cairo_quartz_font_symbol_lookup_done = FALSE;
- static cairo_bool_t _cairo_quartz_font_symbols_present = FALSE;
+diff -u -r old/cairo-1.18.2/src/cairo-quartz-font.c new/cairo-1.18.2/src/cairo-quartz-font.c
+--- old/cairo-1.18.2/src/cairo-quartz-font.c	2024-09-01 07:09:23
++++ new/cairo-1.18.2/src/cairo-quartz-font.c	2025-02-11 06:40:37
+@@ -83,6 +83,10 @@
+ #define FONT_COLOR_GLYPHS kCTFontTraitColorGlyphs
+ #endif
  
 +# include <sys/param.h>
 +# include <sys/sysctl.h>
@@ -12,8 +12,8 @@ diff -r -u old/cairo-1.12.16/src/cairo-quartz-font.c new/cairo-1.12.16/src/cairo
  static void
  quartz_font_ensure_symbols(void)
  {
-@@ -149,6 +153,22 @@
- 	_cairo_quartz_font_symbols_present = TRUE;
+@@ -95,6 +99,22 @@
+     FMGetATSFontRefFromFontPtr = dlsym(RTLD_DEFAULT, "FMGetATSFontRefFromFont");
  
      _cairo_quartz_font_symbol_lookup_done = TRUE;
 +
@@ -35,15 +35,15 @@ diff -r -u old/cairo-1.12.16/src/cairo-quartz-font.c new/cairo-1.12.16/src/cairo
  }
  
  typedef struct _cairo_quartz_font_face cairo_quartz_font_face_t;
-@@ -156,6 +176,7 @@
- 
+@@ -103,6 +123,7 @@
  struct _cairo_quartz_scaled_font {
      cairo_scaled_font_t base;
+     CTFontRef ctFont;
 +    int bbox_extend; /* Hack for Courier New on 10.7 and 10.8 */
  };
  
  struct _cairo_quartz_font_face {
-@@ -281,6 +302,22 @@
+@@ -273,6 +294,22 @@
      if (status)
  	goto FINISH;
  
@@ -63,10 +63,10 @@ diff -r -u old/cairo-1.12.16/src/cairo-quartz-font.c new/cairo-1.12.16/src/cairo
 +	}
 +    }
 +
-     ems = CGFontGetUnitsPerEmPtr (font_face->cgFont);
- 
+     ctFont = CTFontCreateWithGraphicsFont (font_face->cgFont, font_scale, NULL, NULL);
      /* initialize metrics */
-@@ -467,6 +504,10 @@
+     fs_metrics.ascent = CTFontGetAscent (ctFont);
+@@ -419,6 +456,10 @@
      ymin = CGRectGetMinY(bbox);
      xmax = CGRectGetMaxX(bbox);
      ymax = CGRectGetMaxY(bbox);

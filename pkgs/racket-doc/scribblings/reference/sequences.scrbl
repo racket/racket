@@ -407,6 +407,16 @@ each element in the sequence.
   Returns a sequence equivalent to @racket[hash], except when @racket[bad-index-v]
   is supplied.
 
+  Like @racket[hash-map], iteration via @racket[in-hash] can adapt to
+  certain modifications to a mutable hash table while a traversal is
+  in progress. Keys removes or remapped by the traversing
+  thread have no immediate adverse affects; the change does not affect
+  a traversal if the key has been seen already, otherwise the
+  traversal skips a deleted key or uses the remapped key's new value.
+
+  Other concurrent modifications, including key removal by a different
+  thread, can lead to skipped entries or an exception if an expected
+  entry key was removed before its key or value could be fetched.
   If @racket[bad-index-v] is supplied, then @racket[bad-index-v] is
   returned as both the key and the value in the case that the
   @racket[hash] is modified concurrently so that iteration does not have a
@@ -423,31 +433,39 @@ each element in the sequence.
 
   @info-on-seq["hashtables" "hash tables"]
 
-  @history[#:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}]}
+  @history[#:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}
+           #:changed "8.18.0.11" @elem{Strengthened the guarantees about traversal with
+                                       same-thread modifications to a mutable hash table.}]}
 
 @defproc*[([(in-hash-keys [hash hash?]) sequence?]
            [(in-hash-keys [hash hash?] [bad-index-v any/c]) sequence?])]{
   Returns a sequence whose elements are the keys of @racket[hash], using
-  @racket[bad-index-v] in the same way as @racket[in-hash].
+  @racket[bad-index-v] in the same way as @racket[in-hash], and with
+  concurrent-modification guarantees analogous to those of @racket[in-hash].
 
   @examples[
     (define table (hash 'a 1 'b 2))
     (for ([key (in-hash-keys table)])
       (printf "key: ~a\n" key))]
 
-  @history[#:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}]}
+  @history[#:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}
+           #:changed "8.18.0.11" @elem{Strengthened the guarantees about traversal with
+                                       same-thread modifications to a mutable hash table.}]}
 
 @defproc*[([(in-hash-values [hash hash?]) sequence?]
            [(in-hash-values [hash hash?] [bad-index-v any/c]) sequence?])]{
   Returns a sequence whose elements are the values of @racket[hash], using
-  @racket[bad-index-v] in the same way as @racket[in-hash].
+  @racket[bad-index-v] in the same way as @racket[in-hash], and with
+  concurrent-modification guarantees analogous to those of @racket[in-hash].
 
   @examples[
     (define table (hash 'a 1 'b 2))
     (for ([value (in-hash-values table)])
       (printf "value: ~a\n" value))]
 
-  @history[#:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}]}
+  @history[#:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}
+           #:changed "8.18.0.11" @elem{Strengthened the guarantees about traversal with
+                                       same-thread modifications to a mutable hash table.}]}
 
 @defproc*[([(in-hash-pairs [hash hash?]) sequence?]
            [(in-hash-pairs [hash hash?] [bad-index-v any/c]) sequence?])]{
@@ -459,14 +477,17 @@ each element in the sequence.
   The @racket[bad-index-v] argument, if supplied, is used in the same
   way as by @racket[in-hash]. When an invalid index is encountered,
   the pair in the sequence with have @racket[bad-index-v] as both its
-  @racket[car] and @racket[cdr].
+  @racket[car] and @racket[cdr]. The concurrent-modification
+  guarantees for @racket[in-hash-pairs] are analogous to those of @racket[in-hash].
 
   @examples[
     (define table (hash 'a 1 'b 2))
     (for ([key+value (in-hash-pairs table)])
       (printf "key and value: ~a\n" key+value))]
 
-  @history[#:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}]}
+  @history[#:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}
+           #:changed "8.18.0.11" @elem{Strengthened the guarantees about traversal with
+                                       same-thread modifications to a mutable hash table.}]}
 
 @deftogether[(
 @defproc[(in-mutable-hash
@@ -588,14 +609,14 @@ each element in the sequence.
 
    @history[#:added "6.4.0.6"
             #:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}
-         #:changed "8.0.0.10" @elem{Added @schemeidfont{ephemeron} variants.}]
+            #:changed "8.0.0.10" @elem{Added @schemeidfont{ephemeron} variants.}]
 }
 
 
 @defproc[(in-directory [dir (or/c #f path-string?) #f]
                        [use-dir? ((and/c path? complete-path?) . -> . any/c)
                                  (lambda (dir-path) #t)])
-         sequence?]{
+         (sequence/c path?)]{
   Returns a sequence that produces all of the paths for files,
   directories, and links within @racket[dir], except for the
   contents of any directory for which @racket[use-dir?] returns
@@ -615,7 +636,7 @@ each element in the sequence.
   before subsequent paths within the directory.
 
   @examples[
-    (eval:alts (current-directory (collection-path "info"))
+    (eval:alts (current-directory (path-only (collection-file-path "main.rkt" "info")))
                (void))
     (eval:alts (for/list ([f (in-directory)])
                   f)
@@ -625,16 +646,12 @@ each element in the sequence.
                                    "main.rkt")))
     (eval:alts (for/list ([f (in-directory "compiled")])
                  f)
-               (map string->path '("main_rkt.dep"
-                                   "main_rkt.zo")))
-    (eval:alts (for/list ([f (in-directory "compiled")])
-                 f)
                (map string->path '("compiled/main_rkt.dep"
                                    "compiled/main_rkt.zo")))
     (eval:alts (for/list ([f (in-directory #f (lambda (p)
                                                 (not (regexp-match? #rx"compiled" p))))])
                   f)
-               (map string->path '("main.rkt" "compiled")))
+               (map string->path '("compiled" "main.rkt")))
   ]
 
 @history[#:changed "6.0.0.1" @elem{Added @racket[use-dir?] argument.}
@@ -711,9 +728,19 @@ each element in the sequence.
 
 @defproc[(in-parallel [seq sequence?] ...) sequence?]{
   Returns a sequence where each element has as many values as the
-  number of supplied @racket[seq]s; the values, in order, are the
-  values of each @racket[seq].  The elements of each @racket[seq] must
+  number of supplied @racket[seq]s; the values are, in order, the
+  value of each @racket[seq].  The elements of each @racket[seq] must
   be single-valued.}
+
+@defproc[(in-parallel-values [n exact-nonnegative-integer?] [seq sequence?] ... ...) sequence?]{
+  Returns a sequence where each element has as many values as the
+  sum of the number of values produced by the supplied @racket[seq]s,
+  where each @racket[seq] is preceded by the number of values @racket[n]
+  that it produces (so, the resulting number of values is the sum
+  of the @racket[n]s). The values of the new sequence are, in order, the
+  values of each @racket[seq].
+
+  @history[#:added "9.0.0.2"]}
 
 @defproc[(in-values-sequence [seq sequence?]) sequence?]{
   Returns a sequence that is like @racket[seq], but it combines
@@ -750,58 +777,67 @@ each element in the sequence.
                                    (any/c . -> . any/c)
                                    any/c
                                    (or/c (any/c . -> . any/c) #f)
-                                   (or/c (() () #:rest list? . ->* . any/c) #f)
-                                   (or/c ((any/c) () #:rest list? . ->* . any/c) #f)))
+                                   (or/c (any/c ... . -> . any/c) #f)
+                                   (or/c (any/c any/c ... . -> . any/c) #f)))
                        (-> (values (any/c . -> . any)
                                    (or/c (any/c . -> . any/c) #f)
                                    (any/c . -> . any/c)
                                    any/c
                                    (or/c (any/c . -> . any/c) #f)
-                                   (or/c (() () #:rest list? . ->* . any/c) #f)
-                                   (or/c ((any/c) () #:rest list? . ->* . any/c) #f))))])
+                                   (or/c (any/c ... . -> . any/c) #f)
+                                   (or/c (any/c any/c ... . -> . any/c) #f))))])
          sequence?]{
-  Returns a sequence whose elements are generated by the procedures
-  and initial value returned by the thunk, which is called to
-  @tech{initiate} the sequence.  The initiated sequence is defined in
-  terms of a @defterm{position}, which is initialized to the third
-  result of the thunk, and the @defterm{element}, which may consist of
-  multiple values.
+  Returns a sequence whose elements are generated according to @racket[thunk].
 
-  The @racket[thunk] results define the generated elements as follows:
+  The sequence is @tech{initiate}d when @racket[thunk] is called.
+  The initiated sequence is defined in
+  terms of a @defterm{position}, which is initialized to @racket[_init-pos],
+  and the @defterm{element}, which may consist of multiple values.
+
+  The @racket[thunk] procedure must return either six or seven values.
+  However, use @racket[initiate-sequence] to return these multiple values,
+  as opposed to listing the values directly.
+
+  If @racket[thunk] returns six values:
   @itemize[
     @item{The first result is a @racket[_pos->element] procedure that
       takes the current position and returns the value(s) for the
       current element.}
-    @item{The optional second result is an @racket[_early-next-pos]
-      procedure that is described further below. Alternatively, the
-      optional second result can be @racket[#f], which is equivalent
-      to the identity function.}
-    @item{The third (or second) result is a @racket[_next-pos] procedure that
+    @item{The second result is a @racket[_next-pos] procedure that
       takes the current position and returns the next position.}
-    @item{The fourth (or third) result is the initial position.}
-    @item{The fifth (or fourth) result is a @racket[_continue-with-pos?] function
+    @item{The third result is a @racket[_init-pos] value, which is the initial position.}
+    @item{The fourth result is a @racket[_continue-with-pos?] function
       that takes the current position and returns a true result if the
       sequence includes the value(s) for the current position, and
       false if the sequence should end instead of including the
-      value(s). Alternatively, the fifth (or fourth) result can be @racket[#f] to
+      value(s). Alternatively, @racket[_continue-with-pos?] can be @racket[#f] to
       indicate that the sequence should always include the current
       value(s). This function is checked on each position before
       @racket[_pos->element] is used.}
-    @item{The sixth (or fifth) result is a @racket[_continue-with-val?] function
-      that is like the fifth (or fourth) result, but it takes the current element
-      value(s) instead of the current position.  Alternatively, the
-      sixth (or fifth) result can be @racket[#f] to indicate that the sequence
+    @item{The fifth result is a @racket[_continue-with-val?] function
+      that is like @racket[_continue-with-pos?], but it takes the current element
+      value(s) as arguments instead of the current position.  Alternatively, @racket[_continue-with-val?]
+      can be @racket[#f] to indicate that the sequence
       should always include the value(s) at the current position.}
-    @item{The seventh (or sixth) result is a @racket[_continue-after-pos+val?]
+    @item{The sixth result is a @racket[_continue-after-pos+val?]
       procedure that takes both the current position and the current
       element value(s) and determines whether the sequence ends after
       the current element is already included in the sequence.
-      Alternatively, the seventh (or sixth) result can be @racket[#f] to indicate
+      Alternatively, @racket[_continue-after-pos+val?] can be @racket[#f] to indicate
       that the sequence can always continue after the current
       value(s).}]
 
-  The @racket[_early-next-pos] procedure, which is the optional second
-  result, takes the current position and returns an updated position.
+  If @racket[thunk] returns seven values, the first result is still
+  the @racket[_pos->element] procedure.
+  However, the second result is now an @racket[_early-next-pos]
+      procedure that is described further below. Alternatively,
+      @racket[_early-next-pos] can be @racket[#f], which is equivalent
+      to the identity function.
+  Other results' positions are shifted by one,
+  so the third result is now @racket[_next-pos], and
+  the fourth result is now @racket[_init-pos], etc.
+
+  The @racket[_early-next-pos] procedure takes the current position and returns an updated position.
   This updated position is used for @racket[_next-pos] and
   @racket[_continue-after-pos+val?], but not with
   @racket[_continue-with-pos?] (which uses the original current
@@ -813,7 +849,7 @@ each element in the sequence.
   needs to be @racket[#f] to avoid retaining values to supply to that function.
 
   Each of the procedures listed above is called only once per
-  position.  Among the last three procedures, as soon as one of the
+  position.  Among the procedures @racket[_continue-with-pos?], @racket[_continue-with-val?], and @racket[_continue-after-pos+val?], as soon as one of the
   procedures returns @racket[#f], the sequence ends, and none are
   called again.  Typically, one of the functions determines the end
   condition, and @racket[#f] is used in place of the other two
@@ -847,15 +883,17 @@ each element in the sequence.
   @let-syntax[([car (make-element-id-transformer
                      (lambda (id) #'@racketidfont{car}))])
     @examples[
+      (require racket/sequence)
       (struct train (car next)
         #:property prop:sequence
         (lambda (t)
           (make-do-sequence
            (lambda ()
-             (values train-car train-next t
-                     (lambda (t) t)
-                     (lambda (v) #t)
-                     (lambda (t v) #t))))))
+             (initiate-sequence
+              #:pos->element train-car
+              #:next-pos train-next
+              #:init-pos t
+              #:continue-with-pos? (lambda (t) t))))))
       (for/list ([c (train 'engine
                            (train 'boxcar
                                   (train 'caboose
@@ -1102,7 +1140,7 @@ If @racket[min-count] is a number, the stream is required to have at least that 
 
 }
 
-@subsubsection{Additional Sequence Constructors}
+@subsubsection{Additional Sequence Constructors and Functions}
 
 @defproc[(in-syntax [stx syntax?]) sequence?]{
   Produces a sequence whose elements are the successive subparts of
@@ -1125,6 +1163,40 @@ If @racket[min-count] is a number, the stream is required to have at least that 
   (for/list ([e (in-slice 3 (in-range 8))]) e)
   ]
   @history[#:added "6.3"]
+}
+
+@defproc[(initiate-sequence
+          [#:pos->element pos->element (any/c . -> . any)]
+          [#:early-next-pos early-next-pos (or/c (any/c . -> . any) #f) #f]
+          [#:next-pos next-pos (any/c . -> . any/c)]
+          [#:init-pos init-pos any/c]
+          [#:continue-with-pos? continue-with-pos? (or/c (any/c . -> . any/c) #f) #f]
+          [#:continue-with-val? continue-with-val? (or/c (any/c ... . -> . any/c) #f) #f]
+          [#:continue-after-pos+val? continue-after-pos+val? (or/c (any/c any/c ... . -> . any/c) #f) #f])
+         (values (any/c . -> . any)
+                 (or/c (any/c . -> . any) #f)
+                 (any/c . -> . any/c)
+                 any/c
+                 (or/c (any/c . -> . any/c) #f)
+                 (or/c (any/c ... . -> . any/c) #f)
+                 (or/c (any/c any/c ... . -> . any/c) #f))]{
+  Returns values suitable for the thunk argument in @racket[make-do-sequence].
+  See @racket[make-do-sequence] for the meaning of each argument.
+
+  @examples[#:eval sequence-evaluator
+    (define (in-alt-list xs)
+      (make-do-sequence
+       (λ ()
+         (initiate-sequence
+          #:pos->element car
+          #:next-pos (λ (xs) (cdr (cdr xs)))
+          #:init-pos xs
+          #:continue-with-pos? pair?
+          #:continue-after-pos+val? (λ (xs _) (pair? (cdr xs)))))))
+    (sequence->list (in-alt-list '(1 2 3 4 5 6)))
+    (sequence->list (in-alt-list '(1 2 3 4 5 6 7)))
+  ]
+  @history[#:added "8.10.0.5"]
 }
 
 
@@ -1247,9 +1319,11 @@ stream, but plain lists can be used as streams, and functions such as
   but the @racket[tail-expr] pattern matches the ``rest'' of the stream after the last @racket[elem-expr].
 
 @history[#:added "6.3"
-         #:changed "8.0.0.12" @elem{Changed to delay @racket[rest-expr] even
-                                    if zero @racket[expr]s are provided.}
-         #:changed "8.8.0.7" @elem{Changed to allow multiple values.}]
+         #:changed "8.0.0.12"
+         @elem{Changed to delay @racket[tail-expr] even if zero
+               @racket[elem-expr]s are provided.}
+         #:changed "8.8.0.7"
+         @elem{Changed to allow multiple values.}]
 }
 
 @defproc[(in-stream [s stream?]) sequence?]{
@@ -1528,8 +1602,7 @@ values from the generator.
 
   When not in the @tech{dynamic extent} of a @racket[generator],
   @racket[infinite-generator], or @racket[in-generator] body,
-  @racket[yield] raises @racket[exn:fail] after evaluating its
-  @racket[expr]s.
+  @racket[yield] raises @racket[exn:fail:contract].
 
   @examples[#:eval generator-eval
     (define my-generator (generator () (yield 1) (yield 2 3 4)))
@@ -1566,7 +1639,7 @@ values from the generator.
               ([maybe-arity code:blank
                             (code:line #:arity arity-k)])]{
   Produces a @tech{sequence} that encapsulates the @tech{generator}
-  formed by @racket[(generator () body ...+)]. The values produced by
+  formed by @racket[(generator () body ...)]. The values produced by
   the generator form the elements of the sequence, except for the last
   value produced by the generator (i.e., the values produced by
   returning).

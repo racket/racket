@@ -1,6 +1,5 @@
 #lang racket/base
-(require racket/cmdline
-         racket/file
+(require racket/file
          racket/format
          racket/string
          racket/path
@@ -14,6 +13,8 @@
 (provide create-dirs-catalog)
 
 (module+ main
+  (require racket/cmdline)
+
   (define immediate? #f)
   (define link? #f)
   (define merge? #f)
@@ -74,15 +75,20 @@
       (define (check-path src-f f)
         (cond
           [(file-exists? (build-path src-f "info.rkt"))
-           (define f-name (or ((get-pkg-info src-f) 'pkg-name (lambda _ #f))
-                              (path->string f)))
-           (when (hash-ref found f-name #f)
-             (error 'pack-local 
-                    "found package ~a multiple times: ~a and ~a"
-                    f-name
-                    (hash-ref found f-name)
-                    src-f))
-           (hash-set! found f-name src-f)]
+           (define info (get-pkg-info src-f))
+           (case (info 'dirs-catalog (lambda _ #f))
+             [(ignore) (void)]
+             [(subdirs) (check-content src-f)]
+             [else
+              (define f-name (or (info 'pkg-name (lambda _ #f))
+                                 (path->string f)))
+              (when (hash-ref found f-name #f)
+                (error 'pack-local
+                       "found package ~a multiple times: ~a and ~a"
+                       f-name
+                       (hash-ref found f-name)
+                       src-f))
+              (hash-set! found f-name src-f)])]
           [(directory-exists? src-f)
            (check-content src-f)]))
       (cond
@@ -114,6 +120,11 @@
                 (explode-path p))))
 
   (for ([(pkg-name dir) (in-hash found)])
+    (define checksum (or (let-values ([(base name dir?) (split-path dir)])
+                           (define checksum-file (build-path base (path-replace-suffix name ".CHECKSUM")))
+                           (and (file-exists? checksum-file)
+                                (file->string checksum-file)))
+                         ""))
     (define i (get-pkg-info dir))
     (define deps
       (extract-pkg-dependencies i))
@@ -140,7 +151,7 @@
                                            (format "~a@racket-lang.org" r)
                                            r))
                                      " "))
-             (checksum . "")
+             (checksum . ,checksum)
              (description . ,(or desc "???"))
              (tags . ())
              (dependencies . ,deps)

@@ -601,6 +601,16 @@
     [(op)
      `(asm ,info ,asm-unactivate-thread)])
 
+  (define-instruction value save-errno
+    [(op (z ur))
+     (safe-assert (eq? z %eax)) ; see get-tc
+     `(set! ,(make-live-info) ,z (asm ,info ,asm-save-errno))])
+
+  (define-instruction value save-last-error
+    [(op (z ur))
+     (safe-assert (eq? z %eax)) ; see get-tc
+     `(set! ,(make-live-info) ,z (asm ,info ,asm-save-last-error))])
+
   ; TODO: should we insist that asm-library-call preserve %ts and %td?
   ; TODO: risc architectures will have to take info-asmlib-save-ra? into account
   (define-instruction value asmlibcall
@@ -764,6 +774,7 @@
                      asm-inc-cc-counter asm-read-time-stamp-counter asm-read-performance-monitoring-counter
                      ; threaded version specific
                      asm-get-tc asm-activate-thread asm-deactivate-thread asm-unactivate-thread
+                     asm-save-errno asm-save-last-error
                      ; machine dependent exports
                      asm-sext-eax->edx)
 
@@ -894,7 +905,7 @@
   (define-op extad     byte-op     #b10011001)  ; extend eax to edx
 
   (define-op int3      byte-op     #b11001100)
-  
+
   (define-op rdtsc     two-byte-op     #b1111 #b00110001) ; read time-stamp counter
   (define-op rdpmc     two-byte-op     #b1111 #b00110011) ; read performance monitoring counter
   (define-op pause     two-byte-op #b11110011 #b10010000) ; equivalent to rep nop
@@ -1293,7 +1304,7 @@
              (emit-code (op disp code*)
                (build byte #b11101001)
                (build long offset)))]
-        [else 
+        [else
           (emit-code (op disp code*)
             (build byte #b11101001)
             (ax-ea-branch-disp disp))])))
@@ -1447,7 +1458,7 @@
                [(and (eqv? 0 size) (not (eq? base-reg %ebp))) #b00]
                [(ax-byte-size? size) #b01]
                [else #b10])]
-            [(literal@) stuff #b00]   
+            [(literal@) stuff #b00]
             [(disp) (size reg)
              (cond
                [(and (eqv? 0 size) (not (eq? reg %ebp))) #b00] ; indirect
@@ -2048,6 +2059,16 @@
       (lambda (code*)
         (emit bsr target code*))))
 
+  (define asm-save-errno
+    (let ([target `(literal 0 (entry ,(lookup-c-entry save-errno)))])
+      (lambda (code* dest) ; dest is ignored, as in asm-get-tc
+        (emit bsr target code*))))
+
+  (define asm-save-last-error
+    (let ([target `(literal 0 (entry ,(lookup-c-entry save-last-error)))])
+      (lambda (code* dest) ; dest is ignored, as in asm-get-tc
+        (emit bsr target code*))))
+
   (define asm-indirect-call
     (lambda (code* t)
       (Trivit (t)
@@ -2183,12 +2204,12 @@
   (define callee-expects-result-pointer?
     (lambda (result-type)
       (nanopass-case (Ltype Type) result-type
-        [(fp-ftd& ,ftd) (constant-case machine-type-name
-                          [(i3osx ti3osx i3nt ti3nt)
-                           (case ($ftd-size ftd)
-                             [(1 2 4 8) #f]
-                             [else #t])]
-                          [else ($ftd-compound? ftd)])]
+        [(fp-ftd& ,ftd ,fptd) (constant-case machine-type-name
+                                [(i3osx ti3osx i3nt ti3nt)
+                                 (case ($ftd-size ftd)
+                                   [(1 2 4 8) #f]
+                                   [else #t])]
+                                [else ($ftd-compound? ftd)])]
         [else #f])))
   (define callee-pops-result-pointer?
     (lambda (result-type)
@@ -2196,7 +2217,7 @@
   (define fill-result-pointer-from-registers?
     (lambda (result-type)
       (nanopass-case (Ltype Type) result-type
-        [(fp-ftd& ,ftd) (not (callee-expects-result-pointer? result-type))]
+        [(fp-ftd& ,ftd ,fptd) (not (callee-expects-result-pointer? result-type))]
         [else #f])))
 
   (module (push-registers pop-registers push-registers-size)
@@ -2297,7 +2318,7 @@
                            (cons (load-single-stack n) locs)
                            (fx+ n 4)
                            #f)]
-                        [(fp-ftd& ,ftd)
+                        [(fp-ftd& ,ftd ,fptd)
                          (do-stack (cdr types)
                            (cons (load-content n ($ftd-size ftd)) locs)
                            (fx+ n (fxlogand (fx+ ($ftd-size ftd) 3) -4))
@@ -2341,7 +2362,7 @@
           (cond
            [fill-result-here?
             (let* ([ftd (nanopass-case (Ltype Type) result-type
-                          [(fp-ftd& ,ftd) ftd])]
+                          [(fp-ftd& ,ftd ,fptd) ftd])]
                    [size ($ftd-size ftd)])
               (case size
                 [(4)
@@ -2371,9 +2392,9 @@
                  [else (values (reg-list %eax) 0)])]
               [(fp-void) (values '() 0)]
               [else (values (reg-list %eax) 0)])]))
-        (define (add-deactivate adjust-active? fill-result-here? t0 result-type e)
+        (define (add-deactivate/errno adjust-active? save-last-error? maybe-errno-lvalue fill-result-here? t0 result-type e)
           (cond
-           [adjust-active?
+           [(or adjust-active? maybe-errno-lvalue)
             (let-values ([(result-regs result-fp-count) (get-result-registers fill-result-here? result-type)])
               (let ([save-and-restore
                      (lambda (regs fp-count e)
@@ -2383,11 +2404,32 @@
                                ,(push-registers regs fp-count 0)
                                ,e
                                ,(pop-registers regs fp-count 0))]))])
-                (%seq
-                 (set! ,%edx ,t0)
-                 ,(save-and-restore (list %edx) 0 (%inline deactivate-thread))
-                 ,e
-                 ,(save-and-restore result-regs result-fp-count `(set! ,%eax ,(%inline activate-thread))))))]
+                (cond
+                  [adjust-active?
+                   (%seq
+                    (set! ,%edx ,t0)
+                    ,(save-and-restore (list %edx) 0 (%inline deactivate-thread))
+                    ,e
+                    ,(save-and-restore result-regs result-fp-count
+                                       (let ([e `(set! ,%eax ,(%inline activate-thread))])
+                                         (cond
+                                           [maybe-errno-lvalue
+                                            (%seq
+                                             (set! ,%eax , (if save-last-error?
+                                                               (%inline save-last-error)
+                                                               (%inline save-errno)))
+                                             ,(save-and-restore (list %eax) 0 e)
+                                             (set! ,maybe-errno-lvalue ,%eax))]
+                                           [else e]))))]
+                  [else ; maybe-errno-lvalue
+                   (%seq
+                    ,e
+                    ,(save-and-restore result-regs result-fp-count
+                                       (%seq
+                                        (set! ,%eax ,(if save-last-error?
+                                                         (%inline save-last-error)
+                                                         (%inline save-errno)))
+                                        (set! ,maybe-errno-lvalue ,%eax))))])))]
            [else e]))
         (define (add-cleanup-compensate result-type e)
           ;; The convention for the calle to pop the return-pointer argument makes a mess,
@@ -2424,13 +2466,16 @@
             (with-values (do-stack arg-type* '() 0 result-type)
               (lambda (frame-size locs)
                 (returnem conv* frame-size locs result-type
-                  (lambda (t0 not-varargs?)
+                  (lambda (t0 not-varargs? maybe-errno-lvalue)
                     (let* ([fill-result-here? (fill-result-pointer-from-registers? result-type)]
                            [adjust-active? (if-feature pthreads (memq 'adjust-active conv*) #f)]
+                           [save-last-error? (if-feature windows (memq 'save-last-error conv*) #f)]
                            [t (if adjust-active? %edx t0)] ; need a register if `adjust-active?`
                            [live* (add-caller-save-registers (reg-list %eax %edx))]
                            [call
-                            (add-deactivate adjust-active? fill-result-here? t0 result-type
+                            (add-deactivate/errno
+                              adjust-active? save-last-error? maybe-errno-lvalue
+                              fill-result-here? t0 result-type
                               (add-cleanup-compensate result-type
                                 (cond
                                   [(memq 'i3nt-com conv*)
@@ -2448,7 +2493,7 @@
                       (cond
                        [fill-result-here?
                         (let* ([ftd (nanopass-case (Ltype Type) result-type
-                                      [(fp-ftd& ,ftd) ftd])]
+                                      [(fp-ftd& ,ftd ,fptd) ftd])]
                                [size ($ftd-size ftd)])
                           (%seq
                            ,call
@@ -2463,14 +2508,14 @@
                               [(4)
                                (cond
                                 [(and (if-feature windows (not ($ftd-compound? ftd)) #t)
-				      (equal? '((float 4 0)) ($ftd->members ftd)))
+                                      (equal? '((float 4 0)) ($ftd->members ftd)))
                                  `(set! ,(%mref ,%ecx ,%zero 0 fp) ,(%inline fstps))]
                                 [else
                                  `(set! ,(%mref ,%ecx 0) ,%eax)])]
                               [(8)
                                (cond
                                 [(and (if-feature windows (not ($ftd-compound? ftd)) #t)
-				      (equal? '((float 8 0)) ($ftd->members ftd)))
+                                      (equal? '((float 8 0)) ($ftd->members ftd)))
                                  `(set! ,(%mref ,%ecx ,%zero 0 fp) ,(%inline fstpl))]
                                 [else
                                  `(seq
@@ -2598,7 +2643,7 @@
                    (do-stack (cdr types)
                      (cons (load-single-stack n) locs)
                      (fx+ n 4))]
-                  [(fp-ftd& ,ftd)
+                  [(fp-ftd& ,ftd ,fptd)
                    (do-stack (cdr types)
                      (cons (load-stack-address n) locs)
                      (fx+ n (fxlogand (fx+ ($ftd-size ftd) 3) -4)))]
@@ -2615,7 +2660,7 @@
                          (fx+ n 4)))]))))
           (define (do-result result-type init-stack-offset indirect-result-to-registers?)
             (nanopass-case (Ltype Type) result-type
-              [(fp-ftd& ,ftd)
+              [(fp-ftd& ,ftd ,fptd)
                (cond
                 [indirect-result-to-registers?
                  (cond
@@ -2707,7 +2752,7 @@
                                            ;; the extra 4 bytes may be used for the unactivate mode
                                            12])]
                  [init-stack-offset (fx+ 20 indirect-result-space)]
-		 [indirect-result-to-registers? (fill-result-pointer-from-registers? result-type)])
+                 [indirect-result-to-registers? (fill-result-pointer-from-registers? result-type)])
               (let-values ([(get-result result-regs result-num-fp-regs)
                             (do-result result-type init-stack-offset indirect-result-to-registers?)])
                 (with-values (do-stack (if indirect-result-to-registers?

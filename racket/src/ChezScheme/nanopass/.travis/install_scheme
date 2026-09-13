@@ -22,8 +22,7 @@ function retrieve_file {
 
 function install_vicare {
   VICARE_BASE="https://bitbucket.org/marcomaggi/vicare-scheme/downloads"
-  VICARE_BASE_VERSION="0.4d0"
-  VICARE_VERSION="${VICARE_BASE_VERSION}pre4"
+  VICARE_VERSION="0.4.1-devel.3"
   VICARE_FILE="vicare-scheme-${VICARE_VERSION}.tar.xz"
   VICARE_URL="${VICARE_BASE}/${VICARE_FILE}"
 
@@ -36,12 +35,12 @@ function install_vicare {
 
   xzcat ${VICARE_FILE} | tar xf -
 
-  pushd "vicare-scheme-${VICARE_BASE_VERSION}"
+  pushd "vicare-scheme-${VICARE_VERSION}"
 
   ./configure --enable-posix --with-libffi
   make
   sudo make install
-  popd  # vicare-scheme-${VICARE_BASE_VERSION}
+  popd  # vicare-scheme-${VICARE_VERSION}
 }
 
 function install_ikarus {
@@ -68,36 +67,69 @@ function install_ikarus {
 }
 
 function install_chez {
-  BASE_URL="http://scheme.com/download"
-  CHEZ_VERSION="8.4"
+  BASE_URL="https://github.com/cisco/ChezScheme/releases"
+  CHEZ_VERSION="9.5.2"
+  CHEZ_TGZ="csv${CHEZ_VERSION}.tar.gz"
+  CHEZ_EXE="ChezScheme${CHEZ_VERSION}.exe"
 
   case $ARCH in
-    i386|i686) CHEZ_ARCH="i3" ;;
-    x86_64|amd64) CHEZ_ARCH="a6" ;;
+    i386|i686) ARCH_MT="i3" ;;
+    x86_64|amd64) ARCH_MT="a6" ;;
     *) echo "unexpected architecture $ARCH" ; exit 1 ;;
   esac
 
   case $OS in
-    Linux) CHEZ_OS="le" ; PREFIX="/usr" ;;
-    Darwin) CHEZ_OS="osx" ; PREFIX="/usr/local" ;;
+    Linux) OS_MT="le" ;;
+    Darwin) OS_MT="osx" ;;
+    Windows*|MSYS_NT*) OS_MT="nt" ;;
     *) echo "unexpected operating system $OS" ; exit 1 ;;
   esac
 
-  CHEZ_FILE="pcsv${CHEZ_VERSION}-${CHEZ_ARCH}${CHEZ_OS}.tar.gz"
+  MT="${ARCH_MT}${OS_MT}"
 
-  retrieve_file "${BASE_URL}/${CHEZ_FILE}" ${CHEZ_FILE}
-  
-  tar zxf $CHEZ_FILE
-  pushd "csv${CHEZ_VERSION}/custom"
-  ./configure --installprefix=$PREFIX --installman=$PREFIX/man
-  make
-  sudo make install
-  popd  # "csv${CHEZ_VERSION}/custom"
+  case $OS_MT in
+    le|osx)
+      retrieve_file "${BASE_URL}/download/v${CHEZ_VERSION}/${CHEZ_TGZ}" ${CHEZ_TGZ}
+      tar zxf $CHEZ_TGZ
+      pushd "csv${CHEZ_VERSION}"
+      ./configure -m="${ARCH_MT}${OS_MT}"
+      make
+      sudo make install
+      popd  # "csv${CHEZ_VERSION}"
+      ;;
+    nt)
+      retrieve_file "${BASE_URL}/download/v${CHEZ_VERSION}/${CHEZ_EXE}" ${CHEZ_EXE}
+      ./${CHEZ_EXE} /install /quiet
+      export PATH=/c/Program\ Files/Chez\ Scheme\ ${CHEZ_VERSION}/bin/${MT}:$PATH
+      echo "(scheme-version)" | scheme -q
+      ;;
+    *) echo "unrecognized OS_MT: ${OS_MT}" ; exit 1 ;;
+  esac
+}
+
+function install_ironscheme {
+  DOTNET_FILE="dotnet-install.sh"
+  DOTNET_URL="https://dot.net/v1/$DOTNET_FILE"
+  retrieve_file $DOTNET_URL $DOTNET_FILE
+  chmod +x $DOTNET_FILE
+  # install .NET
+  "./$DOTNET_FILE" --channel Current --runtime dotnet
+  export -p PATH="$HOME/.dotnet:$PATH"
+
+  BASE_URL="https://github.com/IronScheme/IronScheme/releases/download"
+  IRONSCHEME_VERSION=1.0.239
+  IRONSCHEME_GIT_VERSION=671ea21
+  IRONSCHEME_URL="${BASE_URL}/${IRONSCHEME_VERSION}/IronScheme-${IRONSCHEME_VERSION}-${IRONSCHEME_GIT_VERSION}.zip"
+  IRONSCHEME_FILE="IronScheme.zip"
+  retrieve_file $IRONSCHEME_URL $IRONSCHEME_FILE
+  unzip $IRONSCHEME_FILE
+  alias ironscheme="dotnet IronScheme.ConsoleCore.dll"
 }
 
 case $SCHEME in
   vicare) install_vicare ;;
   ikarus) install_ikarus ;;
   chez) install_chez ;;
+  ironscheme) install_ironscheme ;;
   *) echo "Please set the SCHEME environment variable to one of: vicare, ikarus, or chez before running" ; exit 1;;
 esac

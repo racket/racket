@@ -18,8 +18,8 @@
                           [#:roots roots (listof (or/c path-string? 'same)) (current-compiled-file-roots)]
                           [#:compile compile-proc0 (any/c . -> . any) compile] 
                           [compile-proc (any/c . -> . any) compile-proc0] 
-                          [#:extension-handler ext-proc0 (or/c false/c (path? boolean? . -> . any)) #f]
-                          [ext-proc (or/c false/c (path? boolean? . -> . any)) ext-proc0]
+                          [#:extension-handler ext-proc0 (or/c #f (path? boolean? . -> . any)) #f]
+                          [ext-proc (or/c #f (path? boolean? . -> . any)) ext-proc0]
                           [#:notify notify-proc (any/c . -> . any) void]
                           [#:source-reader read-syntax-proc 
                                         (any/c input-port? . -> . (or/c syntax? eof-object?)) 

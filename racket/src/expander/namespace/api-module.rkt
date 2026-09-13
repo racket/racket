@@ -137,5 +137,5 @@
    [else
     (define mpi (if (module-path-index? mod)
                     mod
-                    (module-path-index-join mod #f)))
+                    (module-path-index-join* mod #f)))
     (module-path-index-resolve mpi load?)]))

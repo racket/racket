@@ -2,7 +2,8 @@
 (require "../common/check.rkt"
          "../host/thread.rkt"
          "input-port.rkt"
-         "output-port.rkt")
+         "output-port.rkt"
+         "lock.rkt")
 
 ;; Common functionality for "custom-input-port.rkt" and
 ;; "custom-output-port.rkt"
@@ -15,11 +16,10 @@
          check-buffer-mode
          make-buffer-mode)
 
-
-;; in atomic mode
 (define (make-get-location user-get-location)
+  ;; with lock held
   (lambda (self)
-    (end-atomic)
+    (port-unlock self)
     (call-with-values
      (lambda () (user-get-location))
      (case-lambda
@@ -30,7 +30,7 @@
           (raise-result-error '|user port get-location| "(or/c #f exact-nonnegative-integer?)" col))
         (unless (or (not line) (exact-positive-integer? pos))
           (raise-result-error '|user port get-location| "(or/c #f exact-positive-integer?)" pos))
-        (start-atomic)
+        (port-lock self)
         (values line col pos)]
        [args
         (apply raise-arity-error '|user port get-location return| 3 args)]))))
@@ -77,13 +77,14 @@
          user-buffer-mode))
 
 (define (make-buffer-mode user-buffer-mode #:output? [output? #f])
+  ;; with lock held
   (case-lambda
     [(self)
-     (end-atomic)
+     (port-unlock self)
      (define m (user-buffer-mode))
      (cond
        [(or (not m) (eq? m 'block) (eq? m 'none) (and output? (eq? m 'line)))
-        (start-atomic)
+        (port-lock self)
         m]
        [else
         (raise-result-error '|user port buffer-mode|
@@ -92,5 +93,6 @@
                                 "(or/c 'block 'none #f)")
                             m)])]
     [(self m)
-     (non-atomically
-      (user-buffer-mode m))]))
+     (port-unlock self)
+     (user-buffer-mode m)
+     (port-lock self)]))

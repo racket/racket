@@ -177,7 +177,6 @@
   $ (~a "test -f " archive-d "/pkgs/pkg-test1.zip")
   $ (~a "test -f " archive-d "/pkgs/pkg-test1.zip.CHECKSUM")
 
-
   $ "raco pkg install pkg-test2"
   $ (~a "raco pkg archive " archive-d " pkg-test2")
   =stdout> #rx"Removing .* pkg-test1"
@@ -192,5 +191,8 @@
   $ (~a "test -f " archive-d "/pkgs/pkg-test1.zip.CHECKSUM")
   $ (~a "test -f " archive-d "/pkgs/pkg-test2.zip")
   $ (~a "test -f " archive-d "/pkgs/pkg-test2.zip.CHECKSUM")
+
+  $ (~a "raco pkg archive --relative " archive-d " pkg-test1")
+  =stdout> #rx"== Archiving pkg-test1 =="
 
   (delete-directory/files d)))

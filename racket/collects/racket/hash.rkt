@@ -33,7 +33,9 @@
                             (lambda (_ x y) (combine x y))
                             (hash-duplicate-error 'hash-union!))]
          one . rest)
-  (for* ([two (in-list rest)] [(k v) (in-hash two)])
+  (define no-value (cons 'fresh 'no-value))
+  (for* ([two (in-list rest)] [(k v) (in-hash two no-value)]
+                              #:unless (eq? k no-value))
     (hash-set! one k (if (hash-has-key? one k)
                          (combine/key k (hash-ref one k) v)
                          v))))
@@ -63,6 +65,27 @@
                     (combine/key k v (hash-ref hm k))))
         res)))
 
+(define (hash-filter ht pred)
+  (cond
+    [(immutable? ht)
+     (for/fold ([ht ht]) ([(k v) (in-immutable-hash ht)]
+                          #:unless (pred k v))
+       (hash-remove ht k))]
+    [else
+     (define no-value (cons 'fresh 'no-value))
+     (define new-ht (hash-copy-clear ht))
+     (for ([(k v) (in-hash ht no-value)]
+           #:unless (eq? k no-value)
+           #:when (pred k v))
+       (hash-set! new-ht k v))
+     new-ht]))
+
+(define (hash-filter-keys ht pred)
+  (hash-filter ht (lambda (k _) (pred k))))
+
+(define (hash-filter-values ht pred)
+  (hash-filter ht (lambda (_ v) (pred v))))
+
 (provide/contract
  [hash-union (->* [(and/c hash? immutable?)]
                   [#:combine
@@ -84,4 +107,7 @@
                         #:combine/key
                         (-> any/c any/c any/c any/c)]
                        #:rest (listof hash?)
-                       (and/c hash? immutable?))])
+                       (and/c hash? immutable?))]
+ [hash-filter (-> hash? procedure? hash?)]
+ [hash-filter-values (-> hash? procedure? hash?)]
+ [hash-filter-keys (-> hash? procedure? hash?)])

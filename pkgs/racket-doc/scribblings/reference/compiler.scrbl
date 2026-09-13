@@ -53,7 +53,12 @@ especially large linklet, and machine-code mode is used for functions
 that are small enough within that outer contour. ``Small enough'' is
 determined by the @envvar-indexed{PLT_CS_COMPILE_LIMIT} environment
 variable, and the default value of 10000 means that most Racket
-modules have no interpreted component.
+modules have no interpreted component. The
+@racket[#:unlimited-compile] option for @racket[#%declare] disables
+interpreted mode for the enclosing module. Check @racket['info]
+logging at the @racket['linklet] topic (e.g., set @envvar{PLTSTDERR}
+to @tt["info@linklet"]) to discover when compilation is restricted to
+smaller functions by @envvar{PLT_CS_COMPILE_LIMIT}.
 
 JIT compilation mode is used only if the @envvar-indexed{PLT_CS_JIT}
 environment variable is set on startup, otherwise pure interpreter
@@ -74,16 +79,19 @@ enabled, but performance is not otherwise affected.
 @section[#:tag "compiler-inspect"]{Inspecting Compiler Passes}
 
 When the @envvar-indexed{PLT_LINKLET_SHOW} environment variable is set
-on startup, the Racket process's standard output shows intermediate
+on startup, the Racket process's standard error shows intermediate
 compiled forms whenever a Racket form is compiled. For all Racket
 variants, the output shows one or more @tech{linklets} that are
 generated from the original Racket form.
 
-For the @tech{CS} implementation of Racket, a ``schemified'' version of the linklet
-is also shown as the translation of the @racket[linklet] form to a
-Chez Scheme procedure form. The following environment variables imply
-@envvar{PLT_LINKLET_SHOW} and show additional intermediate compiled
-forms or adjust the way forms are displayed:
+For the @tech{CS} implementation of Racket, a ``schemified'' version
+of the linklet is also shown as the translation of the
+@racket[linklet] form to a Chez Scheme procedure form. The output also
+indicates which modules and linklets the compiler is working on.
+
+The following environment variables imply @envvar{PLT_LINKLET_SHOW}
+and show additional intermediate compiled forms or adjust the way
+forms are displayed:
 
 @itemlist[
 
@@ -136,4 +144,6 @@ compilation and evaluation times on exit. When the
 information about macro-expansion time is printed on exit.
 
 @history[#:changed "8.8.0.10" @elem{Added special pass name @tt{all}
-                                    to @envvar{PLT_LINKLET_SHOW_PASSES}}]
+                                    to @envvar{PLT_LINKLET_SHOW_PASSES}.}
+         #:changed "8.11.1.2" @elem{Added module and linklet info
+                                    to output.}]

@@ -16,6 +16,7 @@
 (define-constant RKTIO_OPEN_INIT (<< 1 13))
 (define-constant RKTIO_OPEN_OWN (<< 1 14))
 (define-constant RKTIO_OPEN_REPLACE_PERMS (<< 1 15))
+(define-constant RKTIO_OPEN_TRACK_TERMINAL_OUTPUT (<< 1 16))
 (define-constant RKTIO_DEFAULT_PERM_BITS 438)
 (define-constant RKTIO_STDIN 0)
 (define-constant RKTIO_STDOUT 1)
@@ -34,6 +35,8 @@
 (define-constant RKTIO_NO_INHERIT_INPUT (<< 1 0))
 (define-constant RKTIO_NO_INHERIT_OUTPUT (<< 1 1))
 (define-constant RKTIO_FAMILY_ANY -1)
+(define-constant RKTIO_LISTEN_REUSE (<< 1 0))
+(define-constant RKTIO_LISTEN_RETRY_ADDRINUSE (<< 1 1))
 (define-constant RKTIO_SHUTDOWN_READ 0)
 (define-constant RKTIO_SHUTDOWN_WRITE 1)
 (define-constant RKTIO_PROP_ERROR -2)
@@ -95,11 +98,11 @@
 (define-constant RKTIO_PATH_INIT_DIR 8)
 (define-constant RKTIO_PATH_INIT_FILE 9)
 (define-constant RKTIO_PATH_CACHE_DIR 10)
-(define-constant RKTIO_OS_SIGNAL_NONE -1)
 (define-constant RKTIO_OS_SIGNAL_INT 0)
 (define-constant RKTIO_OS_SIGNAL_TERM 1)
 (define-constant RKTIO_OS_SIGNAL_HUP 2)
 (define-constant RKTIO_NUM_OS_SIGNALS 3)
+(define-constant RKTIO_OS_SIGNAL_NONE -1)
 (define-constant RKTIO_SW_HIDE 0)
 (define-constant RKTIO_SW_MAXIMIZE 1)
 (define-constant RKTIO_SW_MINIMIZE 2)
@@ -170,11 +173,14 @@
  rktio_length_and_addrinfo_t
  ((intptr_t len) ((ref (ref char)) address)))
 (define-struct-type
+ rktio_length_and_addr_bytes_t
+ ((intptr_t len) (intptr_t addr_len) ((ref char) addr_bytes)))
+(define-struct-type
  rktio_process_result_t
  (((ref rktio_process_t) process)
-  ((ref rktio_fd_t) stdin_fd)
-  ((ref rktio_fd_t) stdout_fd)
-  ((ref rktio_fd_t) stderr_fd)))
+  ((ref rktio_fd_t) stdin_rfd)
+  ((ref rktio_fd_t) stdout_rfd)
+  ((ref rktio_fd_t) stderr_rfd)))
 (define-struct-type rktio_status_t ((rktio_bool_t running) (int result)))
 (define-type rktio_timestamp_t intptr_t)
 (define-struct-type
@@ -288,13 +294,13 @@
  (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd)))
 (define-function
  ()
- rktio_bool_t
- rktio_fd_is_pending_open
+ int
+ rktio_fd_modes
  (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd)))
 (define-function
  ()
- int
- rktio_fd_modes
+ rktio_bool_t
+ rktio_fd_is_pending_open
  (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd)))
 (define-function/errno
  NULL
@@ -316,12 +322,12 @@
  ()
  rktio_ok_t
  rktio_close
- (((ref rktio_t) rktio) ((ref rktio_fd_t) fd)))
+ (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd)))
 (define-function
  ()
  void
  rktio_close_noerr
- (((ref rktio_t) rktio) ((ref rktio_fd_t) fd)))
+ (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd)))
 (define-function/errno
  NULL
  ()
@@ -332,7 +338,7 @@
  ()
  void
  rktio_forget
- (((ref rktio_t) rktio) ((ref rktio_fd_t) fd)))
+ (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd)))
 (define-function/errno
  NULL
  ()
@@ -346,7 +352,7 @@
  intptr_t
  rktio_read
  (((ref rktio_t) rktio)
-  ((ref rktio_fd_t) fd)
+  ((ref rktio_fd_t) rfd)
   ((*ref char) buffer)
   (intptr_t len)))
 (define-function/errno
@@ -355,7 +361,7 @@
  intptr_t
  rktio_write
  (((ref rktio_t) rktio)
-  ((ref rktio_fd_t) fd)
+  ((ref rktio_fd_t) rfd)
   ((*ref char) buffer)
   (intptr_t len)))
 (define-function/errno
@@ -364,7 +370,7 @@
  intptr_t
  rktio_read_converted
  (((ref rktio_t) rktio)
-  ((ref rktio_fd_t) fd)
+  ((ref rktio_fd_t) rfd)
   ((*ref char) buffer)
   (intptr_t len)
   ((*ref char) is_converted)))
@@ -374,7 +380,7 @@
  intptr_t
  rktio_read_in
  (((ref rktio_t) rktio)
-  ((ref rktio_fd_t) fd)
+  ((ref rktio_fd_t) rfd)
   ((*ref char) buffer)
   (intptr_t start)
   (intptr_t end)))
@@ -384,7 +390,7 @@
  intptr_t
  rktio_write_in
  (((ref rktio_t) rktio)
-  ((ref rktio_fd_t) fd)
+  ((ref rktio_fd_t) rfd)
   ((*ref char) buffer)
   (intptr_t start)
   (intptr_t end)))
@@ -394,7 +400,39 @@
  intptr_t
  rktio_read_converted_in
  (((ref rktio_t) rktio)
-  ((ref rktio_fd_t) fd)
+  ((ref rktio_fd_t) rfd)
+  ((*ref char) buffer)
+  (intptr_t start)
+  (intptr_t len)
+  ((*ref char) is_converted)
+  (intptr_t converted_start)))
+(define-function/result_t
+ rktio_result_integer
+ ()
+ (ref rktio_result_t)
+ rktio_read_in_r
+ (((ref rktio_t) rktio)
+  ((ref rktio_fd_t) rfd)
+  ((*ref char) buffer)
+  (intptr_t start)
+  (intptr_t end)))
+(define-function/result_t
+ rktio_result_integer
+ ()
+ (ref rktio_result_t)
+ rktio_write_in_r
+ (((ref rktio_t) rktio)
+  ((ref rktio_fd_t) rfd)
+  ((*ref char) buffer)
+  (intptr_t start)
+  (intptr_t end)))
+(define-function/result_t
+ rktio_result_integer
+ ()
+ (ref rktio_result_t)
+ rktio_read_converted_in_r
+ (((ref rktio_t) rktio)
+  ((ref rktio_fd_t) rfd)
   ((*ref char) buffer)
   (intptr_t start)
   (intptr_t len)
@@ -404,7 +442,7 @@
  ()
  intptr_t
  rktio_buffered_byte_count
- (((ref rktio_t) rktio) ((ref rktio_fd_t) fd)))
+ (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd)))
 (define-function/errno
  RKTIO_POLL_ERROR
  ()
@@ -422,6 +460,24 @@
  ()
  rktio_tri_t
  rktio_poll_write_flushed
+ (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd)))
+(define-function/result_t
+ rktio_result_integer
+ ()
+ (ref rktio_result_t)
+ rktio_poll_read_ready_r
+ (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd)))
+(define-function/result_t
+ rktio_result_integer
+ ()
+ (ref rktio_result_t)
+ rktio_poll_write_ready_r
+ (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd)))
+(define-function/result_t
+ rktio_result_integer
+ ()
+ (ref rktio_result_t)
+ rktio_poll_write_flushed_r
  (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd)))
 (define-function/errno
  RKTIO_LOCK_ERROR
@@ -455,7 +511,7 @@
  ()
  rktio_ok_t
  rktio_set_file_size
- (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd) (rktio_filesize_t sz)))
+ (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd) (rktio_filesize_t size)))
 (define-function
  ()
  (ref rktio_fd_transfer_t)
@@ -471,6 +527,7 @@
  void
  rktio_fd_close_transfer
  (((ref rktio_fd_transfer_t) rfdt)))
+(define-function () uintptr_t rktio_current_terminal_position ())
 (define-function/errno
  NULL
  ()
@@ -515,6 +572,15 @@
  NULL
  ()
  (ref rktio_listener_t)
+ rktio_listen_opt
+ (((ref rktio_t) rktio)
+  ((ref rktio_addrinfo_t) local)
+  (int backlog)
+  (int flags)))
+(define-function/errno
+ NULL
+ ()
+ (ref rktio_listener_t)
  rktio_listen
  (((ref rktio_t) rktio)
   ((ref rktio_addrinfo_t) local)
@@ -524,7 +590,7 @@
  ()
  void
  rktio_listen_stop
- (((ref rktio_t) rktio) ((ref rktio_listener_t) l)))
+ (((ref rktio_t) rktio) ((ref rktio_listener_t) listener)))
 (define-function/errno
  RKTIO_POLL_ERROR
  ()
@@ -581,6 +647,12 @@
  rktio_tcp_nodelay
  (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd) (rktio_bool_t enable)))
 (define-function/errno
+ #f
+ ()
+ rktio_ok_t
+ rktio_tcp_keepalive
+ (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd) (rktio_bool_t enable)))
+(define-function/errno
  NULL
  ()
  (ref rktio_fd_t)
@@ -590,8 +662,8 @@
  #f
  ()
  rktio_ok_t
- rktio_udp_disconnect
- (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd)))
+ rktio_udp_connect
+ (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd) ((ref rktio_addrinfo_t) addr)))
 (define-function/errno
  #f
  ()
@@ -605,8 +677,8 @@
  #f
  ()
  rktio_ok_t
- rktio_udp_connect
- (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd) ((ref rktio_addrinfo_t) addr)))
+ rktio_udp_disconnect
+ (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd)))
 (define-function/errno
  RKTIO_WRITE_ERROR
  ()
@@ -625,6 +697,18 @@
  (((ref rktio_t) rktio)
   ((ref rktio_fd_t) rfd)
   ((ref (nullable rktio_addrinfo_t)) addr)
+  ((*ref char) buffer)
+  (intptr_t start)
+  (intptr_t end)))
+(define-function/errno
+ RKTIO_WRITE_ERROR
+ ()
+ intptr_t
+ rktio_udp_sendto_addr_bytes
+ (((ref rktio_t) rktio)
+  ((ref rktio_fd_t) rfd)
+  ((*ref char) addr)
+  (intptr_t addr_len)
   ((*ref char) buffer)
   (intptr_t start)
   (intptr_t end)))
@@ -648,23 +732,33 @@
   (intptr_t start)
   (intptr_t end)))
 (define-function/errno
+ NULL
+ ()
+ (ref rktio_length_and_addr_bytes_t)
+ rktio_udp_recvfrom_addr_bytes
+ (((ref rktio_t) rktio)
+  ((ref rktio_fd_t) rfd)
+  ((*ref char) buffer)
+  (intptr_t start)
+  (intptr_t end)))
+(define-function/errno
  #f
  ()
  rktio_ok_t
  rktio_udp_set_receive_buffer_size
  (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd) (int size)))
 (define-function/errno
- #f
- ()
- rktio_ok_t
- rktio_udp_set_ttl
- (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd) (int ttl_val)))
-(define-function/errno
  RKTIO_PROP_ERROR
  ()
  rktio_tri_t
  rktio_udp_get_ttl
  (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd)))
+(define-function/errno
+ #f
+ ()
+ rktio_ok_t
+ rktio_udp_set_ttl
+ (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd) (int ttl_val)))
 (define-function/errno
  RKTIO_PROP_ERROR
  ()
@@ -731,6 +825,12 @@
  (ref (ref char))
  rktio_listener_address
  (((ref rktio_t) rktio) ((ref rktio_listener_t) lnr)))
+(define-function/errno
+ NULL
+ ()
+ (ref (ref char))
+ rktio_addr_bytes_address
+ (((ref rktio_t) rktio) ((*ref char) addr) (intptr_t len)))
 (define-function
  ()
  rktio_bool_t
@@ -891,14 +991,14 @@
  ()
  void
  rktio_poll_set_forget
- (((ref rktio_t) rktio) ((ref rktio_poll_set_t) fds)))
+ (((ref rktio_t) rktio) ((ref rktio_poll_set_t) rfds)))
 (define-function
  ()
  void
  rktio_poll_add
  (((ref rktio_t) rktio)
   ((ref rktio_fd_t) rfd)
-  ((ref rktio_poll_set_t) fds)
+  ((ref rktio_poll_set_t) rfds)
   (int modes)))
 (define-function
  ()
@@ -906,53 +1006,53 @@
  rktio_poll_add_accept
  (((ref rktio_t) rktio)
   ((ref rktio_listener_t) listener)
-  ((ref rktio_poll_set_t) fds)))
+  ((ref rktio_poll_set_t) rfds)))
 (define-function
  ()
  void
  rktio_poll_add_connect
  (((ref rktio_t) rktio)
   ((ref rktio_connect_t) conn)
-  ((ref rktio_poll_set_t) fds)))
+  ((ref rktio_poll_set_t) rfds)))
 (define-function
  ()
  void
  rktio_poll_add_addrinfo_lookup
  (((ref rktio_t) rktio)
   ((ref rktio_addrinfo_lookup_t) lookup)
-  ((ref rktio_poll_set_t) fds)))
+  ((ref rktio_poll_set_t) rfds)))
 (define-function
  ()
  void
  rktio_poll_add_process
  (((ref rktio_t) rktio)
   ((ref rktio_process_t) sp)
-  ((ref rktio_poll_set_t) fds)))
+  ((ref rktio_poll_set_t) rfds)))
 (define-function
  ()
  void
  rktio_poll_add_fs_change
  (((ref rktio_t) rktio)
   ((ref rktio_fs_change_t) fc)
-  ((ref rktio_poll_set_t) fds)))
+  ((ref rktio_poll_set_t) rfds)))
 (define-function
  ()
  void
  rktio_poll_set_add_nosleep
- (((ref rktio_t) rktio) ((ref rktio_poll_set_t) fds)))
+ (((ref rktio_t) rktio) ((ref rktio_poll_set_t) rfds)))
 (define-function
  ()
  void
  rktio_poll_set_add_handle
  (((ref rktio_t) rktio)
   (intptr_t h)
-  ((ref rktio_poll_set_t) fds)
+  ((ref rktio_poll_set_t) rfds)
   (int repost)))
 (define-function
  ()
  void
  rktio_poll_set_add_eventmask
- (((ref rktio_t) rktio) ((ref rktio_poll_set_t) fds) (int mask)))
+ (((ref rktio_t) rktio) ((ref rktio_poll_set_t) rfds) (int mask)))
 (define-function () void rkio_reset_sleep_backoff (((ref rktio_t) rktio)))
 (define-function/errno
  NULL
@@ -976,14 +1076,14 @@
   (int mode)))
 (define-function
  ()
- void
- rktio_ltps_handle_set_data
- (((ref rktio_t) rktio) ((ref rktio_ltps_handle_t) h) ((ref void) data)))
-(define-function
- ()
  (ref void)
  rktio_ltps_handle_get_data
  (((ref rktio_t) rktio) ((ref rktio_ltps_handle_t) h)))
+(define-function
+ ()
+ void
+ rktio_ltps_handle_set_data
+ (((ref rktio_t) rktio) ((ref rktio_ltps_handle_t) h) ((ref void) data)))
 (define-function
  ()
  void
@@ -1012,7 +1112,7 @@
  rktio_sleep
  (((ref rktio_t) rktio)
   (float nsecs)
-  ((ref rktio_poll_set_t) fds)
+  ((ref rktio_poll_set_t) rfds)
   ((ref rktio_ltps_t) lt)))
 (define-function/errno
  #f
@@ -1021,7 +1121,7 @@
  rktio_start_sleep
  (((ref rktio_t) rktio)
   (float nsecs)
-  ((ref rktio_poll_set_t) fds)
+  ((ref rktio_poll_set_t) rfds)
   ((ref rktio_ltps_t) lt)
   (int woke_fd)))
 (define-function () void rktio_end_sleep (((ref rktio_t) rktio)))
@@ -1145,9 +1245,15 @@
 (define-function/errno
  NULL
  ()
+ (ref rktio_stat_t)
+ rktio_fd_stat
+ (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd)))
+(define-function/errno
+ NULL
+ ()
  (ref rktio_identity_t)
  rktio_fd_identity
- (((ref rktio_t) rktio) ((ref rktio_fd_t) fd)))
+ (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd)))
 (define-function/errno
  NULL
  ()
@@ -1181,6 +1287,18 @@
  ()
  (ref char)
  rktio_directory_list_step
+ (((ref rktio_t) rktio) ((ref rktio_directory_list_t) dl)))
+(define-function/alloc_result_t
+ rktio_result_directory_list
+ ()
+ (ref rktio_result_t)
+ rktio_directory_list_start_r
+ (((ref rktio_t) rktio) (rktio_const_string_t dirname)))
+(define-function/result_t
+ rktio_result_string
+ ()
+ (ref rktio_result_t)
+ rktio_directory_list_step_r
  (((ref rktio_t) rktio) ((ref rktio_directory_list_t) dl)))
 (define-function
  ()
@@ -1258,7 +1376,7 @@
  ()
  void
  rktio_signal_received_at
- (((ref rktio_signal_handle_t) h)))
+ (((ref rktio_signal_handle_t) signal_handle)))
 (define-function () void rktio_signal_received (((ref rktio_t) rktio)))
 (define-function
  ()
@@ -1320,12 +1438,12 @@
  ()
  (ref rktio_char16_t)
  rktio_path_to_wide_path
- (((ref rktio_t) rktio) (rktio_const_string_t p)))
+ (((ref rktio_t) rktio) (rktio_const_string_t path)))
 (define-function
  ()
  (ref char)
  rktio_wide_path_to_path
- (((ref rktio_t) rktio) ((*ref rktio_char16_t) wp)))
+ (((ref rktio_t) rktio) ((*ref rktio_char16_t) wpath)))
 (define-function () int rktio_processor_count (((ref rktio_t) rktio)))
 (define-function/errno
  #f
@@ -1337,6 +1455,24 @@
   (rktio_const_string_t name)
   (rktio_const_string_t msg)
   (rktio_const_string_t exec_name)))
+(define-function
+ ()
+ void
+ rktio_syslog_best_effort
+ (((ref rktio_t) rktio)
+  (int level)
+  (rktio_const_string_t name)
+  (rktio_const_string_t msg)
+  (rktio_const_string_t exec_name)))
+(define-function
+ ()
+ void
+ rktio_std_write_in_best_effort
+ (((ref rktio_t) rktio)
+  (int which)
+  ((*ref char) buffer)
+  (intptr_t start)
+  (intptr_t end)))
 (define-function () int rktio_convert_properties (((ref rktio_t) rktio)))
 (define-function/errno
  NULL
@@ -1505,8 +1641,11 @@
   (dll_find_object_proc dll_find_object)
   (dll_close_proc dll_close)))
 (define-function () int rktio_get_last_error_kind (((ref rktio_t) rktio)))
+(define-function () int rktio_get_error_kind (((ref rktio_result_t) res)))
 (define-function () int rktio_get_last_error (((ref rktio_t) rktio)))
+(define-function () int rktio_get_error (((ref rktio_result_t) res)))
 (define-function () int rktio_get_last_error_step (((ref rktio_t) rktio)))
+(define-function () int rktio_get_error_step (((ref rktio_result_t) res)))
 (define-function
  ()
  void
@@ -1518,6 +1657,7 @@
  rktio_set_last_error_step
  (((ref rktio_t) rktio) (int step)))
 (define-function () void rktio_remap_last_error (((ref rktio_t) rktio)))
+(define-function () void rktio_remap_error (((ref rktio_result_t) res)))
 (define-function
  ()
  (ref char)
@@ -1528,4 +1668,25 @@
  (ref char)
  rktio_get_error_string
  (((ref rktio_t) rktio) (int kind) (int errid)))
+(define-function
+ ()
+ rktio_const_string_t
+ rktio_classify_error
+ ((int errkind) (int errid)))
+(define-function
+ ()
+ rktio_bool_t
+ rktio_result_is_success
+ (((ref rktio_result_t) res)))
+(define-function () intptr_t rktio_result_integer (((ref rktio_result_t) res)))
+(define-function
+ ()
+ (ref char)
+ rktio_result_string
+ (((ref rktio_result_t) res)))
+(define-function
+ ()
+ (ref rktio_directory_list_t)
+ rktio_result_directory_list
+ (((ref rktio_result_t) res)))
 )

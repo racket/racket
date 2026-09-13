@@ -1,5 +1,20 @@
 #lang racket/base
+
+;; Note that this module only semi-private, in the sense that other packages
+;; which are in the main distribution but in separate repositories require
+;; it. This means any backwards-incompatible API changes need coordination.
+;; The following packages are known to use this module:
+;;
+;; - htdp-lib
+;;
+;; Please try not to add more packages which require this file. Instead,
+;; consider whether a public API is appropriate, or if a currently-private
+;; API should be made public. If not, then make a new file
+;; "racket/private/for-yourpackage.rkt" which exports the necessary
+;; definitions. See "racket/private/for-compatibility-lib.rkt" for an example.
+
 (require (for-syntax racket/base
+                     racket/private/stx
                      syntax/kerncase
                      syntax/private/struct
                      racket/struct-info)
@@ -20,13 +35,14 @@
                       stx
                       name)))
                  names)
-       (let ([dup (check-duplicate-identifier names)])
+       (let-values ([(dup origs) (stx-find-duplicate-identifiers names)])
          (when dup
            (raise-syntax-error
             'shared
             "duplicate identifier"
             stx
-            dup)))
+            dup
+            origs)))
        (let ([exprs (map (lambda (expr)
                            (let ([e (local-expand
                                      expr

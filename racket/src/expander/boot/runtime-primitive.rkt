@@ -19,7 +19,7 @@
 (define runtime-stx (add-scope empty-syntax runtime-scope))
 
 (define runtime-module-name (make-resolved-module-path '#%runtime))
-(define runtime-mpi (module-path-index-join ''#%runtime #f))
+(define runtime-mpi (module-path-index-join* ''#%runtime #f))
 
 (define (add-runtime-primitive! sym)
   (add-binding-in-scopes! (syntax-scope-set runtime-stx 0)

@@ -1,5 +1,5 @@
 #lang at-exp racket/base
-(require scribble/core scribble/manual scribble/bnf
+(require scribble/core scribble/manual scribble/bnf scribble/decode
          racket/list racket/string)
 
 ;; If you edit this table, please try to avoid making the table wider
@@ -43,6 +43,7 @@
             |  \B                 Match where _\b_ does not                       #px 18
             |  \p{Property}       Match (UTF-8 encoded) in Property               #px 19
             |  \P{Property}       Match (UTF-8 encoded) not in Property           #px 20
+            |  \X                 Match (UTF-8 encoded) grapheme cluster          #px
   Literal  :== Any character except _(_, _)_, _*_, _+_, _?_, _[_, _._, _^_, _\_, or _|_                #rx
   Literal  :== Any character except _(_, _)_, _*_, _+_, _?_, _[_, _]_, _{_, _}_, _._, _^_, _\_, or _|_ #px
             |  \Aliteral                Match Aliteral                            #ot 21
@@ -179,7 +180,7 @@
                                          (element #f " ")
                                          (element #f (regexp-replace* #rx"`" Y " "))))]
     [(#rx"^$") null]
-    [else (list s)]))
+    [else (decode-string s)]))
 
 (define (lit-ize l)
   (map (lambda (i) (if (string? i) (litchar i) i)) l))
@@ -298,12 +299,14 @@
   \B : <0,0>
 
   \p{Property} : <1,6>
-  \P{Property} : <1,6>})
+  \P{Property} : <1,6>
+
+  \X : <1,+inf.0>})
 
 (define (subscripts i)
   (regexp-case i
     [(#rx"^(.*)_(.)(.*)$" X S Y)
-     `(,@(subscripts X) ,(element 'subscript (list S)) ,@(subscripts Y))]
+     `(,@(subscripts X) ,(element 'subscript (fixup-ids S)) ,@(subscripts Y))]
     [(#rx"^(.*)([nm])([012]?)(.*)$" X V N Y)
      `(,@(subscripts X)
        ,(element 'italic (list V)) ,(element 'subscript (list N))

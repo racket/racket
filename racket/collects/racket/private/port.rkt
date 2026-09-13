@@ -9,6 +9,7 @@
 
 (provide copy-port
          open-output-nowhere
+         open-input-nowhere
          relocate-output-port
          transplant-output-port
          transplant-to-relocate)
@@ -29,6 +30,10 @@
      (and specials-ok?
           (lambda (special)
             (wrap-evt always-evt (lambda (x) #t)))))))
+
+(define open-input-nowhere
+  (lambda ([name 'nowhere])
+    (open-input-bytes #"" name)))
 
 (define (transplant-to-relocate transplant p line col pos close? name)
   (let-values ([(init-l init-c init-p) (port-next-location p)])

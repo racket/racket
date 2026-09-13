@@ -1,5 +1,6 @@
 
 (load-relative "loadtest.rktl")
+(require compiler/find-exe)
 
 (Section 'port)
 
@@ -11,6 +12,9 @@
      (parameterize ([current-directory dir])
        (thunk)))
    (lambda () (delete-directory dir))))
+
+(define thread-procs (list thread
+                           (lambda (thunk) (thread #:pool 'own thunk))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Tests for progress events and commits
@@ -79,6 +83,8 @@
   (test-file #t))
 
 (let-values ([(r w) (make-pipe)])
+  (test #t pipe-port? r)
+  (test #t pipe-port? w)
   (write-byte 200 w)
   (test #t byte-ready? r)
   (test #f char-ready? r))
@@ -90,13 +96,16 @@
   (test #t evt? (sync/timeout 0 (port-progress-evt i)))
   (test 0 peek-bytes-avail! (make-bytes 10) 0 (port-progress-evt i) i))
 
+(test #f pipe-port? (open-input-string ""))
+(test #f pipe-port? (open-output-string))
+
 (test #t string-port? (open-input-string ""))
 (test #t string-port? (open-input-bytes #""))
 (test #t string-port? (open-output-bytes))
 (test #t string-port? (open-output-string))
 
 ;; concurrent close on input fails
-(let ()
+(for ([thread (in-list thread-procs)])
   (define-values (i o) (make-pipe))
   (thread (lambda ()
             (sync (system-idle-evt))
@@ -106,7 +115,7 @@
    exn:fail?))
 
 ;; concurrent close on input triggers progress
-(let ()
+(for ([thread (in-list thread-procs)])
   (define-values (i o) (make-pipe))
   (thread (lambda ()
             (sync (system-idle-evt))
@@ -114,7 +123,7 @@
   (test 0 peek-bytes-avail! (make-bytes 10) 0 (port-progress-evt i) i))
 
 ;; concurrent close on output fails
-(let ()
+(for ([thread (in-list thread-procs)])
   (define-values (i o) (make-pipe 4096))
   (thread (lambda ()
             (sync (system-idle-evt))
@@ -126,7 +135,7 @@
    exn:fail?))
 
 ;; concurrent close of input unblocks limited output
-(let ()
+(for ([thread (in-list thread-procs)])
   (define-values (i o) (make-pipe 4096))
   (define done? #f)
   (thread (lambda ()
@@ -139,6 +148,33 @@
     (write-bytes #"hello" o)
     (unless done?
       (loop))))
+
+(test '(#t #t #t #t #t #t #t #t #t #t)
+      'concurrent-read
+      (let ()
+        (define-values (i o) (make-pipe 4096))
+        (map
+         thread-wait
+         (for/list ([k (in-range 10)])
+           (thread #:pool 'own
+                   #:keep 'results
+                   (lambda ()
+                     (for/and ([j (in-range 1000)])
+                       (write-bytes #"a" o)
+                       (equal? #"a" (read-bytes 1 i)))))))))
+
+(test 6000
+      'concurrent-write
+      (let ()
+        (define o (open-output-bytes))
+        (for-each
+         thread-wait
+         (for/list ([k (in-range 6)])
+           (thread #:pool 'own
+                   (lambda ()
+                     (for ([j (in-range 1000)])
+                       (write-bytes #"a" o))))))
+        (bytes-length (get-output-bytes o))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Based on the Racket manual...
@@ -402,30 +438,31 @@
 			      (channel-put commit-req-ch
 					   (list* k progress-evt done-evt ch nack))))))))
 
-(let ([mod3-cycle (make-mod3-cycle)])
-  (port-progress-evt mod3-cycle)
-  (let ([result1 #f]
-	[result2 #f])
-    (let ([t1 (thread (lambda ()
-			(set! result1 (read-string 5 mod3-cycle))))]
-	  [t2 (thread (lambda ()
-			(set! result2 (read-string 5 mod3-cycle))))])
-      (thread-wait t1)
-      (thread-wait t2)
-      (test 11 string-length (string-append result1 "," result2))))
-  (let ([s (make-bytes 1)]
-	[progress-evt (port-progress-evt mod3-cycle)])
-    (test 1 peek-bytes-avail! s 0 progress-evt mod3-cycle)
-    (test #"1" values s)
-    (test #t 
-	  port-commit-peeked 1 progress-evt (make-semaphore 1)
-	  mod3-cycle)
-    (test #t evt? (sync/timeout 0 progress-evt))
-    (test 0 peek-bytes-avail! s 0 progress-evt mod3-cycle)
-    (test #f 
-	  port-commit-peeked 1 progress-evt (make-semaphore 1) 
-	  mod3-cycle))
-  (close-input-port mod3-cycle))
+(for ([thread (in-list thread-procs)])
+  (let ([mod3-cycle (make-mod3-cycle)])
+    (port-progress-evt mod3-cycle)
+    (let ([result1 #f]
+          [result2 #f])
+      (let ([t1 (thread (lambda ()
+                          (set! result1 (read-string 5 mod3-cycle))))]
+            [t2 (thread (lambda ()
+                          (set! result2 (read-string 5 mod3-cycle))))])
+        (thread-wait t1)
+        (thread-wait t2)
+        (test 11 string-length (string-append result1 "," result2))))
+    (let ([s (make-bytes 1)]
+          [progress-evt (port-progress-evt mod3-cycle)])
+      (test 1 peek-bytes-avail! s 0 progress-evt mod3-cycle)
+      (test #"1" values s)
+      (test #t 
+            port-commit-peeked 1 progress-evt (make-semaphore 1)
+            mod3-cycle)
+      (test #t evt? (sync/timeout 0 progress-evt))
+      (test 0 peek-bytes-avail! s 0 progress-evt mod3-cycle)
+      (test #f 
+            port-commit-peeked 1 progress-evt (make-semaphore 1) 
+            mod3-cycle))
+    (close-input-port mod3-cycle)))
 
 ;; Non-byte port results:
 (define infinite-voids
@@ -503,6 +540,19 @@
   (test 5 write-bytes-avail/enable-break #"hello" /dev/null-out)
   (test #t write-special-avail* 'hello /dev/null-out)
   (test 5 write-bytes-avail #"hello" /dev/null-out))
+
+(for ([pre? (in-list '(#f #t))])
+  (let ()
+    (define exe (find-exe))
+    (define-values (sp stdout-in stdin-out stderr-in)
+      (subprocess #f #f #f exe "-q" "-n"))
+    (subprocess-wait sp)
+    (when pre?
+      ;; write some buffered bytes
+      (write-bytes #"ok" stdin-out))
+    ;; make sure `write-bytes-avail-evt` doesn't try to buffer
+    (err/rt-test/once (sync (write-bytes-avail-evt #"hello" stdin-out))
+                      exn:fail:filesystem?)))
 
 ;; A part that accumulates bytes as characters in a list,
 ;;  but not in a thread-safe way:
@@ -638,18 +688,20 @@
               (loop (+ n v))))))
 
 ;; Further test of peeking in a limited pipe (shouldn't get stuck):
-(let-values ([(i o) (make-pipe 50)]
-             [(s) (make-semaphore)])
-  (define t
-    (thread (lambda ()
-              (peek-bytes 100 0 i)
-              (semaphore-wait s)
-              (peek-bytes 200 0 i))))
-  (display (make-bytes 100 65) o)
-  (sync (system-idle-evt))
-  (semaphore-post s)
-  (display (make-bytes 100 66) o)
-  (sync t))
+(for ([thread (in-list thread-procs)])
+  (let-values ([(i o) (make-pipe 50)]
+               [(s) (make-semaphore)])
+    (define t
+      (thread (lambda ()
+                (peek-bytes 100 0 i)
+                (semaphore-wait s)
+                (peek-bytes 200 0 i))))
+    (display (make-bytes 100 65) o)
+    (sync (system-idle-evt))
+    (semaphore-post s)
+    (display (make-bytes 100 66) o)
+    (sync t)
+    (test 'not-stuck values 'not-stuck)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Provide a location proc:
@@ -850,7 +902,7 @@
 ;;  another commit thread is broken, that the second doesn't
 ;;  assume that the initial commit thread is still there:
 
-(let ()
+(for ([thread (in-list thread-procs)])
   (define-values (r w) (make-pipe))
   (define ch (make-channel))
   (display "hi" w)
@@ -870,6 +922,23 @@
       (thread-resume t2)
       (sleep)))
   (test (char->integer #\h) peek-byte r))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that a thread blocked in a commit can give up a port
+;; so that another thread can make progress
+
+(for ([thread (in-list thread-procs)])
+  (define-values (in out) (make-pipe))
+  (write-bytes #"abc" out)
+  (define a (thread (lambda ()
+                      (peek-byte in)
+                      (port-commit-peeked 1 (port-progress-evt in) (make-semaphore) in))))
+  (sync (system-idle-evt))
+  (define ch (make-channel))
+  (thread (lambda () (channel-put ch (peek-byte in))))
+  (test (char->integer #\a) sync ch)
+  (test (char->integer #\a) read-byte in)
+  (thread-wait a))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  Check that breaks are enabled properly:
@@ -929,52 +998,54 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check port shortcuts for `make-input-port' and `make-output-port'
 
-(let-values ([(i o) (make-pipe 5)])
-  (define i2 (make-input-port
-              (object-name i)
-              i
-              i
-              void))
-  (define o2 (make-output-port
-              (object-name o)
-              o
-              o
-              void))
-  (test #f sync/timeout 0 i2)
-  (test o2 sync/timeout 0 o2)
-  (write-bytes #"01234" o2)
-  (test #f sync/timeout 0 o2)
-  (test i2 sync/timeout 0 i2)
-  (test #"01234" read-bytes 5 i2)
-  (test 0 read-bytes-avail!* (make-bytes 3) i2)
-  (thread (lambda () 
-            (sync (system-idle-evt))
-            (write-bytes #"5" o2)))
-  (test #\5 read-char i2)
-  (let ([s (make-bytes 6)])
+(for ([thread (in-list thread-procs)])
+  (let-values ([(i o) (make-pipe 5)])
+    (define i2 (make-input-port
+                (object-name i)
+                i
+                i
+                void))
+    (define o2 (make-output-port
+                (object-name o)
+                o
+                o
+                void))
+    (test #f sync/timeout 0 i2)
+    (test o2 sync/timeout 0 o2)
+    (write-bytes #"01234" o2)
+    (test #f sync/timeout 0 o2)
+    (test i2 sync/timeout 0 i2)
+    (test #"01234" read-bytes 5 i2)
+    (test 0 read-bytes-avail!* (make-bytes 3) i2)
     (thread (lambda () 
               (sync (system-idle-evt))
-              (test 5 write-bytes-avail #"6789ab" o2)))
-    (test 5 read-bytes-avail! s i2)
-    (test #"6789a\0" values s)))
+              (write-bytes #"5" o2)))
+    (test #\5 read-char i2)
+    (let ([s (make-bytes 6)])
+      (thread (lambda () 
+                (sync (system-idle-evt))
+                (test 5 write-bytes-avail #"6789ab" o2)))
+      (test 5 read-bytes-avail! s i2)
+      (test #"6789a\0" values s))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that an uncooperative output port doesn't keep breaks
 ;; disabled too long:
 
-(test 'ok
-      'stuck-port
-      (let ([p (make-output-port 'stumper
-                                 always-evt
-                                 (lambda args
-                                   never-evt)
-                                 void)]
-            [t (current-thread)])
-        (thread (lambda () 
-                  (sync (system-idle-evt))
-                  (break-thread t)))
-        (with-handlers ([exn:break? (lambda (exn) 'ok)])
-          (write-byte 0 p))))
+(for ([thread (in-list thread-procs)])
+  (test 'ok
+        'stuck-port
+        (let ([p (make-output-port 'stumper
+                                   always-evt
+                                   (lambda args
+                                     never-evt)
+                                   void)]
+              [t (current-thread)])
+          (thread (lambda () 
+                    (sync (system-idle-evt))
+                    (break-thread t)))
+          (with-handlers ([exn:break? (lambda (exn) 'ok)])
+            (write-byte 0 p)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test port-commit-peeked and position counting
@@ -1063,7 +1134,7 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; port-closed events
 
-(let ()
+(for ([thread (in-list thread-procs)])
   (define-values (i o) (make-pipe))
   (define ic (port-closed-evt i))
   (define oc (port-closed-evt o))
@@ -1294,6 +1365,45 @@
   (define str (make-string 10))
   (test 5 peek-string! str 0 in)
   (test "hello" substring str 0 5))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(parameterize ([current-input-port (open-input-nowhere)])
+  (test eof read)
+  (test eof read-char)
+  (test eof read-byte)
+  (test eof read-line)
+  (test eof read-char-or-special))
+
+(test 'nowhere object-name (open-input-nowhere))
+(test 'apple   object-name (open-input-nowhere 'apple))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(for ([poll-proc (in-list (list
+                           (lambda (i)
+                             (byte-ready? i))
+                           (lambda (i)
+                             (peek-bytes-avail!* (make-bytes 1) 0 #f i))))])
+  (define peeked? #f)
+  (define polled? #f)
+  (define i
+    (make-input-port
+     'test
+     (lambda (bstr)
+       never-evt)
+     (lambda (bstr skip evt)
+       (set! peeked? #t)
+       (poll-guard-evt
+        (lambda (poll?)
+          (when poll?
+            (set! polled? #t))
+          (wrap-evt always-evt (lambda (v) 0)))))
+     void))
+  ;; should trigger a poll on an evt:
+  (poll-proc i)
+  (test #t values peeked?)
+  (test #t values polled?))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

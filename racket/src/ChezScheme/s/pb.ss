@@ -7,20 +7,20 @@
 ;; the C compiler supports 64-bit integers for the kernel's
 ;; implementation, where care is taken for the conversion between C
 ;; pointers and Scheme object addresses). That way, a single set of pb
-;; boot files can be used to bootstrap the compiler for any supporrted
+;; boot files can be used to bootstrap the compiler for any supported
 ;; platform.
 
 ;; The pb machine can be configured (through ".def") for 32-bit Scheme
 ;; object representations and a specific endianness.
 
 ;; In all configurations, the pb machine uses 32-bit instructions. The
-;; fasl format of instructuctions is always little-endian, and the
+;; fasl format of instructions is always little-endian, and the
 ;; machine-code content is swapped on load for a big-endian
 ;; environment.
 
-;; The pb binstruction set is load--store and vaguely similar to Arm.
+;; The pb instruction set is load--store and vaguely similar to Arm.
 ;; One difference is that there's a single flag for branching:
-;; signalling arithemtic, bitwise, and comparison operations set the
+;; signalling arithmetic, bitwise, and comparison operations set the
 ;; flag for a specific condition, such as "overflow" or "equal", and
 ;; the branch variants are "branch if true" or "branch if false".
 ;; The intent is that a test is always immediately followed by a
@@ -30,7 +30,7 @@
 ;; bit on the left (like byte order for a little-endian machine):
 ;;
 ;;     low byte                        high byte
-;;        8          8          8          8 
+;;        8          8          8          8
 ;;  -----------------------------------------------
 ;;  |    op    |    reg    |     immed/reg        |
 ;;  -----------------------------------------------
@@ -50,12 +50,12 @@
 ;; be the destination register. The long `immed` form is mainly for
 ;; branches. See "cmacros.ss" for the `op` constructions.
 
-;; Foreign-procedure calls always supported for specific prototypes,
-;; which are generally the ones for functions implemented the Chez
+;; Foreign-procedure calls are always supported for specific prototypes,
+;; which are generally the ones for functions implemented in the Chez
 ;; Scheme kernel. Supported prototypes are specified in "cmacros.ss".
 ;; Foreign callables are not always supported. All foreign-call
 ;; arguments and results are passed in registers for the
-;; always-supported set of protypoes.
+;; always-supported set of prototypes.
 
 ;; Foreign-call procedures and callables may be supported for other
 ;; prototypes (e.g., depending on whether libffi is available). Those
@@ -551,7 +551,17 @@
       [(op (x ur) (y ur) (w signed16) (old ur) (new ur))
        (addr-reg x y w (lambda (u)
                          ;; signals on successful swap
-                         `(asm ,info ,asm-cas! ,u ,old ,new)))]))
+                         `(asm ,info ,asm-cas! ,u ,old ,new)))]
+      [(op (x ur) (y ur) (w ur) (old ur) (new ur))
+       (let ([zero-imm (with-output-language (L15d Triv) `(immediate 0))])
+         (cond
+           [(eq? y %zero)
+            (addr-reg x w zero-imm (lambda (u) `(asm ,info ,asm-cas! ,u ,old ,new)))]
+           [else
+            (let ([u0 (make-tmp 'u)])
+              (seq
+               `(set! ,(make-live-info) ,u0 (asm ,null-info ,(asm-add #f) ,y ,w))
+               (addr-reg x u0 zero-imm (lambda (u) `(asm ,info ,asm-cas! ,u ,old ,new)))))]))]))
 
   (define-instruction effect (store-store-fence)
     [(op)
@@ -1595,13 +1605,18 @@
 
     (define (is-result-as-arg? info)
       (nanopass-case (Ltype Type) (info-foreign-result-type info)
-        [(fp-ftd& ,ftd) #t]
+        [(fp-ftd& ,ftd ,fptd) #t]
         [else #f]))
 
     (define (adjust-active? info)
       (if-feature pthreads
         (memq 'adjust-active (info-foreign-conv* info))
         #f))
+
+    (define (save-errno? info)
+      (memq 'save-errno (info-foreign-conv* info)))
+    (define (save-last-error? info)
+      (memq 'save-last-error (info-foreign-conv* info)))
 
     (define (make-type-desc-literal info args-enc res-enc)
       (let ([result-as-arg? (is-result-as-arg? info)]
@@ -1613,7 +1628,11 @@
                             (cons* #f
                                    (constant ffi-default-abi)
                                    (or varargs-after 0)
-                                   (adjust-active? info)
+                                   (and (adjust-active? info) #t)
+                                   (cond
+                                     [(save-errno? info) 1]
+                                     [(save-last-error? info) 2]
+                                     [else #f])
                                    (car res-enc)
                                    result-as-arg?
                                    (if result-as-arg?
@@ -1661,7 +1680,7 @@
                 (%seq
                  (set! ,%Carg1 ,lo)
                  ,(%inline call-arena-in ,%Carg1 (immediate ,off))
-                 (set! ,%Carg1 ,lo)
+                 (set! ,%Carg1 ,hi)
                  ,(%inline call-arena-in ,%Carg1 (immediate ,(fx+ off 4)))))))
           (define save-double/unboxed
             (lambda (off)
@@ -1715,7 +1734,7 @@
                                    locs)
                              (cons (constant ffi-typerep-float) encs)
                              (fx+ off 8))]
-                      [(fp-ftd& ,ftd)
+                      [(fp-ftd& ,ftd ,fptd)
                        (loop types
                              (cons (if in?
                                        (load-int off)
@@ -1726,10 +1745,7 @@
                                          e
                                          (box e)))
                                    encs)
-                             (fx+ off (if ($ftd-compound? ftd)
-                                          (constant ptr-bytes)
-                                          (max (constant ptr-bytes)
-                                               ($ftd-size ftd)))))]
+                             (fx+ off (constant ptr-bytes)))]
                       [(fp-void)
                        (loop types
                              (cons (lambda () `(nop)) locs)
@@ -1806,7 +1822,7 @@
                                      (cons (load-double-reg (car fp*)) locs)
                                      (cons (car fp*) live*)
                                      int* (cdr fp*))]
-                              [(fp-ftd& ,ftd)
+                              [(fp-ftd& ,ftd ,fptd)
                                (sorry! who "indirect arguments not supported")]
                               [else
                                (when (null? int*) (sorry! who "too many integer/pointer arguments: ~s" (length in-types)))
@@ -1833,7 +1849,7 @@
                        (values (lambda (lvalue) ; unboxed
                                  `(set! ,lvalue ,(%inline single->double ,%Cfpretval)))
                                (list %Cfpretval))]
-                      [(fp-ftd& ,ftd)
+                      [(fp-ftd& ,ftd ,fptd)
                        (sorry! who "unhandled result type ~s" type)]
                       [else
                        (when (64-bit-type-on-32-bit? type)
@@ -1874,7 +1890,7 @@
                                      [(fp-scheme-object) 'uptr]
                                      [(fp-fixnum) 'uptr]
                                      [(fp-u8*) 'void*]
-                                     [(fp-ftd ,ftd) 'void*]
+                                     [(fp-ftd ,fptd) 'void*]
                                      [(fp-void) 'void]
                                      [else (if (eq? (subset-mode) 'system)
                                                (sorry! who "unhandled type in prototype ~s" type)
@@ -1891,6 +1907,8 @@
             (let* ([arg-type* (info-foreign-arg-type* info)]
                    [result-type (info-foreign-result-type info)])
               (let ([prototype (and (not (adjust-active? info))
+                                    (not (save-errno? info))
+                                    (not (save-last-error? info))
                                     (not (ormap (lambda (conv)
                                                   (and (pair? conv) (eq? (car conv) 'varargs) (cdr conv)))
                                                 (info-foreign-conv* info)))
@@ -1902,7 +1920,7 @@
                      (values
                       (lambda () `(nop))
                       (reverse locs)
-                      (lambda (t0 not-varargs?)
+                      (lambda (t0 atomic? not-errno-lvalue)
                         (let ([info (make-info-kill*-live* (add-caller-save-registers result-live*) arg-live*)])
                           `(inline ,info ,%c-call ,t0 (immediate ,prototype))))
                       get-result
@@ -1913,10 +1931,22 @@
                      (values
                       (lambda () `(nop))
                       locs
-                      (lambda (t0 not-varargs?)
-                        `(seq
-                          (set! ,%Carg1 (literal ,(make-type-desc-literal info args-enc res-enc)))
-                            (inline ,null-info ,%c-stack-call ,t0 ,%Carg1)))
+                      (lambda (t0 atomic? maybe-errno-lvalue)
+                        (let ([call (%seq
+                                      (set! ,%Carg1 (literal ,(make-type-desc-literal info args-enc res-enc)))
+                                      (inline ,null-info ,%c-stack-call ,t0 ,%Carg1)
+                                      ,(if maybe-errno-lvalue
+                                           `(set! ,maybe-errno-lvalue ,(%tc-ref U))
+                                           `(nop)))])
+                          (cond
+                            [atomic?
+                             ;; libffi-based call may need to allocate, but `%ap` has not
+                             ;; been moved to `tc` for an atomic call, so move to and from `tc` here
+                             (%seq
+                              (set! ,(%mref ,%tc ,%zero ,(reg-tc-disp %ap)) ,%ap)
+                              ,call
+                              (set! ,%ap ,(%mref ,%tc ,%zero ,(reg-tc-disp %ap))))]
+                            [call])))
                       (car res-locs)
                       (lambda () `(nop))))])))))))
 

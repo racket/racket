@@ -161,6 +161,15 @@ by @racket[kind], which must be one of the following:
  On Mac OS, the default is @filepath{Library/Racket} within the
  @tech{user's home directory}.}
 
+ @item{@indexed-racket['host-addon-dir] --- like
+ @racket['addon-dir], but when cross-platform build mode has been
+ selected (through the @Flag{C} or @DFlag{cross} argument to
+ @exec{racket}; see @secref["mz-cmdline"]), the result refers to a
+ directory for the current system's installation, instead of for the
+ target system.
+
+ @history[#:added "8.17.0.2"]}
+
  @item{@indexed-racket['cache-dir] --- a directory for storing
  user-specific caches. The directory might not exist.
 
@@ -793,8 +802,11 @@ The resulting paths are always sorted using @racket[path<?].}
 
 @defproc[(filesystem-root-list) (listof path?)]{
 
-Returns a list of all current root directories. Obtaining this list
-can be particularly slow on Windows.}
+Returns a list of all current root directories.
+
+@history[#:changed "9.3.0.2" @elem{Removed filtering of Windows root directories that are
+                                   currently inaccessible, which was intended to
+                                   avoid removable-storage devices that are empty.}]}
 
 @;------------------------------------------------------------------------
 @section[#:tag "filesystem-change"]{Detecting Filesystem Changes}
@@ -863,6 +875,14 @@ is shut down, @racket[filesystem-change-evt-cancel] is applied to the
 event.
 
 @history[#:changed "7.3.0.8" @elem{Allow @racket[#f] for @racket[failure-thunk].}]}
+
+
+@defproc[(filesystem-change-evt-ready? [evt filesystem-change-evt?])
+         boolean?]{
+
+Equivalent to @racket[(and (sync/timeout 0 evt) #t)].
+
+@history[#:added "8.18.0.6"]}
 
 
 @defproc[(filesystem-change-evt-cancel [evt filesystem-change-evt?])

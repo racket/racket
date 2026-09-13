@@ -242,6 +242,35 @@
 		    (loop (add1 i)))))))
 	  (loop))))))
 
+(define indic-conjunct-breaks (make-hash))
+(define ic_None 0)
+(define ic_Linker 1)
+(define ic_Consonant 2)
+(define ic_Extend 3)
+
+(with-input-from-file "Unicode/DerivedCoreProperties.txt"
+  (lambda ()
+    (let loop ()
+      (let ([l (read-line)])
+	(unless (eof-object? l)
+	  (let ([m (regexp-match #rx"^([0-9A-F.]+) *; InCB; (Linker|Consonant|Extend)" l)])
+	    (when m
+	      (let* ([start (string->number (car (regexp-match #rx"^[0-9A-F]+" (car m))) 16)]
+		     [end (let ([m (regexp-match #rx"^[0-9A-F]+[.][.]([0-9A-F]+)" (car m))])
+			    (if m
+				(string->number (cadr m) 16)
+				start))]
+		     [br (cond
+                           [(string=? (caddr m) "Linker") ic_Linker]
+                           [(string=? (caddr m) "Extend") ic_Extend]
+                           [(string=? (caddr m) "Consonant") ic_Consonant]
+                           [else (error "unknown InCB kind" (caddr m))])])
+		(let loop ([i start])
+		  (hash-set! indic-conjunct-breaks i br)
+		  (unless (= i end)
+		    (loop (add1 i)))))))
+	  (loop))))))
+
 (define white_spaces (make-hash))
 
 (with-input-from-file "Unicode/PropList.txt"
@@ -394,6 +423,8 @@
                     (hash-set! extended-pictographics i #t))))))
           (loop))))))
 
+(define indic-conjunct-break-shift (integer-length (sub1 (length graph-props))))
+
 (call-with-input-file "Unicode/UnicodeData.txt"
   (lambda (i)
     (let loop ([prev-code 0])
@@ -491,7 +522,8 @@
                       (combine-cat cat)
                       ;; Grapheme cluster breaks, can vary within a "<first>"-"<last>" range
                       (lambda (code)
-                        (hash-ref grapheme-cluster-breaks code 0))
+                        (+ (hash-ref grapheme-cluster-breaks code 0)
+                           (arithmetic-shift (hash-ref indic-conjunct-breaks code 0) indic-conjunct-break-shift)))
                       ;; Combining class - used again to filter initial composes
                       combining))
 	      (loop code))))))))
@@ -638,7 +670,7 @@
 (printf "\n/* Character general categories: */\n")
 (printf "READ_ONLY unsigned char *scheme_uchar_cats_table[~a];\n" hi-count)
 
-(printf "\n/* Grapheme-cluster break categories: */\n")
+(printf "\n/* Grapheme-cluster and indict-conjunct break categories: */\n")
 (printf "READ_ONLY unsigned char *scheme_uchar_graphbreaks_table[~a];\n" hi-count)
 
 (printf "\n/* The udata... arrays are used by init_uchar_table to fill the above mappings.*/\n\n")
@@ -669,6 +701,8 @@
 (printf "\n")
 (print-table "char" "_cases" vectors2 pos2 #f)
 (print-table "char" "_cats" vectors3 pos3 #f)
+
+(printf "\n")
 (define (print-graphbreak-constants)
   (for ([prop (in-list graph-props)]
         [i (in-naturals)])
@@ -676,8 +710,18 @@
             (string-upcase prop)
             i))
   (printf "#define MZ_GRAPHBREAK_COUNT ~a\n" (length graph-props))
-  (printf "#define MZ_GRAPHBREAK_BITS ~a\n" (integer-length (length graph-props))))
+  (define bits (integer-length (length graph-props)))
+  (printf "#define MZ_GRAPHBREAK_BITS ~a\n" bits)
+  (printf "#define MZ_GRAPHBREAK_MASK ~a\n" (sub1 (arithmetic-shift 1 bits)))
+  (printf "\n")
+  (printf "#define MZ_INDIC_CONJUNCT_NONE ~a\n" ic_None)
+  (printf "#define MZ_INDIC_CONJUNCT_LINKER ~a\n" ic_Linker)
+  (printf "#define MZ_INDIC_CONJUNCT_CONSONANT ~a\n"  ic_Consonant)
+  (printf "#define MZ_INDIC_CONJUNCT_EXTEND ~a\n" ic_Extend)
+  (printf "#define MZ_INDIC_CONJUNCT_SHIFT ~a\n" indic-conjunct-break-shift))
 (print-graphbreak-constants)
+(printf "\n")
+
 (print-table "char" "_graphbreaks" vectors4 pos4 #f)
 
 (printf "\n/* Case mapping size: ~a */\n" (hash-count (car cases)))
@@ -720,7 +764,7 @@
 
 (let ([l graph-props])
   (printf "\n#define NUM_GRAPHEME_BREAK_PROPERTIES ~a\n" (length l))
-  (printf "READ_ONLY static const char *grapheme_break_propoerty_names[] = {")
+  (printf "READ_ONLY static const char *grapheme_break_property_names[] = {")
   (for ([p (in-list graph-props)]
         [i (in-naturals)])
     (printf (if (zero? i)
@@ -728,6 +772,11 @@
                 ",\n  ~s")
             p))
   (printf "\n};\n"))
+
+(printf "\n#define NUM_INDIC_CONJUNCT_PROPERTIES 4\n")
+(printf "READ_ONLY static const char *indict_conjunct_property_names[] = {")
+(printf " \"None\", \"Linker\", \"Consonant\", \"Extend\" ")
+(printf "};")
 
 (set! ranges (cons (list range-bottom range-top (range-v . > . -1))
 		   ranges))

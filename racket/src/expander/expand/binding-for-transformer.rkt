@@ -14,14 +14,21 @@
 (define (binding-for-transformer? b id at-phase ns)
   (cond
    [(not at-phase)
-    ;; The binding must be imported; determine whether it's syntax by
-    ;; consulting the exporting module
-    (define m (namespace->module ns (module-path-index-resolve
-                                     (module-binding-nominal-module b))))
-    (define b/p (hash-ref (hash-ref (module-provides m) (module-binding-nominal-phase+space b) #hasheq())
-                          (module-binding-nominal-sym b)
-                          #f))
-    (provided-as-transformer? b/p)]
+    ;; The binding is either imported or a portal binding. If it's
+    ;; imported, determine whether it's syntax by consulting the
+    ;; exporting module. If we can't find the exporting module, assume
+    ;; that it's a portal binding.
+    (cond
+      [(non-self-module-path-index? (module-binding-nominal-module b))
+       (define m (namespace->module ns (module-path-index-resolve
+                                        (module-binding-nominal-module b))))
+       (define b/p (hash-ref (hash-ref (module-provides m) (module-binding-nominal-phase+space b) #hasheq())
+                             (module-binding-nominal-sym b)
+                             #f))
+       (provided-as-transformer? b/p)]
+      [else
+       ;; self modix => portal binding
+       #t])]
    [else
     ;; Use `binding-lookup` to both check for taints and determine whether the
     ;; binding is a transformer or variable binding

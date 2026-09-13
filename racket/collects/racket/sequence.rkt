@@ -10,7 +10,8 @@
          (only-in racket/contract/private/prop
                   contract-struct-stronger?
                   contract-struct-equivalent?
-                  trust-me)
+                  trust-me
+                  prop:any/c?)
          syntax/stx)
 
 (provide empty-sequence
@@ -29,7 +30,8 @@
          sequence-count
          (rename-out [-sequence/c sequence/c])
          in-syntax
-         (contract-out [in-slice (exact-positive-integer? sequence? . -> . any)]))
+         (contract-out [in-slice (exact-positive-integer? sequence? . -> . any)])
+         initiate-sequence)
 
 (define empty-sequence
   (make-do-sequence
@@ -43,7 +45,10 @@
        #f))))
 
 (define (sequence->list s)
-  (for/list ([v s]) v))
+  (cond
+    [(list? s) s]
+    [(sequence? s) (for/list ([v s]) v)]
+    [else (raise-argument-error 'sequence->list "sequence?" s)]))
 
 (define (sequence-length s)
   (unless (sequence? s) (raise-argument-error 'sequence-length "sequence?" s))
@@ -63,9 +68,9 @@
   (unless (sequence? s) (raise-argument-error 'sequence-ref "sequence?" s))
   (unless (exact-nonnegative-integer? i)
     (raise-argument-error 'sequence-ref "exact-nonnegative-integer?" i))
-  (let ([v (for/fold ([c #f]) ([v (in-values*-sequence s)]
-                               [j (in-range (add1 i))]
-                               #:unless (j . < . i))
+  (let ([v (for/first ([v (in-values*-sequence s)]
+                       [j (in-range (add1 i))]
+                       #:unless (j . < . i))
              (or v '(#f)))])
     (cond
      [(not v)
@@ -203,6 +208,32 @@
        [else (sequence? val)])))
 
 (define (sequence/c-late-neg-projection this)
+  (define ctcs (sequence/c-ctcs this))
+  (define n-cs (length ctcs))
+  (define min-count (sequence/c-min-count this))
+  (cond
+    [(and (= n-cs 1) (not min-count) (prop:any/c? (car ctcs)))
+     (sequence/c-any/c-late-neg-projection this)]
+    [else
+     (sequence/c-general-ctc-late-neg-projection this)]))
+
+(define (sequence/c-any/c-late-neg-projection this)
+  (define accepts-orig-blame (sequence/c-general-ctc-late-neg-projection this))
+  (λ (orig-blame)
+    (define late-neg (accepts-orig-blame orig-blame))
+    (λ (seq neg-party)
+      (cond
+        [(exact-nonnegative-integer? seq) seq]
+        [(string? seq) seq]
+        [(bytes? seq) seq]
+        [(list? seq) seq]
+        [(vector? seq) seq]
+        [(flvector? seq) seq]
+        [(fxvector? seq) seq]
+        [(input-port? seq) seq]
+        [else (late-neg seq neg-party)]))))
+
+(define (sequence/c-general-ctc-late-neg-projection this)
   (define ctcs (sequence/c-ctcs this))
   (define n-cs (length ctcs))
   (define min-count (sequence/c-min-count this))
@@ -394,3 +425,18 @@
       #f
       (λ (val) (pair? val))
       #f))))
+
+(define (initiate-sequence #:pos->element pos->element
+                           #:early-next-pos [early-next-pos #f]
+                           #:next-pos next-pos
+                           #:init-pos init-pos
+                           #:continue-with-pos? [continue-with-pos? #f]
+                           #:continue-with-val? [continue-with-val? #f]
+                           #:continue-after-pos+val? [continue-after-pos+val? #f])
+  (values pos->element
+          early-next-pos
+          next-pos
+          init-pos
+          continue-with-pos?
+          continue-with-val?
+          continue-after-pos+val?))

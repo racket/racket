@@ -1,10 +1,24 @@
 #lang racket/base
+
+;; Note that this module only semi-private, in the sense that other packages
+;; which are in the main distribution but in separate repositories require
+;; it. This means any backwards-incompatible API changes need coordination.
+;; The following packages are known to use this module:
+;;
+;; - compatibility-lib
+;;
+;; Please try not to add more packages which require this file. Instead,
+;; consider whether a public API is appropriate, or if a currently-private
+;; API should be made public. If not, then make a new file
+;; "racket/private/for-yourpackage.rkt" which exports the necessary
+;; definitions. See "racket/private/for-compatibility-lib.rkt" for an example.
+
 (require (for-syntax racket/base)
          (only-in racket/list remove-duplicates)
          racket/stxparam
          racket/unsafe/ops
          "serialize-structs.rkt"
-         "class-wrapped.rkt"
+         "class-struct.rkt"
          racket/runtime-path
          (only-in "../contract/region.rkt" current-contract-region)
          "../contract/base.rkt"
@@ -13,6 +27,7 @@
          "class-undef.rkt"
          (for-syntax racket/stxparam
                      racket/private/immediate-default
+                     racket/private/stx
                      syntax/kerncase
                      syntax/stx
                      syntax/name
@@ -24,6 +39,8 @@
                      "classidmap.rkt"
                      "intdef-util.rkt"))
 
+(#%declare #:unlimited-compile)
+
 (define insp (current-inspector)) ; for all opaque structures
 
 ;;--------------------------------------------------------------------
@@ -32,7 +49,8 @@
 
 (provide provide-public-names
          ;; needed for Typed Racket
-         (protect-out do-make-object find-method/who))
+         find-method/who
+         (protect-out do-make-object))
 (define-syntax (provide-public-names stx)
   (class-syntax-protect
    (datum->syntax
@@ -459,230 +477,6 @@
     (define ((norm-init/field-iid/def-ctx def-ctx) norm) (syntax-local-identifier-as-binding (stx-car (stx-car norm)) def-ctx))
     (define ((norm-init/field-eid/def-ctx def-ctx) norm) (syntax-local-identifier-as-binding (stx-car (stx-cdr (stx-car norm))) def-ctx))
     
-    ;; expands an expression enough that we can check whether it has
-    ;; the right form for a method; must use local syntax definitions
-    (define (proc-shape name orig-stx xform? 
-                        the-obj the-finder
-                        bad class-name expand-stop-names
-                        def-ctx lookup-localize)
-      (define (expand expr locals)
-        (local-expand
-         expr
-         'expression
-         (append locals (list #'lambda #'λ) expand-stop-names)
-         def-ctx))
-      ;; Checks whether the vars sequence is well-formed
-      (define (vars-ok? vars)
-        (or (identifier? vars)
-            (stx-null? vars)
-            (and (stx-pair? vars)
-                 (identifier? (stx-car vars))
-                 (vars-ok? (stx-cdr vars)))))
-      (define (kw-vars-ok? vars)
-        (or (identifier? vars)
-            (stx-null? vars)
-            (and (stx-pair? vars)
-                 (let ([a (stx-car vars)]
-                       [opt-arg-ok?
-                        (lambda (a)
-                          (or (identifier? a)
-                              (and (stx-pair? a)
-                                   (identifier? (stx-car a))
-                                   (stx-pair? (stx-cdr a))
-                                   (stx-null? (stx-cdr (stx-cdr a))))))])
-                   (or (and (opt-arg-ok? a)
-                            (kw-vars-ok? (stx-cdr vars)))
-                       (and (keyword? (syntax-e a))
-                            (stx-pair? (stx-cdr vars))
-                            (opt-arg-ok? (stx-car (stx-cdr vars)))
-                            (kw-vars-ok? (stx-cdr (stx-cdr vars)))))))))
-      ;; mk-name: constructs a method name
-      ;; for error reporting, etc.
-      (define (mk-name name)
-        (datum->syntax 
-         #f 
-         (string->symbol (format "~a method~a~a" 
-                                 (syntax-e name)
-                                 (if class-name
-                                     " in "
-                                     "")
-                                 (or class-name 
-                                     ""))) 
-         #f))
-      ;; -- transform loop starts here --
-      (let loop ([stx orig-stx][can-expand? #t][name name][locals null])
-        (syntax-case (disarm stx) (#%plain-lambda lambda λ case-lambda letrec-values let-values)
-          [(lam vars body1 body ...)
-           (or (and (free-identifier=? #'lam #'#%plain-lambda)
-                    (vars-ok? (syntax vars)))
-               (and (or (free-identifier=? #'lam #'lambda)
-                        (free-identifier=? #'lam #'λ))
-                    (kw-vars-ok? (syntax vars))))
-           (if xform?
-               (with-syntax ([the-obj the-obj]
-                             [the-finder the-finder]
-                             [name (mk-name name)])
-                 (with-syntax ([vars (if (or (free-identifier=? #'lam #'lambda)
-                                             (free-identifier=? #'lam #'λ))
-                                         (let loop ([vars #'vars])
-                                           (cond
-                                             [(identifier? vars) vars]
-                                             [(syntax? vars)
-                                              (datum->syntax vars
-                                                             (loop (syntax-e vars))
-                                                             vars
-                                                             vars)]
-                                             [(pair? vars)
-                                              (syntax-case (car vars) ()
-                                                [(id expr)
-                                                 (and (identifier? #'id) (not (immediate-default? #'expr)))
-                                                 ;; optional argument; need to wrap arg expression
-                                                 (cons
-                                                  (with-syntax ([expr (syntax/loc #'expr
-                                                                        (syntax-parameterize ([the-finder (quote-syntax the-obj)])
-                                                                          (#%expression expr)))])
-                                                    (syntax/loc (car vars)
-                                                      (id expr)))
-                                                  (loop (cdr vars)))]
-                                                [_ (cons (car vars) (loop (cdr vars)))])]
-                                             [else vars]))
-                                         #'vars)])
-                   (let ([l (syntax/loc stx 
-                              (lambda (the-obj . vars) 
-                                (syntax-parameterize ([the-finder (quote-syntax the-obj)])
-                                  body1 body ...)))])
-                     (syntax-track-origin
-                      (with-syntax ([l (rearm (add-method-property l) stx)])
-                        (syntax/loc stx 
-                          (let ([name l]) name)))                  
-                      stx
-                      (syntax-local-introduce #'lam)))))
-               stx)]
-          [(#%plain-lambda . _)
-           (bad "ill-formed lambda expression for method" stx)]
-          [(lambda . _)
-           (bad "ill-formed lambda expression for method" stx)]
-          [(λ . _)
-           (bad "ill-formed lambda expression for method" stx)]
-          [(case-lam [vars body1 body ...] ...)
-           (and (free-identifier=? #'case-lam #'case-lambda)
-                (andmap vars-ok? (syntax->list (syntax (vars ...)))))
-           (if xform?
-               (with-syntax ([the-obj the-obj]
-                             [the-finder the-finder]
-                             [name (mk-name name)])
-                 (let ([cl (syntax/loc stx
-                             (case-lambda [(the-obj . vars) 
-                                           (syntax-parameterize ([the-finder (quote-syntax the-obj)])
-                                             body1 body ...)] ...))])
-                   (syntax-track-origin 
-                    (with-syntax ([cl (rearm (add-method-property cl) stx)])
-                      (syntax/loc stx
-                        (let ([name cl]) name)))
-                    stx
-                    (syntax-local-introduce #'case-lam))))
-               stx)]
-          [(case-lambda . _)
-           (bad "ill-formed case-lambda expression for method" stx)]
-          [(let- ([(id) expr] ...) let-body)
-           (and (or (free-identifier=? (syntax let-) 
-                                       (quote-syntax let-values))
-                    (free-identifier=? (syntax let-) 
-                                       (quote-syntax letrec-values)))
-                (andmap identifier? (syntax->list (syntax (id ...)))))
-           (let* ([letrec? (free-identifier=? (syntax let-) 
-                                              (quote-syntax letrec-values))]
-                  [ids (syntax->list (syntax (id ...)))]
-                  [new-ids (if xform?
-                               (map
-                                (lambda (id)
-                                  (datum->syntax
-                                   #f
-                                   (gensym (syntax-e id))))
-                                ids)
-                               ids)]
-                  [body-locals (append ids locals)]
-                  [exprs (map (lambda (expr id)
-                                (loop expr #t id (if letrec?
-                                                     body-locals
-                                                     locals)))
-                              (syntax->list (syntax (expr ...)))
-                              ids)]
-                  [body (let ([body (syntax let-body)])
-                          (if (identifier? body)
-                              (ormap (lambda (id new-id)
-                                       (and (bound-identifier=? body id)
-                                            new-id))
-                                     ids new-ids)
-                              (loop body #t name body-locals)))])
-             (unless body
-               (bad "bad form for method definition" orig-stx))
-             (with-syntax ([(proc ...) exprs]
-                           [(new-id ...) new-ids]
-                           [mappings
-                            (if xform?
-                                (map
-                                 (lambda (old-id new-id)
-                                   (with-syntax ([old-id old-id]
-                                                 [old-id-localized (lookup-localize (localize old-id))]
-                                                 [new-id new-id]
-                                                 [the-obj the-obj]
-                                                 [the-finder the-finder])
-                                     (syntax (old-id (make-direct-method-map 
-                                                      (quote-syntax the-finder)
-                                                      (quote the-obj)
-                                                      (quote-syntax old-id)
-                                                      #f
-                                                      (quote-syntax old-id-localized)
-                                                      (quote new-id))))))
-                                 ids new-ids)
-                                null)]
-                           [body body])
-               (syntax-track-origin
-                (rearm
-                 (if xform?
-                     (if letrec?
-                         (syntax/loc stx (letrec-syntax mappings
-                                           (let- ([(new-id) proc] ...) 
-                                                 body)))
-                         (syntax/loc stx (let- ([(new-id) proc] ...) 
-                                               (letrec-syntax mappings
-                                                 body))))
-                     (syntax/loc stx (let- ([(new-id) proc] ...) 
-                                           body)))
-                 stx)
-                stx
-                (syntax-local-introduce #'let-))))]
-          [(-#%app -chaperone-procedure expr . rst)
-           (and (free-identifier=? (syntax -#%app)
-                                   (quote-syntax #%plain-app))
-                (free-identifier=? (syntax -chaperone-procedure)
-                                   (quote-syntax chaperone-procedure)))
-           (with-syntax ([expr (loop #'expr #t name locals)])
-             (syntax-track-origin
-              (rearm
-               (syntax/loc stx (-#%app -chaperone-procedure expr . rst))
-               stx)
-              stx
-              (syntax-local-introduce #'-#%app)))]
-          [_else 
-           (if can-expand?
-               (loop (expand stx locals) #f name locals)
-               (bad "bad form for method definition" orig-stx))])))
-    
-    (define (add-method-property l)
-      (syntax-property l 'method-arity-error #t))
-
-    ;; `class' wants to be priviledged with respect to
-    ;; syntax taints: save the declaration-time inspector and use it 
-    ;; to disarm syntax taints
-    (define method-insp (variable-reference->module-declaration-inspector
-                         (#%variable-reference)))
-    (define (disarm stx)
-      (syntax-disarm stx method-insp))
-    (define (rearm new old)
-      (syntax-rearm new old))
-    
     ;; --------------------------------------------------------------------------------
     ;; Start here:
     
@@ -721,8 +515,8 @@
           
           ;; ----- Expand definitions -----
           (let ([defn-and-exprs (expand-all-forms stx defn-and-exprs def-ctx bind-local-id)]
-                [bad (lambda (msg expr)
-                       (raise-syntax-error #f msg stx expr))]
+                [bad (lambda (msg expr . rest)
+                       (apply raise-syntax-error #f msg stx expr rest))]
                 [class-name (if name-id
                                 (syntax-e name-id)
                                 (let ([s (syntax-local-infer-name stx)])
@@ -1117,25 +911,26 @@
                                      [else 'list])])
                     
                     ;; -- Look for duplicates --
-                    (let ([dup (check-duplicate-identifier
-                                (append defined-syntax-names
-                                        defined-method-names
-                                        private-field-names
-                                        field-names
-                                        inherit-field-names
-                                        plain-init-names
-                                        inherit-names
-                                        inherit/super-names
-                                        inherit/inner-names
-                                        rename-super-names
-                                        rename-inner-names))])
+                    (let-values ([(dup origs)
+                                  (stx-find-duplicate-identifiers
+                                    (append defined-syntax-names
+                                            defined-method-names
+                                            private-field-names
+                                            field-names
+                                            inherit-field-names
+                                            plain-init-names
+                                            inherit-names
+                                            inherit/super-names
+                                            inherit/inner-names
+                                            rename-super-names
+                                            rename-inner-names))])
                       (when dup
-                        (bad "duplicate declared identifier" dup)))
+                        (bad "duplicate declared identifier" dup origs)))
                     
                     ;; -- Could still have duplicates within private/public/override/augride --
-                    (let ([dup (check-duplicate-identifier local-method-names)])
+                    (let-values ([(dup origs) (stx-find-duplicate-identifiers local-method-names)])
                       (when dup
-                        (bad "duplicate declared identifier" dup)))
+                        (bad "duplicate declared identifier" dup origs)))
                     
                     ;; -- Check for duplicate external method names, init names, or field names
                     (let ([check-dup
@@ -1787,6 +1582,227 @@
                  (syntax->list #'(defn-or-expr ...)))]))
      )))
 
+(begin-for-syntax
+  ;; expands an expression enough that we can check whether it has
+  ;; the right form for a method; must use local syntax definitions
+  (define (proc-shape name orig-stx xform? 
+                      the-obj the-finder
+                      bad class-name expand-stop-names
+                      def-ctx lookup-localize)
+    (define (expand expr locals)
+      (local-expand
+       expr
+       'expression
+       (append locals (list #'lambda) expand-stop-names)
+       def-ctx))
+    ;; Checks whether the vars sequence is well-formed
+    (define (vars-ok? vars)
+      (or (identifier? vars)
+          (stx-null? vars)
+          (and (stx-pair? vars)
+               (identifier? (stx-car vars))
+               (vars-ok? (stx-cdr vars)))))
+    (define (kw-vars-ok? vars)
+      (or (identifier? vars)
+          (stx-null? vars)
+          (and (stx-pair? vars)
+               (let ([a (stx-car vars)]
+                     [opt-arg-ok?
+                      (lambda (a)
+                        (or (identifier? a)
+                            (and (stx-pair? a)
+                                 (identifier? (stx-car a))
+                                 (stx-pair? (stx-cdr a))
+                                 (stx-null? (stx-cdr (stx-cdr a))))))])
+                 (or (and (opt-arg-ok? a)
+                          (kw-vars-ok? (stx-cdr vars)))
+                     (and (keyword? (syntax-e a))
+                          (stx-pair? (stx-cdr vars))
+                          (opt-arg-ok? (stx-car (stx-cdr vars)))
+                          (kw-vars-ok? (stx-cdr (stx-cdr vars)))))))))
+    ;; mk-name: constructs a method name
+    ;; for error reporting, etc.
+    (define (mk-name name)
+      (datum->syntax 
+       #f 
+       (string->symbol (format "~a method~a~a" 
+                               (syntax-e name)
+                               (if class-name
+                                   " in "
+                                   "")
+                               (or class-name 
+                                   ""))) 
+       #f))
+    ;; -- transform loop starts here --
+    (let loop ([stx orig-stx][can-expand? #t][name name][locals null])
+      (syntax-case (disarm stx) (#%plain-lambda lambda case-lambda letrec-values let-values)
+        [(lam vars body1 body ...)
+         (or (and (free-identifier=? #'lam #'#%plain-lambda)
+                  (vars-ok? (syntax vars)))
+             (and (free-identifier=? #'lam #'lambda)
+                  (kw-vars-ok? (syntax vars))))
+         (if xform?
+             (with-syntax ([the-obj the-obj]
+                           [the-finder the-finder]
+                           [name (mk-name name)])
+               (with-syntax ([vars (if (free-identifier=? #'lam #'lambda)
+                                       (let loop ([vars #'vars])
+                                         (cond
+                                           [(identifier? vars) vars]
+                                           [(syntax? vars)
+                                            (datum->syntax vars
+                                                           (loop (syntax-e vars))
+                                                           vars
+                                                           vars)]
+                                           [(pair? vars)
+                                            (syntax-case (car vars) ()
+                                              [(id expr)
+                                               (and (identifier? #'id) (not (immediate-default? #'expr)))
+                                               ;; optional argument; need to wrap arg expression
+                                               (cons
+                                                (with-syntax ([expr (syntax/loc #'expr
+                                                                      (syntax-parameterize ([the-finder (quote-syntax the-obj)])
+                                                                        (#%expression expr)))])
+                                                  (syntax/loc (car vars)
+                                                    (id expr)))
+                                                (loop (cdr vars)))]
+                                              [_ (cons (car vars) (loop (cdr vars)))])]
+                                           [else vars]))
+                                       #'vars)])
+                 (let ([l (syntax/loc stx 
+                            (lambda (the-obj . vars) 
+                              (syntax-parameterize ([the-finder (quote-syntax the-obj)])
+                                body1 body ...)))])
+                   (syntax-track-origin
+                    (with-syntax ([l (rearm (add-method-property l) stx)])
+                      (syntax/loc stx 
+                        (let ([name l]) name)))                  
+                    stx
+                    (syntax-local-introduce #'lam)))))
+             stx)]
+        [(#%plain-lambda . _)
+         (bad "ill-formed lambda expression for method" stx)]
+        [(lambda . _)
+         (bad "ill-formed lambda expression for method" stx)]
+        [(case-lam [vars body1 body ...] ...)
+         (and (free-identifier=? #'case-lam #'case-lambda)
+              (andmap vars-ok? (syntax->list (syntax (vars ...)))))
+         (if xform?
+             (with-syntax ([the-obj the-obj]
+                           [the-finder the-finder]
+                           [name (mk-name name)])
+               (let ([cl (syntax/loc stx
+                           (case-lambda [(the-obj . vars) 
+                                         (syntax-parameterize ([the-finder (quote-syntax the-obj)])
+                                           body1 body ...)] ...))])
+                 (syntax-track-origin 
+                  (with-syntax ([cl (rearm (add-method-property cl) stx)])
+                    (syntax/loc stx
+                      (let ([name cl]) name)))
+                  stx
+                  (syntax-local-introduce #'case-lam))))
+             stx)]
+        [(case-lambda . _)
+         (bad "ill-formed case-lambda expression for method" stx)]
+        [(let- ([(id) expr] ...) let-body)
+         (and (or (free-identifier=? (syntax let-) 
+                                     (quote-syntax let-values))
+                  (free-identifier=? (syntax let-) 
+                                     (quote-syntax letrec-values)))
+              (andmap identifier? (syntax->list (syntax (id ...)))))
+         (let* ([letrec? (free-identifier=? (syntax let-) 
+                                            (quote-syntax letrec-values))]
+                [ids (syntax->list (syntax (id ...)))]
+                [new-ids (if xform?
+                             (map
+                              (lambda (id)
+                                (datum->syntax
+                                 #f
+                                 (gensym (syntax-e id))))
+                              ids)
+                             ids)]
+                [body-locals (append ids locals)]
+                [exprs (map (lambda (expr id)
+                              (loop expr #t id (if letrec?
+                                                   body-locals
+                                                   locals)))
+                            (syntax->list (syntax (expr ...)))
+                            ids)]
+                [body (let ([body (syntax let-body)])
+                        (if (identifier? body)
+                            (ormap (lambda (id new-id)
+                                     (and (bound-identifier=? body id)
+                                          new-id))
+                                   ids new-ids)
+                            (loop body #t name body-locals)))])
+           (unless body
+             (bad "bad form for method definition" orig-stx))
+           (with-syntax ([(proc ...) exprs]
+                         [(new-id ...) new-ids]
+                         [mappings
+                          (if xform?
+                              (map
+                               (lambda (old-id new-id)
+                                 (with-syntax ([old-id old-id]
+                                               [old-id-localized (lookup-localize (localize old-id))]
+                                               [new-id new-id]
+                                               [the-obj the-obj]
+                                               [the-finder the-finder])
+                                   (syntax (old-id (make-direct-method-map 
+                                                    (quote-syntax the-finder)
+                                                    (quote the-obj)
+                                                    (quote-syntax old-id)
+                                                    #f
+                                                    (quote-syntax old-id-localized)
+                                                    (quote new-id))))))
+                               ids new-ids)
+                              null)]
+                         [body body])
+             (syntax-track-origin
+              (rearm
+               (if xform?
+                   (if letrec?
+                       (syntax/loc stx (letrec-syntax mappings
+                                         (let- ([(new-id) proc] ...) 
+                                               body)))
+                       (syntax/loc stx (let- ([(new-id) proc] ...) 
+                                             (letrec-syntax mappings
+                                               body))))
+                   (syntax/loc stx (let- ([(new-id) proc] ...) 
+                                         body)))
+               stx)
+              stx
+              (syntax-local-introduce #'let-))))]
+        [(-#%app -chaperone-procedure expr . rst)
+         (and (free-identifier=? (syntax -#%app)
+                                 (quote-syntax #%plain-app))
+              (free-identifier=? (syntax -chaperone-procedure)
+                                 (quote-syntax chaperone-procedure)))
+         (with-syntax ([expr (loop #'expr #t name locals)])
+           (syntax-track-origin
+            (rearm
+             (syntax/loc stx (-#%app -chaperone-procedure expr . rst))
+             stx)
+            stx
+            (syntax-local-introduce #'-#%app)))]
+        [_else 
+         (if can-expand?
+             (loop (expand stx locals) #f name locals)
+             (bad "bad form for method definition" orig-stx))])))
+    
+    (define (add-method-property l)
+      (syntax-property l 'method-arity-error #t))
+
+    ;; `class' wants to be priviledged with respect to
+    ;; syntax taints: save the declaration-time inspector and use it 
+    ;; to disarm syntax taints
+    (define method-insp (variable-reference->module-declaration-inspector
+                         (#%variable-reference)))
+    (define (disarm stx)
+      (syntax-disarm stx method-insp))
+    (define (rearm new old)
+      (syntax-rearm new old)))
+
 (define-syntax (-define-serializable-class stx)
   (syntax-case stx ()
     [(_ orig-stx name super-expression (interface-expr ...)
@@ -1929,13 +1945,7 @@
                       stx
                       id)))
                  ids)
-       (let ([dup (check-duplicate-identifier ids)])
-         (when dup
-           (raise-syntax-error
-            #f
-            "duplicate identifier"
-            stx
-            dup)))
+       (raise-if-duplicate-identifiers "duplicate identifier" stx ids)
        (if (eq? (syntax-local-context) 'top-level)
            ;; Does nothing in particular at the top level:
            (syntax/loc stx (define-syntaxes (id ...) (values 'id ...)))
@@ -2031,111 +2041,7 @@
      a))
   (eq-hash-code (member-key-id a)))
 
-;;--------------------------------------------------------------------
-;;  class implementation
-;;--------------------------------------------------------------------
 
-(define-struct class (name
-                      pos supers     ; pos is subclass depth, supers is vector
-                      self-interface ; self interface
-                      insp-mk        ; dummy struct maker to control inspection access
-                      obj-inspector  ; the inspector used for instances of this class
-                      
-                      method-width   ; total number of methods
-                      method-ht      ; maps public names to vector positions
-                      method-ids     ; reverse-ordered list of public method names
-                      abstract-ids   ; list of abstract method names
-                      method-ictcs   ; list of indices of methods to fix for interface ctcs
-
-                      [ictc-classes  ; #f or weak hash of cached classes keyed by blame
-                       #:mutable]
-
-                      methods        ; vector of methods (for external dynamic dispatch)
-                                     ; vector might also contain lists; see comment below from Stevie
-                      super-methods  ; vector of methods (for subclass super calls)
-                      int-methods    ; vector of vector of methods (for internal dynamic dispatch)
-                      beta-methods   ; vector of vector of methods
-                      meth-flags     ; vector: #f => primitive-implemented
-                      ;         'final => final
-                      ;         'augmentable => can augment
-                      
-                      inner-projs    ; vector of projections for the last inner slot
-                      dynamic-idxs   ; vector of indexs for access into int-methods
-                      dynamic-projs  ; vector of vector of projections for internal dynamic dispatch
-                      
-                      field-width    ; total number of fields
-                      field-pub-width ; total number of public fields
-                      field-ht       ; maps public field names to field-infos (see make-field-info above)
-                      field-ids      ; list of public field names
-                      all-field-ids  ; list of field names in reverse order, used for `undefined` error reporting
-                      
-                      [struct:object ; structure type for instances
-                       #:mutable]
-                      [object?       ; predicate
-                       #:mutable]
-                      [make-object   ; : (-> object), constructor that creates an uninitialized object
-                          #:mutable]
-                      [field-ref     ; accessor
-                       #:mutable]
-                      [field-set!    ; mutator
-                       #:mutable]
-                      
-                      init-args      ; list of symbols in order; #f => only by position
-                      init-mode      ; 'normal, 'stop (don't accept by-pos for super), or 'list
-                      
-                      [init          ; initializer
-                       #:mutable]    ; :   object
-                      ;     (object class (box boolean) leftover-args new-by-pos-args new-named-args 
-                      ;      -> void) // always continue-make-super?
-                      ;     class
-                      ;     (box boolean)
-                      ;     leftover-args
-                      ;     named-args
-                      ;  -> void
-                      
-                      [orig-cls      ; uncontracted version of this class (or same class)
-                       #:mutable]
-                      [serializer    ; proc => serializer, #f => not serializable
-                       #:mutable]
-                      [fixup         ; for deserialization
-                       #:mutable]
-
-                      check-undef?   ; objects need an unsafe-undefined guarding chaperone?
-                      
-                      no-super-init?); #t => no super-init needed
-  #:inspector insp
-  #:property prop:equal+hash
-  (list (λ (cls-a cls-b recur) (eq? (class-orig-cls cls-a) (class-orig-cls cls-b)))
-        (λ (cls recur) (eq-hash-code (class-orig-cls cls)))
-        (λ (cls recur) (eq-hash-code (class-orig-cls cls)))))
-
-#|
-
-From Stevie, explaining the shape of the elements of the vector in the 'methods' field:
-
-For each level of interface, we build up the following structure:
-
-(list <contract> <name of interface that contains this contract> <pos blame or #f> <neg blame or #f>)
-
-The second part of the list is used for certain types of failure reporting, I think, 
-whereas the other parts are what we need to build the correct contract forms (once we
-have the method implementation to contract).  In the interface contract info returned
-from a list of contracts, the info for the leaves contains #f negative blame (which 
-will be filled in with the class that implements the interface) and the info for the
-"roots" (more on that later) contains #f positive blame (which is filled in with the 
-info for the client of the class).
-
-When we have a particular class, we can fill in the neg. blame for the leaves in the hierarchy, and
-then we also apply as much of these structures have complete data to the method implementation
- (that is, non-#f pos and neg blames so we can appropriately construct the correct `contract' forms).
-
-What's left is a list of non-complete data for the root(s) of the hierarchy (by roots, I mean
-the first interfaces where this method is mentioned in the interface hierarchy).  We store that
-list along with the method implementation, so that once we have the neg. blame (the blame region
-that instantiates the class in question), we can complete this data and apply those 
-last few projections.
-
-|#
 
 ;; compose-class: produces one result if `deserialize-id' is #f, two
 ;;                results if `deserialize-id' is not #f
@@ -2201,6 +2107,55 @@ last few projections.
                                 augment-names augment-final-names augride-normal-names
                                 abstract-names)
                         "method names"))
+
+  (define new-public-names (append pubment-names public-final-names public-normal-names abstract-names))
+  (define new-override-names (append overment-names override-final-names override-normal-names))
+
+  ;; method names added for interface default implementations; whether via `public` or
+  ;; `override`, these are in many ways more like `public`, since they extend the
+  ;; methods added by this class relative to the superclass
+  (define-values (default-method-names default-override-names default-methods default-overrides super-defaults)
+    (for/fold ([names null] [override-names null] [methods null] [overrides null] [public-ht #f] [override-ht #f] [defaults (hash)]
+                            #:result (values names override-names methods overrides defaults))
+              ([intf (in-list interfaces)])
+      (for/fold ([names names] [override-names override-names] [methods null] [overrides overrides] [public-ht public-ht] [override-ht override-ht] [defaults defaults])
+                ([(var def) (in-hash (interface-defaults intf))])
+        (let ([public-ht (or public-ht (for/hasheq ([name (in-list new-public-names)])
+                                         (values name #t)))]
+              [override-ht (or override-ht (for/hasheq ([name (in-list new-override-names)])
+                                             (values name #t)))])
+          (cond
+            [(hash-ref override-ht var #f)
+             => (lambda (impl)
+                  (cond
+                    [(hash-ref defaults var #f)
+                     => (lambda (prev-def)
+                          (values names override-names methods overrides public-ht override-ht
+                                  (hash-set defaults var (if (not (eq? def prev-def))
+                                                             (make-ambigious-interface-super-method var)
+                                                             def))))]
+                    [else
+                     (values names (cons var override-names) methods (cons impl overrides) public-ht override-ht
+                                  (hash-set defaults var def))]))]
+            [(hash-ref public-ht var #f)
+             (obj-error 'class* "method has implementation in superinterface"
+                        "method name" (as-write var)
+                        #:intf-name (interface-name intf))]
+            [(not (eq? def (hash-ref defaults var (lambda () def))))
+             (obj-error 'class* "method has conflicting default implementations in among superinterfaces"
+                        "method name" (as-write var)
+                        #:intf-name (interface-name intf))]
+            [(and super
+                  (hash-ref (class-method-ht super) var #f))
+             (cond
+               [(implementation? super intf)
+                (values names override-names methods overrides public-ht override-ht (hash-set defaults var intf))]
+               [else
+                (obj-error 'class* "method implmentation in both superclass and superinterface"
+                           "method name" (as-write var)
+                           #:intf-name (interface-name intf))])]
+            [else
+             (values (cons var names) override-names (cons def methods) overrides public-ht override-ht (hash-set defaults var def))])))))
   
   ;; -- Run class-seal/unseal checkers --
   (when (has-seals? super)
@@ -2239,18 +2194,20 @@ last few projections.
                               (string->symbol (format "derived-from-~a" s))
                               s))))]
          ;; Combine method lists
-         [public-names (append pubment-names public-final-names public-normal-names abstract-names)]
-         [override-names (append overment-names override-final-names override-normal-names)]
+         [public-names (append new-public-names default-method-names)]
+         [override-names new-override-names]
          [augride-names (append augment-names augment-final-names augride-normal-names)]
          [final-names (append public-final-names override-final-names augment-final-names)]
          [augonly-names (append pubment-names overment-names augment-names)]
          ;; Misc utilities
-         [no-new-methods? (null? public-names)]
+         [no-new-methods? (and (null? public-names)
+                               (null? default-override-names))]
          [no-method-changes? (and (null? interfaces)
                                   (null? public-names)
                                   (null? override-names)
                                   (null? augride-names)
-                                  (null? final-names))]
+                                  (null? final-names)
+                                  (null? default-override-names))]
          [no-new-fields? (null? public-field-names)]
          [xappend (lambda (a b) (if (null? b) a (append a b)))])
     
@@ -2285,7 +2242,7 @@ last few projections.
       
       ;; Put new ids in table, with pos (replace field pos with accessor info later)
       (unless no-new-methods?
-        (for ([id (in-list public-names)]
+        (for ([id (in-list (append public-names default-override-names))]
               [p (in-naturals (class-method-width super))])
           (when (hash-ref method-ht id #f)
             (obj-error 'class* "superclass already contains method"
@@ -2314,20 +2271,26 @@ last few projections.
       
       ;; Check that superclass has expected methods, and get indices
       (let ([get-indices
-             (lambda (method-ht what ids)
+             (lambda (at-method-ht what ids)
                (map
                 (lambda (id)
                   (hash-ref 
-                   method-ht id
+                   at-method-ht id
                    (lambda ()
-                     (obj-error 'class* 
-                                (format "~a does not provide an expected method for ~a" 
-                                        (if (eq? method-ht super-method-ht) "superclass" "class")
-                                        what)
-                                (format "~a name" what) (as-write id)
-                                #:class-name name))))
+                     (cond
+                       [(and (eq? at-method-ht super-method-ht)
+                             (hash-ref super-defaults id #f))
+                        ;; must be added from an interface default, so get index from `method-ht`
+                        (hash-ref method-ht id)]
+                       [else
+                        (obj-error 'class* 
+                                   (format "~a does not provide an expected method for ~a" 
+                                           (if (eq? at-method-ht super-method-ht) "superclass" "class")
+                                           what)
+                                   (format "~a name" what) (as-write id)
+                                   #:class-name name)]))))
                 ids))]
-            [method-width (+ (class-method-width super) (length public-names))]
+            [method-width (+ (class-method-width super) (length public-names) (length default-override-names))]
             [field-width (+ (class-field-width super) num-fields)]
             [field-pub-width (+ (class-field-pub-width super) (length public-field-names))])
         (let ([inherit-indices (get-indices super-method-ht "inherit" inherit-names)]
@@ -2342,7 +2305,9 @@ last few projections.
               [new-augonly-indices (get-indices method-ht "pubment" pubment-names)]
               [new-final-indices (get-indices method-ht "public-final" public-final-names)]
               [new-normal-indices (get-indices method-ht "public" public-normal-names)]
-              [new-abstract-indices (get-indices method-ht "abstract" abstract-names)])
+              [new-abstract-indices (get-indices method-ht "abstract" abstract-names)]
+              [default-method-indices (get-indices method-ht "default" (append default-method-names
+                                                                               default-override-names))])
           
           ;; -- Check that all interfaces are satisfied --
           (for-each
@@ -2389,7 +2354,7 @@ last few projections.
                   (append abstract-names
                           (remq* override-names super-abstract-ids))]
                  [super-interfaces (cons (class-self-interface super) interfaces)]
-                 [i (interface-make name super-interfaces #f method-names (make-immutable-hash) #f null)]
+                 [i (interface-make name super-interfaces #f method-names (hash) (hash) #f null)]
                  [methods (if no-method-changes?
                               (class-methods super)
                               (make-vector method-width))]
@@ -2451,28 +2416,6 @@ last few projections.
             (setup-all-implemented! i)
             (vector-set! (class-supers c) (add1 (class-pos super)) c)
             (set-class-orig-cls! c c)
-
-            
-            ;; --- Make the new external method contract records ---
-            ;; (they are just copies of the super at this point, updated below)
-            (define wci-neg-extra-arg-vec 
-              (if (impersonator-prop:has-wrapped-class-neg-party? super)
-                  (let* ([the-info (impersonator-prop:get-wrapped-class-info super)]
-                         [ov (wrapped-class-info-neg-extra-arg-vec the-info)])
-                    (if no-method-changes?
-                        ov
-                        (let ([v (make-vector method-width #f)])
-                          (vector-copy! v 0 ov)
-                          v)))
-                  #f))
-            (define wci-neg-acceptors-ht
-              (if (impersonator-prop:has-wrapped-class-neg-party? super)
-                  (let* ([the-info (impersonator-prop:get-wrapped-class-info super)]
-                         [oh (wrapped-class-info-neg-acceptors-ht the-info)])
-                    (if no-method-changes?
-                        oh
-                        (hash-copy oh)))
-                  #f))
             
             ;; --- Make the new object struct ---
             (let*-values ([(prim-object-make prim-object? struct:prim-object)
@@ -2534,21 +2477,25 @@ last few projections.
                 
                 ;; -- Extract superclass methods and make rename-inners ---
                 (let ([rename-supers (map (lambda (index mname)
-                                              ;; While the last part of the vector is indeed the right
-                                              ;; method, if there have been super contracts placed since,
-                                              ;; they won't be reflected there, only in the super-methods
-                                              ;; vector of the superclass.
-                                            (let ([vec (vector-ref (class-beta-methods super) index)])
-                                              (when (and (positive? (vector-length vec))
-                                                         (not (vector-ref vec (sub1 (vector-length vec)))))
-                                                (obj-error 'class* 
-                                                           (string-append
-                                                            "superclass method for override, overment, inherit/super, "
-                                                            "or rename-super is not overrideable")
-                                                           "superclass" super
-                                                           "method name" (as-write mname)
-                                                           #:class-name name)))
-                                            (vector-ref (class-super-methods super) index))
+                                            (cond
+                                              [(hash-ref super-defaults mname #f)
+                                               => (lambda (def) def)]
+                                              [else
+                                               ;; While the last part of the vector is indeed the right
+                                               ;; method, if there have been super contracts placed since,
+                                               ;; they won't be reflected there, only in the super-methods
+                                               ;; vector of the superclass.
+                                               (let ([vec (vector-ref (class-beta-methods super) index)])
+                                                 (when (and (positive? (vector-length vec))
+                                                            (not (vector-ref vec (sub1 (vector-length vec)))))
+                                                   (obj-error 'class* 
+                                                              (string-append
+                                                               "superclass method for override, overment, inherit/super, "
+                                                               "or rename-super is not overrideable")
+                                                              "superclass" super
+                                                              "method name" (as-write mname)
+                                                              #:class-name name)))
+                                               (vector-ref (class-super-methods super) index)]))
                                           rename-super-indices
                                           rename-super-names)]
                       [rename-inners (let ([new-augonly (make-vector method-width #f)])
@@ -2610,14 +2557,15 @@ last few projections.
                     (for-each (lambda (index)
                                 (vector-set! dynamic-idxs index 0))
                               (append new-augonly-indices new-final-indices
-                                      new-normal-indices new-abstract-indices)))
+                                      new-normal-indices new-abstract-indices
+                                      default-method-indices)))
                   
                   ;; -- Create method accessors --
                   (let ([method-accessors
                          (map (lambda (index)
                                 (let ([dyn-idx (vector-ref dynamic-idxs index)])
                                   (lambda (obj)
-                                    (vector-ref (vector-ref (class-int-methods (object-ref obj))
+                                    (vector-ref (vector-ref (class-int-methods (object-ref/unwrap obj))
                                                             index)
                                                 dyn-idx))))
                               (append new-normal-indices replace-normal-indices refine-normal-indices
@@ -2653,8 +2601,9 @@ last few projections.
                                   (vector-set! dynamic-idxs index 0)
                                   (vector-set! dynamic-projs index (vector values)))
                                 (append new-augonly-indices new-final-indices
-                                        new-abstract-indices new-normal-indices)
-                                new-methods)
+                                        new-abstract-indices new-normal-indices
+                                        default-method-indices)
+                                (append new-methods default-methods default-overrides))
                       ;; Add only abstracts, making sure the super method just calls (void)
                       (let ([dummy (lambda args (void))])
                         (for-each (lambda (index)
@@ -2691,12 +2640,7 @@ last few projections.
                                                        (make-method ((vector-ref inner-projs index) method) id))
                                           (vector-set! beta-methods index v))))
                                   (unless (vector-ref meth-flags index)
-                                    (vector-set! meth-flags index (not make-struct:prim)))
-                                  
-                                  ;; clear out external contracts for methods that are overridden
-                                  (when wci-neg-extra-arg-vec
-                                    (vector-set! wci-neg-extra-arg-vec index #f)
-                                    (hash-remove! wci-neg-acceptors-ht method)))
+                                    (vector-set! meth-flags index (not make-struct:prim))))
                                 (append replace-augonly-indices replace-final-indices replace-normal-indices
                                         refine-augonly-indices refine-final-indices refine-normal-indices)
                                 (append override-methods augride-methods)
@@ -2781,67 +2725,11 @@ last few projections.
                                    (loop (add1 i))))))))
                       
                       ;; --- Install initializer into class ---
-                      ;;     and create contract-wrapped subclass
-                      (define c+ctc
-                        (cond
-                          [wci-neg-extra-arg-vec
-                           (define neg-party (impersonator-prop:get-wrapped-class-neg-party super))
-                           (define info (impersonator-prop:get-wrapped-class-info super))
-                           (define blame (wrapped-class-info-blame info))
-                           (define sub-init-proj-pairs
-                             (let loop ([proj-pairs (wrapped-class-info-init-proj-pairs info)])
-                               (cond
-                                 [(null? proj-pairs) '()]
-                                 [else
-                                  (define pr (car proj-pairs))
-                                  (if (member (list-ref pr 0) init-args)
-                                      (loop (cdr proj-pairs))
-                                      (cons pr (loop (cdr proj-pairs))))])))
-                           (define super-init-proj-pairs (wrapped-class-info-init-proj-pairs info))
-                           
-                           ;; use an init that checks the super contracts on a super call
-                           (set-class-init!
-                            c
-                            (λ (o continue-make-super c inited? leftovers named-args)
-                              (define (contract-checking-continue-make-super o c inited?
-                                                                             leftovers
-                                                                             by-pos-args
-                                                                             new-named-args)
-                                (check-arg-contracts blame neg-party c
-                                                     super-init-proj-pairs
-                                                     new-named-args)
-                                (continue-make-super o c inited?
-                                                     leftovers
-                                                     by-pos-args
-                                                     new-named-args))
-                              (init o contract-checking-continue-make-super
-                                    c inited? leftovers named-args)))
-                           
-                           ;; add properties to the subclass that
-                           ;; check the residual external contracts
-                           (impersonate-struct
-                            c
-                            
-                            set-class-orig-cls! (λ (a b) b)
-                            
-                            impersonator-prop:wrapped-class-neg-party
-                            neg-party
-                            
-                            impersonator-prop:wrapped-class-info
-                            (wrapped-class-info 
-                             blame
-                             wci-neg-extra-arg-vec
-                             wci-neg-acceptors-ht
-                             (wrapped-class-info-pos-field-projs info)
-                             (wrapped-class-info-neg-field-projs info)
-                             sub-init-proj-pairs))]
-                          [else
-                           (set-class-init! c init)
-                           c]))
-                      
+                      (set-class-init! c init)
+
                       ;; -- result is the class, and maybe deserialize-info ---
                       (if deserialize-id
-                          (values c+ctc
+                          (values c
                                   (make-deserialize-info
                                    (if (interface-extension? i externalizable<%>)
                                        (lambda (args)
@@ -2862,7 +2750,7 @@ last few projections.
                                            (values o
                                                    (lambda (o2)
                                                      ((class-fixup c) o o2))))))))
-                          (copy-seals super c+ctc)))))))))))))
+                          (copy-seals super c)))))))))))))
 
 ;; (listof interface?) -> (listof symbol?)
 ;; traverse the interfaces and figure out contracted methods
@@ -2993,19 +2881,16 @@ An example
                       (make-struct-type 'props struct-type 0 0 #f props #f)])
           struct:))))
 
-(define-values (prop:object _object? object-ref) 
-  (make-struct-type-property 'object 'can-impersonate))
-(define (object? o)
-  (or (_object? o)
-      (wrapped-object? o)))
+(define (object? o) (object-struct? o))
 (define (object-ref/unwrap o)
+  (define cls-or-object/c-wrapper-info (object-ref o))
   (cond
-    [(_object? o) (object-ref o)]
-    [(wrapped-object? o) (object-ref/unwrap (wrapped-object-object o))]
-    [else 
-     ;; error case
-     (object-ref o)]))
-
+    [(class? cls-or-object/c-wrapper-info)
+     cls-or-object/c-wrapper-info]
+    [else
+     (object-ref/unwrap
+      (object/c-wrapper-info-val
+       cls-or-object/c-wrapper-info))]))
 
 
 ;;--------------------------------------------------------------------
@@ -3112,36 +2997,82 @@ An example
     (syntax-case m-stx ()
       [((interface-expr ...) ([prop prop-val] ...) var ...)
        (let ([name (syntax-local-infer-name stx)])
-         (define-values (vars ctcs)
-           (for/fold ([vars '()] [ctcs '()])
+         (define-values (vars ctcs defaults override?s)
+           (for/fold ([vars '()] [ctcs '()] [defaults '()] [override?s '()])
                      ([v (syntax->list #'(var ...))])
              (syntax-case v ()
                [id
                 (identifier? #'id)
-                (values (cons #'id vars) (cons #f ctcs))]
+                (values (cons #'id vars) (cons #f ctcs) (cons #f defaults) (cons #f override?s))]
+               [(id #:public default-rhs)
+                (values (cons #'id vars) (cons #f ctcs) (cons #'default-rhs defaults) (cons #f override?s))]
+               [(id #:override default-rhs)
+                (values (cons #'id vars) (cons #f ctcs) (cons #'default-rhs defaults) (cons #t override?s))]
                [(id ctc)
                 (identifier? #'id)
-                (values (cons #'id vars) (cons #'ctc ctcs))]
-               [_ (raise-syntax-error #f "not an identifier or identifier-contract pair"
+                (values (cons #'id vars) (cons #'ctc ctcs) (cons #f defaults) (cons #f override?s))]
+               [(id ctc #:public default-rhs)
+                (values (cons #'id vars) (cons #'ctc ctcs) (cons #'default-rhs defaults) (cons #f override?s))]
+               [(id ctc #:override default-rhs)
+                (values (cons #'id vars) (cons #'ctc ctcs) (cons #'default-rhs defaults) (cons #t override?s))]
+               [_ (raise-syntax-error #f
+                                      (string-append "bad syntax;\n"
+                                                     " not an identifier or parenthesized sequence of identifier,\n"
+                                                     " optional contract, and optional method implementation")
                                       stx v)])))
-         (let ([dup (check-duplicate-identifier vars)])
-           (when dup
-             (raise-syntax-error #f
-                                 "duplicate name"
-                                 stx
-                                 dup)))
-         (with-syntax ([name (datum->syntax #f name #f)]
-                       [(var ...) (map localize vars)]
-                       [((v c) ...) (filter (λ (p) (cadr p)) (map list vars ctcs))])
-           (class-syntax-protect
-            (syntax/loc stx
-              (compose-interface
-               'name
-               (list interface-expr ...)
-               `(var ...)
-               (make-immutable-hash (list (cons 'v c) ...))
-               (list prop ...)
-               (list prop-val ...))))))])))
+         (raise-if-duplicate-identifiers "duplicate name" stx vars)
+         (let ([the-obj (datum->syntax (quote-syntax here) (gensym 'self))]
+               [the-finder (datum->syntax #f (gensym 'find-self))])
+           (with-syntax ([name (datum->syntax #f name #f)]
+                         [(var ...) (map localize vars)]
+                         [((v c) ...) (filter (λ (p) (cadr p)) (map list vars ctcs))]
+                         [((v/def def override?) ...) (filter (λ (p) (cadr p)) (map list vars defaults override?s))])
+             (with-syntax ([(def ...)
+                            (let ()
+                              (define (bad msg expr)
+                                (raise-syntax-error #f msg stx expr))
+                              (define expand-stop-names (append
+                                                         (syntax->list #'(var ...))
+                                                         (kernel-form-identifier-list)))
+                              (define def-ctx (syntax-local-make-definition-context))
+                              (define localized-map (make-bound-identifier-mapping))
+                              (define lookup-localize (lambda (id)
+                                                        (bound-identifier-mapping-get
+                                                         localized-map
+                                                         id
+                                                         (lambda () #f))))
+                              (for/list ([name (in-list (syntax->list #'(v/def ...)))]
+                                         [def (in-list (syntax->list #'(def ...)))])
+                                (proc-shape name def #t
+                                            the-obj the-finder
+                                            bad (syntax-e #'name) expand-stop-names
+                                            def-ctx lookup-localize)))])
+               (class-syntax-protect
+                (quasisyntax/loc stx
+                  (compose-interface
+                   'name
+                   (list interface-expr ...)
+                   `(var ...)
+                   (hash (~@ 'v c) ...)
+                   #,(if (null? (syntax->list #'(def ...)))
+                         #'(hash)
+                         (with-syntax ([the-obj the-obj]
+                                       [the-finder the-finder])
+                           #'(let ()
+                               (define-syntax-parameter the-finder #f)
+                               (syntax-parameterize ([this-param (make-this-map (quote-syntax this-id)
+                                                                                (quote-syntax the-finder)
+                                                                                (quote the-obj))])
+                                 (let-syntax ([var (make-interface-method-map
+                                                    (quote-syntax set!)
+                                                    (quote-syntax the-finder)
+                                                    (quote the-obj)
+                                                    (quote-syntax find-method/who)
+                                                    (quote var))]
+                                              ...)
+                                   (hash (~@ 'v/def (cons def override?)) ...))))))
+                   (list prop ...)
+                   (list prop-val ...))))))))])))
 
 (define-syntax (_interface stx)
   (syntax-case stx ()
@@ -3174,12 +3105,15 @@ An example
     #:mutable]
    public-ids       ; (listof symbol) (in any order?!?)
    contracts        ; (hashof symbol? contract?)
+   defaults         ; (hashof symbol? procedure?)
    [class           ; (union #f class) -- means that anything implementing
        #:mutable]      ; this interface must be derived from this class
    properties)      ; (listof (vector gensym prop val))
   #:inspector insp)
 
-(define (compose-interface name supers vars ctcs props vals)
+(define (compose-interface name supers vars ctcs
+                           defaults/override ; (hashof symbol? (cons procedure? boolean?))
+                           props vals)
   (for-each
    (lambda (intf)
      (unless (interface? intf)
@@ -3207,9 +3141,11 @@ An example
        (for-each
         (lambda (var)
           (when (and (hash-ref ht var #f)
-                     (not (hash-ref ctcs var #f)))
-            (obj-error 'interface "variable already in superinterface" 
-                       "variable name" (as-write var)
+                     (not (hash-ref ctcs var #f))
+                     ;; ok to add/replace default implementation
+                     (not (hash-ref defaults/override var #f)))
+            (obj-error 'interface "method already in superinterface"
+                       "method name" (as-write var)
                        (and (interface-name super) "already in") (as-write (interface-name super))
                        #:intf-name name)))
         (interface-public-ids super)))
@@ -3241,11 +3177,44 @@ An example
             (lambda (var) (hash-set! ht var #t))
             (interface-public-ids super)))
          supers)
+        (define defaults (for/hash ([(var def+override) (in-hash defaults/override)])
+                           (values var (car def+override))))
+        (define override-defaults (for/hash ([(var def+override) (in-hash defaults/override)]
+                                             #:when (cdr def+override))
+                                    (values var #t)))
+        (define leftover-override-defaults
+          (for/fold ([override-defaults override-defaults]) ([super (in-list supers)])
+            (for/fold ([override-defaults override-defaults]) ([var (in-hash-keys (interface-defaults super))])
+              (hash-remove override-defaults var))))
+        (unless (= 0 (hash-count leftover-override-defaults))
+          (obj-error 'interface "method is not implemented in any superinterface"
+                     "method name" (hash-iterate-key leftover-override-defaults (hash-iterate-first leftover-override-defaults))))
+        (define all-defaults
+          (for/fold ([all-defaults defaults]) ([super (in-list supers)])
+            (for/fold ([all-defaults all-defaults]) ([(var def) (in-hash (interface-defaults super))])
+              (cond
+                [(hash-ref defaults var #f)
+                 ;; method's default implementation is replaced
+                 (unless (cdr (hash-ref defaults/override var))
+                   (obj-error 'interface "superinterface has default implementation of method"
+                              "method name" (as-write var)
+                              #:intf-name name))
+                 all-defaults]
+                [else
+                 (define old-def (hash-ref all-defaults var #f))
+                 (when (and old-def
+                            ;; if the implementation is `eq?`, it must be from the
+                            ;; same superinterface
+                            (not (eq? old-def def)))
+                   (obj-error 'interface "method has conflicting default implementations in among superinterfaces"
+                              "method name" (as-write var)
+                              #:intf-name name))
+                 (hash-set all-defaults var def)]))))
         ;; Done
         (let* ([new-ctcs (for/hash ([(k v) (in-hash ctcs)])
                            (values k (coerce-contract 'interface v)))]
                [i (interface-make name supers #f (hash-map ht (lambda (k v) k))
-                                  new-ctcs class (hash-map prop-ht (lambda (k v) v)))])
+                                  new-ctcs all-defaults class (hash-map prop-ht (lambda (k v) v)))])
           (setup-all-implemented! i)
           i)))))
 
@@ -3314,7 +3283,14 @@ An example
 ; different types are never equal? (without a custom prop:equal+hash), even if one is a subtype of the
 ; other. Therefore, we need to emulate what the behavior of equal? would have been if class contracts
 ; didn’t create new struct types. (This can go away if class/c is ever rewritten to use chaperones.)
-(define (object-equal? obj-a obj-b recur)
+;
+; the paragraph above suggests that `object-equal?` should be just
+; (λ (a b recur) (recur (unwrap-object a) (unwrap-object b)))
+; but this doesn't appear to work, as raco setup breaks (in a
+; way that's not obviously connected to object equality, alas)
+(define (object-equal? wrapped-obj-a wrapped-obj-b recur)
+  (define obj-a (unwrap-object wrapped-obj-a))
+  (define obj-b (unwrap-object wrapped-obj-b))
   (and (equal? (object-ref obj-a) (object-ref obj-b))
        (let ([vec-a (inspectable-struct->vector obj-a)])
          (and vec-a (let ([vec-b (inspectable-struct->vector obj-b)])
@@ -3327,58 +3303,65 @@ An example
         (recur (vector (object-ref obj) vec))
         (eq-hash-code obj))))
 
-(define object<%> ((make-naming-constructor struct:interface 'interface:object% #f)
-                   'object% null #f null (make-immutable-hash) #f null))
-(setup-all-implemented! object<%>)
-(define object% ((make-naming-constructor struct:class 'object% "class")
-                 'object%
-                 0 (vector #f) 
-                 object<%>
-                 void ; never inspectable
-                 #f   ; this is for the inspector on the object
-                 
-                 0 (make-hasheq) null null null
-                 #f
-                 (vector) (vector) (vector) (vector) (vector)
+(define object<%> (let ([object<%>
+			 ((make-naming-constructor struct:interface 'interface:object% #f)
+			  'object% null #f null (hash) (hash) #f null)])
+		    (setup-all-implemented! object<%>)
+		    object<%>))
 
-                 (vector) (vector) (vector)
-                 
-                 0 0 (make-hasheq) null null
-                 
-                 'struct:object object? 'make-object
-                 'field-ref-not-needed 'field-set!-not-needed
-                 
-                 null
-                 'normal
-                 
-                 (lambda (this super-init si_c si_inited? si_leftovers args) 
-                   (unless (null? args)
-                     (unused-args-error this args))
-                   (void))
-                 
-                 #f
-                 (lambda (obj) #(()))        ; serialize
-                 (lambda (obj args) (void))  ; deserialize-fixup
+(define object%
+  ((make-naming-constructor struct:class 'object% "class")
+   'object%
+   0 (vector #f)
+   object<%>
+   void ; never inspectable
+   #f   ; this is for the inspector on the object
 
-                 #f   ; no chaperone to guard against unsafe-undefined
-                 
-                 #t)) ; no super-init
+   0 (make-hasheq) null null null
+   #f
+   (vector) (vector) (vector) (vector) (vector)
 
-(vector-set! (class-supers object%) 0 object%)
-(set-class-orig-cls! object% object%)
-(let*-values ([(struct:obj make-obj obj? -get -set!)
-               (make-struct-type 'object #f 0 0 #f
-                                 (list (cons prop:object object%)
-                                       (cons prop:equal+hash
-                                             (list object-equal?
-                                                   object-hash-code
-                                                   object-hash-code)))
-                                 #f)])
-  (set-class-struct:object! object% struct:obj)
-  (set-class-make-object! object% make-obj))
-(set-class-object?! object% object?) ; don't use struct pred; it wouldn't work with prim classes
+   (vector) (vector) (vector)
 
-(set-interface-class! object<%> object%)
+   0 0 (make-hasheq) null null
+
+   'struct:object object? 'make-object
+   'field-ref-not-needed 'field-set!-not-needed
+
+   null
+   'normal
+
+   (lambda (this super-init si_c si_inited? si_leftovers args)
+     (unless (null? args)
+       (unused-args-error this args))
+     (void))
+
+   #f
+   (lambda (obj) #(()))        ; serialize
+   (lambda (obj args) (void))  ; deserialize-fixup
+
+   #f   ; no chaperone to guard against unsafe-undefined
+
+   #t)) ; no super-init
+
+(define-values (struct:object make-object-struct object-struct? object-struct-get object-struct-set!)
+  (make-struct-type 'object #f 0 0 #f
+                    (list (cons prop:object object%)
+                          (cons prop:equal+hash
+                                (list object-equal?
+                                      object-hash-code
+                                      object-hash-code)))
+                    #f))
+
+;; finish `object%`
+(let ()
+  (vector-set! (class-supers object%) 0 object%)
+  (set-class-orig-cls! object% object%)
+  (set-class-struct:object! object% struct:object)
+  (set-class-make-object! object% make-object-struct)
+  (set-class-object?! object% object?)
+
+  (set-interface-class! object<%> object%))
 
 ;;--------------------------------------------------------------------
 ;;  instantiation
@@ -3607,20 +3590,6 @@ An example
 
 (define (do-make-object blame class by-pos-args named-args)
   (cond
-    [(impersonator-prop:has-wrapped-class-neg-party? class)
-     (define the-info (impersonator-prop:get-wrapped-class-info class))
-     (define neg-party (impersonator-prop:get-wrapped-class-neg-party class))
-     (define unwrapped-o 
-       (do-make-object/real-class blame class by-pos-args named-args
-                                  (wrapped-class-info-blame the-info)
-                                  neg-party
-                                  (wrapped-class-info-init-proj-pairs the-info)))
-     (wrapped-object
-      unwrapped-o
-      (wrapped-class-info-neg-extra-arg-vec the-info)
-      (wrapped-class-info-pos-field-projs the-info)
-      (wrapped-class-info-neg-field-projs the-info)
-      neg-party)]
     [(class? class)
      (do-make-object/real-class blame class by-pos-args named-args #f #f '())]
     [else
@@ -3859,8 +3828,7 @@ An example
                 (unsyntax
                  (make-method-call-to-possibly-wrapped-object
                   stx kw-args/var arg-list rest-arg?
-                  #'sym #'method #'receiver
-                  (quasisyntax/loc stx (find-method/who '(unsyntax form) receiver sym)))))))
+                  #'sym #'method #'receiver)))))
           'feature-profile:send-dispatch #t))))
     
     (define (core-send apply? kws?)
@@ -3908,25 +3876,48 @@ An example
      ;; send/keyword-apply
      send/keyword-apply)))
 
-(define dynamic-send
-  (make-keyword-procedure
-   (lambda (kws kw-vals obj method-name . args)
-     (unless (object? obj) (raise-argument-error 'dynamic-send "object?" obj))
-     (unless (symbol? method-name) (raise-argument-error 'dynamic-send "symbol?" method-name))
-     (define mtd (find-method/who 'dynamic-send obj method-name))
-     (cond
-       [(wrapped-object? obj)
-        (if mtd
-            (keyword-apply mtd kws kw-vals 
-                           (wrapped-object-neg-party obj) 
-                           (wrapped-object-object obj)
-                           args)
-            (keyword-apply dynamic-send kws kw-vals
-                           (wrapped-object-object obj)
-                           method-name
-                           args))]
-       [else
-        (keyword-apply mtd kws kw-vals obj args)]))))
+(define-syntax-rule
+  (dynamic-send-specialized obj method-name args ...)
+  (let ([mtd (dynamic-send-checks-and-get-method obj method-name)])
+    (mtd obj args ...)))
+
+(define (dynamic-send-checks-and-get-method obj method-name)
+  (unless (object? obj) (raise-argument-error 'dynamic-send "object?" obj))
+  (unless (symbol? method-name) (raise-argument-error 'dynamic-send "symbol?" method-name))
+  (find-method/who 'dynamic-send obj method-name))
+
+(define dynamic-send-no-keywords
+  (let ([dynamic-send
+         (case-lambda
+           [(obj method-name) (dynamic-send-specialized obj method-name)]
+           [(obj method-name arg1) (dynamic-send-specialized obj method-name arg1)]
+           [(obj method-name arg1 arg2) (dynamic-send-specialized obj method-name arg1 arg2)]
+           [(obj method-name arg1 arg2 arg3) (dynamic-send-specialized obj method-name arg1 arg2 arg3)]
+           [(obj method-name . args)
+            (define mtd (dynamic-send-checks-and-get-method obj method-name))
+            (apply mtd obj args)])])
+    dynamic-send))
+
+(define dynamic-send/proc
+  (let ([dynamic-send
+         (make-keyword-procedure
+          (lambda (kws kw-vals obj method-name . args)
+            (define mtd (dynamic-send-checks-and-get-method obj method-name))
+            (keyword-apply mtd kws kw-vals obj args))
+          dynamic-send-no-keywords)])
+    dynamic-send))
+
+(define-syntax (dynamic-send stx)
+  (syntax-case stx ()
+    [(_ args ...)
+     (for/and ([arg (in-list (syntax->list #'(args ...)))])
+       (not (keyword? (syntax-e arg))))
+     (with-syntax ([app (datum->syntax stx '#%app)])
+       (syntax/loc stx (app dynamic-send-no-keywords args ...)))]
+    [(_ . args)
+     (with-syntax ([app (datum->syntax stx '#%app)])
+       (syntax/loc stx (app dynamic-send/proc . args)))]
+    [x (identifier? #'x) (syntax/loc stx dynamic-send/proc)]))
 
 ;; imperative chained send
 (define-syntax (send* stx)
@@ -3960,40 +3951,7 @@ An example
     [(_ obj:expr) (class-syntax-protect
                    (syntax/loc stx obj))]))
 
-;; find-method/who : symbol[top-level-form/proc-name]
-;;                   any[object] 
-;;                   symbol[method-name] 
-;;               -> method-proc
-;; returns the method's procedure
 
-(define (find-method/who who in-object name)
-  (cond
-    [(object-ref in-object #f) ; non-#f result implies `_object?`
-     => (lambda (cls)
-          (define mth-idx (hash-ref (class-method-ht cls) name #f))
-          (if mth-idx
-              (vector-ref (class-methods cls) mth-idx)
-              (no-such-method who name cls)))]
-    [(wrapped-object? in-object)
-     (define cls
-       (let loop ([obj in-object])
-         (cond
-           [(wrapped-object? obj) (loop (wrapped-object-object obj))]
-           [else 
-            (object-ref obj #f)])))
-     (define mth-idx (hash-ref (class-method-ht cls) name #f))
-     (unless mth-idx (no-such-method who name (object-ref in-object)))
-     (vector-ref (wrapped-object-neg-extra-arg-vec in-object) mth-idx)]
-    [else
-     (obj-error who "target is not an object"
-                "target" in-object 
-                "method name" (as-write name))]))
-
-(define (no-such-method who name cls)
-  (obj-error who 
-             "no such method"
-             "method name" (as-write name)
-             #:class-name (class-name cls)))
 
 (define-values (make-class-field-accessor make-class-field-mutator)
   (let ()
@@ -4003,10 +3961,6 @@ An example
       (unless (symbol? name)
         (raise-argument-error who "symbol?" name))
       (define field-info-external-X (if get? field-info-external-ref field-info-external-set!))
-      (define wrapped-class-info-X-field-projs
-        (if get? 
-            wrapped-class-info-pos-field-projs
-            wrapped-class-info-neg-field-projs))
       (define (get-accessor)
         (field-info-external-X
          (hash-ref (class-field-ht class) name
@@ -4014,51 +3968,69 @@ An example
                      (obj-error who "no such field"
                                 "field-name" (as-write name)
                                 #:class-name (class-name class))))))
-      (cond
-        [(impersonator-prop:has-wrapped-class-neg-party? class)
-         (define the-info (impersonator-prop:get-wrapped-class-info class))
-         (define projs (hash-ref (wrapped-class-info-X-field-projs the-info) name #f))
-         (define np (impersonator-prop:get-wrapped-class-neg-party class))
-         (cond
-           [projs 
-            (if get?
-                (let loop ([projs projs])
-                  (cond
-                    [(pair? projs)
-                     (define f-rest (loop (cdr projs)))
-                     (define f-this (car projs))
-                     (λ (val) ((f-this (f-rest val)) np))]
-                    [else projs]))
-                (let loop ([projs projs])
-                  (cond
-                    [(pair? projs)
-                     (define f-rest (loop (cdr projs)))
-                     (define f-this (car projs))
-                     (λ (o val) ((f-this (f-rest o val)) np))]
-                    [else projs])))]
-           [else (get-accessor)])]
-        [else
-         (get-accessor)]))
+      (get-accessor))
     (values (λ (class name)
               (define ref (check-and-get-proc 'class-field-accessor class name #t))
               (λ (o)
-                (cond
-                  [(_object? o)
-                   (ref o)]
-                  [(wrapped-object? o)
-                   (ref (wrapped-object-object o))]
-                  [else
-                   (raise-argument-error 'class-field-accessor "object?" o)])))
+                (unless (_object? o)
+                  (raise-argument-error 'class-field-accessor "object?" o))
+                (let loop ([o o])
+                  (define cls-or-object/c-wrapper-info (object-ref o))
+                  (cond
+                    [(class? cls-or-object/c-wrapper-info)
+                     (ref o)]
+                    [else
+                     (define do-not-check-class-field-accessor-or-mutator-access?
+                       (object/c-wrapper-info-do-not-check-class-field-accessor-or-mutator-access?
+                        cls-or-object/c-wrapper-info))
+                     (define pos-fields (object/c-wrapper-info-pos-fields cls-or-object/c-wrapper-info))
+                     (define unwrapped (object/c-wrapper-info-val cls-or-object/c-wrapper-info))
+                     (define blame+neg-party (object/c-wrapper-info-blame+neg-party cls-or-object/c-wrapper-info))
+                     (define neg-party (cdr blame+neg-party))
+                     (cond
+                       [do-not-check-class-field-accessor-or-mutator-access?
+                        (loop unwrapped)]
+                       [(hash-ref pos-fields name #f)
+                        =>
+                        (λ (lnp)
+                          (define o (loop unwrapped))
+                          (with-contract-continuation-mark
+                              blame+neg-party
+                            (lnp o neg-party)))]
+                       [else
+                        (do-opaque-field-access-check cls-or-object/c-wrapper-info o name)
+                        (loop unwrapped)])]))))
             (λ (class name)
               (define setter! (check-and-get-proc 'class-field-mutator class name #f))
-              (λ (o v) 
-                (cond
-                  [(_object? o)
-                   (setter! o v)]
-                  [(wrapped-object? o)
-                   (setter! (unwrap-object o) v)]
-                  [else
-                   (raise-argument-error 'class-field-mutator "object?" o)]))))))
+              (λ (o v)
+                (unless (_object? o)
+                  (raise-argument-error 'class-field-mutator "object?" o))
+                (let loop ([o o]
+                           [v v])
+                  (define cls-or-object/c-wrapper-info (object-ref o))
+                  (cond
+                    [(class? cls-or-object/c-wrapper-info)
+                     (setter! o v)]
+                    [else
+                     (define do-not-check-class-field-accessor-or-mutator-access?
+                       (object/c-wrapper-info-do-not-check-class-field-accessor-or-mutator-access?
+                        cls-or-object/c-wrapper-info))
+                     (define neg-fields (object/c-wrapper-info-neg-fields cls-or-object/c-wrapper-info))
+                     (define unwrapped (object/c-wrapper-info-val cls-or-object/c-wrapper-info))
+                     (define blame+neg-party (object/c-wrapper-info-blame+neg-party cls-or-object/c-wrapper-info))
+                     (define neg-party (cdr blame+neg-party))
+                     (cond
+                       [do-not-check-class-field-accessor-or-mutator-access?
+                        (loop unwrapped v)]
+                       [(hash-ref neg-fields name #f)
+                        =>
+                        (λ (lnp)
+                          (loop unwrapped (with-contract-continuation-mark
+                                              blame+neg-party
+                                            (lnp v neg-party))))]
+                       [else
+                        (do-opaque-field-mutation-check cls-or-object/c-wrapper-info o name v)
+                        (loop unwrapped v)])])))))))
 
 (define-struct generic (name applicable))
 
@@ -4103,16 +4075,26 @@ An example
                        [dynamic-generic
                         (lambda (obj)
                           (cond
-                            [(wrapped-object? obj)
-                             (vector-ref (wrapped-object-neg-extra-arg-vec obj) pos)]
                             [(instance? obj)
-                             (vector-ref (class-methods (object-ref obj)) pos)]
+                             (define cls-or-object/c-wrapper-info (object-ref obj))
+                             (cond
+                               [(class? cls-or-object/c-wrapper-info)
+                                (vector-ref (class-methods (object-ref obj)) pos)]
+                               [else
+                                ((object/c-wrapper-info-methods-proc cls-or-object/c-wrapper-info) name)])]
                             [else (fail obj)]))])
                   (if (eq? 'final (vector-ref (class-meth-flags class) pos))
                       (let ([method (vector-ref (class-methods class) pos)])
                         (lambda (obj)
-                          (unless (instance? obj) (fail obj))
-                          method))
+                          (cond
+                            [(instance? obj)
+                             (define cls-or-object/c-wrapper-info (object-ref obj))
+                             (cond
+                               [(class? cls-or-object/c-wrapper-info)
+                                method]
+                               [else
+                                ((object/c-wrapper-info-methods-proc cls-or-object/c-wrapper-info) name)])]
+                            [else (fail obj)])))
                       dynamic-generic)))))])
     make-generic))
 
@@ -4132,10 +4114,9 @@ An example
               (unsyntax
                (make-method-call-to-possibly-wrapped-object
                 stx #f flat-stx (not proper?)
-                #'(generic-name gen) 
-                #'((generic-applicable gen) obj) 
-                #'obj
-                #'((generic-applicable gen) obj))))))))]))
+                #'(generic-name gen)
+                #'((generic-applicable gen) obj)
+                #'obj)))))))]))
 
 (define (check-generic gen)
   (unless (generic? gen)
@@ -4185,32 +4166,45 @@ An example
   (do-set-field! 'set-field! id obj val))
 
 (define (do-set-field! who id obj val)
+  (define cls-or-object/c-wrapper-info (object-ref obj #f))
   (cond
-    [(_object? obj) 
-     (do-set-field!/raw-object who id obj val)]
-    [(wrapped-object? obj)
-     (define projs+set! (hash-ref (wrapped-object-neg-field-projs obj) id #f))
+    [(class? cls-or-object/c-wrapper-info)
+     (do-set-field!/raw-object who cls-or-object/c-wrapper-info id obj val)]
+    [(object/c-wrapper-info? cls-or-object/c-wrapper-info)
+     (define unwrapped (object/c-wrapper-info-val cls-or-object/c-wrapper-info))
+     (define blame+neg-party (object/c-wrapper-info-blame+neg-party cls-or-object/c-wrapper-info))
+     (define neg-party (cdr blame+neg-party))
      (cond
-       [projs+set! 
-        (define np (wrapped-object-neg-party obj))
-        (let loop ([projs+set! projs+set!]
-                   [val val])
-          (cond
-            [(pair? projs+set!)
-             (define the-proj (car projs+set!))
-             (loop (cdr projs+set!)
-                   ((the-proj val) np))]
-            [else
-             (projs+set! (wrapped-object-object obj) val)]))]
+       [(hash-ref (object/c-wrapper-info-neg-fields cls-or-object/c-wrapper-info) id #f)
+        =>
+        (λ (lnp)
+          (do-set-field! who id unwrapped (with-contract-continuation-mark
+                                              blame+neg-party
+                                            (lnp val neg-party))))]
        [else
-        (do-field-get/raw-object who id (wrapped-object-object obj))])]    
+        (do-opaque-field-mutation-check cls-or-object/c-wrapper-info obj id val)
+        (do-set-field! who id unwrapped val)])]
     [else
      (raise-argument-error who
                            "object?"
                            obj)]))
 
-(define (do-set-field!/raw-object who id obj val)
-  (define cls (object-ref obj))
+(define (do-opaque-field-mutation-check cls-or-object/c-wrapper-info obj id val)
+  (when (object/c-wrapper-info-opaque-fields cls-or-object/c-wrapper-info)
+    (define blame+neg-party (object/c-wrapper-info-blame+neg-party cls-or-object/c-wrapper-info))
+    (define blame (car blame+neg-party))
+    (define neg-party (cdr blame+neg-party))
+    (raise-blame-error (blame-swap blame)
+                       #:missing-party neg-party
+                       obj
+                       `(expected:
+                         "to not mutate fields except those listed in the contract\n"
+                         "  field: ~a"
+                         given: "~e")
+                       id
+                       val)))
+
+(define (do-set-field!/raw-object who cls id obj val)
   (define field-ht (class-field-ht cls))
   (define fi (hash-ref field-ht id #f))
   (if fi
@@ -4240,32 +4234,44 @@ An example
   (do-get-field 'get-field id obj))
 
 (define (do-get-field who id obj)
+  (define cls-or-object/c-wrapper-info (object-ref obj #f))
   (cond
-    [(_object? obj)
-     (do-field-get/raw-object who id obj)]
-    [(wrapped-object? obj)
-     (define projs+ref (hash-ref (wrapped-object-pos-field-projs obj) id #f))
+    [(class? cls-or-object/c-wrapper-info)
+     (do-field-get/raw-object who cls-or-object/c-wrapper-info id obj)]
+    [(object/c-wrapper-info? cls-or-object/c-wrapper-info)
+     (define unwrapped (object/c-wrapper-info-val cls-or-object/c-wrapper-info))
      (cond
-       [projs+ref
-        (define np (wrapped-object-neg-party obj))
-        (let loop ([projs+ref projs+ref])
-          (cond
-            [(pair? projs+ref)
-             (define the-proj (car projs+ref))
-             (define field-val-with-other-contracts (loop (cdr projs+ref)))
-             ((the-proj field-val-with-other-contracts) np)]
-            [else
-             ;; projs+ref is the struct field accessor
-             (projs+ref (wrapped-object-object obj))]))]
+       [(hash-ref (object/c-wrapper-info-pos-fields cls-or-object/c-wrapper-info) id #f)
+        =>
+        (λ (lnp)
+          (define blame+neg-party (object/c-wrapper-info-blame+neg-party cls-or-object/c-wrapper-info))
+          (define neg-party (cdr blame+neg-party))
+          (define fv (do-get-field who id unwrapped))
+          (with-contract-continuation-mark
+              blame+neg-party
+            (lnp fv neg-party)))]
        [else
-        (do-field-get/raw-object who id (wrapped-object-object obj))])]
-    [else 
+        (do-opaque-field-access-check cls-or-object/c-wrapper-info obj id)
+        (do-get-field who id unwrapped)])]
+    [else
      (raise-argument-error who
                            "object?"
                            obj)]))
 
-(define (do-field-get/raw-object who id obj)
-  (define cls (object-ref obj))
+(define (do-opaque-field-access-check cls-or-object/c-wrapper-info obj id)
+  (when (object/c-wrapper-info-opaque-fields cls-or-object/c-wrapper-info)
+    (define blame+neg-party (object/c-wrapper-info-blame+neg-party cls-or-object/c-wrapper-info))
+    (define blame (car blame+neg-party))
+    (define neg-party (cdr blame+neg-party))
+    (raise-blame-error (blame-swap blame)
+                       #:missing-party neg-party
+                       obj
+                       `(expected:
+                         "to not access fields except those listed in the contract\n"
+                         "  field: ~a")
+                       id)))
+
+(define (do-field-get/raw-object who cls id obj)
   (define field-ht (class-field-ht cls))
   (define fi (hash-ref field-ht id #f))
   (if fi
@@ -4380,6 +4386,9 @@ An example
       stx
       (syntax x))]))
 
+(define ((make-ambigious-interface-super-method name) obj . _)
+  (obj-error 'super "method is implemented by multiple superinterfaces"
+             "method name" (as-write name)))
 
 ;;--------------------------------------------------------------------
 ;;  class, interface, and object properties
@@ -4388,7 +4397,8 @@ An example
 (define (is-a? v c)
   (cond
     [(class? c) 
-     (and (object? v) ((class-object? (class-orig-cls c)) (unwrap-object v)))]
+     (and (object? v)
+          ((class-object? (class-orig-cls c)) (unwrap-object v)))]
     [(interface? c) (and (object? v) (implementation? (object-ref/unwrap v) c))]
     [else (raise-argument-error 'is-a? "(or/c class? interface?)" 1 v c)]))
 
@@ -4459,15 +4469,14 @@ An example
 (define (object-info o)
   (unless (object? o)
     (raise-argument-error 'object-info "object?" o))
-  (let ([o* (if (has-original-object? o) (original-object o) o)])
-    (let loop ([c (object-ref/unwrap o*)]
-               [skipped? #f])
-      (if (struct? ((class-insp-mk c)))
-          ;; current objec can inspect this object
-          (values c skipped?)
-          (if (zero? (class-pos c))
-              (values #f #t)
-              (loop (vector-ref (class-supers c) (sub1 (class-pos c))) #t))))))
+  (let loop ([c (object-ref/unwrap o)]
+             [skipped? #f])
+    (if (struct? ((class-insp-mk c)))
+        ;; current objec can inspect this object
+        (values c skipped?)
+        (if (zero? (class-pos c))
+            (values #f #t)
+            (loop (vector-ref (class-supers c) (sub1 (class-pos c))) #t)))))
 
 (define (to-sym s)
   (if (string? s)
@@ -4499,27 +4508,26 @@ An example
   (lambda (in-o [opaque-v '...])
     (unless (object? in-o)
       (raise-argument-error 'object->vector "object?" in-o))
-    (let ([o in-o])
-      (list->vector
-       (cons
-        (string->symbol (format "object:~a" (class-name (object-ref/unwrap o))))
-        (reverse
-         (let-values ([(c skipped?) (object-info o)])
-           (let loop ([c c][skipped? skipped?])
-             (cond
-               [(not c) (if skipped? (list opaque-v) null)]
-               [else (let-values ([(name num-fields field-ids field-ref
-                                         field-set next next-skipped?)
-                                   (class-info c)])
-                       (let ([rest (loop next next-skipped?)]
-                             [here (let loop ([n num-fields])
-                                     (if (zero? n)
-                                         null
-                                         (cons (field-ref o (sub1 n))
-                                               (loop (sub1 n)))))])
-                         (append (if skipped? (list opaque-v) null)
-                                 here
-                                 rest)))])))))))))
+    (define o-unwrapped (unwrap-object in-o))
+    (define-values (c skipped?) (object-info o-unwrapped))
+    (list->vector
+     (cons
+      (string->symbol (format "object:~a" (class-name (object-ref o-unwrapped))))
+      (reverse
+       (let loop ([c c][skipped? skipped?])
+         (cond
+           [(not c) (if skipped? (list opaque-v) null)]
+           [else
+            (define-values (name num-fields field-ids field-ref field-set next next-skipped?)
+              (class-info c))
+            (define rest (loop next next-skipped?))
+            (define here
+              (for/list ([field-id (in-list field-ids)])
+                (do-get-field 'object->vector field-id in-o)))
+            (append (if skipped? (list opaque-v) null)
+                    here
+                    rest)])))))))
+
 
 (define (object=? o1 o2)
   (cond
@@ -4541,125 +4549,30 @@ An example
         (and o1 o2 (-object=? o1 o2)))]))
 
 (define (-object=? o1 o2)
-  (eq? (object=-original-object o1)
-       (object=-original-object o2)))
-
-(define (object=-original-object o)
-  (define orig-o (if (has-original-object? o) (original-object o) o))
-  (define orig-orig-o
-    (if (wrapped-object? orig-o)
-        (wrapped-object-object orig-o)
-        orig-o))
-  orig-orig-o)
+  (eq? (unwrap-object o1)
+       (unwrap-object o2)))
 
 (define (object=-hash-code o)
   (unless (object? o)
     (raise-argument-error 'object=-hash-code "object?" 0 o))
-  (eq-hash-code (object=-original-object o)))
+  (eq-hash-code (unwrap-object o)))
+
+(define (unwrap-object o)
+  (cond
+    [(impersonator? o)
+     (let loop ([o o])
+       (define cls-or-object/c-wrapper-info (object-ref o))
+       (cond
+         [(class? cls-or-object/c-wrapper-info) o]
+         [else (loop (object/c-wrapper-info-val cls-or-object/c-wrapper-info))]))]
+    [else o]))
 
 ;;--------------------------------------------------------------------
 ;;  primitive classes
 ;;--------------------------------------------------------------------
 
-(define (make-primitive-class 
-         make-struct:prim     ; see below
-         prim-init            ; primitive initializer: takes obj and list of name-arg pairs
-         name                 ; symbol
-         super                ; superclass
-         intfs                ; interfaces
-         init-arg-names       ; #f or list of syms and sym--value lists
-         override-names       ; overridden method names
-         new-names            ; new (public) method names
-         override-methods     ; list of methods
-         new-methods)         ; list of methods
-  
-  ; The `make-struct:prim' function takes prop:object, a class,
-  ;  a preparer, a dispatcher function, an unwrap property,
-  ;  an unwrapper, and a property assoc list, and produces:
-  ;    * a struct constructor (must have prop:object)
-  ;    * a struct predicate
-  ;    * a struct type for derived classes (mustn't have prop:object)
-  ;
-  ; The supplied preparer takes a symbol and returns a num.
-  ; 
-  ; The supplied dispatcher takes an object and a num and returns a method.
-  ;
-  ; The supplied unwrap property is used for adding the unwrapper
-  ;  as a property value on new objects.
-  ;
-  ; The supplied unwrapper takes an object and returns the unwrapped
-  ;  version (or the original object).
-  ;
-  ; When a primitive class has a superclass, the struct:prim maker
-  ;  is responsible for ensuring that the returned struct items match
-  ;  the supertype predicate.
-  
-  (compose-class name
-                 (or super object%)
-                 intfs
-                 #f
-                 #f
-                 #f
-                 
-                 0 null null null ; no fields
-                 
-                 null ; no rename-supers
-                 null ; no rename-inners
-                 null null new-names
-                 null null override-names
-                 null null null ; no augrides
-                 null ; no inherits
-                 
-                 ; #f => init args by position only
-                 ; sym => required arg
-                 ; sym--value list => optional arg
-                 (and init-arg-names  
-                      (map (lambda (s)
-                             (if (symbol? s) s (car s)))
-                           init-arg-names))
-                 'stop
-                 
-                 (lambda ignored
-                   (values
-                    new-methods
-                    override-methods
-                    null ; no augride-methods
-                    (lambda (this super-go/ignored si_c/ignored si_inited?/ignored si_leftovers/ignored init-args)
-                      (apply prim-init this 
-                             (if init-arg-names
-                                 (extract-primitive-args this name init-arg-names init-args)
-                                 init-args)))))
-
-                 #f
-                 
-                 make-struct:prim))
-
-(define (extract-primitive-args this class-name init-arg-names init-args)
-  (let loop ([names init-arg-names][args init-args])
-    (cond
-      [(null? names)
-       (unless (null? args)
-         (unused-args-error this args))
-       null]
-      [else (let* ([name (car names)]
-                   [id (if (symbol? name)
-                           name
-                           (car name))])
-              (let ([arg (assq id args)])
-                (cond
-                  [arg 
-                   (cons (cdr arg) (loop (cdr names) (remq arg args)))]
-                  [(symbol? name)
-                   (missing-argument-error class-name name)]
-                  [else
-                   (cons (cadr name) (loop (cdr names) args))])))])))
-
-;;--------------------------------------------------------------------
-;;  wrapper for contracts
-;;--------------------------------------------------------------------
-
-(define-values (impersonator-prop:original-object has-original-object? original-object)
-  (make-impersonator-property 'impersonator-prop:original-object))
+(define (make-primitive-class  . args)
+  (error 'make-primitive-class "no longer supported"))
 
 
 (define (check-arg-contracts wrapped-blame wrapped-neg-party val init-proj-pairs orig-named-args)
@@ -4713,78 +4626,6 @@ An example
                 (cons (car named-args) named-skipped-args)
                 progress?)])])))
                           
-
-;;--------------------------------------------------------------------
-;;  misc utils
-;;--------------------------------------------------------------------
-
-(define-struct (exn:fail:object exn:fail) () #:inspector insp)
-
-(struct as-write (content))
-(struct as-write-list (content))
-(struct as-value-list (content))
-(struct as-lines (content))
-
-(define (obj-error where 
-                   msg
-                   #:class-name [class-name #f]
-                   #:intf-name [intf-name #f]
-                   #:which-class [which-class ""]
-                   . fields)
-  (define all-fields
-    (append fields
-            (if class-name
-                (list (string-append which-class "class name")
-                      (as-write class-name))
-                null)
-            (if intf-name
-                (list "interface name"
-                      (as-write intf-name))
-                null)))
-  (raise (make-exn:fail:object
-          (format "~a: ~a~a" where msg
-                  (apply
-                   string-append
-                   (let loop ([fields all-fields])
-                     (cond
-                      [(null? fields) null]
-                      [else
-                       (define field (car fields))
-                       (define val (cadr fields))
-                       (list*
-                        "\n  "
-                        field
-                        (if (or (as-write-list? val)
-                                (as-lines? val))
-                            ":"
-                            ": ")
-                        (cond
-                         [(or (as-write-list? val)
-                              (as-value-list? val))
-                          (apply string-append
-                                 (for/list ([v (in-list (if (as-write-list? val)
-                                                            (as-write-list-content val)
-                                                            (as-value-list-content val)))])
-                                   (format (if (as-write-list? val)
-                                               "\n   ~s"
-                                               "\n   ~e")
-                                           v)))]
-                         [(as-write? val)
-                          (format "~s" (as-write-content val))]
-                         [(as-lines? val)
-                          (as-lines-content val)]
-                         [else
-                          (format "~e" val)])
-                        (loop (cddr fields)))]))))
-          (current-continuation-marks))))
-
-(define (for-class name)
-  (if name (format " for class: ~a" name) ""))
-(define (for-class/which which name)
-  (if name (format " for ~a class: ~a" which name) ""))
-(define (for-intf name)
-  (if name (format " for interface: ~a" name) ""))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; mixin
@@ -4941,12 +4782,13 @@ An example
 ;; Providing normal functionality:
 (provide (protect-out get-field/proc)
          
-         ;; for class-c-old.rkt:
+         ;; for class-c.rkt:
+         prop:object _object? object-ref
          (protect-out
-          make-naming-constructor prop:object _object? object-ref replace-ictc-blame
+          make-naming-constructor replace-ictc-blame
           concretize-ictc-method field-info-extend-external field-info-extend-internal this-param
-          object-ref/unwrap impersonator-prop:original-object has-original-object? original-object)
-         ;; end class-c-old.rkt requirements
+          object-ref/unwrap)
+         ;; end class-c.rkt requirements
 
          field-info-internal-ref
          field-info-internal-set!
@@ -4983,5 +4825,4 @@ An example
          make-primitive-class 
          (for-syntax localize) 
          (except-out (struct-out class) class class?)
-         (rename-out [class? class-struct-predicate?])
-         (struct-out wrapped-object))
+         (rename-out [class? class-struct-predicate?]))

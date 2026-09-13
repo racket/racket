@@ -114,22 +114,18 @@
 
 (define (extract-form-name s)
   (cond
-   [(syntax? s)
-    (define e (syntax-e s))
-    (cond
-     [(symbol? e) e]
-     [(and (pair? e)
-           (identifier? (car e)))
-      (syntax-e (car e))]
-     [else #f])]
-   [else #f]))
+    [(syntax? s) ((error-syntax->name-handler) s)]
+    [else #f]))
 
 (define (extract-source-location s)
-  (and (syntax? s)
-       (syntax-srcloc s)
-       (let ([str (srcloc->string (syntax-srcloc s))])
-         (and str
-              (string-append str ": ")))))
+  (define loc (and s
+                   ((error-syntax->srcloc-handler) s)))
+  (cond
+    [(srcloc? loc)
+     (let ([str (srcloc->string loc)])
+       (and str
+            (string-append str ": ")))]
+    [else #f]))
 
 ;; `raise-syntax-error` is meant to accept either syntax objects or
 ;; S-expressions, and it has traditionally supported hybird values by
@@ -156,11 +152,25 @@
       (string-append " " str)))
 
 (define (install-error-syntax->string-handler!)
+  (error-syntax->srcloc-handler
+   (lambda (s)
+     (and (syntax? s) (syntax-srcloc s))))
+  (error-syntax->name-handler
+   (lambda (s)
+     (unless (syntax? s)
+       (raise-argument-error 'default-error-syntax->name-handler "syntax?" s))
+     (define e (syntax-e s))
+     (cond
+       [(symbol? e) e]
+       [(and (pair? e)
+             (identifier? (car e)))
+        (syntax-e (car e))]
+       [else #f])))
   (error-syntax->string-handler
    (let ([default-error-syntax->string-handler
            (lambda (v len)
              (unless (or (not len) (exact-nonnegative-integer? len))
-               (raise-argument-error 'default-error-value->string-handler
+               (raise-argument-error 'default-error-syntax->string-handler
                                      "(or/c exact-nonnegative-integer? #f)"
                                      len))
              (if len

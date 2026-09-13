@@ -631,6 +631,7 @@
        (#"(^.|\\1){2}" #"aa" (#"aa" #"a")) ; self backreferences are allowed
        (#"(^.|\\1){2}" #"baa" #f)
        (#"(.\\1)" #"aa" #f)
+       (#"(x*)y(?:\\1 )*" #"xyx x " (#"xyx x " #"x"))
        (#"ab{1,3}bc" #"abbbbc" (#"abbbbc"))
        (#"ab{1,3}bc" #"abbbc" (#"abbbc"))
        (#"ab{1,3}bc" #"abbc" (#"abbc"))
@@ -1760,6 +1761,29 @@
 (test #f regexp-match #px"\t|\\p{Zs}" "a")
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  Unicode grapheme cluster
+
+(test '((0 . 1)) regexp-match-positions #px"\\X" "abc")
+(test '((0 . 2)) regexp-match-positions #px"\\X" "\u30\u308")
+(test '((0 . 2)) regexp-match-positions #px"\\X" "\u30\u308 ")
+(test '((0 . 3)) regexp-match-positions #px"\\X" "\u30\u308\u300")
+(test '((0 . 3)) regexp-match-positions #px"\\X" "\u30\u308\u300 ")
+(test '((0 . 4)) regexp-match-positions #px".\\X" "x\u30\u308\u300 ")
+(test '((0 . 6)) regexp-match-positions #px"\\X" "\U1F476\U1F3FF\U0308\U200D\U1F476\U1F3FF")
+(test '((0 . 21)) regexp-match-positions #px"\\X" (string->bytes/utf-8 "\U1F476\U1F3FF\U0308\U200D\U1F476\U1F3FF"))
+
+(test '((0 . 3)) regexp-match-positions #px"\\X*" "abc")
+(test '((0 . 2)) regexp-match-positions #px"\\X" "\r\nbc")
+(test '((0 . 1)) regexp-match-positions #px"\\X" "\r\r\nbc")
+(test #f regexp-match-positions #px#"\\X" #"\x80")
+(test '((0 . 1)) regexp-match-positions #px#"\\X|." #"\x80")
+(test #f regexp-match-positions #px"\\X|." #"\x80")
+(test '((0 . 1)) regexp-match-positions #px"\\X" #"0\x80")
+(test '((0 . 2)) regexp-match-positions #px"\\X" "\u30\u308\x80")
+
+(err/rt-test (pregexp "(?<=\\X)x") exn:fail? #rx"lookbehind pattern does not match a bounded")
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Check that [\s] doesn't match \s, etc.
 (let ([test-both
@@ -2133,6 +2157,46 @@
 
 (err/rt-test (regexp-replace* "(a)" "aaa" (lambda (x) x))
              exn:fail:contract:arity?)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that empty ranges don't match
+
+(test #f regexp-match #rx"[^\0-\U10FFFF]" "\0")
+(test #f regexp-match #rx"[^\0-\U10FFFF]" "a")
+(test #f regexp-match #rx"[^\0-\U10FFFF]" "")
+(test #f regexp-match #rx#"[^\0-\xFF]" #"\0")
+(test #f regexp-match #rx#"[^\0-\xFF]" #"a")
+(test #f regexp-match #rx#"[^\0-\xFF]" #"")
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check for empty cases in conditional
+
+(test '("xxs" "x") regexp-match #rx"(x)*(?(1)s|)" "xxs")
+(test '("" #f) regexp-match #rx"(x)*(?(1)s|)" "")
+(test '("xx" "x") regexp-match #rx"(x)*(?(1)|=)" "xx")
+(test '("=" #f) regexp-match #rx"(x)*(?(1)|=)" "=")
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test 0 regexp-capture-group-count #rx"x")
+(test 1 regexp-capture-group-count #rx"(x)")
+(test 0 regexp-capture-group-count #rx"(?:x)")
+(test 3 regexp-capture-group-count #rx".((x))().")
+
+(test 0 regexp-capture-group-count #rx#"x")
+(test 1 regexp-capture-group-count #rx#"(x)")
+(test 0 regexp-capture-group-count #rx#"(?:x)")
+(test 3 regexp-capture-group-count #rx#".((x))().")
+
+(test 0 regexp-capture-group-count #px"x")
+(test 1 regexp-capture-group-count #px"(x)")
+(test 0 regexp-capture-group-count #px"(?:x)")
+(test 3 regexp-capture-group-count #px".((x))().")
+
+(test 0 regexp-capture-group-count #px#"x")
+(test 1 regexp-capture-group-count #px#"(x)")
+(test 0 regexp-capture-group-count #px#"(?:x)")
+(test 3 regexp-capture-group-count #px#".((x))().")
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -57,6 +57,6 @@
                                                       (set! syms (cdr syms)))
                                                     (syntax-e id)))
                                     (when phase
-                                      (define t (portal-syntax portal-stx))
+                                      (define t (portal-syntax portal-stx #f))
                                       (namespace-set-transformer! ns phase sym t))
                                     sym)))))

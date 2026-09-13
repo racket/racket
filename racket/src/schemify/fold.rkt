@@ -41,11 +41,17 @@
     [(#f) void]
     [(expt)
      (and (not (and (= 2 (length vals))
-                    (exact-integer? (car vals))
-                    (exact-integer? (cadr vals))
-                    ((* (integer-length (car vals))
-                        (cadr vals))
-                     . > . 1000)))
+                    (let ([x (car vals)]
+                          [n (cadr vals)])
+                      (and (number? x)
+                           (exact? x)
+                           (exact-integer? n)
+                           ((abs (* (max (integer-length (numerator (real-part x)))
+                                         (integer-length (denominator (real-part x)))
+                                         (integer-length (numerator (imag-part x)))
+                                         (integer-length (denominator (imag-part x))))
+                                    n))
+                            . > . 1000)))))
           void)]
     [(fixnum) (and (for/and ([v (in-list vals)])
                      (fixnum-for-every-system? v))

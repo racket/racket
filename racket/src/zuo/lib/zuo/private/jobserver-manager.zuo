@@ -10,8 +10,14 @@
 (define stdin (fd-open-input 'stdin))
 (define stdout (fd-open-output 'stdout))
 
-(define in (fd-open-input (string->integer (list-ref args 0))))
-(define out (fd-open-output (string->integer (list-ref args 1))))
+(define fifo? (= 1 (length args)))
+
+(define in (if fifo?
+	       (fd-open-input (list-ref args 0))
+	       (fd-open-input (string->integer (list-ref args 0)))))
+(define out (if fifo?
+		(fd-open-output (list-ref args 0) (hash 'exists 'update))
+		(fd-open-output (string->integer (list-ref args 1)))))
 
 ;; jobserver-manager's job is to reliably clean up on exit,
 ;; so disable signals

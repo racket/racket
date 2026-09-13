@@ -20,6 +20,10 @@
 (check (~s 1 '(apple . pie) (string->uninterned-symbol "banana")) "1 (apple . pie) #<symbol:banana>")
 (check (~a 1 '(apple) "banana") "1(apple)banana")
 (check (~a 1 '(apple . pie) (string->uninterned-symbol "banana")) "1(apple . pie)banana")
+(check (~a 1 '(apple . pie) (string->uninterned-symbol "banana")) "1(apple . pie)banana")
+
+(check-fail (string-read "( . pie)") "misplaced `.`")
+(check-fail (string-read "[ . pie]") "misplaced `.`")
 
 (define table
   (list

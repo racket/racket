@@ -116,6 +116,18 @@ used.
 @history[#:added "6.3"]}
 
 
+@deftogether[(
+@defparam[current-pkg-network-timeout max-seconds (or/c #f real?)]
+)]{
+
+A parameter that determines the number of seconds to wait for a network communication,
+such as a download or a checksum fetch. If
+a parameter's value is @racket[#f], then the user's configuration is
+used.
+
+@history[#:added "9.0.0.2"]}
+
+
 @defproc[(pkg-directory [name string?]
                         [#:cache cache (or/c #f (and/c hash? (not/c immutable?))) #f])
          (or/c path-string? #f)]{
@@ -160,11 +172,13 @@ scope}.}
 @defproc[(pkg-desc? [v any/c]) boolean?]
 @defproc[(pkg-desc [source string?]
                    [type (or/c #f 'name 'file 'dir 'link 'static-link
-                               'file-url 'dir-url 'git 'git-url 'github 'clone)]
+                               'file-url 'dir-url 'git 'git-url 'github
+                               'clone 'attach)]
                    [name (or/c string? #f)]
                    [checksum (or/c string? #f)]
                    [auto? boolean?]
-                   [#:path path (or/c #f path-string?) #f])
+                   [#:path path (or/c #f path-string?) #f]
+                   [#:adjacent-deps? adjacent-deps? boolean #f])
          pkg-desc?]
 )]{
 
@@ -178,9 +192,20 @@ The optional @racket[path] argument is intended for use when
 directory containing the repository clone (where the repository itself
 is a directory within @racket[path]).
 
+If the optional @racket[adjacent-deps?] argument is true, then
+dependencies of the package should be found @deftech{adjacent} to the
+package, if possible. An adjacent dependency can be found when
+@racket[type] or the inferred type of @racket[source] is
+@racket['file], @racket['dir], @racket['link], @racket['static-link],
+or @racket['attach], and the search for an adjacent dependency uses
+@racket[source] with the last component of the path (not counting its
+extension) replaced by the dependency's name. Dependencies of a
+package found as adjacent are also found as adjacent, if possible.
+
 @history[#:changed "6.1.1.1" @elem{Added @racket['git] as a @racket[type].}
          #:changed "6.1.1.5" @elem{Added @racket['clone] as a @racket[type].}
-         #:changed "8.0.0.13" @elem{Added @racket['git-url] as a @racket[type].}]}
+         #:changed "8.0.0.13" @elem{Added @racket['git-url] as a @racket[type].}
+         #:changed "9.2.0.6" @elem{Added the @racket[adjacent-deps?] argument.}]}
 
 
 @defproc[(pkg-stage [desc pkg-desc?]
@@ -244,11 +269,12 @@ The package lock must be held (allowing writes if @racket[set?] is true); see
 @history[#:changed "7.7.0.9" @elem{Added the @racket[#:default-scope-scope] argument.}]}
 
 
-@defproc[(pkg-create [format (or/c 'zip 'tgz 'plt 'MANIFEST)]
+@defproc[(pkg-create [format (or/c 'zip 'tgz 'plt 'dir 'MANIFEST)]
                      [dir path-string?]
-                     [#:source source (or/c 'dir 'name)]
-                     [#:mode mode (or/c 'as-is 'source 'binary 'binary-lib 'built)]
                      [#:dest dest-dir (or/c (and/c path-string? complete-path?) #f)]
+                     [#:source source (or/c 'dir 'name) 'dir]
+                     [#:mode mode (or/c 'as-is 'source 'binary 'binary-lib 'built) 'as-is]
+                     [#:original original-source (or/c string? #f) #f]
                      [#:quiet? quiet? boolean? #f]
                      [#:from-command-line? from-command-line? boolean? #f])
         void?]{
@@ -258,7 +284,10 @@ Implements @racket[pkg-create-command].
 Unless @racket[quiet?] is true, information about the output is
 reported to the current output port. If @racket[from-command-line?]
 is true, error messages may suggest specific command-line flags for
-@command-ref{create}.}
+@command-ref{create}.
+
+@history[#:changed "8.14.0.2" @elem{Added the @racket[#:original] argument.}
+         #:changed "9.6.0.6" @elem{Added the @racket['dir] format.}]}
 
 
 @defproc[(pkg-install      [descs (listof pkg-desc?)]
@@ -266,10 +295,13 @@ is true, error messages may suggest specific command-line flags for
                                            (or/c #f 'fail 'force 'search-ask 'search-auto)
                                            #f]
                            [#:update-deps? update-deps? boolean? #f]
+                           [#:update-implies? update-implies? boolean? #t]
                            [#:force? force? boolean? #f]
                            [#:ignore-checksums? ignore-checksums? boolean? #f]
                            [#:strict-doc-conflicts? strict-doc-conflicts? boolean? #f]
                            [#:use-cache? use-cache? boolean? #t]
+                           [#:skip-installed? skip-installed? boolean? #f]
+                           [#:skip-auto-installed? skip-auto-installed? boolean? #f]
                            [#:quiet? quiet? boolean? #f]
                            [#:use-trash? use-trash? boolean? #f]
                            [#:from-command-line? from-command-line? boolean? #f]
@@ -278,7 +310,8 @@ is true, error messages may suggest specific command-line flags for
                            [#:multi-clone-mode multi-clone-mode (or/c 'fail 'force 'convert 'ask) 'fail]
                            [#:pull-mode pull-mode (or/c 'ff-only 'try 'rebase) 'ff-only]
                            [#:link-dirs? link-dirs? boolean? #f]
-                           [#:dry-run? dry-run? boolean? #f])
+                           [#:dry-run? dry-run? boolean? #f]
+                           [#:destdir destdir (or/c #f path-string?) #f])
          (or/c 'skip
                #f
                (listof (or/c path-string?
@@ -313,7 +346,8 @@ The package lock must be held; see @racket[with-pkg-lock].
                                    and @racket[#:infer-clone-from-dir?] arguments.}
          #:changed "6.1.1.6" @elem{Added the @racket[#:use-trash?] argument.}
          #:changed "6.1.1.8" @elem{Added the @racket[#:pull-mode] argument.}
-         #:changed "6.4.0.14" @elem{Added the @racket[#:dry-run] argument.}]}
+         #:changed "6.4.0.14" @elem{Added the @racket[#:dry-run] argument.}
+         #:changed "9.2.0.6" @elem{Added the @racket[#:destdir] and @racket[skip-auto-installed?] arguments.}]}
 
 
 @defproc[(pkg-update      [sources (listof (or/c string? pkg-desc?))]
@@ -475,6 +509,14 @@ The package lock must be held; see @racket[with-pkg-lock].
 @history[#:changed "6.4.0.14" @elem{Added the @racket[#:dry-run] argument.}]}
 
 
+@defproc[(pkg-migrate-available-versions) (listof string?)]{
+
+Returns a list of versions that are suitable as arguments to
+@racket[pkg-migrate].
+
+@history[#:added "8.11.1.7"]}
+
+
 @defproc[(pkg-catalog-show [names (listof string?)]
                            [#:all? all? boolean? #f]
                            [#:only-names? only-names? boolean? #f]
@@ -520,6 +562,7 @@ for extracting existing catalog information.
                                                                                                     path-for-some-system?))
                                                            #f]
                               [#:exclude excludes (listof string?) '()]
+                              [#:mode mode (or/c 'as-is 'source 'binary 'binary-lib 'built) 'as-is]
                               [#:fast-file-copy? fast-file-copy? boolean? #f]
                               [#:quiet? quiet? boolean? #f]
                               [#:package-exn-handler package-exn-handler (string? exn:fail? . -> . any) (lambda (_pkg-name _exn) (raise _exn))])
@@ -541,7 +584,8 @@ for extracting existing catalog information.
          #:changed "6.0.1.13" @elem{Added the @racket[#:package-exn-handler] argument.}
          #:changed "7.7.0.1" @elem{Added the @racket[#:include], @racket[#:include-deps?],
                                    @racket[#:include-deps-platform],
-                                   @racket[#:exclude], and @racket[#:fast-file-copy?] arguments.}]}
+                                   @racket[#:exclude], and @racket[#:fast-file-copy?] arguments.}
+         #:changed "9.2.0.5" @elem{Added the @racket[#:mode] argument.}]}
 
 @defproc[(pkg-archive-pkgs [dest-dir path-string?]
                            [pkgs (listof path-string?)]
@@ -705,7 +749,7 @@ and status reporting.
                                    @racket[#:quiet?] arguments.}]}
 
 
-@defproc[(extract-pkg-dependencies [info (symbol? (-> any/c) . -> . any/c)]
+@defproc[(extract-pkg-dependencies [info (or/c #f (symbol? (-> any/c) . -> . any/c))]
                                    [#:build-deps? build-deps? boolean? #t]
                                    [#:filter? filter? boolean? #f]
                                    [#:versions? versions? boolean? #f])
@@ -720,9 +764,11 @@ run-time dependencies and build-time dependencies.
 If @racket[filter?] is true, then platform-specific dependencies are
 removed from the result list when they do not apply to the current
 platform, and other information is stripped so that the result list is
-always a list of either strings (when @racket[versions?] is true) or a
+always a list of either strings (when @racket[versions?] is @racket[#f]) or a
 two-element list containing a string and a version (when
-@racket[versions?] is @racket[#f]).
+@racket[versions?] is true).
+
+If @racket[info] is @racket[#f], the result is @racket[(list)].
 
 @history[#:changed "6.0.1.6" @elem{Added the @racket[#:versions?] argument.}]}
 
@@ -776,3 +822,26 @@ The package lock must be held; see @racket[with-pkg-lock]. Note that
 called with a lock that is wider than the narrowest relevant scope.
 
 @history[#:added "7.7.0.9"]}
+
+
+@defproc[(call-in-pkg-timeout-sandbox [thunk (-> any)]
+                                      [#:make-exn make-exn exn:fail (string? continuation-mark-set? . -> . any/c)])
+         any]{
+
+Calls @racket[thunk] in a thread and under a custodian that is
+shutdown when the thread terminates. If the thread does not terminate
+within the number of seconds indicated by @racket[current-pkg-network-timeout],
+the thread is forcibly terminated by shutting down its custodian.
+
+The result of @racket[thunk] is returned as the result of
+@racket[call-in-pkg-timeout-sandbox]. If the thread raises an
+exception, the exception is re-@racket[raise]d by
+@racket[call-in-pkg-timeout-sandbox] in the current thread.
+
+The result of @racket[make-exn] is @racket[raise]d if the thread
+terminates without returning a result or throwing an exception and if
+the timeout expires. If the thread terminates without returning a
+result or throwing an exception before the timeout, a ``thread
+terminated'' exception is raised.
+
+@history[#:added "9.0.0.2"]}

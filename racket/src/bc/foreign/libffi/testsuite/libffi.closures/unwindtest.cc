@@ -4,7 +4,7 @@
    PR:		none.
    Originator:	Jeff Sturm <jsturm@one-point.com>  */
 
-/* { dg-do run { xfail x86_64-apple-darwin* moxie*-*-* } } */
+/* { dg-do run { xfail moxie*-*-* } } */
 
 #include "ffitest.h"
 
@@ -48,6 +48,7 @@ typedef int (*closure_test_type1)(float, float, float, float, signed short,
 				  float, float, int, double, int, int, float,
 				  int, int, int, int);
 
+extern "C"
 int main (void)
 {
   ffi_cif cif;

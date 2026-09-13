@@ -7,14 +7,24 @@
 
 (Section 'subprocess)
 
+(let ()
+  (local-require ffi/unsafe/atomic)
+  (when (in-atomic-mode?)
+    (error "oops0\n")))
+
 (define self
   (parameterize ([current-directory (find-system-path 'orig-dir)])
     (find-executable-path (find-system-path 'exec-file) #f)))
-(define cat (find-executable-path 
-	     (if (eq? 'windows (system-type)) 
-		 "cat.exe"
-		 "cat")
-	     #f))
+(define cat (or (find-executable-path
+		 (if (eq? 'windows (system-type))
+		     "cat.exe"
+		     "cat")
+		 #f)
+		;; a likely place to find `cat.exe`:
+		(let ([cat "c:/program files/git/usr/bin/cat.exe"])
+		  (and (file-exists? cat)
+		       (simple-form-path cat)))))
+
 (define tmpfile (build-path (find-system-path 'temp-dir) "cattmp"))
 (define tmpfile2 (build-path (find-system-path 'temp-dir) "cattmp2"))
 
@@ -679,6 +689,16 @@
   (try-arg "a\\\\\\\\\"b" "a\\\\b")
   (try-arg "a\\\\\\\\\\\"b" "a\\\\\"b"))
 
+(unless (eq? 'windows (system-type))
+  (err/rt-test (subprocess #f #f #f "anything" 'exact "make sure this is disallowed")
+               exn:fail:contract?
+               #rx"exact command line not supported"))
+
+(err/rt-test (subprocess #f #f #f "anything" 'exact) ;; missing argument after `'exact`
+             exn:fail:contract?)
+(err/rt-test (subprocess #f #f #f "anything" 'exact "a" "b") ;; multiple arguments after `'exact`
+             exn:fail:contract?)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; check file-descriptor sharing
 
@@ -723,7 +743,7 @@
 
   (list ok? (get-output-bytes o) (regexp-match? #rx"error reading" (get-output-bytes e))))
 
-(unless (eq? 'windows (system-type))
+(unless 'closes-all-cloexec-and-uninherited ; we don't have a predicate for platforms without O_CLOEXEC
   (test '(#t #"y\n1\n" #f) check-sharing 'all))
 (test '(#f #"y\n" #t) check-sharing 'inherited)
 (test '(#f #"y\n" #t) check-sharing '())
@@ -790,5 +810,9 @@
 
 (for ([f (list tmpfile tmpfile2)] #:when (file-exists? f)) (delete-file f))
 
+(let ()
+  (local-require ffi/unsafe/atomic)
+  (when (in-atomic-mode?)
+    (error "oops1\n")))
 
 (report-errs)

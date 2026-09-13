@@ -23,8 +23,23 @@
 (test #f malloc 0 _int)
 (test #f malloc _int 0)
 
+(test 0 ptr-ref (malloc 100 'zeroed-atomic) _int 10)
+(test 0 ptr-ref (malloc 100 'zeroed-atomic-interior) _int 10)
+
 (unless (eq? 'cs (system-type 'gc))
   (test 0 bytes-length (make-sized-byte-string #f 0)))
+
+(err/rt-test (malloc 'atomic) exn:fail:contract? #rx"no size given")
+
+(let ()
+  (define data #"hello, world")
+  (define dataptr (malloc _uint8 (bytes-length data) data 'atomic-interior 'failok))
+  (define dataptr2 (malloc _uint8 (bytes-length data) data 'atomic-interior 'fail-ok))
+  (test (char->integer #\h) ptr-ref dataptr _byte)
+  (test (char->integer #\d) ptr-ref dataptr _byte 11)
+  (test (char->integer #\h) ptr-ref dataptr2 _byte)
+  (test (char->integer #\d) ptr-ref dataptr2 _byte 11))
+
 
 ;; Check integer-range checking:
 (let ()
@@ -404,8 +419,6 @@
   (unless (and (eq? 'windows (system-type)) (= 4 (compiler-sizeof '(* void))))
     (let ([v (for/list ([i 7]) i)])
       ;; pass array as pointer:
-      ;; FIXME: these tests wrap the result pointer as non-GCable,
-      ;; but _c7_list allocates the argument array as GCable.
       (t (for/list ([i 7]) (add1 i)) 'increment_c_array (_fun _c7_list -> (_list o _byte 7)) v)
       (t (for/list ([i 7]) (add1 i)) 'increment_c_array (_fun _c7_list -> _c7_list) v)
       (let ([r ((ffi 'increment_c_array (_fun _c7_list -> (_array _byte 7))) v)])
@@ -736,11 +749,9 @@
   (define p (cast (ptr-add (malloc 10) 5) _pointer _thing-pointer))
   (test #t cpointer-gcable? p)
   (define q (cast p _thing-pointer _stuff-pointer))
-  (test (cast p _pointer _intptr)
-        cast q _pointer _intptr)
+  (test #t ptr-equal? p q)
   (collect-garbage)
-  (test (cast p _thing-pointer _intptr)
-        cast q _stuff-pointer _intptr))
+  (test #t ptr-equal? p q))
 
 ;; For casts where the BC output might share with the input, so
 ;; an offset pointer needs to be 'atomic-interior
@@ -781,6 +792,14 @@
         (cpointer-gcable? (cast (bytes 1 2 3 4)
                                 _bytes
                                 _pointer))))
+
+;; test immobile cells
+(for ([free-via-non-gcable? (in-list '(#f #t))])
+  (let ([b (malloc-immobile-cell 'hello)])
+    (test 'hello ptr-ref b _racket)
+    (define b/non-gcable (cast (cast b _pointer _intptr) _intptr _pointer))
+    (test 'hello ptr-ref b/non-gcable _racket)
+    (free-immobile-cell (if free-via-non-gcable? b/non-gcable b))))
 
 ;; test 'interior allocation mode
 (let ()
@@ -934,6 +953,11 @@
 
 ;; strings can be cast
 (test "heλλo" cast (cast "he\u3bb\u3bbo" _string/utf-16 _gcpointer) _gcpointer _string/utf-16)
+
+;; symbols
+(test "abc" cast (cast 'abc _symbol _gcpointer) _gcpointer _string/utf-8)
+(test "heλλo" cast (cast 'heλλo _symbol _gcpointer) _gcpointer _string/utf-8)
+(test (char->integer #\h) (get-ffi-obj 'grab7th test-lib  (_fun _symbol -> _int)) 'abcdefgh)
 
 ;; check async:
 (when test-async?
@@ -1409,6 +1433,13 @@
   (test #t ctype? (_vector o _int 10))
   (test #t ctype? (_vector io _int 10)))
 
+(test #t ctype? (_ptr i _int atomic))
+(test #t ctype? (_ptr i _int zeroed-atomic))
+(test #t ctype? (_ptr i _int atomic-interior))
+(test #t ctype? (_ptr i _int zeroed-atomic-interior))
+
+(syntax-test #'(_ptr i _int magic))
+
 ;; ----------------------------------------
 
 (define-cpointer-type _foo)
@@ -1531,7 +1562,7 @@
     (go (- (expt 2 63)) (- 256 (expt 2 63))))
 
   (let ()
-    (define p (cast bstr _pointer _pointer))
+    (define p (malloc 10 'atomic-interior))
     (for ([i (in-range 100)])
       (ptr-set! bstr _pointer (ptr-add p i))
       (ptr-set! bstr _pointer 2 p)
@@ -1610,16 +1641,34 @@
 ;; ----------------------------------------
 
 (let ()
-  (unless (eq? (system-type) 'windows)
-    (define-ffi-definer define-test-lib test-lib
-      #:make-c-id convention:hyphen->underscore)
-    (define-test-lib check-multiple-of-ten
-      (_fun #:save-errno 'posix _int -> _int))
-    (test 0 check-multiple-of-ten 40)
-    (test -1 check-multiple-of-ten 42)
-    (test 2 saved-errno)
-    (saved-errno 5)
-    (test 5 saved-errno)))
+  (define-ffi-definer define-test-lib test-lib
+    #:make-c-id convention:hyphen->underscore)
+  (define-test-lib underscore-variable (_fun -> _void))
+  (test (void) underscore-variable))
+
+(let ()
+  (define-ffi-definer define-test-lib test-lib
+    #:make-c-id convention:hyphen->camelCase)
+  (define-test-lib camel-case-variable (_fun -> _void))
+  (test (void) camel-case-variable)
+  (define-test-lib cAmeL-CAsE-vaRiaBlE (_fun -> _void))
+  (test (void) cAmeL-CAsE-vaRiaBlE))
+
+(let ()
+  (define-ffi-definer define-test-lib test-lib
+    #:make-c-id convention:hyphen->PascalCase)
+  (define-test-lib pascal-case-variable (_fun -> _void))
+  (test (void) pascal-case-variable)
+  (define-test-lib paSCaL-CAsE-vaRiaBlE (_fun -> _void))
+  (test (void) paSCaL-CAsE-vaRiaBlE))
+
+(let ()
+  (define-ffi-definer define-test-lib test-lib
+    #:make-c-id convention:hyphen->camelcase)
+  (define-test-lib pascal-case-variable (_fun -> _void))
+  (test (void) pascal-case-variable)
+  (define-test-lib paSCaL-CAsE-vaRiaBlE (_fun -> _void))
+  (test (void) paSCaL-CAsE-vaRiaBlE))
 
 (let ()
   (define-ffi-definer define-test-lib test-lib)

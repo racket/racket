@@ -3,7 +3,8 @@
          "../host/thread.rkt"
          "../print/more-pending.rkt"
          "output-port.rkt"
-         "bytes-output.rkt")
+         "bytes-output.rkt"
+         "lock.rkt")
 
 (provide make-max-output-port
          max-output-port-max-length)
@@ -14,7 +15,7 @@
   [max-length 0] ;; see "../print/write-with-max.rkt"
   #:override
   [write-out
-   (lambda (src-bstr src-start src-end nonblock? enable-break? copy?)
+   (lambda (src-bstr src-start src-end nonblock? enable-break? copy? no-escape?)
      (cond
        [max-length
         (define len (- src-end src-start))
@@ -28,9 +29,9 @@
            len]
           [else
            (define write-len (min len max-length))
-           (end-atomic)
+           (port-unlock this)
            (define wrote-len (write-bytes src-bstr o src-start (+ src-start write-len)))
-           (start-atomic)
+           (port-lock this)
            (cond
              [(= max-length wrote-len)
               (set! max-length (more-pending '(0 . #"") (+ src-start max-length) src-end src-bstr))
@@ -40,9 +41,9 @@
               (set! max-length (- max-length wrote-len))
               wrote-len])])]
        [else
-        (end-atomic)
+        (port-unlock this)
         (define len (write-bytes src-bstr o src-start src-end))
-        (start-atomic)
+        (port-lock this)
         len]))])
 
 (define (make-max-output-port o max-length)

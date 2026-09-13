@@ -7,18 +7,21 @@
          rand-choice
          rand-range
          rand-nat
+         current-contract-pseudo-random-generator
          permute
          oneof)
 
-(define my-generator (make-pseudo-random-generator))
-(define (rand [x #f]) 
-  (if x
-      (random x my-generator)
-      (random my-generator)))
+(define current-contract-pseudo-random-generator
+  (make-parameter (make-pseudo-random-generator)))
 
+(define rand
+  (case-lambda
+    [(k) (random k (current-contract-pseudo-random-generator))]
+    [(min max) (random min max (current-contract-pseudo-random-generator))]
+    [() (random (current-contract-pseudo-random-generator))]))
 
 (define (rand-seed x)
-  (parameterize ([current-pseudo-random-generator my-generator])
+  (parameterize ([current-pseudo-random-generator (current-contract-pseudo-random-generator)])
     (random-seed x)))
 
 (define-syntax (rand-choice stx)

@@ -10,6 +10,9 @@
 #ifndef WINDOWS_PROCESSES
 # include <signal.h>
 #endif
+#ifdef MZ_USE_MAP_JIT
+# include <pthread.h>
+#endif
 
 #ifdef DOS_FAR_POINTERS
 # include <alloc.h>
@@ -677,6 +680,18 @@ Scheme_Object *scheme_make_offset_external_cptr(GC_CAN_IGNORE void *cptr, intptr
   return o;
 }
 
+Scheme_Object *scheme_make_cache_wrap(Scheme_Object *v)
+{
+  Scheme_Object *data;
+
+  data = scheme_alloc_object();
+  data->type = scheme_cache_wrap_type;
+
+  SCHEME_PTR1_VAL(data) = v;
+  SCHEME_PTR2_VAL(data) = scheme_false;
+
+  return data;
+}
 
 /************************************************************************/
 /*                            allocation                                */

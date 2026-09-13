@@ -16,6 +16,7 @@
          renamed->-ctc renamed-<-ctc
          char-in
          real-in
+         (rename-out [-complex/c complex/c])
          natural-number/c
          string-len/c
          false/c
@@ -143,18 +144,18 @@
         [1/10 m]
         [1/10 n]
         [1/10 (if (<= n 0 1 m)
-                  (random)
+                  (rand)
                   (rand-choice [1/2 n] [else m]))]
         [else
          (cond
            [(or (= n -inf.0) (= m +inf.0))
-            (define c (random 4294967087))
+            (define c (rand 4294967087))
             (cond
               [(and (= n -inf.0) (= m +inf.0)) c]
               [(= m +inf.0) (+ n c)]
               [(= n -inf.0) (- m c)])]
            [else
-            (+ n (* (random) (- m n)))])]))]))
+            (+ n (* (rand) (- m n)))])]))]))
 
 (define-struct between/c-s (low high)
   #:property prop:custom-write custom-write-property-proc
@@ -237,10 +238,10 @@
           (λ ()
             (rand-choice
              [1/10 -inf.0]
-             [2/10 (random)]
-             [2/10 (- (random))]
-             [2/10 (random 4294967087)]
-             [2/10 (- (random 4294967087))]
+             [2/10 (rand)]
+             [2/10 (- (rand))]
+             [2/10 (rand 4294967087)]
+             [2/10 (- (rand 4294967087))]
              [else 0])))]
        [(and (= x -inf.0) (equal? name '</c))
         (λ (fuel) #f)]
@@ -251,10 +252,10 @@
           (λ ()
             (rand-choice
              [1/10 +inf.0]
-             [2/10 (random)]
-             [2/10 (- (random))]
-             [2/10 (random 4294967087)]
-             [2/10 (- (random 4294967087))]
+             [2/10 (rand)]
+             [2/10 (- (rand))]
+             [2/10 (rand 4294967087)]
+             [2/10 (- (rand 4294967087))]
              [else 0])))]
        [else
         (λ (fuel)
@@ -262,8 +263,8 @@
             (rand-choice
              [1/10 (-/+ +inf.0)]
              [1/10 (-/+ x 0.01)]
-             [4/10 (-/+ x (random))]
-             [else (-/+ x (random 4294967087))])))]))
+             [4/10 (-/+ x (rand))]
+             [else (-/+ x (rand 4294967087))])))]))
    #:stronger </>-ctc-stronger
    #:equivalent </>-ctc-equivalent))
 
@@ -324,11 +325,76 @@
                           1
                           arg1 arg2)))
 
-(set-some-basic-misc-contracts! (renamed-between/c -inf.0 +inf.0 'real?)
+(define between/c-inf+inf-as-real? (renamed-between/c -inf.0 +inf.0 'real?))
+
+;; passing only defined names here gives the demodularizer license to prune:
+(set-some-basic-misc-contracts! between/c-inf+inf-as-real?
                                 renamed-between/c
                                 between/c-s?
                                 between/c-s-low
                                 between/c-s-high)
+
+(define -complex/c
+  (let ()
+    (define (complex/c rp ip)
+      (make-complex/c (coerce-flat-contract 'complex/c rp)
+                      (coerce-flat-contract 'complex/c ip)))
+    complex/c))
+
+(struct complex/c (real? imag?)
+  #:extra-constructor-name make-complex/c
+  #:property prop:custom-write custom-write-property-proc
+  #:property prop:flat-contract
+  (build-flat-contract-property
+   #:trusted trust-me
+   #:name (λ (c) (build-compound-type-name 'complex/c (complex/c-real? c) (complex/c-imag? c)))
+   #:first-order (λ (ctc)
+                   (define rp? (complex/c-real? ctc))
+                   (define ip? (complex/c-imag? ctc))
+                   (λ (v) (and (complex? v) (rp? (real-part v)) (ip? (imag-part v)))))
+   #:late-neg-projection
+   (λ (ctc)
+     (define rp? (complex/c-real? ctc))
+     (define ip? (complex/c-imag? ctc))
+     (λ (blame)
+       (λ (val neg-party)
+         (if (and (complex? val)
+                  (rp? (real-part val))
+                  (ip? (imag-part val)))
+             val
+             (raise-blame-error
+              blame val #:missing-party neg-party
+              '(expected:
+                "a complex number with\n"
+                "  real part: ~s\n"
+                "  imaginary part: ~s"
+                given: "~v")
+              (contract-name rp?)
+              (contract-name ip?)
+              val)))))
+   #:generate
+   (λ (ctc)
+     (λ (fuel)
+       (define gen-real (contract-random-generate/choose (complex/c-real? ctc) fuel))
+       (define gen-imag (contract-random-generate/choose (complex/c-imag? ctc) fuel))
+       (and gen-real
+            gen-imag
+            (λ ()
+              (make-rectangular (gen-real) (gen-imag))))))
+   #:stronger
+   (λ (this that)
+     (cond
+       [(complex/c? that)
+        (and (contract-stronger? (complex/c-real? this) (complex/c-real? that))
+             (contract-stronger? (complex/c-imag? this) (complex/c-imag? that)))]
+       [else #f]))
+   #:equivalent
+   (λ (this that)
+     (cond
+       [(complex/c? that)
+        (and (contract-equivalent? (complex/c-real? this) (complex/c-real? that))
+             (contract-equivalent? (complex/c-imag? this) (complex/c-imag? that)))]
+       [else #f]))))
 
 (define (char-in a b)
   (check-two-args 'char-in a b char? char?)
@@ -439,6 +505,20 @@
        (contract-struct-equivalent? (promise-base-ctc-ctc this)
                                     (promise-base-ctc-ctc that))))
 
+(define (promise-ctc-generate ctc)
+  (define base-ctc (promise-base-ctc-ctc ctc))
+  (λ (fuel)
+    (define gen-base (contract-random-generate/choose base-ctc fuel))
+    (and gen-base
+         (λ () (delay (gen-base))))))
+
+(define (promise-ctc-exercise ctc)
+  (define base-ctc (promise-base-ctc-ctc ctc))
+  (λ (fuel)
+    (define gen-base (contract-random-generate/choose base-ctc fuel))
+    (values (λ (p) (force p))
+            (list base-ctc))))
+
 (struct promise-base-ctc (ctc))
 (struct chaperone-promise-ctc promise-base-ctc ()
   #:property prop:custom-write custom-write-property-proc
@@ -449,6 +529,8 @@
    #:late-neg-projection promise-contract-late-neg-proj
    #:stronger promise-ctc-stronger?
    #:equivalent promise-ctc-equivalent?
+   #:generate promise-ctc-generate
+   #:exercise promise-ctc-exercise
    #:first-order (λ (ctc) promise?)))
 
 (struct promise-ctc promise-base-ctc ()
@@ -460,6 +542,8 @@
    #:late-neg-projection promise-contract-late-neg-proj
    #:stronger promise-ctc-stronger?
    #:equivalent promise-ctc-equivalent?
+   #:generate promise-ctc-generate
+   #:exercise promise-ctc-exercise
    #:first-order (λ (ctc) promise?)))
 
 ;; (parameter/c in/out-ctc)
@@ -618,13 +702,13 @@
     [(zero? (hash-count env-hash))
      (rand-choice
       [1/3 (any/c-structured-value)]
-      [1/3 (any/c-procedure env-hash fuel)]
+      [1/3 (any/c-procedure env fuel)]
       [else (any/c-from-predicate-generator env-hash fuel)])]
     [else
      (rand-choice
       [1/4 (oneof (hash-ref env-hash (oneof (hash-keys env-hash))))]
       [1/4 (any/c-structured-value)]
-      [1/4 (any/c-procedure env-hash fuel)]
+      [1/4 (any/c-procedure env fuel)]
       [else (any/c-from-predicate-generator env-hash fuel)])]))
 
 (define (any/c-structured-value)
@@ -634,11 +718,11 @@
       [else
        (rand-choice
         [1/10 (cons (loop (- depth 1)) (loop (- depth 1)))]
-        [1/10 (make-vector (random 10) (λ (_) (loop (- depth 1))))]
-        [1/10 (make-hash (for/list ([i (in-range (random 10))])
+        [1/10 (make-vector (rand 10) (λ (_) (loop (- depth 1))))]
+        [1/10 (make-hash (for/list ([i (in-range (rand 10))])
                            (cons (loop (- depth 1))
                                  (loop (- depth 1)))))]
-        [1/10 (make-immutable-hash (for/list ([i (in-range (random 10))])
+        [1/10 (make-immutable-hash (for/list ([i (in-range (rand 10))])
                                      (cons (loop (- depth 1))
                                            (loop (- depth 1)))))]
         [1/10 (box (loop (- depth 1)))]
@@ -657,7 +741,9 @@
     (λ args
       (apply
        values
-       (for/list ([i (in-range (rand-nat))])
+       (for/list ([i (in-range (let ([ans (rand-nat)])
+                                 (printf "~s values\n" ans)
+                                 ans))])
          (random-any/c env fuel))))
     (rand-nat))
    'random-any/c-generated-procedure))
@@ -727,23 +813,32 @@
      (-prompt-tag/c (list ?ctc ...) (list ?call/cc ...))]
     [(_ ?ctc ... #:call/cc ?call/cc)
      (-prompt-tag/c (list ?ctc ...) (list ?call/cc))]
-    [(_ ?ctc ...) (-prompt-tag/c (list ?ctc ...) (list))]))
+    [(_ ?ctc ...) (-prompt-tag/c (list ?ctc ...) #f)]))
 
 ;; procedural part of the contract
 ;; takes two lists of contracts (abort & call/cc contracts)
 (define/subexpression-pos-prop (-prompt-tag/c ctc-args call/ccs)
   (define ctcs (coerce-contracts 'prompt-tag/c ctc-args))
-  (define call/cc-ctcs (coerce-contracts 'prompt-tag/c call/ccs))
+  (define call/cc-ctcs (and call/ccs (coerce-contracts 'prompt-tag/c call/ccs)))
   (cond [(and (andmap chaperone-contract? ctcs)
-              (andmap chaperone-contract? call/cc-ctcs))
+              (or (not call/cc-ctcs) (andmap chaperone-contract? call/cc-ctcs)))
          (chaperone-prompt-tag/c ctcs call/cc-ctcs)]
         [else
          (impersonator-prompt-tag/c ctcs call/cc-ctcs)]))
 
 (define (prompt-tag/c-name ctc)
+  (define call/ccs (base-prompt-tag/c-call/ccs ctc))
+  (define call/cc-lst
+    (cond
+      [(not call/ccs) '()]
+      [(= 1 (length call/ccs))
+       (cons '#:call/cc call/ccs)]
+      [else
+       (list '#:call/cc (apply build-compound-type-name 'values call/ccs))]))
   (apply build-compound-type-name
-         (append (list 'prompt-tag/c) (base-prompt-tag/c-ctcs ctc)
-                 (list '#:call/cc) (base-prompt-tag/c-call/ccs ctc))))
+         (append (list 'prompt-tag/c)
+                 (base-prompt-tag/c-ctcs ctc)
+                 call/cc-lst)))
 
 ;; build a projection for prompt tags
 (define ((prompt-tag/c-late-neg-proj chaperone?) ctc)
@@ -752,15 +847,26 @@
   (define ho-projs
     (map get/build-late-neg-projection (base-prompt-tag/c-ctcs ctc)))
   (define call/cc-projs
-    (map get/build-late-neg-projection (base-prompt-tag/c-call/ccs ctc)))
+    (and (base-prompt-tag/c-call/ccs ctc)
+         (map get/build-late-neg-projection (base-prompt-tag/c-call/ccs ctc))))
   (λ (blame)
     (define swapped (blame-swap blame))
     (define ho-neg-projs (for/list ([proj (in-list ho-projs)]) (proj swapped)))
     (define ho-pos-projs (for/list ([proj (in-list ho-projs)]) (proj blame)))
-    (define cc-neg-projs (for/list ([proj (in-list call/cc-projs)]) (proj swapped)))
-    (define cc-pos-projs (for/list ([proj (in-list call/cc-projs)]) (proj blame)))
-    (define (make-proj projs neg-party blame+neg-party)
+    (define cc-neg-projs (and call/cc-projs (for/list ([proj (in-list call/cc-projs)]) (proj swapped))))
+    (define cc-pos-projs (and call/cc-projs (for/list ([proj (in-list call/cc-projs)]) (proj blame))))
+    (define (make-proj val projs neg-party blame+neg-party)
+      (define proj-len (length projs))
       (λ vs
+        (define vs-len (length vs))
+        (unless (= proj-len vs-len)
+          (raise-blame-error
+           (blame-swap blame) #:missing-party neg-party val
+           '(expected: "~a value~a" given: "~a value~a")
+           proj-len
+           (if (= proj-len 1) "" "s")
+           vs-len
+           (if (= vs-len 1) "" "s")))
         (with-contract-continuation-mark
          blame+neg-party
          (apply values
@@ -773,16 +879,18 @@
       (cond
         [(continuation-prompt-tag? val)
          ;; prompt/abort projections
-         (define proj1 (make-proj ho-pos-projs neg-party blame+neg-party))
-         (define proj2 (make-proj ho-neg-projs neg-party blame+neg-party))
+         (define proj1 (make-proj val ho-pos-projs neg-party blame+neg-party))
+         (define proj2 (make-proj val ho-neg-projs neg-party blame+neg-party))
          ;; call/cc projections
-         (define call/cc-guard (make-proj cc-pos-projs neg-party blame+neg-party))
+         (define call/cc-guard (if cc-pos-projs (make-proj val cc-pos-projs neg-party blame+neg-party) values))
          (define call/cc-proxy
-           (λ (f)
-             (proc-proxy
-              f
-              (λ args
-                (apply values (make-proj cc-neg-projs neg-party blame+neg-party) args)))))
+           (if cc-neg-projs
+               (λ (f)
+                 (proc-proxy
+                  f
+                  (λ args
+                    (apply values (make-proj val cc-neg-projs neg-party blame+neg-party) args))))
+               (λ (p) p)))
          (proxy val
                 proj1 proj2
                 call/cc-guard call/cc-proxy
@@ -1156,7 +1264,7 @@
     (raise-type-error 'rename-contract "contract?" ctc))
   (let ([ctc (coerce-contract 'rename-contract ctc)])
     (if (flat-contract? ctc)
-        (flat-named-contract name (flat-contract-predicate ctc))
+        (flat-named-contract name (flat-contract-predicate ctc) (contract-struct-generate ctc))
         (let* ([make-contract (if (chaperone-contract? ctc) make-chaperone-contract make-contract)])
           (define (rename-contract-stronger? this other)
             (contract-struct-stronger? ctc other))
@@ -1167,6 +1275,8 @@
                          #:first-order (contract-first-order ctc)
                          #:stronger rename-contract-stronger?
                          #:equivalent rename-contract-equivalent?
+                         #:generate (contract-struct-generate ctc)
+                         #:exercise (contract-struct-exercise ctc)
                          #:list-contract? (list-contract? ctc))))))
 
 (define (if/c predicate then/c else/c)

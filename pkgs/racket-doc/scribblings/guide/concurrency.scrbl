@@ -17,8 +17,9 @@ that can be used to synchronize both threads and other implicit forms of
 concurrency, such as @tech{ports}.
 
 Threads run concurrently in the sense that one thread can preempt
-another without its cooperation, but threads do not run in parallel in
-the sense of using multiple hardware processors.  See
+another without its cooperation, but by default, threads do not run in parallel in
+the sense of using multiple hardware processors. That default kind of
+thread is a @deftech{coroutine thread}. See
 @secref["parallelism"] for information on parallelism in Racket.
 
 @section{Threads}
@@ -63,6 +64,17 @@ thread exits:
 (thread-wait worker)
 (displayln "Worker finished")
 ]
+
+To receive a result back from a thread, use @racket[#:keep 'results]
+when creating the thread, and then @racket[thread-wait] can return the
+values that the thread's procedure returned:
+
+@racketblock[
+(define worker (thread (lambda () (+ 1 2))
+                       #:keep 'results))
+(thread-wait worker)
+]
+
 
 @section{Thread Mailboxes}
 
@@ -579,7 +591,7 @@ to wait until at least a certain number of items have been produced.
            (code:comment "we check to see if there has been enough")
            (code:comment "production")
            (cond
-             [(>= (car waiter) total-items-seen)
+             [(<= (car waiter) total-items-seen)
               (code:comment "if so, we send a message back on the channel")
               (code:comment "and continue the loop without that item")
               (handle-evt

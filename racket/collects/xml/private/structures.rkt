@@ -1,34 +1,52 @@
 #lang racket/base
 (require "core.rkt"
-         racket/contract)
+         (submod "core.rkt" serialization-support)
+         racket/runtime-path
+         racket/contract
+         (for-syntax racket/base))
+
+(define-runtime-module-path-index deserialize-info-mpi '(submod "." deserialize-info))
+(module+ deserialize-info
+  (define-syntax (get-checked-constructor stx)
+    (syntax-case stx ()
+      [(_ name)
+       (identifier? #'name)
+       #`(let ()
+           (local-require (only-in #,(datum->syntax #'name (list #'submod ".."))
+                                   name))
+           name)])))
+(define-syntax define-xml-struct
+  (make-define-serializable-struct #'deserialize-info-mpi #'get-checked-constructor))
 
 ; Location = (make-location Nat Nat Nat) | Symbol
-(define-struct location (line char offset) #:transparent)
+(define-xml-struct location (line char offset))
 
 ; Document = (make-document Prolog Element (listof Misc))
-(define-struct document (prolog element misc) #:transparent)
+(define-xml-struct document (prolog element misc))
 
 ; Prolog = (make-prolog (listof Misc) Document-type (listof Misc))
-(define-struct prolog (misc dtd misc2) #:transparent)
+(define-xml-struct prolog (misc dtd misc2))
 
 ; Document-type = (make-document-type sym External-dtd #f)
 ;               | #f
-(define-struct document-type (name external inlined) #:transparent)
+(define-xml-struct document-type (name external inlined))
 
 ; External-dtd = (make-external-dtd/public str str)
 ;              | (make-external-dtd/system str)
-;              | #f
-(define-struct external-dtd (system) #:transparent)
-(define-struct (external-dtd/public external-dtd) (public) #:transparent)
-(define-struct (external-dtd/system external-dtd) () #:transparent)
+;              | (external-dtd ignored-str) ; represents *absence* of external dtd
+(define-xml-struct external-dtd (system))
+(define-xml-struct (external-dtd/public external-dtd) (public))
+(define-xml-struct (external-dtd/system external-dtd) ())
+(define no-external-dtd
+  (external-dtd ""))
 
 ; Element = (make-element Location Location Symbol (listof Attribute) (listof Content))
-(define-struct (element source) (name attributes content) #:transparent)
+(define-xml-struct (element source) (name attributes content))
 
 ; Attribute = (make-attribute Location Location Symbol String)
-(define-struct (attribute source) (name value) #:transparent)
+(define-xml-struct (attribute source) (name value))
 
-; Content = Pcdata  
+; Content = Pcdata
 ;         |  Element
 ;         |  Entity
 ;         |  Misc
@@ -37,8 +55,11 @@
 ; Misc = Comment
 ;      |  Processing-instruction
 
+; Pcdata = (make-pcdata Location Location String)
+(define-xml-struct (pcdata source) (string))
+
 ; Entity = (make-entity Location Location (U Nat Symbol))
-(define-struct (entity source) (text) #:transparent)
+(define-xml-struct (entity source) (text))
 
 (define permissive/c
   (make-contract
@@ -64,6 +85,7 @@
 (define location/c
   (or/c location? symbol? false/c))
 (provide/contract
+ #:unprotected-submodule unsafe
  (struct location ([line (or/c false/c exact-nonnegative-integer?)]
                    [char (or/c false/c exact-nonnegative-integer?)]
                    [offset exact-nonnegative-integer?]))
@@ -74,6 +96,14 @@
  (struct (external-dtd/public external-dtd) ([system string?]
                                              [public string?]))
  (struct (external-dtd/system external-dtd) ([system string?]))
+ [no-external-dtd (and/c external-dtd?
+                         (property/c #:name '|struct type|
+                                     (λ (v)
+                                       (define-values (t _) (struct-info v))
+                                       t)
+                                     (flat-named-contract 'struct:external-dtd
+                                                          (λ (v)
+                                                            (equal? v struct:external-dtd)))))]
  (struct document-type ([name symbol?]
                         [external external-dtd?]
                         [inlined false/c]))
@@ -81,12 +111,12 @@
  (struct (p-i source) ([start location/c]
                        [stop location/c]
                        [target-name symbol?]
-                       [instruction string?])) 
+                       [instruction string?]))
  [misc/c contract?]
  (struct prolog ([misc (listof misc/c)]
                  [dtd (or/c document-type? false/c)]
                  [misc2 (listof misc/c)]))
- (struct document ([prolog prolog?] 
+ (struct document ([prolog prolog?]
                    [element element?]
                    [misc (listof misc/c)]))
  (struct (element source) ([start location/c]
@@ -100,13 +130,13 @@
                              [value (or/c string? permissive/c)]))
  [permissive-xexprs (parameter/c boolean?)]
  [permissive/c contract?]
- [content/c contract?] 
+ [content/c contract?]
  (struct (pcdata source) ([start location/c]
                           [stop location/c]
                           [string string?]))
  (struct (cdata source) ([start location/c]
                          [stop location/c]
-                         [string string?])) 
+                         [string string?]))
  [valid-char? (any/c . -> . boolean?)]
  (struct (entity source) ([start location/c]
                           [stop location/c]

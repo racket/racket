@@ -111,7 +111,7 @@ initial-request structure, etc.  The @racket[get-cookie] and
 from a @racket["Cookie"] field value.}
 
 
-@defproc[(get-cookie/single [name cookie-name?] [cookies string?]) (or/c cookie-value? false/c)]{
+@defproc[(get-cookie/single [name cookie-name?] [cookies string?]) (or/c cookie-value? #f)]{
 
 Like @racket[get-cookie], but returns the just first value string
 associated to @racket[name], or #f if no association is found.}

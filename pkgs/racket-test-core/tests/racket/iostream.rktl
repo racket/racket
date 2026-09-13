@@ -97,9 +97,7 @@
 		(+ pos n2)))))
     (close-input-port p)))
 
-(define portno 40010)
-
-(define (setup-mzscheme-echo tcp?)
+(define (setup-mzscheme-echo tcp? port-no1 port-no2)
   (define p (process* test-file "-q" "-b"))
   (define s (make-bytes 256))
   (define r #f)
@@ -118,8 +116,8 @@
 		       (set! w ww)
 		       (set! r2 rr2)
 		       (set! w2 ww2)))])
-	(fprintf (cadr p) "(define-values (r w) (tcp-connect \"localhost\" ~a))\n" portno)
-	(fprintf (cadr p) "(define-values (r2 w2) (tcp-connect \"localhost\" ~a))\n" (add1 portno))
+	(fprintf (cadr p) "(define-values (r w) (tcp-connect \"localhost\" ~a))\n" port-no1)
+	(fprintf (cadr p) "(define-values (r2 w2) (tcp-connect \"localhost\" ~a))\n" (add1 port-no2))
         (flush-output (cadr p))
 	(thread-wait t)
 	(fprintf (cadr p) "(begin ((copy-stream r w2)) (exit))\n"))
@@ -267,7 +265,7 @@
 (end)
 
 (start "Echo...\n")
-(define p (setup-mzscheme-echo #f))
+(define p (setup-mzscheme-echo #f #f #f))
 (thread (lambda () 
 	  (feed-file (cadr p))
 	  (close-output-port (cadr p))))
@@ -275,7 +273,7 @@
 (end)
 
 (start "Echo, faster...\n")
-(define p (setup-mzscheme-echo #f))
+(define p (setup-mzscheme-echo #f #f #f))
 (thread (lambda () 
 	  (feed-file/fast (cadr p))
 	  (close-output-port (cadr p))))
@@ -283,7 +281,7 @@
 (end)
 
 (start "Echo, indirect...\n")
-(define p (setup-mzscheme-echo #f))
+(define p (setup-mzscheme-echo #f #f #f))
 (define-values (rp1 wp1) (make-pipe))
 (define-values (rp2 wp2) (make-pipe))
 (thread (lambda () ((copy-stream rp1 (cadr p))) (close-output-port (cadr p))))
@@ -294,11 +292,15 @@
 (check-file/fast rp2)
 (end)
 
-(define l1 (tcp-listen portno 5 #t))
+(define l1 (tcp-listen 0 5 #t))
+(define port-no1 (let-values ([(addr port-no other-addr other-port-no) (tcp-addresses l1 #t)])
+                  port-no))
 (define l2 (tcp-listen (add1 portno) 5 #t))
+(define port-no2 (let-values ([(addr port-no other-addr other-port-no) (tcp-addresses l1 #t)])
+                   port-no))
 
 (start "TCP Echo...\n")
-(define-values (r w r2 w2) (setup-mzscheme-echo #t))
+(define-values (r w r2 w2) (setup-mzscheme-echo #t port-no1 port-no2))
 (close-input-port r)
 (thread (lambda () 
 	  (feed-file w)
@@ -315,7 +317,7 @@
 
 
 (start "TCP Echo, faster...\n")
-(define-values (r w r2 w2) (setup-mzscheme-echo #t))
+(define-values (r w r2 w2) (setup-mzscheme-echo #t port-no1 port-no2))
 (close-input-port r)
 (thread (lambda () 
 	  (feed-file/fast w)
@@ -327,7 +329,7 @@
 (start "TCP Echo, indirect...\n")
 (define-values (rp1 wp1) (make-pipe))
 (define-values (rp2 wp2) (make-pipe))
-(define-values (r w r2 w2) (setup-mzscheme-echo #t))
+(define-values (r w r2 w2) (setup-mzscheme-echo #t port-no1 port-no2))
 (close-input-port r)
 (thread (lambda () ((copy-stream rp1 w)) (close-output-port w)))
 (thread (lambda () ((copy-stream r2 wp2)) (close-output-port wp2)))

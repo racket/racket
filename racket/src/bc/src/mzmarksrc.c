@@ -799,6 +799,7 @@ thread_val {
   gcMARK2(pr->resumed_box, gc);
   gcMARK2(pr->running_box, gc);
   gcMARK2(pr->sync_box, gc);
+  gcMARK2(pr->results, gc);
 
   gcMARK2(pr->mbox_first, gc);
   gcMARK2(pr->mbox_last, gc);
@@ -1957,6 +1958,7 @@ mark_struct_type_val {
   gcMARK2(t->props, gc);
   gcMARK2(t->proc_attr, gc);
   gcMARK2(t->guard, gc);
+  gcMARK2(t->metaobj, gc);
   gcMARK2(t->immutables, gc);
 
  size:
@@ -2339,8 +2341,6 @@ sequential_fsemaphore {
 }
 
 #endif
-
-
 
 END future;
 

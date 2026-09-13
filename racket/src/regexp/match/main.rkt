@@ -132,9 +132,9 @@
     (raise-argument-error who
                           (cond
                            [peek? "input-port?"]
-                           [in-port-ok? "(or/c bytes? string? input-port? path?)"]
-                           [in-path-ok? "(or/c bytes? string? path?)"]
-                           [else "(or/c bytes? string?)"])
+                           [in-port-ok? "(or/c string? bytes? path? input-port?)"]
+                           [in-path-ok? "(or/c string? bytes? path?)"]
+                           [else "(or/c string? bytes?)"])
                           orig-in))
   
   (define start-offset (cond
@@ -147,7 +147,7 @@
   (define end-offset (cond
                       [orig-end-offset
                        (unless (exact-nonnegative-integer? orig-end-offset)
-                         (raise-argument-error who "(or/c #f exact-nonnegative-integer?)" orig-end-offset))
+                         (raise-argument-error who "(or/c exact-nonnegative-integer? #f)" orig-end-offset))
                        (check-range who "ending index" in orig-end-offset start-offset)
                        orig-end-offset]
                       [(bytes? in) (bytes-length in)]
@@ -155,7 +155,10 @@
                       [else 'eof]))
   
   (unless (or (not out) (output-port? out))
-    (raise-argument-error who "(or/c #f output-port?)" out))
+    (raise-argument-error who "(or/c output-port? #f)" out))
+
+  (unless (or (not progress-evt) (progress-evt? progress-evt))
+    (raise-argument-error who "(or/c progress-evt? #f)" progress-evt))
   
   (unless (bytes? prefix)
     (raise-argument-error who "bytes?" prefix))

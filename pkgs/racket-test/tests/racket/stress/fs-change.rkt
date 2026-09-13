@@ -18,9 +18,9 @@
                (call-with-output-file* path #:exists 'append (lambda (o) (write-byte 48 o)))
                (filesystem-change-evt-cancel fc))
            fc))
-       (map sync fcs))
+       (for-each sync fcs))
      (custodian-shutdown-all c))
    (delete-file path)))
 
 (module+ main
-  (map place-wait (for/list ([i 4]) (go))))
+  (for-each place-wait (for/list ([i 4]) (go))))

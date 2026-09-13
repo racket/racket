@@ -1,5 +1,6 @@
 #lang racket/base
 (require ffi/unsafe
+         ffi/vcruntime
          racket/runtime-path
          setup/cross-system
          (for-syntax racket/base
@@ -62,7 +63,10 @@
        ;; Also don't look for older versions, because that can log an error
        ;; in "mzssl.rkt". Just recognize the version that's provided by
        ;; the "racket-lib" package.
-       '("1.1")]
+       (case (system-type 'arch)
+         [(i386 ppc)
+          '("1.1")]
+         [else '("3")])]
       [else
        (case (path->string (system-library-subpath #f))
          [("x86_64-darwin" "i386-darwin" "aarch64-darwin")
@@ -79,14 +83,45 @@
 (define-runtime-path libcrypto-so
   #:runtime?-id runtime?
   (case (if runtime? (system-type) (cross-system-type))
-    [(windows) '(so "libeay32")]
+    [(windows)
+     (case (if runtime? (system-type 'arch) (cross-system-type 'arch))
+       [(aarch64)
+	'(so "libcrypto-3-arm64")]
+       [(x86_64)
+	'(so "libcrypto-3-x64")]
+       [else
+	'(so "libeay32")])]
     [(macosx)
-     ;; Version "1.1" is bundled with Racket
-     '(so "libcrypto" ("1.1" #f))]
+     (case (if runtime? (system-type 'arch) (cross-system-type 'arch))
+       [(i386 ppc)
+        ;; Version "1.1" is bundled with Racket
+        '(so "libcrypto" ("1.1" #f))]
+       [else
+        ;; Version "3" is bundled with Racket
+        '(so "libcrypto" ("3" #f))])]
     [else '(so "libcrypto")]))
 
 (define libcrypto
-  (with-handlers ([exn:fail? (lambda (x)
-                               (set! libcrypto-load-fail-reason (exn-message x))
-                               #f)])
-    (ffi-lib libcrypto-so openssl-lib-versions)))
+  (cond
+    ;; On iOS, linking to regular shared objects (except those provided
+    ;; by Apple) is not supported. Instead, the library must be linked
+    ;; via an XCFramework containing a position-independent library such
+    ;; as the one provided by [1]. Here, we assume the library has been
+    ;; loaded if we can get the OpenSSL_version_num function.
+    ;;
+    ;; [1]: https://github.com/krzyzanowskim/OpenSSL-Package
+    [(eq? (system-type 'os*) 'ios)
+     (define the-lib (ffi-lib #f))
+     (define openssl-version
+       ((get-ffi-obj
+         "OpenSSL_version_num" the-lib
+         (_fun -> _ulong)
+         (lambda ()
+           (lambda ()
+             0)))))
+     (and (> openssl-version 0) the-lib)]
+    [else
+     (with-handlers ([exn:fail? (lambda (x)
+                                  (set! libcrypto-load-fail-reason (exn-message x))
+                                  #f)])
+       (ffi-lib libcrypto-so openssl-lib-versions))]))

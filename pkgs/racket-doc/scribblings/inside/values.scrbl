@@ -826,7 +826,7 @@ follows:
                                            void* cycle_data);
 }
 
-The two hash functions are use to generate primary and secondary keys
+The two hash functions are used to generate primary and secondary keys
 for double hashing in an @racket[equal?]-based hash table. The result
 of the primary-key function should depend on both @var{obj} and
 @var{base}.

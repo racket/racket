@@ -63,9 +63,9 @@
     [`(if ,tst ,thn ,els)
      (not-just-functions
       (extract-expr-functions knowns `(begin ,tst ,thn ,els) #f lambdas))]
-    [`(with-continuation-marks ,tst ,thn ,els)
+    [`(with-continuation-mark ,key ,val ,body)
      (not-just-functions
-      (extract-expr-functions knowns `(with-continuation-marks ,tst ,thn ,els) #f lambdas))]
+      (extract-expr-functions knowns `(begin ,key ,val ,body) #f lambdas))]
     [`(set! ,id ,rhs)
      (not-just-functions
       (extract-expr-functions knowns rhs #f lambdas))]

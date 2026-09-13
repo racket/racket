@@ -117,7 +117,7 @@ creates pattern variable definitions for the pattern variables of
 
 @section{Error reporting}
 
-@defparam[current-syntax-context stx (or/c syntax? false/c)]{
+@defparam[current-syntax-context stx (or/c syntax? #f)]{
 
 The current contextual syntax object, defaulting to @racket[#f].  It
 determines the special form name that prefixes syntax errors created
@@ -162,7 +162,7 @@ different due to renaming, prefixing, etc).
 @section{Recording disappeared uses}
 
 @defparam[current-recorded-disappeared-uses ids
-          (or/c (listof identifier?) false/c)]{
+          (or/c (listof identifier?) #f)]{
 
 Parameter for tracking disappeared uses. Tracking is ``enabled'' when
 the parameter has a non-false value. This is done automatically by

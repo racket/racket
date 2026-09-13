@@ -203,7 +203,8 @@ mutable pairs print using @litchar["{"] and @litchar["}"] instead of
 
 @defboolparam[print-unreadable on?]{
 
-A @tech{parameter} that enables or disables printing of values that have no
+A @tech{parameter} that enables or disables
+@racket[print] and @racket[write] of values that have no
 @racket[read]able form (using the default reader), including
 structures that have a custom-write procedure (see
 @racket[prop:custom-write]), but not including @tech{uninterned}

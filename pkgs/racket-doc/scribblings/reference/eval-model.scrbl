@@ -605,8 +605,8 @@ top-levels are in correspondingly higher @tech{phase}s.
 
 When a module is compiled, its @tech{phase} 1 is instantiated. This
 can, in turn, trigger the transitive instantiation of many other
-modules at other phases, including phase 1. Racket provides a very
-strong guarantee about this instantiation called
+modules at other phases, including phase 1. Racket provides a
+guarantee about this instantiation called
 @index["separate compilation guarantee"]{``The Separate
 Compilation Guarantee''}:
 
@@ -638,25 +638,11 @@ thus would still contain @racket[3]. Because external effects are
 intrinsically observable outside Racket, they are irreversible and
 cannot be discarded.
 
-Thus, The Separate Compilation Guarantee only concerns effects like
+Thus, the Separate Compilation Guarantee only concerns effects like
 mutation, because they are exclusively effects ``on the Racket runtime
 system'' and not ``on the physical universe.''
 
-There are many things a Racket program can do that appear to be
-internal effects but are actually external effects. For instance,
-@racket[bytes-set!] is typically an internal effect, except when the
-bytes are created by @racket[make-shared-bytes], which allocates in
-space observable by other processes. Thus, effects which modify those
-bytes are not discardable, so @racket[bytes-set!], in this case, has an
-external effect.
-
-The opposite is also true: some things which appear to be external are
-actually internal. For instance, if a Racket program starts multiple
-threads and uses mutation to communicate between them, that mutation
-is purely internal, because Racket's threads are defined entirely
-internally (they are not related to operating system threads).
-
-Furthermore, whenever a Racket program calls an @tech{unsafe}
+Whenever a Racket program calls an @tech{unsafe}
 function, the Racket runtime system makes no promises about its
 effects. For instance, all foreign calls use
 @racketmodname[ffi/unsafe], so all foreign calls are unsafe and their
@@ -668,8 +654,8 @@ instantiations generally, such as when its phase 1 is required and
 used for effects via reflective mechanisms.
 
 The practical consequence of this guarantee is that because effects
-are never visible, no module can detect whether a module it
-@racket[require]s is already compiled. Thus, it can never change the
+are not visible, no module can detect whether a module it
+@racket[require]s is already compiled. Thus, it cannot change the
 compilation of one module to have already compiled a different module.
 In particular, if module A is shared by the phase 1 portion of modules
 X and Y, then any internal effects while X is compiled are not visible
@@ -933,8 +919,10 @@ used only to abort to the point of capture.
 
 Racket supports multiple @deftech{threads} of evaluation.  Threads run
 concurrently, in the sense that one thread can preempt another without
-its cooperation, but threads currently all run on the same processor
-(i.e., the same underlying operating system process and thread).
+its cooperation. By default, however, a thread is a @deftech{coroutine thread}
+that runs on the same processor
+(i.e., the same underlying operating-system process and thread)
+as other coroutine threads, at least within the same @tech{place}.
 
 Threads are created explicitly by functions such as @racket[thread]. 
 In terms of the evaluation model, each step in evaluation
@@ -942,7 +930,7 @@ actually deals with multiple concurrent
 expressions, up to one per thread, rather than a single expression. The expressions all
 share the same objects and top-level variables, so that they can
 communicate through shared state, and @defterm{sequential consistency} @cite["Lamport79"] is
-guaranteed (i.e., the result is consistent with some global sequence
+guaranteed among coroutine threads (i.e., the result is consistent with some global sequence
 imposed on all evaluation steps across threads). Most evaluation steps involve a
 single step in a single thread, but certain synchronization
 primitives require multiple threads to progress together in one step; for example,
@@ -982,20 +970,43 @@ for the cell in the created thread. For a non-preserved thread cell, a
 new thread sees the same initial value (specified when the thread cell
 is created) as all other threads.
 
-@tech{Futures} and @tech{places} offer different kinds of concurrency
-and parallelism, and they have weaker guarantees about shared state.
-(Places can share state through functions like
-@racket[make-shared-bytes].) Each thread of evaluation in a future or
-place is constrained to behave consistent with the possibility of some
-other thread that might inspect any shared data starting at any point
-that a future or place starts. In the case that two futures or two
-places share state, each read or write operation to shared state
-corresponds to a read or write operation at the virtual-memory level,
-and the operations are constrained to the order they could be observed
-or affected by a thread. However, Racket does not enforce additional
+A @deftech{parallel thread} is like a coroutine thread, but it can run on
+a different processor (i.e., a different underlying operating-system
+thread). A parallel thread can be created by calling @racket[thread]
+with a @racket[#:pool] argument whose value is @racket['own] or a
+parallel-thread pool.
+Operations provided by Racket remain thread-safe with
+parallel threads, but sequential consistency is not guaranteed
+across operations and threads. If two parallel threads
+share state, each read or write operation to shared state
+corresponds to a read or write operation at the virtual-memory level;
+Racket does not enforce additional
 guarantees about reordering that might be performed at the
 virtual-memory level or below, except in the case of operations that
-specify such guarantees explicitly (e.g., @racket[box-cas!]).
+specify such guarantees explicitly (e.g., @racket[box-cas!]). That is,
+the host machine's memory model can be exposed by observations
+across parallel threads.
+
+The possibility of shared state imposes a cost on some operations,
+particularly in the case of sharing among parallel threads, and
+using parallel threads can easily make a computation slower than
+using coroutine threads when the underlying primitives resort to a
+more pessimistic mode.
+@tech{Futures} and @tech{places} are alternatives to parallel threads
+that provide different trade-offs in sharing constraints and performance.
+@tech{Futures} sometimes achieve better performance by limiting
+operations that run in parallel; as a result, they can be created and
+complete more cheaply, and they can fall back more consistently
+to coroutine performance in cases where parallel threads would become
+slow. @tech{Places} can sometimes achieve better performance by
+limiting sharing (somewhat like separate processes at the
+operating-system level), so that operations can proceed more
+optimistically. A place has its own set of @tech{coroutine threads}
+that it schedules with sequential consistency, but the can run
+in parallel to coroutine threads in other places.
+Both futures and places include the possibly of
+shared state, and they have the same kind of weak ordering on operations
+as parallel threads.
 
 @;------------------------------------------------------------------------
 @section[#:tag "parameter-model"]{Parameters}

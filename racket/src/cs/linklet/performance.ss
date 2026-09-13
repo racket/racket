@@ -80,13 +80,14 @@
 
 (define (linklet-performance-report!)
   (when measure-performance?
-    (let ([region-times (make-eq-hashtable)]
+    (let ([region-nongc-times (make-eq-hashtable)]
           [region-gc-times (make-eq-hashtable)]
           [region-counts (make-eq-hashtable)]
           [region-memories (make-eq-hashtable)])
       (hash-table-for-each perf-regions
                            (lambda (k r)
-                             (hashtable-set! region-times k (perf-region-time r))
+                             (hashtable-set! region-nongc-times k (- (perf-region-time r)
+                                                                     (perf-region-gc-time r)))
                              (hashtable-set! region-gc-times k (perf-region-gc-time r))
                              (hashtable-set! region-counts k (perf-region-count r))
                              (let ([m (perf-region-memory r)])
@@ -97,13 +98,13 @@
                                    'regalloc
                                    'other)])
                     (let-values ([(count cpu gc-cpu bytes) (apply values (cdr s))])
-                      (hashtable-update! region-times label (lambda (v) (+ v (time->ms cpu))) 0)
+                      (hashtable-update! region-nongc-times label (lambda (v) (+ v (time->ms cpu))) 0)
                       (hashtable-update! region-gc-times label (lambda (v) (+ v (time->ms gc-cpu))) 0)
                       (hashtable-update! region-counts label (lambda (v) (max count v)) 0))))
                 (#%$pass-stats))
-      (let* ([total (apply + (hash-table-map region-times (lambda (k v) (round (inexact->exact v)))))]
+      (let* ([total (apply + (hash-table-map region-nongc-times (lambda (k v) (round (inexact->exact v)))))]
              [gc-total (apply + (hash-table-map region-gc-times (lambda (k v) v)))]
-             [name-len (apply max (hash-table-map region-times (lambda (k v) (string-length (symbol->string k)))))]
+             [name-len (apply max (hash-table-map region-nongc-times (lambda (k v) (string-length (symbol->string k)))))]
              [len (string-length (number->string total))]
              [gc-len (string-length (number->string gc-total))]
              [categories '((read (read-bundle faslin-code faslin-literals))
@@ -147,7 +148,7 @@
                 (+ v (loop (cdr keys))))])))
         (define (report-time level label n gc-ht)
           (report level label n
-                  (#%format " [~a]" (pad-left (hashtable-ref gc-ht label 0) gc-len))
+                  (#%format " [+~a]" (pad-left (hashtable-ref gc-ht label 0) gc-len))
                   'ms
                   (let ([c (hashtable-ref region-counts label 0)])
                     (if (zero? c)
@@ -156,13 +157,13 @@
         (for-each (lambda (l)
                     (let* ([cat (car l)]
                            [subs (cadr l)]
-                           [t (sum-values region-times subs cat region-subs)]
+                           [t (sum-values region-nongc-times subs cat region-subs)]
                            [gc-t (sum-values region-gc-times subs cat region-gc-subs)])
                       (unless (and (zero? t) (zero? gc-t))
-                        (hashtable-set! region-times cat t)
+                        (hashtable-set! region-nongc-times cat t)
                         (hashtable-set! region-gc-times cat gc-t))))
                   categories)
-        (let loop ([ht region-times] [gc-ht region-gc-times] [level 0])
+        (let loop ([ht region-nongc-times] [gc-ht region-gc-times] [level 0])
           (for-each (lambda (p)
                       (let ([label (car p)]
                             [n (cdr p)])
@@ -172,7 +173,7 @@
                           (when sub-ht
                             (loop sub-ht sub-gc-ht (add1 level))))))
                     (ht->sorted-list ht)))
-        (report 0 'total total (#%format " [~a]" gc-total) 'ms "")
+        (report 0 'total total (#%format " [+~a]" gc-total) 'ms "")
         (lprintf ";;")
         (for-each (lambda (p) (report 0 (car p) (/ (cdr p) 1024 1024) "" 'MB ""))
                   (ht->sorted-list region-memories))))))

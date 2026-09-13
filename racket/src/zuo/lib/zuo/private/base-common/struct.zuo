@@ -23,7 +23,7 @@
       (bad-syntax stx))
     (define key `(,(quote-syntax quote)
                   ,(string->uninterned-symbol (symbol->string (syntax-e name)))))
-    (define name? (string->symbol (datum->syntax name (~a (syntax-e name) "?"))))
+    (define name? (datum->syntax name (string->symbol (~a (syntax-e name) "?"))))
     `(,(quote-syntax begin)
       (,(quote-syntax define) ,name
                               (,(quote-syntax lambda)

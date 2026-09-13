@@ -576,9 +576,9 @@ function body.
     (define spaced-s2 (string-append s2 " ")) (code:comment @#,t{local to @racket[starts?]})
     (string-prefix? s spaced-s2))
   (cond
-   [(starts? "hello") "hi!"]
-   [(starts? "goodbye") "bye!"]
-   [else "huh?"]))
+    [(starts? "hello") "hi!"]
+    [(starts? "goodbye") "bye!"]
+    [else "huh?"]))
 (converse "hello world")
 (converse "hellonearth")
 (converse "goodbye friends")
@@ -608,9 +608,9 @@ each clause, the @nonterm{id} is bound to the result of the
 (let ([x (random 4)]
       [o (random 4)])
   (cond
-   [(> x o) "X wins"]
-   [(> o x) "O wins"]
-   [else "cat's game"]))
+    [(> x o) "X wins"]
+    [(> o x) "O wins"]
+    [else "cat's game"]))
 ]
 
 The bindings of a @racket[let] form are available only in the body of
@@ -623,9 +623,9 @@ use earlier bindings:
        [o (random 4)]
        [diff (number->string (abs (- x o)))])
   (cond
-   [(> x o) (string-append "X wins by " diff)]
-   [(> o x) (string-append "O wins by " diff)]
-   [else "cat's game"]))
+    [(> x o) (string-append "X wins by " diff)]
+    [(> o x) (string-append "O wins by " diff)]
+    [else "cat's game"]))
 ]
 
 @; ----------------------------------------------------------------------

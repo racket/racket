@@ -1,6 +1,7 @@
 #lang scheme/base
 
 (require racket/match
+         (prefix-in c: racket/contract)
          (prefix-in s: racket/set)
          scheme/mpair
          scheme/control scheme/foreign
@@ -729,6 +730,14 @@
 
    (comp 1
          (match (box 'x) ('#&x 1) (_ #f)))
+
+   (let ()
+     (c:define/contract (my-unbox obj)
+       (c:-> (c:box/c c:any/c) c:any/c)
+       (match obj
+         [(box x) x]))
+
+     (comp 1 (my-unbox (box 1))))
 
    (comp 2
          (match (vector 1 2) ('#(1 2) 2) (_ #f)))

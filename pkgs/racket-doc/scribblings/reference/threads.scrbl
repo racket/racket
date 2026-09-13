@@ -36,14 +36,37 @@ A thread can be used as a @tech{synchronizable event} (see
 @;------------------------------------------------------------------------
 @section{Creating Threads}
 
-@defproc[(thread [thunk (-> any)]) thread?]{
+@defproc[(thread [thunk (-> any)]
+                 [#:pool pool (or/c #f 'own parallel-thread-pool?) #f]
+                 [#:keep keep (or/c #f 'results) #f])
+         thread?]{
 
 Calls @racket[thunk] with no arguments in a new thread of control. The
 @racket[thread] procedure returns immediately with a @deftech{thread
 descriptor} value. When the invocation of @racket[thunk] returns, the
 thread created to invoke @racket[thunk] terminates.
 
-}
+The resulting thread is a @tech{coroutine thread} if @racket[pool] is
+@racket[#f]. If @racket[pool] is @racket['own], then a new
+@tech{parallel thread pool} is created, the thread is added to the
+pool, and the pool is closed (in the sense of
+@racket[parallel-thread-pool-close]) to additional threads. If
+@racket[pool] is a parallel thread pool, then the new thread is
+created in that pool, meaning that it shares processor resources with
+other threads in the same pool.
+@;
+@margin-note*{See @guidesecref["parallel-threads"] for information about parallel threads and
+performance. Parallel threads do not run in parallel on the @tech{BC}
+variant of Racket or when Racket is built without support for
+parallelism. For more information, see the description of
+@tech{parallel thread pools}.}
+
+If @racket[keep] is @racket['results], results are recorded with the
+thread so that they can be reported by @racket[thread-wait].
+Otherwise, then the results of @racket[thunk] are ignored.
+
+@history[#:changed "8.18.0.2" @elem{Added the @racket[#:pool] and
+                                    @racket[#:keep] arguments.}]}
 
 @defproc[(thread? [v any/c]) thread?]{Returns @racket[#t] if
 @racket[v] is a @tech{thread descriptor}, @racket[#f] otherwise.}
@@ -149,10 +172,10 @@ Terminates the specified thread immediately, or suspends the thread if
 @racket[thd] was created with
 @racket[thread/suspend-to-kill]. Terminating the main thread exits the
 application.  If @racket[thd] has already terminated,
-@racket[kill-thread] does nothing.  If the @tech{current custodian}
-does not manage @racket[thd] (and none of its subordinates manages
-@racket[thd]), the @exnraise[exn:fail:contract], and the thread is not
-killed or suspended.
+@racket[kill-thread] does nothing.  If the @tech{current custodian} 
+does not solely manage @racket[thd] (i.e., some custodian of @racket[thd]
+is not the current custodian or a subordinate), the 
+@exnraise[exn:fail:contract], and the thread is not killed or suspended.
 
 Unless otherwise noted, procedures provided by Racket (and GRacket) are
 kill-safe and suspend-safe; that is, killing or suspending a thread
@@ -166,9 +189,12 @@ consumed or not consumed, and other threads can safely use the port.}
          void?]{
 
 @index['("threads" "breaking")]{Registers} a break with the specified
-thread, where @racket[kind] optionally indicates the kind of break to
-register. If breaking is disabled in @racket[thd], the break will be
-ignored until breaks are re-enabled (see @secref["breakhandler"]).}
+thread. The optional @racket[kind] value indicates the kind of break to
+register, where @racket[#f], @racket['hang-up], and @racket['terminate]
+correspond to interrupt, hang-up, and terminate breaks respectively.
+If breaking is disabled in @racket[thd], the break will be
+ignored until breaks are re-enabled.
+See @secref["breakhandler"] for details.}
 
 @defproc[(sleep [secs (>=/c 0) 0]) void?]{
 
@@ -192,10 +218,20 @@ otherwise.}
 @;------------------------------------------------------------------------
 @section[#:tag "threadsync"]{Synchronizing Thread State}
 
-@defproc[(thread-wait [thd thread?]) void?]{
+@defproc[(thread-wait [thd thread?]
+                      [fail-k (procedure-arity-includes/c 0) void])
+         any]{
 
 Blocks execution of the current thread until @racket[thd] has
-terminated. Note that @racket[(thread-wait (current-thread))]
+terminated. If the thread's procedure raised an exception, otherwise
+aborted to the thread's initial @tech{prompt}, or was terminated by
+being killed, then @racket[fail-k] is
+called to produce the result of @racket[thread-wait]. Otherwise, if
+the thread records its results (see @racket[#:keep] in
+@racket[thread]), those results are returned, while @|void-const| is
+return if the thread does not keep its results.
+
+Note that @racket[(thread-wait (current-thread))]
 deadlocks the current thread, but a break can end the deadlock if
 breaking is enabled and if the thread is the main thread or otherwise
 accessible; see @secref["breakhandler"].
@@ -208,7 +244,10 @@ with @racket[thread-wait] normally cannot be garbage collected (see
 @secref["gc-model"]). As a special case, however, @racket[(thread-wait
 thd)] blocks without preventing garbage collection of the thread if
 @racket[thd] is the current thread, since the thread could only
-continue if a break escapes from the wait.}
+continue if a break escapes from the wait.
+
+@history[#:changed "8.18.0.2" @elem{Added support for threads with
+                                    values and the @racket[fail-k] argument.}]}
 
 @defproc[(thread-dead-evt [thd thread?]) evt?]{
 
@@ -308,3 +347,50 @@ receive. @ResultItself{thread-receive event}.}
 Pushes the elements of @racket[lst] back onto the front of the current
 thread's queue. The elements are pushed one by one, so that the first
 available message is the last element of @racket[lst].}
+
+@;------------------------------------------------------------------------
+@section[#:tag "threadpool"]{Parallel Thread Pools}
+
+@defproc[(parallel-thread-pool? [v any/c]) thread?]{Returns @racket[#t] if
+@racket[v] is a @tech{parallel thread pool}, @racket[#f] otherwise.
+
+@history[#:added "8.18.0.2"]}
+
+@defproc[(make-parallel-thread-pool [n exact-positive-integer? (processor-count)])
+         parallel-thread-pool?]{
+
+Creates a @deftech{parallel thread pool} that can be used to group a
+@tech{parallel thread} with other parallel threads. The threads in a
+pool can use up to @racket[n] processors to run. If more than
+@racket[n] threads are in the pool, not all of them will run in
+parallel, but they will still all run concurrently.
+
+The new thread pool is placed into the management of the current
+@tech{custodian}. If the custodian is shut down, then the pool is
+closed in the same way as with @racket[parallel-thread-pool-close].
+Any threads already in the pool can continue to run and use the pool's
+resources (unless they are also shut down by the same custodian).
+
+A parallel thread pool cannot run threads in parallel on the @tech{BC}
+variant of Racket or when Racket is compiled without support for
+parallelism. In that case, parallel threads behave the same as
+@tech{coroutine threads}. For the @tech{CS} variant of Racket, the
+@racket[futures-enabled?] predicate can be used to detect when
+parallel threads behave differently from coroutine threads.
+
+@history[#:added "8.18.0.2"]}
+
+@defproc[(parallel-thread-pool-close [p parallel-thread-pool?])
+         void?]{
+
+Closes a @tech{parallel thread pool} so that no threads can be added
+to the pool. Any existing threads in the pool are allowed to continue
+running, and they continue to share the pool's processor resources.
+
+When no more threads are running within a closed thread pool, or when
+no threads are allowed to make progress because the pool's
+@tech{custodian} has been shut down, then processor resources
+allocated to the pool can be returned to the operating system (i.e.,
+operating-system threads allocated to the pool are terminated).
+
+@history[#:added "8.18.0.2"]}

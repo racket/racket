@@ -1,0 +1,12 @@
+diff -u -r old/openssl-3.4.1/Makefile new/openssl-3.4.1/Makefile
+--- old/openssl-3.4.1/Makefile	2025-02-11 12:10:28
++++ new/openssl-3.4.1/Makefile	2025-02-11 12:10:43
+@@ -1672,7 +1672,7 @@
+ ARFLAGS= qc
+ RANLIB=$(CROSS_COMPILE)ranlib
+ RC= $(CROSS_COMPILE)windres
+-RCFLAGS= --target=pe-x86-64
++RCFLAGS=
+ 
+ RM= rm -f
+ RMDIR= rmdir

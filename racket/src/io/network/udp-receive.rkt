@@ -1,6 +1,5 @@
 #lang racket/base
-(require "../host/place-local.rkt"
-         "../common/check.rkt"
+(require "../common/check.rkt"
          "../host/thread.rkt"
          "../host/rktio.rkt"
          "../sandman/main.rkt"
@@ -12,7 +11,8 @@
          "address.rkt"
          "udp-socket.rkt"
          "error.rkt"
-         "evt.rkt")
+         "evt.rkt"
+         "address-cache.rkt")
 
 (provide udp-receive!
          udp-receive!*
@@ -36,7 +36,7 @@
                          #:wait? [wait? #t]
                          #:enable-break? [enable-break? #f])
   (check-receive! who u bstr start end)
-  (atomically
+  (rktioly
    (do-udp-maybe-receive! who u bstr start end
                           #:wait? wait?
                           #:enable-break? enable-break?)))
@@ -47,9 +47,14 @@
    u
    ;; in atomic mode:
    (lambda ()
-     (do-udp-maybe-receive! who u bstr start end
-                            #:wait? #f
-                            #:handle-error (lambda (thunk) thunk)))))
+     (rktioly
+      (do-udp-maybe-receive! who u bstr start end
+                             #:wait? #f
+                             #:handle-error (lambda (thunk) thunk)
+                             #:unlock end-rktio+atomic
+                             #:relock (lambda ()
+                                        (start-atomic)
+                                        (start-rktio)))))))
   
 (define/who (udp-receive-ready-evt u)
   (check who udp? u)
@@ -58,6 +63,7 @@
      (or (not (udp-s u))
          (not (eqv? (rktio_poll_read_ready rktio (udp-s u))
                     RKTIO_POLL_NOT_READY))))
+   ;; in atomic and in rktio, must not start nested rktio
    (lambda (ps)
      (rktio_poll_add rktio (udp-s u) ps RKTIO_POLL_READ))))
 
@@ -67,11 +73,13 @@
 
 ;; ----------------------------------------
 
-;; in atomic mode
+;; in rktio mode and maybe atomic mode, with the "maybe" delegated to `unlock` and `handle-error`
 (define (do-udp-maybe-receive! who u bstr start end
                                #:wait? [wait? #t]
                                #:enable-break? [enable-break? #f]
-                               #:handle-error [handle-error handle-error-immediately])
+                               #:handle-error [handle-error handle-error-immediately]
+                               #:unlock [unlock end-rktio]
+                               #:relock [relock start-rktio])
    (let loop ()
      ;; re-check closed on every iteration, in case the state changes
      ;; while we block
@@ -81,13 +89,13 @@
       #:continue
       (lambda ()
         (cond
-          [(not (udp-bound? u))
+          [(not (udp-is-bound? u))
            (handle-error
             (lambda ()
               (raise-network-arguments-error who "udp socket is not bound"
                                              "socket" u)))]
           [else
-           (define r (rktio_udp_recvfrom_in rktio (udp-s u) bstr start end))
+           (define r (rktio_udp_recvfrom_addr_bytes rktio (udp-s u) bstr start end))
            (cond
              [(rktio-error? r)
               (cond
@@ -95,15 +103,16 @@
                      (racket-error? r RKTIO_ERROR_INFO_TRY_AGAIN))
                  (cond
                    [wait?
-                    (end-atomic)
+                    (unlock)
                     ((if enable-break? sync/enable-break sync)
                      (rktio-evt (lambda ()
                                   (or (not (udp-s u))
                                       (not (eqv? (rktio_poll_read_ready rktio (udp-s u))
                                                  RKTIO_POLL_NOT_READY))))
+                                ;; in atomic and in rktio, must not start nested rktio
                                 (lambda (ps)
                                   (rktio_poll_add rktio (udp-s u) ps RKTIO_POLL_READ))))
-                    (start-atomic)
+                    (relock)
                     (loop)]
                    [else (values #f #f #f)])]
                 [else
@@ -111,21 +120,24 @@
                   (lambda ()
                     (raise-network-error who r "receive failed")))])]
              [else
-              (define len (rktio_recv_length_ref r))
-              (define address (rktio_to_bytes_list (rktio_recv_address_ref r) 2))
+              (define len (rktio_recv_with_addr_bytes_length_ref r))
+              (define address-bstr (rktio_recv_with_addr_bytes_to_bytes r))
               (rktio_free r)
+              (define address+port
+                (or (address-bytes-cache-bytes-ref address-bstr)
+                    (let ()
+                      (define address+port-bstrs (rktio_to_bytes_list
+                                                  (rktio_addr_bytes_address rktio address-bstr (bytes-length address-bstr))
+                                                  2))
+                      (define address+pos
+                        (cons (string->immutable-string
+                               (bytes->string/utf-8 (car address+port-bstrs) #\?))
+                              (string->integer (bytes->string/latin-1 (cadr address+port-bstrs)))))
+                      (address-bytes-cache-set! address-bstr address+pos)
+                      address+pos)))
               (values len
-                      (if (bytes=? (car address) cached-address-bytes)
-                          cached-address-string
-                          (begin
-                            (set! cached-address-bytes (car address))
-                            (set! cached-address-string (string->immutable-string
-                                                         (bytes->string/utf-8 cached-address-bytes #\?)))
-                            cached-address-string))
-                      (string->integer (bytes->string/utf-8 (cadr address))))])])))))
-
-(define-place-local cached-address-bytes #"")
-(define-place-local cached-address-string "")
+                      (car address+port)
+                      (cdr address+port))])])))))
 
 ;; ----------------------------------------
 
@@ -148,6 +160,7 @@
             [else
              (sandman-poll-ctx-add-poll-set-adder!
               poll-ctx
+              ;; in atomic and in rktio-sleep-relevant (not rktio), must not start nested rktio
               (lambda (ps)
                 (rktio_poll_add rktio (udp-s (udp-receiving-evt-u self)) ps RKTIO_POLL_READ)))
              (values #f self)])]))))
@@ -163,17 +176,18 @@
 (define/who (udp-set-receive-buffer-size! u size)
   (check who udp? u)
   (check who exact-positive-integer? size)
-  (atomically
+  (rktioly
    (check-udp-closed who u)
    (unless (fixnum? size)
-     (end-atomic)
+     (end-rktio)
      (raise-non-fixnum who size))
    (define r (rktio_udp_set_receive_buffer_size rktio (udp-s u) size))
    (when (rktio-error? r)
      (raise-option-error who "set" r))))
 
+;; in rktio mode
 (define (raise-option-error who mode v)
-  (end-atomic)
+  (end-rktio)
   (raise-network-error who v (string-append mode "sockopt failed")))
 
 (define (raise-non-fixnum who size)

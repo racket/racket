@@ -1,0 +1,54 @@
+#lang zuo/base
+
+(provide maybe-dry-run-mode)
+
+(define (maybe-dry-run-mode)
+  (define a (and (eq? 'unix (system-type))
+                 (assoc "MAKEFLAGS" (hash-ref (runtime-env) 'env))))
+  (define (new-mode mode sym)
+    (when (and mode (not (eq? mode sym)))
+      (error (~a "`MAKEFLAGS` specified both " mode " and " sym " modes")))
+    sym)
+  (define (no-touch mode)
+    (when (eq? mode 'touch)
+      (error "`MAKEFLAGS` indicates touch mode, which is not supported"))
+    mode)
+  (and a
+       (let loop ([l (shell->strings (cdr a))])
+         (and (pair? l)
+              (or
+               ;; If the first argument has only letters, then we
+               ;; assume it represents single-letter flags:
+               (let ([s (car l)])
+                 (let loop ([i 0] [mode #f])
+                   (cond
+                     [(= i (string-length s))
+                      (no-touch mode)]
+                     [(equal? (char "n") (string-ref s i))
+                      (loop (+ i 1) (new-mode mode 'dry-run))]
+                     [(equal? (char "q") (string-ref s i))
+                      (loop (+ i 1) (new-mode mode 'question))]
+                     [(equal? (char "t") (string-ref s i))
+                      (loop (+ i 1) (new-mode mode 'touch))]
+                     [(and (or (string<? (substring s i (+ i 1)) "a")
+                               (string<? "z" (substring s i (+ i 1))))
+                           (or (string<? (substring s i (+ i 1)) "A")
+                               (string<? "Z" (substring s i (+ i 1)))))
+                      ;; doesn't look like single-letter flags, so
+                      ;; look for "-n", "-t", or "-q"
+                      (let loop ([l l] [mode #f])
+                        (cond
+                          [(null? l)
+                           (no-touch mode)]
+                          [(member (car l) '("-n" "--just-print" "--dry-run" "--recon"))
+                           (loop (cdr l) (new-mode mode 'dry-run))]
+                          [(member (car l) '("-q" "--question"))
+                           (loop (cdr l) (new-mode mode 'question))]
+                          [(member (car l) '("-t" "--touch"))
+                           (loop (cdr l) (new-mode mode 'touch))]
+                          [(equal? "--" (car l))
+                           (loop '() mode)]
+                          [else
+                           (loop (cdr l) mode)]))]
+                     [else
+                      (loop (+ i 1) mode)]))))))))

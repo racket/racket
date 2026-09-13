@@ -67,24 +67,38 @@
            [out null]
            [in null]
            [err null]
+           [err-th #f]
            [module-path null]
            [funcname null])
 
     (define/public (spawn _id _module-path _funcname [initialmsg #f])
       (set! module-path _module-path)
       (set! funcname _funcname)
+      (define (paths->string l)
+        (define (path-or-same->string p) (if (eq? p 'same) "" (path->string p)))
+        (cond
+          [(null? l) ""]
+          [(null? (cdr l)) (path-or-same->string (car l))]
+          [else (string-append (path-or-same->string (car l))
+                               (if (eq? 'windows (system-type)) ";" ":")
+                               (paths->string (cdr l)))]))
       (define worker-cmdline-list (list (current-executable-path)
                                         "-X" (path->string (current-collects-path))
                                         "-G" (path->string (find-config-dir))
                                         "-A" (path->string (find-system-path 'addon-dir))
+                                        "-R" (paths->string (current-compiled-file-roots))
                                         "-e" "(eval(read))"))
       (define dynamic-require-cmd `((dynamic-require (string->path ,module-path) (quote ,funcname)) #f))
-      (let-values ([(_process-handle _out _in _err) (apply subprocess #f #f (current-error-port) worker-cmdline-list)])
+      (let-values ([(_process-handle _out _in _err) (apply subprocess #f #f #f worker-cmdline-list)])
         (set! id _id)
         (set! process-handle _process-handle)
         (set! out _out)
         (set! in _in)
         (set! err _err)
+        (set! err-th (thread
+                      (lambda () ; manual copy bumps `terminal-file-position`
+                        (copy-port err (current-error-port))
+                        (close-input-port err))))
         (send/msg dynamic-require-cmd)
         (when initialmsg (send/msg (initialmsg id)))))
     (define/public (send/msg msg) 
@@ -119,6 +133,8 @@
       (DEBUG_COMM (eprintf "KILLING WORKER ~a\n" id))
       (close-output-port in)
       (close-input-port out)
+      (when err-th (kill-thread err-th))
+      (close-input-port err)
       (subprocess-kill process-handle #t))
     (define/public (break) (kill))
     (define/public (kill/respawn worker-cmdline-list [initialmsg #f])
@@ -292,7 +308,11 @@
                               (loop (cons wrkr idle) (remove node-worker inflight) (add1 count) error-count)
                               (loop idle inflight count error-count))
                           (begin
-                            (queue/work-done work-queue node wrkr (string-append msg (wrkr/read-all wrkr)))
+                            (queue/work-done work-queue node wrkr
+                                             (string-append (if (eof-object? msg)
+                                                                "worker process died unexpectedly"
+                                                                msg)
+                                                            (wrkr/read-all wrkr)))
                             (kill/remove-dead-worker node-worker wrkr))))))]
                [_
                 (log-error (format "parallel-do-event-loop match node-worker failed trying to match: ~e" 
@@ -328,24 +348,30 @@
 (define list-queue% 
   (class* object% (work-queue<%>)
     (init-field queue create-job-thunk success-thunk failure-thunk [report-proc display])
+    (define queue-size (length queue))
+    (define original-size queue-size)
     (field [results null])
 
-    (define/public (work-done work workerid msg)
+    (define/public (work-done work worker msg)
       (match msg
         [(list (list 'REPORT msg) stdout stderr)
          (report-proc msg)
          #f]
         [(list (list 'DONE result) stdout stderr)
-         (set! results (cons (success-thunk work result stdout stderr) results))
+         (set! results (cons (success-thunk work result stdout stderr (send worker get-id)) results))
          #t]
         [(list (list 'ERROR errmsg) stdout stderr)
-         (failure-thunk work errmsg stdout stderr)
+         (failure-thunk work errmsg stdout stderr (send worker get-id))
          #t]))
     (define/public (get-job workerid)
       (match queue
         [(cons h t)
           (set! queue t)
-          (values h (create-job-thunk h workerid))]))
+          (set! queue-size (- queue-size 1))
+          (values h
+                  (if (procedure-arity-includes? create-job-thunk 4)
+                      (create-job-thunk h workerid (+ 1 queue-size) original-size)
+                      (create-job-thunk h workerid)))]))
     (define/public (has-jobs?) (not (null? queue)))
     (define/public (get-results) (reverse results))
     (define/public (jobs-cnt) (length queue))

@@ -15,13 +15,13 @@ utilities to use the HTTP protocol.}
          boolean?]{
 
 Identifies an HTTP connection.
-                   
+
 }
 
 @defproc[(http-conn-live? [x any/c])
          boolean?]{
 
-Identifies an HTTP connection that is "live", i.e. one that is still
+Identifies an HTTP connection that is ``live'', i.e., one that is still
 connected to the server.
 
 }
@@ -29,7 +29,7 @@ connected to the server.
 @defproc[(http-conn-liveable? [x any/c])
          boolean?]{
 
-Identifies an HTTP connection that can be made "live", i.e. one for which
+Identifies an HTTP connection that can be made ``live'', i.e., one for which
 @racket[http-conn-send!] is valid. Either the HTTP connection is already
 @racket[http-conn-live?], or it can @tech{auto-reconnect}.
 
@@ -51,9 +51,9 @@ Returns a fresh HTTP connection.
 Uses @racket[hc] to connect to @racket[host] on port @racket[port]
 using SSL if @racket[ssl?] is not @racket[#f] (using @racket[ssl?] as
 an argument to @racket[ssl-connect] to, for example, check
-certificates.) If @racket[auto-reconnect?] is @racket[#t], then the HTTP
+certificates). If @racket[auto-reconnect?] is @racket[#t], then the HTTP
 connection is going to try to @deftech{auto-reconnect} for subsequent requests.
-I.e., if the connection is closed when performing @racket[http-conn-send!] or
+That is, if the connection is closed when performing @racket[http-conn-send!] or
 @racket[http-conn-recv!], then @racket[http-conn-enliven!] is going to be
 called on it.
 
@@ -99,7 +99,7 @@ configured to @tech{auto-reconnect}.
                           [#:close? close? boolean? #f]
                           [#:headers headers (listof (or/c bytes? string?)) empty]
                           [#:content-decode decodes (listof symbol?) '(gzip deflate)]
-                          [#:data data (or/c false/c bytes? string? data-procedure/c) #f])
+                          [#:data data (or/c #f bytes? string? data-procedure/c) #f])
          void?]{
 
 Sends an HTTP request to @racket[hc] to the URI @racket[uri] using
@@ -138,7 +138,7 @@ Parses an HTTP response from @racket[hc] for the method
 @racket[method] while decoding the encodings listed in
 @racket[decodes].
 
-Returns the status line, a list of headers, and an port which contains
+Returns the status line, a list of headers, and an input port which contains
 the contents of the response. The port's content must be consumed
 before the connection is used further.
 
@@ -156,7 +156,7 @@ to do so.
                               [#:version version (or/c bytes? string?) #"1.1"]
                               [#:method method (or/c bytes? string? symbol?) #"GET"]
                               [#:headers headers (listof (or/c bytes? string?)) empty]
-                              [#:data data (or/c false/c bytes? string? data-procedure/c) #f]
+                              [#:data data (or/c #f bytes? string? data-procedure/c) #f]
                               [#:content-decode decodes (listof symbol?) '(gzip deflate)]
                               [#:close? close? boolean? #f])
          (values bytes? (listof bytes?) input-port?)]{
@@ -169,10 +169,10 @@ Calls @racket[http-conn-send!] and @racket[http-conn-recv!] in sequence.
 @defproc[(http-sendrecv [host (or/c bytes? string?)] [uri (or/c bytes? string?)]
                         [#:ssl? ssl? base-ssl?-tnl/c #f]
                         [#:port port (between/c 1 65535) (if ssl? 443 80)]
-                        [#:version version (or/c bytes? string?) #"1.1"]                          
+                        [#:version version (or/c bytes? string?) #"1.1"]
                         [#:method method (or/c bytes? string? symbol?) #"GET"]
                         [#:headers headers (listof (or/c bytes? string?)) empty]
-                        [#:data data (or/c false/c bytes? string? data-procedure/c) #f]
+                        [#:data data (or/c #f bytes? string? data-procedure/c) #f]
                         [#:content-decode decodes (listof symbol?) '(gzip deflate)])
          (values bytes? (listof bytes?) input-port?)]{
 
@@ -191,30 +191,45 @@ response, which is why there is no @racket[#:closed?] argument like
                                    [proxy-port (between/c 1 65535)]
                                    [target-host (or/c bytes? string?)]
                                    [target-port (between/c 1 65535)]
-                                   [#:ssl? ssl? base-ssl?/c #f])
+                                   [#:ssl? ssl? base-ssl?/c #f]
+                                   [#:proxy-auth proxy-auth (or/c #f string?) #f])
          (values base-ssl?/c input-port? output-port? (-> port? void?))]{
-Creates an HTTP connection to @racket[proxy-host] (on port @racket[proxy-port])
- and invokes the HTTP ``CONNECT'' method to provide a tunnel to
- @racket[target-host] (on port @racket[target-port]).
+ Creates an HTTP connection to @racket[proxy-host] (on port
+ @racket[proxy-port]) and invokes the HTTP ``CONNECT'' method to provide
+ a tunnel to @racket[target-host] (on port @racket[target-port]).
 
- The SSL context or symbol, if any, provided in @racket[ssl?]
- is applied to the gateway ports using @racket[ports->ssl-ports] (or @racket[ports->win32-ssl-ports]).
+ If @racket[proxy-auth] is not @racket[#f], it should be a string of the
+ form @racket["username:password"]. The credentials will be Base64-encoded
+ and sent as a @litchar{Proxy-Authorization} header for HTTP Basic
+ authentication with the proxy server.
+
+ The SSL context or symbol, if any, provided in @racket[ssl?] is
+ applied to the gateway ports using @racket[ports->ssl-ports] (or
+ @racket[ports->win32-ssl-ports]).
 
  The function returns four values:
+
  @itemize[
- @item{If @racket[ssl?] was @racket[#f] then @racket[#f]. Otherwise an @racket[ssl-client-context?]
-       that has been negotiated with the target.
-       
-   If @racket[ssl?] was a protocol symbol, then a new @racket[ssl-client-context?] is created,
-   otherwise the current value of @racket[ssl?] is used}
- @item{An @racket[input-port?] from the tunnelled service}
- @item{An @racket[output-port?] to the tunnelled service}
- @item{An abandon function, which when applied either returned port, will abandon it, in a manner
-   similar to @racket[tcp-abandon-port]}
+   @item{
+     The first value is @racket[#f] if @racket[ssl?] is @racket[#f],
+     otherwise it is an @racket[ssl-client-context?] that has been
+     negotiated with the target. In the latter case,
+     @itemize[
+       @item{if @racket[ssl?] is @racket[#t] or a symbol, the
+         @racket[ssl-client-context?] is created with
+         @racket[ssl-make-client-context], where @racket[#t] means
+         @racket['auto];}
+       @item{if @racket[ssl?] is @racket[ssl-client-context?], it is
+         used as is.}
+     ]}
+   @item{The second value is an input port from the tunnelled service.}
+   @item{The third value is an output port to the tunnelled service.}
+   @item{The fourth value is an abandon function, which when applied to
+     either returned port, will abandon it, in a manner similar to
+     @racket[tcp-abandon-port].}
  ]
- The SSL context or symbol, if any, provided in @racket[ssl?]
- is applied to the gateway ports using @racket[ports->ssl-ports] (or @racket[ports->win32-ssl-ports])
- and the negotiated client context is returned
+
+@history[#:changed "9.1.0.2" @elem{Added the @racket[#:proxy-auth] argument.}]
 }
 
 @defthing[data-procedure/c chaperone-contract?]{
@@ -225,13 +240,13 @@ argument, which is a string or byte string:
 
 }
 
-@defthing[base-ssl?/c contract?]{
- Base contract for the definition of the SSL context (passed in @racket[ssl?]) of an
+@defthing[base-ssl?/c flat-contract?]{
+ Base contract for the definition of the SSL context (passed in @racket[_ssl?]) of an
  @racket[http-conn-CONNECT-tunnel]:
- 
+
  @racket[(or/c boolean? ssl-client-context? symbol?)].
 
- If @racket[ssl?] is not @racket[#f] then @racket[ssl?] is used as an argument to
+ If @racket[_ssl?] is not @racket[#f], then @racket[_ssl?] is used as an argument to
  @racket[ssl-connect] to, for example, check certificates.
 }
 
@@ -239,8 +254,8 @@ argument, which is a string or byte string:
  Contract for a @racket[base-ssl?/c] that might have been applied to a tunnel.
  It is either a @racket[base-ssl?/c], or a @racket[base-ssl?/c] consed onto a list of an
  @racket[input-port?], @racket[output-port?], and an abandon function
- (e.g. @racket[tcp-abandon-port]):
- 
+ (e.g., @racket[tcp-abandon-port]):
+
  @racket[(or/c base-ssl?/c (list/c base-ssl?/c input-port? output-port? (-> port? void?)))]
 }
 
@@ -262,5 +277,5 @@ formatted by @racketmodname[net/uri-codec]'s
    (alist->form-urlencoded
     (list (cons 'username "Ryu")
           (cons 'password "Sheng Long")))
-   #:headers (list "Content-Type: application/x-www-form-urlencoded"))             
+   #:headers (list "Content-Type: application/x-www-form-urlencoded"))
 ]

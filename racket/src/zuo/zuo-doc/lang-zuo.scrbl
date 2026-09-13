@@ -37,7 +37,7 @@ mapped to the @racket[dynamic-require] function. Getting
 A @racketmodname[zuo] module consists of a sequence of definitions
 (e.g., @racket[define]), macro definitions (e.g.,
 @racket[define-syntax]), imports (e.g., @racket[require]), exports
-(e.g., @racket[provides]), and expressions (e.g., @racket[5]). Loading
+(e.g., @racket[provide]), and expressions (e.g., @racket[5]). Loading
 the module first @deftech{expands} it, and then @deftech{evaluates}
 it. A module is loaded only once, so if a module is demanded more than
 once, the result of the first load is used.
@@ -59,7 +59,7 @@ definition context, and referencing a defined variable before its
 evaluation is an error. The value of each expression in a module body
 is printed using @racket[alert] compiled with @racket[~v].
 
-A module's provided variables and syntax are made available to other
+A module's provided variables and macros are made available to other
 modules that import it. Variables and macros that are not provided are
 completely inaccessible outside of the module.
 
@@ -73,7 +73,7 @@ expansion. The absence of a phase separation is related to the way that
 each module is evaluated only once, and it's made workable in part by
 the absence of mutable data structures in Zuo, and in part because
 there is no support for compiling a @racketmodname[zuo] module and
-saving it separate from it's instantiation in a Zuo process or saved
+saving it separate from its instantiation in a Zuo process or saved
 image.
 
 Zuo macros consume a representation of syntax that uses plain pairs,
@@ -90,7 +90,7 @@ expander does not impose or automate that binding. See
 @section{Binding and Control Forms}
 
 A @racketmodname[zuo] syntactic form is either a @deftech{definition}
-form or an @deftech{expression forms}. Expressions can appear in
+form or an @deftech{expression} form. Expressions can appear in
 definition contexts, but not vice versa. In descriptions of syntactic
 forms @racket[_body ...+] refers to a context that allows definition
 forms, but the last form in the expansion of the definition context
@@ -156,8 +156,8 @@ Just like @realracket*[quote quasiquote unquote unquote-splicing] from
 
 Analogous to @realracket[quote-syntax] from @racketmodname[racket],
 but only identifiers have a specialized syntax-object representation
-in place of symbols. Tree structure in @racket[datum] represented
-using plain pairs, and non-identifier elements of @racket[datums] are
+in place of symbols. Tree structure in @racket[datum] is represented
+using plain pairs, and non-identifier elements are
 represented with plain numbers, strings, etc.
 
 A Zuo module's representation starts with plain pairs and symbols, a
@@ -189,7 +189,7 @@ a macro expansion, use @racket[string->uninterned-symbol].}
 
 @defform[(quote-module-path)]{
 
-Returns the module path of the enclosing module.}
+Produces the module path of the enclosing module.}
 
 
 @subsection{Definition Forms}
@@ -198,8 +198,7 @@ Returns the module path of the enclosing module.}
            (define (id . formals) body ...++)]]{
 
 Like @realracket*[define] from @racketmodname[racket], but without
-keyword arguments, optional arguments, or header nesting for curried
-functions.}
+keyword arguments and header nesting for curried functions.}
 
 @defform*[[(define-syntax id expr)
            (define-syntax (id . formals) body ...++)]]{
@@ -250,7 +249,7 @@ assuming that @racket[module-path] is implemented in a language like
                     [maybe-renamed-id id
                                       renamed-id]
                     [renamed-id [provided-id id]])]
-@defform[#:literals (all-from-out)
+@defform[#:literals (rename-out all-from-out)
          (provide spec ...)
          #:grammar ([spec id
                           (rename-out renamed-id ...)
@@ -271,10 +270,10 @@ Declares a kind of @deftech{submodule}, roughly analogous to
 submodules nested in submodules.
 
 A submodule becomes a procedure of zero arguments that is a mapped
-from the symbol form of @racket[id] in the encloding module's
+from the symbol form of @racket[id] in the enclosing module's
 representation as a hash table (see @secref["module-protocol"]).
 Calling the procedure evaluates the @racket[defn-or-expr] content of
-the submodule, where expression results are printed and the procedure
+the submodule, where expression results are printed and the procedure's
 result is @racket[(void)].
 
 When Zuo loads a starting module (see @secref["running"]), it checks
@@ -293,16 +292,16 @@ for conditionals.
 @defproc[(not [v any/c]) boolean?]
 )]{
 
-Just like @realracket*[boolean? not] from @racket[racket].}
+Just like @realracket*[boolean? not] from @racketmodname[racket].}
 
 @defproc[(eq? [v1 any/c] [v2 any/c]) boolean?]{
 
-Analogous to @realracket[eq?] from @racket[racket], but even small Zuo
+Analogous to @realracket[eq?] from @racketmodname[racket], but even small Zuo
 numbers are not necessarily @racket[eq?] when they are @racket[=].}
 
 @defproc[(equal? [v1 any/c] [v2 any/c]) boolean?]{
 
-Analogous to @realracket[equal?] from @racket[racket].}
+Analogous to @realracket[equal?] from @racketmodname[racket].}
 
 
 @section{Numbers}
@@ -322,6 +321,7 @@ Returns @racket[#t] if @racket[v] is an integer, @racket[#f] otherwise.}
            [(- [z integer?] [w integer?] ...+) integer?])]
 @defproc[(* [z integer?] ...) integer?]
 @defproc[(quotient [n integer?] [m integer?]) integer?]
+@defproc[(remainder [n integer?] [m integer?]) integer?]
 @defproc[(modulo [n integer?] [m integer?]) integer?]
 @defproc[(= [z integer?] [w integer?]) boolean?]
 @defproc[(< [x integer?] [y integer?]) boolean?]
@@ -334,10 +334,13 @@ Returns @racket[#t] if @racket[v] is an integer, @racket[#f] otherwise.}
 @defproc[(bitwise-not [n integer?])  integer?]
 )]{
 
-Analogous to @realracket*[+ - * quotient modulo = < <= > >=
+Analogous to @realracket*[+ - * quotient remainder modulo = < <= > >=
 bitwise-ior bitwise-and bitwise-xor bitwise-not] from
 @racketmodname[racket], but on Zuo integers and sometimes constrained
-to two arguments.}
+to two arguments.
+
+@history[#:changed "1.9" @elem{Added @racket[remainder] and changed @racket[modulo]
+                               to match Racket.}]}
 
 
 @section{Pairs and Lists}
@@ -388,17 +391,17 @@ Just like @realracket*[caar cadr cdar cddr] from @racketmodname[racket].}
 @deftogether[(
 @defproc[(map [proc procedure?] [lst list?] ...+)
          list?]
-@defproc[(for-each [proc procedure?] [lst list?])
+@defproc[(for-each [proc (any/c . -> . any/c)] [lst list?])
          void?]
-@defproc[(foldl [proc procedure?] [init any/c] [lst list?])
+@defproc[(foldl [proc (any/c any/c . -> . any/c)] [init any/c] [lst list?])
          any/c]
-@defproc[(andmap [proc procedure?] [lst list?])
+@defproc[(andmap [proc (any/c . -> . any/c)] [lst list?])
           any/c]
-@defproc[(ormap [proc procedure?] [lst list?])
+@defproc[(ormap [proc (any/c . -> . any/c)] [lst list?])
          any/c]
-@defproc[(filter [proc procedure?] [lst list?])
+@defproc[(filter [proc (any/c . -> . any/c)] [lst list?])
          list?]
-@defproc[(sort [lst list?] [less-than? procedure?])
+@defproc[(sort [lst list?] [less-than? (any/c any/c . -> . any/c)])
          list?]
 )]{
 
@@ -435,9 +438,9 @@ Zuo @deftech{strings} are sequences of bytes.
 )]{
 
 Analogous to @realracket*[string? string string-length string-ref substring
-string=? string<?] from @racketmodname[racket], or more precisely analogous to
-@realracket*[bytes? bytes-length bytes-ref subbytes bytes=? bytes-ci=?] from
-@racketmodname[racket].}
+string=? string-ci=? string<?] from @racketmodname[racket], or more precisely analogous to
+@realracket*[bytes? bytes bytes-length bytes-ref subbytes bytes=? bytes<?]
+(and, in principle, @racket[bytes-ci=?]) from @racketmodname[racket].}
 
 @defproc[(string-u32-ref [str string?] [k integer?]) integer?]{
 
@@ -459,10 +462,10 @@ See also @racket[file-sha256] and @racket[sha256-length].}
 @defform[(char str)]{
 
 Expands to @racket[(string-ref str 0)], where @racket[str] must be a
-string of length 1.}
+literal string of length 1.}
 
-@defproc*[([(string-split [str string?]) list?]
-           [(string-split [str string?] [sep string?]) list?])]{
+@defproc*[([(string-split [str string?]) (listof string?)]
+           [(string-split [str string?] [sep string?]) (listof string?)])]{
 
 Breaks @racket[str] into a sequence of substrings that have a
 non-empty separator string in between. When @racket[sep] is not
@@ -499,7 +502,7 @@ symbols are the only kind of value that can be used as a key for a Zuo
 @tech{hash table}.
 
 The textual representation of symbols does not include escapes for
-special character, analogous to the way @litchar{|} works in Racket.
+special character, unlike the way @litchar{|} works in Racket.
 Symbols with those characters will print in a way that cannot be read
 back into Zuo.
 
@@ -519,7 +522,7 @@ null character.}
 @section{Hash Tables (Persistent Maps)}
 
 Zuo @tech{hash tables} do not actually have anything to do with
-hashing, but they're called that for similarly to Racket. A hash table
+hashing, but they're called that for similarity to Racket. A hash table
 maps symbols to other values, and updating a hash table produces a new
 hash table (which, internally, may share with the original).
 
@@ -536,11 +539,11 @@ support to convert the textual form back into a hash table value.
                       [key symbol?]
                       [failure-value any/c])
             any/c])]
-@defproc[(hash-set [hash (and/c hash? immutable?)]
+@defproc[(hash-set [hash hash?]
                    [key symbol?]
                    [v any/c])
          hash?]
-@defproc[(hash-remove [hash (and/c hash? immutable?)]
+@defproc[(hash-remove [hash hash?]
                       [key symbol?])
          hash?]
 @defproc[(hash-keys [hash hash?]) (listof symbol?)]
@@ -572,8 +575,8 @@ differences:
 @deftogether[(
 @defproc[(procedure? [v any/c]) any/c]
 @defproc[(apply [proc procedure?] [lst list?]) any/c]
-@defproc[(call/cc [proc procedure?]) any/c]
-@defproc[(call/prompt [proc procedure?] [tag symbol?]) any/c]
+@defproc[(call/cc [proc (any/c . -> . any/c)]) any/c]
+@defproc[(call/prompt [proc (-> any/c)] [tag symbol?]) any/c]
 @defproc[(continuation-prompt-available? [tag symbol?]) boolean?]
 )]{
 
@@ -597,12 +600,12 @@ Returns @racket[#t] if @racket[v] is a path string, @racket[#f] otherwise.}
 
 @defproc[(relative-path? [path path-string?]) boolean?]{
 
-Returns @racket[#t] if @racket[v] is a relative path, @racket[#f] otherwise.}
+Returns @racket[#t] if @racket[path] is a relative path, @racket[#f] otherwise.}
 
 @defproc[(build-raw-path [base path-string?] [rel path-string?] ...) path-string?]{
 
-Combines @racket[base] path (absolute or relative) with the relative
-paths @racket[rel], adding path separators as needed.}
+Combines @racket[base] path (absolute or relative) with relative
+@racket[rel] paths, adding path separators as needed.}
 
 @defproc[(build-path [base path-string?] [rel path-string?] ...) path-string?]{
 
@@ -717,13 +720,13 @@ allowed via @racket[key].}
 
 @defproc[(opaque-ref [key any/c] [v any/c] [failure-val any/c]) any/c]{
 
-Returns the value encapsulated in @racket[v] if its is an opaque
+Returns the value encapsulated in @racket[v] if it is an opaque
 object with access allowed via @racket[key], @racket[failure-val] otherwise.}
 
 
 @section{Variables}
 
-A @tech{variable} is a value with a name that contains an another
+A @tech{variable} is a value with a name that contains another
 value. The contained value is initially undefined, and attempting to
 access the contained value before it's set results in an error where
 the variable's name is used in the error message. A variable's
@@ -754,8 +757,7 @@ does not yet have a contained value.}
 
 A @deftech{module path} is a path string or a symbol, where a symbol
 must contain only the letters @litchar{A}-@litchar{Z},
-@litchar{a}-@litchar{z}, @litchar{A}-@litchar{Z},
-@litchar{0}-@litchar{9}, @litchar{-}, @litchar{+}, @litchar{+}, or
+@litchar{a}-@litchar{z}, @litchar{0}-@litchar{9}, @litchar{-}, @litchar{+}, @litchar{_}, or
 @litchar{/}. Furthermore, @litchar{/} in a symbol module path cannot
 be at the start, end, or adjacent to another @litchar{/}.
 
@@ -767,7 +769,7 @@ otherwise.}
 @defproc[(build-module-path [base module-path?] [rel-path path-string?]) module-path?]{
 
 Analogous to @racket[build-path], but for @tech{module paths}. The
-@racket[rel-path] string must end with @litchar{.zou}, and the
+@racket[rel-path] string must end with @litchar{.zuo}, and the
 characters of @racket[rel-path] must be allowable in a symbol module
 paths, except for a @litchar{.} in @filepath{.} and @filepath{..}
 elements or a @litchar{.zuo} suffix.}
@@ -776,7 +778,7 @@ elements or a @litchar{.zuo} suffix.}
 
 Loads @racket[mod-path] if it has not been loaded already, and returns
 the @tech{hash table} representation of the loaded module. See also
-@secref["module-protocol"]}
+@secref["module-protocol"].}
 
 @defproc[(dynamic-require [mod-path module-path?] [export symbol?]) any/c]{
 
@@ -805,7 +807,7 @@ Returns @racket[#t] if @racket[v] is the unique @deftech{void} value,
 
 @defproc[(void [v any/c] ...) void?]{
 
-Accepts any number of arguments and ignored them, returning the void
+Accepts any number of arguments and ignores them, returning the void
 value.}
 
 
@@ -853,11 +855,11 @@ displayln] from @racketmodname[racket]. They use @racket[~a] and
 Errors (and exits) after printing the @racket[v]s to standard error,
 using an error color if standard error is a terminal.
 
-If the first @racket[v] is a string, its character are printed output
-@realracket[display]-style, and then @litchar{: } is printed. All
+If the first @racket[v] is a string, its characters are printed
+followed by @litchar{: }. All
 other @racket[v]s (including the first one if it's not a string) are
-combined using @racket[~v], and that resulting string is written
-@realracket[display]-style.}
+combined using @racket[~v], and the resulting string's characters are
+printed.}
 
 
 @defproc[(alert [v any/c] ...) void?]{
@@ -928,7 +930,7 @@ indicate that it expects three arguments as a macro transformer; see
 
 @section{Files, Streams, and Processes}
 
-Files, input and out streams more generally, and processes are all
+Files, input and output streams, and processes are all
 represented as @tech{handles}.
 
 @defproc[(handle? [v any/c]) boolean?]{
@@ -1005,7 +1007,7 @@ string containing the read bytes.
 The number of bytes in the returned string can be less than
 @racket[amount] if the number of currently available bytes is less
 than @racket[amount] but at least one byte. The result can be an empty
-string only if @racket[amount] is @racket[0] or @racket['avail].
+string only if @racket[amount] is @racket[0] or @racket[eof].
 
 On Windows, @racket['avail] mode is not supported for console input.
 
@@ -1026,7 +1028,9 @@ until at least one is ready, and then it returns the first element of
 @racket[handles] that is ready. If @racket[timeout-msecs] is a number,
 then it specifies a number of milliseconds to wait; the result is
 @racket[#f] if no handle in @racket[handles] is ready before
-@racket[timeout-msecs] milliseconds pass.
+@racket[timeout-msecs] milliseconds pass. Polling typically does not
+work on Windows, because pipe handles claim to be ready for reading even
+when no data is available.
 
 @history[#:added "1.1"]}
 
@@ -1049,8 +1053,8 @@ descriptor, which is potentially useful after supplying an integer to
 @racket[fd-open-input] or @racket[fd-open-output] }
 
 @deftogether[(
-@defproc[(file->string [name path-string]) string?]
-@defproc[(display-to-file [str string?] [name path-string] [options hash? (hash)]) void?]
+@defproc[(file->string [name path-string?]) string?]
+@defproc[(display-to-file [str string?] [name path-string?] [options hash? (hash)]) void?]
 )]{
 
 Convenience function to open @racket[name] and read its content into a
@@ -1061,12 +1065,12 @@ string or to write @racket[str] as its new content.}
 A constant representing an end-of-file.}
 
 @deftogether[(
-@defproc[(cleanable-file [name path?]) handle?]
+@defproc[(cleanable-file [name path-string?]) handle?]
 @defproc[(cleanable-cancel [cleanable handle?]) void?]
 )]{
 
-The @racket[cleanable-file] function register @racket[name] as a file
-name to delete on any exit, including errors or termination signals,
+The @racket[cleanable-file] function registers @racket[name] as a file
+to delete on any exit, including errors or termination signals,
 unless @racket[cleanable-cancel] is called on the handle to cancel the
 clean-up action.}
 
@@ -1087,7 +1091,7 @@ keys are as follows, and supplying an unrecognized key in
 @itemlist[
 
 @item{@racket['dir] mapped to a path string: the working directory of
-      the new porcess; if @racket[executable] is a relative path, it
+      the new process; if @racket[executable] is a relative path, it
       is relative to this directory}
 
 @item{@racket['env] mapped to a list of pairs of strings: environment
@@ -1128,7 +1132,7 @@ keys are as follows, and supplying an unrecognized key in
       closed before waiting for processes to exit.}
 
 @item{@racket['exact?] mapped to boolean (or any value): if not
-      @racket[#f], a single @racket[arg] must be provided, and it is
+      @racket[#f], a single @racket[args] must be provided, and it is
       provided as-is for the created process's command line on
       Windows. A non-@racket[#f] value for @racket['exact?] is not
       allowed on Unix.}
@@ -1136,9 +1140,9 @@ keys are as follows, and supplying an unrecognized key in
 @item{@racket['exec?] mapped to boolean (or any value): if not
       @racket[#f], the target executable is run in the current
       process, after waiting for any other subprocesses and deleting
-      cleanables. A non-@racket[#f] value for @racket['exact?] is not
+      cleanables. A non-@racket[#f] value for @racket['exec?] is not
       allowed on Windows or, more generally, when @racket[(hash-ref
-      (runtime-env) 'can-exec?)] produced @racket[#f].}
+      (runtime-env) 'can-exec?)] is @racket[#f].}
 
 ]
 
@@ -1162,7 +1166,7 @@ handle will produce a result immediately.}
 
 Returns @racket['running] if the process represented by
 @racket[process] is still running, the exit value if the process has
-exited (@racket[0] normally means succes), erroring for any other kind
+exited (@racket[0] normally means success), erroring for any other kind
 of handle.}
 
 
@@ -1184,17 +1188,27 @@ the start of @envvar{PATH}.}
 
 @deftogether[(
 @defproc[(string->shell [str string?]) string?]
-@defproc[(shell->strings [str string?] [starts-exe? any/c #f]) list?]
+@defproc[(shell->strings [str string?] [starts-exe? any/c #f]) (listof string?)]
 )]{
 
 The @racket[string->shell] function converts a string to a
 command-line fragment that encodes the same string. The
 @racket[shell->strings] function takes a command-line fragment and
-parses it into a list of strings in the same way the shell would. On
-Windows, the shell parses an executable name differently than
+parses it into a list of strings in the same way the shell would.
+
+On Windows, the shell parses an executable name differently than
 arguments in a command, so provide a true value as
-@racket[starts-exe?] if the command-line fragment @racket[str] starts
-with an executable name.}
+@racket[starts-exe?] for @racket[shell->strings] if the command-line fragment @racket[str] starts
+with an executable name. Relatedly, Windows batch files parse
+arguments a little differently, effectively treating @litchar{,},
+@litchar{;}, and @litchar{=} like whitespace; the @racket[shell->strings]
+funciton does not support that parsing mode, but @racket[string->shell]
+quotes those characters to make them safe in arguments that end up
+being consumed by a batch file.
+
+@history[#:changed "1.15" @elem{On Windows, changed @racket[string->shell] to treat @litchar{,},
+                                @litchar{;}, and @litchar{=} like a space character
+                                among arguments.}]}
 
 
 @section{Filesystem}
@@ -1245,11 +1259,11 @@ The abbreviated @racket['type] field contains @racket['file],
 @racket['dir], or @racket['link], with @racket['link] only on Unix and
 only when @racket[follow-links?] is @racket[#f].}
 
-@defproc[(ls [dir path-string?]) list?]{
+@defproc[(ls [dir path-string?]) (listof path-string?)]{
 
 Returns a list of path strings for files in @racket[dir].}
 
-@defproc[(ls* [dir path-string?]) list?]{
+@defproc[(ls* [dir path-string?]) (listof path-string?)]{
 
 Like @racket[ls], but builds a path using @racket[dir] for each
 element of the result list.}
@@ -1276,7 +1290,7 @@ Creates a directory @racket[dir].}
 @defproc[(mkdir-p [dir path-string?]) void?]{
 
 Creates a directory @racket[dir] if it does not already exist, along
-with its ancector directories.}
+with its ancestor directories.}
 
 @defproc[(rmdir [dir path-string?]) void?]{
 
@@ -1306,7 +1320,7 @@ the mode (i.e., permissions) specified by @racket['mode] in
 inclusive; if @racket['mode] is not provided, the mode of
 @racket[source] is used. The creation-time mode can be modified by
 the process's umask, but unless @racket[options] maps
-@racket['replace-mode] to @racket[#false], the mode is explicitly applied again
+@racket['replace-mode] to @racket[#f], the mode is explicitly applied again
 to @racket[destination]---whether @racket[destination] was just
 created or exists already, and ignoring the process's umask. On
 Windows, the attributes of @racket[source] are always copied to
@@ -1315,7 +1329,7 @@ is made read only if and only if the @scheme[bitwise-and] of the mode
 value and @racket[2] is @racket[0].
 
 The @racket[:no-replace-mode] hash table maps
-@racket['no-replace-mode] to @racket[#true].
+@racket['replace-mode] to @racket[#f].
 
 @history[#:changed "1.6" @elem{Added the @racket[options] argument and
                                @racket[:no-replace-mode].}]}
@@ -1331,9 +1345,9 @@ along to individual file-copy operations.
 @history[#:changed "1.6" @elem{Added the @racket[options] argument.}]}
 
 @deftogether[(
-@defproc[(file-exists? [name path-string?]) booelan?]
-@defproc[(directory-exists? [name path-string?]) booelan?]
-@defproc[(link-exists? [name path-string?]) booelan?]
+@defproc[(file-exists? [name path-string?]) boolean?]
+@defproc[(directory-exists? [name path-string?]) boolean?]
+@defproc[(link-exists? [name path-string?]) boolean?]
 )]{
 
 Uses @racket[stat] to check for a file, directory, or link,
@@ -1355,7 +1369,10 @@ Zuo process. The hash table includes the following keys:
       process was started, not counting Zuo configuration arguments or
       the name of a script to run}
 
-@item{@racket['dir]: the current directory}
+@item{@racket['dir]: the current directory; on Unix, if the
+      @envvar{PWD} environment variable is set as an absolute path
+      that refer to the same directory as the one reported by the
+      operating system, the @envvar{PWD} form is used}
 
 @item{@racket['env]: a list of pairs of strings for environment variables}
 
@@ -1371,11 +1388,11 @@ Zuo process. The hash table includes the following keys:
       is determined by the compiler used to build the Zuo executable,
       but it can be set explicitly by defining either the
       @tt{ZUO_WINDOWS_TOOLCHAIN} or @tt{ZUO_UNIX_TOOLCHAIN}
-      preprocessor symbol when compiliing Zuo}
+      preprocessor symbol when compiling Zuo}
 
 @item{@racket['sys-dir] (Windows only): the path to the system directory}
 
-@item{@racket['can-exec?]: a boolean whether @racket[process] supports
+@item{@racket['can-exec?]: a boolean indicating whether @racket[process] supports
       a true value for the @racket['exec?] option}
 
 @item{@racket['version]: Zuo's major version number as an integer}
@@ -1384,7 +1401,9 @@ Zuo process. The hash table includes the following keys:
 
 ]
 
-@history[#:changed "1.1" @elem{Added @racket['minor-version].}]}
+@history[#:changed "1.1" @elem{Added @racket['minor-version].}
+         #:changed "1.11" @elem{Changed @racket['dir] to use the @envvar{PWD}
+                                environment variable.}]}
 
 @defproc[(system-type) symbol?]{
 
@@ -1402,7 +1421,7 @@ must be an open output file or stream, and then exits.
 
 This function is intended to be used after some set of modules has
 been loaded, so that the loaded modules are included in the image. The
-dump fails if if any @tech{handle} is encountered as reachable from
+dump fails if any @tech{handle} is encountered as reachable from
 loaded modules, however.}
 
 @defproc[(exit [status integer? 0]) void?]{

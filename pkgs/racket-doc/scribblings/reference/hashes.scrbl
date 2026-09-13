@@ -43,7 +43,7 @@ hashing is treated as a deeper hash, but the @racket[cdr] of a
 A hash table can be used as a two-valued @tech{sequence} (see
 @secref["sequences"]). The keys and values of the hash table serve as
 elements of the sequence (i.e., each element is a key and its
-associated value). If a mapping is added to or removed from the hash
+associated value). If a mapping is added to or removed from a mutable hash
 table during iteration, then an iteration step may fail with
 @racket[exn:fail:contract], or the iteration may skip or duplicate
 keys and values.  See also @racket[in-hash], @racket[in-hash-keys],
@@ -213,6 +213,16 @@ table in the order that they appear in @racket[assocs], so later
 mappings can hide earlier mappings.
 
 See also @racket[make-custom-hash].
+
+@examples[
+#:eval the-eval
+(make-hash)
+(make-hash '([0 . 1] [42 . "meaning of life"] [2 . 3]))
+(make-hash '([0 . 1] [1 . 2] [0 . 3]))
+(make-hash (list (cons 0 1) (cons 'apple 'orange) (cons #t #f)))
+(make-hash '((0 1) (1 2) (2 3)))
+(make-hash (list (cons + -)))
+]
 
 @history[#:changed "8.5.0.3" @elem{Added @racket[make-hashalw].}]}
 
@@ -634,6 +644,12 @@ with the following order (earlier bullets before later):
 @history[#:changed "6.3" @elem{Added the @racket[try-order?] argument.}
          #:changed "7.1.0.7" @elem{Added guarantees for @racket[try-order?].}]}
 
+@examples[
+#:eval the-eval
+(hash-map (make-hash '([0 . 1] [1 . 2] [2 . 3])) (λ (k v) k))
+(hash-map (make-hash '([0 . 1] [1 . 2] [2 . 3])) (λ (k v) v))
+]
+
 @defproc[(hash-map/copy
           [ht hash?]
           [proc (any/c any/c . -> . (values any/c any/c))]
@@ -906,9 +922,9 @@ key-comparison mode, and same key-holding strength as @racket[ht].}
 
 Computes the union of @racket[ht0] with each hash table @racket[ht] by functional
 update, adding each element of each @racket[ht] to @racket[ht0] in turn.  For each
-key @racket[k] and value @racket[v], if a mapping from @racket[k] to some value
-@racket[v0] already exists, it is replaced with a mapping from @racket[k] to
-@racket[(combine/key k v0 v)].
+key @racket[_k] and value @racket[_v], if a mapping from @racket[_k] to some value
+@racket[_v0] already exists, it is replaced with a mapping from @racket[_k] to
+@racket[(combine/key _k _v0 _v)].
 
 @examples[
 #:eval the-eval
@@ -934,9 +950,9 @@ key @racket[k] and value @racket[v], if a mapping from @racket[k] to some value
 
 Computes the union of @racket[ht0] with each hash table @racket[ht] by mutable
 update, adding each element of each @racket[ht] to @racket[ht0] in turn.  For each
-key @racket[k] and value @racket[v], if a mapping from @racket[k] to some value
-@racket[v0] already exists, it is replaced with a mapping from @racket[k] to
-@racket[(combine/key k v0 v)].
+key @racket[_k] and value @racket[_v], if a mapping from @racket[_k] to some value
+@racket[_v0] already exists, it is replaced with a mapping from @racket[_k] to
+@racket[(combine/key _k _v0 _v)].
 
 @examples[
 #:eval the-eval
@@ -964,13 +980,13 @@ h
 
 Constructs the hash table which is the intersection of @racket[ht0]
 with every hash table @racket[ht].  In the resulting hash table, a key
-@racket[k] is mapped to a combination of the values to which
-@racket[k] is mapped in each of the hash tables.  The final values are
+@racket[_k] is mapped to a combination of the values to which
+@racket[_k] is mapped in each of the hash tables.  The final values are
 computed by stepwise combination of the values appearing in each of
-the hash tables by applying @racket[(combine/key k v vi)] or
-@racket[(combine v vi)], where @racket[vi] is the value to which
-@racket[k] is mapped in the i-th hash table @racket[ht], and
-@racket[v] is the accumulation of the values from the previous steps.
+the hash tables by applying @racket[(combine/key _k _v _vi)],
+where @racket[_vi] is the value to which
+@racket[_k] is mapped in the @math{i}-th hash table @racket[ht], and
+@racket[_v] is the accumulation of the values from the previous steps.
 The comparison predicate of the first argument (@racket[eq?],
 @racket[eqv?], @racket[equal-always?], @racket[equal?]) determines the
 one for the result.
@@ -988,5 +1004,117 @@ one for the result.
 
 
 @history[#:added "7.9.0.1"]}
+
+@defproc[(hash-filter [ht hash?] [pred (-> any/c any/c boolean?)])
+         hash?]{
+
+Filters the @racket[hash?] @racket[ht] based on a predicate
+@racket[pred] applied to both its keys and values. This function
+constructs a new hash table that includes only those key-value pairs
+from the input @racket[ht] for which the predicate @racket[pred]
+returns true when applied simultaneously to the keys and values of
+@racket[ht]. The output hash table retains the mutability and the key
+comparison predicate (e.g., @racket[eqv?], @racket[equal-always?],
+@racket[equal?]) of the input hash table @racket[ht], ensuring that
+the structural and operational properties of the original hash are
+preserved in the output.
+
+@examples[
+  #:eval the-eval
+  ;; Filtering key-value pairs where the key is less than 3 and value is even
+  (hash-filter (for/hash ([num '(1 2 3 4 5)]) (values num (* num 2)))
+               (λ (k v) (and (< k 3) (even? v))))
+
+  ;; Filtering key-value pairs from an empty hash table
+  (hash-filter (make-hash) (λ (k v) (< k 3)))
+
+  ;; Filtering with eq? hash table based on specific key-value conditions
+  (hash-filter (make-hasheq '([#f . "false"] [#t . "true"]))
+               (λ (k v) (and (eq? k #t) (string=? v "true"))))
+
+  ;; Filtering key-value pairs where the key is a list and the value is a symbol
+  (hash-filter (hash (list 1 2) 'pair (vector 3 4) 'vector)
+               (λ (k v) (and (list? k) (symbol? v))))
+
+  ;; Filtering key-value pairs of mixed types based on custom logic
+  (hash-filter (hash "one" 1 2 "two" "three" 3)
+               (λ (k v) (and (not (number? k)) (number? v) (> v 1))))
+]
+
+@history[#:added "8.13.0.4"]
+}
+
+@defproc[(hash-filter-keys [ht hash?] [pred procedure?])
+         hash?]{
+
+Filters the @racket[hash?] @racket[ht] based on a predicate @racket[pred] applied to its keys.
+This function constructs a new hash table that includes only those key-value pairs
+from the input @racket[ht] for which the predicate @racket[pred] returns true when
+applied to the keys. Similar to @racket[hash-filter-values], the output hash table
+maintains the mutability and key comparator of the input hash table, ensuring that
+the structural and operational properties of the original hash are retained.
+
+@examples[
+  #:eval the-eval
+  ;; Filtering keys less than 3 from a hash table
+  (hash-filter-keys (for/hash ([num '(1 2 3 4 5)]) (values num 0)) (λ (k) (< k 3)))
+
+  ;; Filtering keys from an empty hash table
+  (hash-filter-keys (make-hash) (λ (k) (< k 3)))
+
+  ;; Filtering with eq? hash table
+  (hash-filter-keys (make-hasheq '([#f . "false"] [#t . "true"])) (λ (k) (eq? k #t)))
+
+  ;; Filtering lists as keys
+  (hash-filter-keys (hash (list 1 2) 'pair (vector 3 4) 'vector) list?)
+
+  ;; Filtering keys of mixed types: numbers and strings
+  (hash-filter-keys (hash "one" 1 2 "two" "three" 3) (lambda (k) (number? k)))
+
+  ;; Filtering keys that are symbols
+  (hash-filter-keys (hash 'apple "fruit" 'carrot "vegetable" "banana" "fruit")
+                    (lambda (k) (symbol? k)))
+]
+
+@history[#:added "8.12.0.9"]
+}
+
+
+@defproc[(hash-filter-values [ht hash?] [pred procedure?])
+         hash?]{
+
+Filters the @racket[hash?] @racket[ht] based on a predicate
+@racket[pred] applied to its values.  This function returns a new hash
+table containing only the key-value pairs for which the predicate
+@racket[pred] returns true when applied to the values of @racket[ht].
+The resulting hash table retains the mutability and the key comparison
+predicate (e.g., @racket[eq?], @racket[eqv?], @racket[equal-always?],
+@racket[equal?]) of the input hash table @racket[ht].
+
+@examples[
+   #:eval the-eval
+   ;; Filtering values less than 3
+   (hash-filter-values (for/hash ([num '(1 2 3 4 5)]) (values num num)) (λ (v) (< v 3)))
+
+   ;; Filtering values from an empty hash table
+   (hash-filter-values (make-hash) (λ (v) (< v 3)))
+
+   ;; Filtering with eqv? hash table
+   (hash-filter-values (make-hasheqv '([1 . "one"] [2 . "two"])) (λ (v) (eqv? v "two")))
+
+   ;; Filtering values of mixed types: strings and numbers
+   (hash-filter-values (hash 'one "1" 'two 2 'three "3") (lambda (v) (string? v)))
+
+   ;; Filtering values to include only vectors
+   (hash-filter-values (hash 'list (list 1 2 3) 'vector #(4 5 6) 'string "hello")
+                       (lambda (v) (vector? v)))
+
+   ;; Filtering based on complex values (hash tables and lists)
+   (hash-filter-values (hash 'nested-hash (hash 'a 1 'b 2) 'nested-list (list 'x 'y 'z))
+                       (lambda (v) (hash? v)))
+ ]
+
+@history[#:added "8.12.0.9"]
+}
 
 @(close-eval the-eval)

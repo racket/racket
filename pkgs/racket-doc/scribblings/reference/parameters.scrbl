@@ -32,7 +32,8 @@ reachable, even if the parameter is mutated.
 
 @defproc[(make-parameter [v any/c]
                          [guard (or/c (any/c . -> . any) #f) #f]
-                         [name symbol? 'parameter-procedure])
+                         [name symbol? 'parameter-procedure]
+                         [realm symbol? 'racket])
          parameter?]{
 
 Returns a new parameter procedure. The value of the parameter is
@@ -48,9 +49,11 @@ reject a change to the parameter's value. The @racket[guard] is not
 applied to the initial @racket[v].
 
 The @racket[name] argument is used as the parameter procedure's name
-as reported by @racket[object-name].
+as reported by @racket[object-name], and @racket[realm] is used as
+the reported as reported by @racket[procedure-realm].
 
-@history[#:changed "7.4.0.6" @elem{Added the @racket[name] argument.}]}
+@history[#:changed "7.4.0.6" @elem{Added the @racket[name] argument.}
+         #:changed "8.4.0.2" @elem{Added the @racket[realm] argument.}]}
 
 @defform[(parameterize ([parameter-expr value-expr] ...)
            body ...+)
@@ -137,7 +140,9 @@ forms.}
 
 @defproc[(make-derived-parameter [parameter parameter?]
                                  [guard (any/c . -> . any)]
-                                 [wrap (any/c . -> . any)])
+                                 [wrap (any/c . -> . any)]
+                                 [name symbol? (object-name parameter)]
+                                 [realm symbol? (procedure-realm parameter)])
          parameter?]{
 
 Returns a parameter procedure that sets or retrieves the same value as
@@ -152,8 +157,17 @@ Returns a parameter procedure that sets or retrieves the same value as
 
 ]
 
+The @racket[name] argument is used as the parameter procedure's name
+as reported by @racket[object-name], and @racket[realm] is used as the
+reported as reported by @racket[procedure-realm]. Supply
+@racket[values] for @racket[guard] and @racket[wrap] if the goal is
+merely to replace the name or realm of @racket[parameter].
+
 See also @racket[chaperone-procedure], which can also be used to guard
-parameter procedures.}
+parameter procedures.
+
+@history[#:changed "8.15.0.4" @elem{Added the @racket[name] and
+                                    @racket[realm] arguments.}]}
 
 
 @defproc[(parameter? [v any/c]) boolean?]{

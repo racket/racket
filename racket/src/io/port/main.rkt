@@ -19,6 +19,7 @@
                   terminal-port?
                   port-waiting-peer?)
          "file-identity.rkt"
+         "file-stat.rkt"
          "file-lock.rkt"
          "bytes-port.rkt"
          "string-port.rkt"
@@ -127,6 +128,7 @@
          make-pipe
          pipe-input-port?
          pipe-output-port?
+         pipe-port?
          pipe-content-length
 
          port-closed?
@@ -137,13 +139,15 @@
          file-stream-buffer-mode
 
          port-file-identity
+         port-file-stat
          port-try-file-lock?
          port-file-unlock
 
          file-position
          file-position*
          file-truncate
-         
+         terminal-file-position
+
          port-count-lines!
          port-counts-lines?
          port-next-location

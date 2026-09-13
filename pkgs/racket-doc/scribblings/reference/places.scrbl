@@ -89,7 +89,7 @@ message to each, and then waits for the places to terminate:
          [p pls])
       (place-channel-put p i)
       (printf "~a\n" (place-channel-get p)))
-   (map place-wait pls))
+   (for-each place-wait pls))
 ]
 
 The @filepath{place-worker.rkt} module (in a file that

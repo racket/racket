@@ -7,8 +7,21 @@
 @defmodule[ffi/unsafe/schedule]{The
 @racketmodname[ffi/unsafe/schedule] library provides functions for
 cooperating with the thread scheduler and manipulating it. The
-library's operations are unsafe because callbacks run in @tech{atomic
-mode} and in an unspecified thread.}
+library's operations are @tech[#:doc reference.scrbl]{unsafe}
+because callbacks run in @tech{atomic mode} and in an
+@elemref["unspecified thread"]{unspecified thread}.}
+
+Running an operation in an @elemtag["unspecified thread"]{unspecified
+thread} means that the Racket scheduler for @tech[#:doc
+reference.scrbl]{coroutine threads} selects a convenient coroutine
+thread and switches the thread's evaluation temporarily to the operation. The
+thread will not have been in @tech{atomic mode}, but the
+operation using the thread is always run in atomic mode. An operation
+that is run in an unspecified thread can use @racket[(current-thread)]
+check parameter values, and inspect the continuation, but doing so
+is unsafe: the current thread and its continuation are not specified,
+and misusing a thread or it continuation can leak information or change
+the thread's behavior.
 
 @history[#:added "6.11.0.1"]
 
@@ -18,7 +31,7 @@ mode} and in an unspecified thread.}
 Produces a @deftech{poller} value that is allowed as a
 @racket[prop:evt] value, even though it is not a procedure or itself
 an @racket[evt?]. The @racket[poll] callback is called in @tech{atomic
-mode} in an unspecified thread to check whether the event is ready or
+mode} in an @elemref["unspecified thread"]{unspecified thread} to check whether the event is ready or
 to allow it to register a wakeup trigger.
 
 The first argument to @racket[poll] is always the object that is used

@@ -36,10 +36,10 @@ rktio_ok_t rktio_shell_execute(rktio_t *rktio,
   if (!verb)
     se.lpVerb = NULL;
   else
-    se.lpVerb = WIDE_PATH_copy(verb);
-  se.lpFile = WIDE_PATH_copy(target);
-  se.lpParameters = WIDE_PATH_copy(arg);
-  se.lpDirectory = WIDE_PATH_copy(dir);
+    se.lpVerb = WIDE_PATH_copy(verb, &rktio->err);
+  se.lpFile = WIDE_PATH_copy(target, &rktio->err);
+  se.lpParameters = WIDE_PATH_copy(arg, &rktio->err);
+  se.lpDirectory = WIDE_PATH_copy(dir, &rktio->err);
   se.nShow = show_mode;
   se.hwnd = NULL;
   

@@ -1,7 +1,9 @@
 #lang scribble/base
 
 @(require "shared.rkt"
-          (for-label syntax/parse))
+          (for-label syntax/parse
+                     racket/fixnum
+                     racket/unsafe/ops))
 
 @; -----------------------------------------------------------------------------
 
@@ -101,7 +103,7 @@ racket
               (λ (x) b))]))
 
 (define (sar/λ l p)
-  (for ([a '()]) ([y l])
+  (for/fold ([a '()]) ([y l])
     (unless (bad? y)
       (cons (p y) a))))
 
@@ -121,8 +123,8 @@ racket
          (define (bad? x)
            ... many lines ...)
          (define l
-	   (list e ...))
-         (for ([a '()]) ([x l])
+           (list e ...))
+         (for/fold ([a '()]) ([x l])
            (unless (bad? x)
              (cons b a))))]))
 ]
@@ -262,7 +264,7 @@ straightforward:
 ]
 Both modules @racket[require] the @tt{fast} module, but @tt{needs-goodness}
 on the left goes through the contracted @racket[provide] while
-@tt{needs-speed} on the right uses the @tt{no-contract} submodule. Tchnically,
+@tt{needs-speed} on the right uses the @tt{no-contract} submodule. Technically,
 the left module imports @racket[human] with contracts; the right one
 imports the same function without contract and thus doesn't have to pay the
 performance penalty.

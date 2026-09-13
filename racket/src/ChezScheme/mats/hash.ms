@@ -307,6 +307,7 @@
      (same-entries? (hashtable-entries ht) keys vals)
      (or (not (hashtable-mutable? ht))
          (same-elements? (hashtable-cells ht) (vector-map cons keys vals)))
+     (same-elements? (#%$hashtable-cells ht) (vector-map cons keys vals))
 
      (same-elements? (r6rs:hashtable-keys ht) keys)
      (same-entries? (r6rs:hashtable-entries ht) keys vals)
@@ -328,6 +329,7 @@
      (same-entries? (hashtable-entries ht 0) '#() '#())
      (or (not (hashtable-mutable? ht))
          (same-elements? (hashtable-cells ht 0) '#()))
+     (same-elements? (#%$hashtable-cells ht 0) '#())
 
      (or
       (< (hashtable-size ht) 2)
@@ -365,7 +367,11 @@
                (let ([got-cells (hashtable-cells ht 2)])
                  (ormap (lambda (keys vals)
                           (same-elements? got-cells (vector-map cons keys vals)))
-                        keyss valss))))))))))
+                        keyss valss)))
+           (let ([got-cells (#%$hashtable-cells ht 2)])
+             (ormap (lambda (keys vals)
+                      (same-elements? got-cells (vector-map cons keys vals)))
+                    keyss valss)))))))))
 
 (mat hashtable-arguments
  ; make-eq-hashtable
@@ -924,6 +930,24 @@
     (eq-hashtable-ephemeron? $ht 3))
   (error? ; not a hashtable
     (eq-hashtable-ephemeron? '(hash . table)))
+
+  ; make sure a trap interrupt does not break `hashtable-keys`
+  (let loop ([i 1000])
+    (cond
+      [(= i 0) #t]
+      [else
+       (let ([ht (make-weak-eq-hashtable)])
+         (let loop ([i 1000])
+           (unless (= i 0)
+             (hashtable-set! ht (gensym) i)
+             (loop (sub1 i))))
+         (let ([vec (hashtable-keys ht)])
+           (let loop ([i 0])
+             (unless (= i (vector-length vec))
+               (unless (symbol? (vector-ref vec i))
+                 (error 'keys "not a symbol: ~s" (vector-ref vec i)))
+               (loop (add1 i))))))
+       (loop (sub1 i))]))
 )
 
 (mat symbol-hashtable-arguments

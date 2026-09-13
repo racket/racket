@@ -29,6 +29,17 @@
 
   (define m (lookup 'm))
 
+  ;; This script relies on Unix utilities and isn't meant to be run on
+  ;; Windows, but it can be useful to gather results for cross-compiling
+  ;; to Windows
+  (define windows? (glob-match? "*nt" m))
+  (define (add-exe s)
+    (if windows?
+        (~a s ".exe")
+        s))
+
+  (define hardlinks? (not (equal? (lookup 'InstallHardlinks) "no")))
+
   ;; The following variables determine where the executables, boot files,
   ;; example programs, and manual pages are installed.
 
@@ -47,11 +58,17 @@
   ;; installation group
   (define-var InstallGroup "")
 
-  ;; Files are actually installed at ${TempRoot}${InstallBin},
-  ;; ${TempRoot}${InstallLib}, and ${TempRoot}${InstallMan}.
+  ;; Files are actually installed at ${DESTDIR}${InstallBin},
+  ;; ${DESTDIR}${InstallLib}, and ${DESTDIR}${InstallMan}.
   ;; This useful for testing the install process and for building
-  ;; installation scripts
+  ;; installation scripts. The ${TempRoot} variable is a configure-time
+  ;; selection of the destination, but it can be overriddedn with
+  ;; via ${DESTDIR}.
   (define-var TempRoot "")
+  (define DESTDIR (let ([d (hash-ref vars 'DESTDIR "")])
+                    (if (equal? d "")
+                        TempRoot
+                        d)))
 
   ;; compress man pages?
   (define-var GzipManPages "yes")
@@ -71,14 +88,10 @@
   ;; Everything after here is derived from the configuration
 
   (define Version (let ([l (get-version)])
-                    (~a "csv" (list-ref l 0) "." (list-ref l 1)
-                        (if (and (= (list-ref l 2) 0)
-                                 (= (list-ref l 3) 0))
+                    (~a "csv" (list-ref l 0) "." (list-ref l 1) "." (list-ref l 2)
+                        (if (= (list-ref l 3) 0)
                             ""
-                            (~a "." (list-ref l 2)
-                                (if (= (list-ref l 3) 0)
-                                    ""
-                                    (~a "-pre-release." (list-ref l 3))))))))
+                            (~a "-pre-release." (list-ref l 3))))))
 
   (define (build-path* . elems)
     (if script-to
@@ -116,7 +129,7 @@
   (define PetiteBoot (at-workarea* "boot" m "petite.boot"))
   (define SchemeBoot (at-workarea* "boot" m "scheme.boot"))
   (define Revision (at-workarea* "boot" m "revision"))
-  (define Scheme (at-workarea* "bin" m "scheme"))
+  (define Scheme (at-workarea* "bin" m (add-exe "scheme")))
   (define InstallLibExamples (build-path* InstallLib Version "examples"))
   (define InstallLibBin (build-path* InstallLib Version m))
 
@@ -131,14 +144,14 @@
                                             accum
                                             (loop (car l) (cons (cdr l) accum))))))]))
 
-  (define Bin (prefix-path TempRoot InstallBin))
-  (define Lib (prefix-path TempRoot (build-path InstallLib Version)))
-  (define LibExamples (prefix-path TempRoot InstallLibExamples))
-  (define LibBin (prefix-path TempRoot InstallLibBin))
-  (define Man (prefix-path TempRoot InstallMan))
-  (define PetitePath (build-path* Bin InstallPetiteName))
-  (define SchemePath (build-path* Bin InstallSchemeName))
-  (define SchemeScriptPath (build-path* Bin InstallScriptName))
+  (define Bin (prefix-path DESTDIR InstallBin))
+  (define Lib (prefix-path DESTDIR (build-path InstallLib Version)))
+  (define LibExamples (prefix-path DESTDIR InstallLibExamples))
+  (define LibBin (prefix-path DESTDIR InstallLibBin))
+  (define Man (prefix-path DESTDIR InstallMan))
+  (define PetitePath (build-path* Bin (add-exe InstallPetiteName)))
+  (define SchemePath (build-path* Bin (add-exe InstallSchemeName)))
+  (define SchemeScriptPath (build-path* Bin (add-exe InstallScriptName)))
 
   (struct literal (content))
 
@@ -169,7 +182,11 @@
   (define (rm-rf d)
     (shell/wait* "rm" "-rf" d))
   (define (ln-f from to)
-    (shell/wait* "ln" "-f" from to))
+    (if hardlinks?
+        (shell/wait* "ln" "-f" from to)
+        (shell/wait* "ln" "-s" from to)))
+  (define (ln-s from to)
+    (shell/wait* "ln" "-s" from to))
 
   (when (or (not uninstall?) script-to)
     (when script-to (out "\ninstall:"))
@@ -181,9 +198,25 @@
     (rm-f SchemePath)
     (rm-f PetitePath)
     (rm-f SchemeScriptPath)
-    (I "-m" "555" Scheme SchemePath)
-    (ln-f SchemePath PetitePath)
-    (ln-f SchemePath SchemeScriptPath)
+    (cond
+      [(equal? (hash-ref config 'relativeBootFiles #f) "yes")
+       (define SchemeLibPath (build-path LibBin (add-exe InstallSchemeName)))
+       (define PetiteLibPath (build-path LibBin (add-exe InstallPetiteName)))
+       (define ScriptLibPath (build-path LibBin (add-exe InstallScriptName)))
+       (define (ln-s/rel from to)
+         (define to-dir (car (split-path to)))
+         (ln-s (find-relative-path to-dir from) to))
+       (I "-m" "555" Scheme SchemeLibPath)
+       (ln-f SchemeLibPath PetiteLibPath)
+       (ln-f SchemeLibPath ScriptLibPath)
+       (unless windows?
+         (ln-s/rel SchemeLibPath SchemePath)
+         (ln-s/rel PetiteLibPath PetitePath)
+         (ln-s/rel ScriptLibPath SchemeScriptPath))]
+      [else
+       (I "-m" "555" Scheme SchemePath)
+       (ln-f SchemePath PetitePath)
+       (ln-f SchemePath SchemeScriptPath)])
 
     ;; lib
     (I "-m" "444" PetiteBoot (build-path* LibBin "petite.boot"))

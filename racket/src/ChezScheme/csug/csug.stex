@@ -23,11 +23,11 @@
 \endschemeinit
 
 \generated
-;; We assume here that the verison used to build the documentation
+;; We assume here that the version used to build the documentation
 ;; is the same as the documented version. If it's a release version,
 ;; then the date is fixed to the release date. Otherwise, use
 ;; the date when the document is built.
-(define latest-release-date "April 2022")
+(define latest-release-date "May 2026")
 (printf "\\def\\CSVersion{~a}\n" (scheme-version #t))
 (cond
   [(not (scheme-pre-release))
@@ -77,15 +77,15 @@
 \ifhtml
 \def\copyrightnotice{\raw{<hr class=copyright align=left>
 <p>
-<a class=plain href="index.html">Chez Scheme Version 9 User's Guide</a><br>
-Copyright &copy; 2022 Cisco Systems, Inc.<br>
+<a class=plain href="index.html">Chez Scheme Version 10 User's Guide</a><br>
+Copyright &copy; 2026 Cisco Systems, Inc.<br>
 Licensed under the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License Version 2.0</a>
 (<a class=plain href="canned/copyright.html">full copyright notice.</a>).</br>
 Revised} \revisiondate\raw{ for }\CSVersion\raw{<br>
 <a class=plain href="canned/about.html">about this book</a>
 </tr></table>
 }}
-\documenttitle[csug.css]{Chez Scheme Version 9 User's Guide}
+\documenttitle[csug.css]{Chez Scheme Version 10 User's Guide}
 \fi
 
 \newcommand{\ChezScheme}{\textsl{Chez~Scheme}}
@@ -121,7 +121,7 @@ Revised} \revisiondate\raw{ for }\CSVersion\raw{<br>
 \ifhtml
 \raw{\raw{<table><tr>
 <td><img src="canned/cisco-logo.png"><br></td>
-<td style="padding-left: 2em"><span class=title>Chez Scheme Version 9<br>User's Guide</span></td>
+<td style="padding-left: 2em"><span class=title>Chez Scheme Version 10<br>User's Guide</span></td>
 </tr></table>}}
 \fi
 

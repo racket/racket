@@ -2,7 +2,7 @@
 (require "prop.rkt"
          "blame.rkt"
          "guts.rkt"
-         (for-syntax "arr-util.rkt" racket/base))
+         (for-syntax "arr-util.rkt" racket/base racket/private/stx))
 (provide parametric->/c)
 
 (define-syntax (parametric->/c stx)
@@ -15,12 +15,13 @@
                                "expected an identifier"
                                stx
                                x)))
-       (define dup (check-duplicate-identifier (syntax->list #'(x ...))))
+       (define-values (dup origs) (stx-find-duplicate-identifiers (syntax->list #'(x ...))))
        (when dup (raise-syntax-error
                   'parametric->/c 
                   "duplicate identifier"
                   stx
-                  dup))
+                  dup
+                  origs))
        #`(make-polymorphic-contract opaque/c
                                     '(x ...)
                                     (lambda (x ...) c)

@@ -47,6 +47,6 @@
       (place-channel-put p lock-ch)
       p))
 
-  (map place-wait ps))
+  (for-each place-wait ps))
          
 (module+ test (require (submod ".." main)))

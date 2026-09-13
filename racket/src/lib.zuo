@@ -41,6 +41,8 @@
          strip-debug
          strip-lib-debug
          run-raco-setup
+         raco-setup-prepare-to-here
+         in-builtpkgs-distro?
 
          install-license-files
          maybe-copytree
@@ -87,6 +89,13 @@
            (loop (+ i 1) (+ i 1)))]
       [else (loop (+ i 1) start)])))
 
+(define (deep-replace l v new-v)
+  (cond
+    [(equal? l v) new-v]
+    [(pair? l) (cons (deep-replace (car l) v new-v)
+                     (deep-replace (cdr l) v new-v))]
+    [else l]))
+
 (define (target->path t) (if (target? t) (target-path t) t))
 
 (define (process/wait command . args)
@@ -95,7 +104,8 @@
   (define p (apply process (cons command args)))
   (process-wait (hash-ref p 'process))
   (unless (= 0 (process-status (hash-ref p 'process)))
-    (error "failed")))
+    (error "failed"))
+  (hash-ref p 'stdout (void)))
 
 (struct raco-driver (vars target config-getter))
 
@@ -129,7 +139,8 @@
       (thread-process-wait pid)
       (process-wait pid))
   (unless (= 0 (process-status pid))
-    (error "failed")))
+    (error "failed"))
+  (hash-ref p 'stdout (void)))
 
 (define (raco/process vars . args)
   (apply racket/process (list* vars
@@ -228,7 +239,7 @@
 
 (define (shell-subst-pwd str wrt)
   (string-join (string-split str "`pwd`")
-               (string->shell wrt)))
+               (string->shell (path->complete-path wrt))))
 
 (define (configured-targets-at options)
   (define who 'configured-targets-at)
@@ -252,13 +263,21 @@
                                 (input-data-target 'configure-args configure-args)
                                 inputs)
                          (lambda ()
-                           (shell/wait (map string->shell
-                                            (cons (ensure-path
-                                                   (if (relative-path? configure)
-                                                       (find-relative-path dir configure)
-                                                       configure))
-                                                  configure-args))
-                                       (hash 'dir dir)))))
+			   (define cmd (cons (ensure-path
+                                              (if (relative-path? configure)
+						  (find-relative-path dir configure)
+						  configure))
+                                             configure-args))
+			   (cond
+			    [(and (eq? 'windows (system-type))
+				  (eq? 'unix (hash-ref (runtime-env) 'toolchain-type)))
+			     (process/wait (find-executable-path "sh")
+					   (car cmd)
+					   (cdr cmd)
+					   (hash 'dir dir))]
+			    [else
+                             (shell/wait (map string->shell cmd)
+					 (hash 'dir dir))]))))
                  (hash 'quiet? #t
                        'co-outputs (cdr outputs))))
   ((dynamic-require script 'targets-at) (make-at-dir dir) vars))
@@ -407,6 +426,7 @@
 (define (strip-lib-debug config path)
   (do-strip config 'STRIP_LIB_DEBUG path))
 
+;; Also installs additional packages as indicated in `config`
 (define (run-raco-setup config dest-racket cross-bootstrap-racket cross-compiler-args)
   (define windows? (eq? 'windows (system-type)))
   
@@ -424,26 +444,137 @@
   (define self-root-config-flags (if (equal? self-root-config-dir "")
                                      '()
                                      (list "-G" self-root-config-dir)))
+  (define pre-raco-args (list
+                         (extras 'INSTALL_SETUP_RACKET_FLAGS)
+                         (extras 'SETUP_MACHINE_FLAGS)))
+  (define (run-raco options . args)
+    (cond
+      [(not cross-bootstrap-racket)
+       (process/wait dest-racket
+                     "-X" collectsdir
+                     "-G" configdir
+                     self-root-config-flags
+                     pre-raco-args
+                     args
+                     options)]
+      [else
+       (racket (hash 'racket cross-bootstrap-racket)
+               self-root-config-flags
+               cross-compiler-args
+               "-X" collectsdir
+               "-G" configdir
+               pre-raco-args
+               args
+               options)]))
+
   (define setup-args (list
-                      (extras 'INSTALL_SETUP_RACKET_FLAGS)
-                      (extras 'SETUP_MACHINE_FLAGS)
                       "-N" "raco" "-l-" "setup"
                       (extras 'INSTALL_SETUP_FLAGS)
                       (extras 'PLT_SETUP_OPTIONS)))
-  (cond
-    [(not cross-bootstrap-racket)
-     (process/wait dest-racket
-                   "-X" collectsdir
-                   "-G" configdir
-                   self-root-config-flags
-                   setup-args)]
-    [else
-     (racket (hash 'racket cross-bootstrap-racket)
-             self-root-config-flags
-             cross-compiler-args
-             "-X" collectsdir
-             "-G" configdir
-             setup-args)]))
+
+  (define pkgs (hash-ref config 'INSTALL_PKGS ""))
+  (define missing-pkgs? (let ([v (hash-ref config 'INSTALL_MISSING_PKGS "")])
+                          (or (equal? v "yes")
+                              (and (equal? v "dist")
+                                   ;; added by `setup/unixstyle-install` when
+                                   ;; assembling a source distribrution:
+                                   (file-exists? (at-source "source-dist.txt"))))))
+  (unless (and (equal? pkgs "") (not missing-pkgs?))
+    (define pkg-catalog (hash-ref config 'INSTALL_PKG_CATALOG ""))
+    (alert "setting up enough to install packages")
+    (run-raco '() setup-args
+              "-D" "pkg" "net" "openssl")
+    (define missing-pkgs
+      (cond
+        [missing-pkgs?
+         (alert "checking for missing packages")
+         (define stdout
+           (run-raco (hash 'stdout 'pipe)
+                     "-l" "pkg/private/missing-deps"))
+         (define missing-pkgs
+           (string-split (string-trim (fd-read stdout eof) "\n") "\n"))
+         (if (equal? missing-pkgs '(""))
+             '()
+             missing-pkgs)]
+        [else '()]))
+    (unless (and (equal? pkgs "") (null? missing-pkgs))
+      (alert "installing packages")
+      (run-raco '()
+                "-N" "raco" "-l-" "pkg" "install"
+                "-i" "--no-setup" "--skip-installed" "--auto"
+                (if (equal? pkg-catalog "")
+                    '()
+                    (list "--catalog" pkg-catalog))
+                (if (equal? (hash-ref config 'MISSING_PKGS_SOURCE_MODE "") "yes")
+                    ;; use `--source` mode to be consistent with starting from sources;
+                    ;; otherwise, a copytree merge step can fail on built bytecode;
+                    ;; use `--force-srip` to accomodate foreign-library packages that
+                    ;; are in 'binary mode (which, in turn, is to avoid copies of
+                    ;; native libraries in installer distributions)
+                    (list "--source" "--force-strip")
+                    '())
+                (string-split pkgs)
+                missing-pkgs)
+      ;; ensure that any package-supplied native libraries are moved into place;
+      ;; for example Windows needs SQLite before `raco setup` starts
+      (run-raco '()
+                (deep-replace (deep-replace setup-args "--no-foreign-libs" '()) "-F" '())
+                "--only-foreign-libs"
+                "--pkgs" missing-pkgs)
+      (alert "packages installed")))
+  (run-raco '() setup-args))
+
+(define (raco-setup-prepare-to-here config built-racket at-dir at-root-dir)
+  (define collects-dir (at-root-dir "collects"))
+  ;; set up configuration that points to local "doc" and "info-domain" dirs,
+  ;; so that we don't write outside of a build directory
+  (define src-config (at-root-dir "etc/config.rktd"))
+  (define config-str
+    (cond
+      [(file-exists? src-config)
+       (define in (fd-open-input src-config))
+       (define str (fd-read in eof))
+       (fd-close in)
+       (let loop ([old-str str])
+         (let* ([str (string-trim old-str)]
+                [str (string-trim str "\n")]
+                [str (string-trim str "\r")])
+           (if (equal? old-str str)
+               str
+               (loop str))))]
+      [else "#hash()"]))
+  (let ()
+    (mkdir-p (at-dir "compiled/etc"))
+    (define out (fd-open-output (at-dir "compiled/etc/config.rktd") :truncate))
+    (fd-write out (substring config-str 0 (- (string-length config-str) 1)))
+    (fd-write out (~a "(doc-dir . "
+                      (~s (find-relative-path collects-dir (at-dir "compiled/doc")))
+                      ")"))
+    (fd-write out (~a "(info-domain-root . "
+                      (~s (find-relative-path collects-dir (at-dir "compiled/info-domain")))
+                      ")"))
+    (fd-write out ")")
+    (fd-close out))
+  (run-raco-setup (hash-set* config
+                             'DESTDIR ""
+                             'collectsdir collects-dir
+                             'configdir (at-dir "compiled/etc")
+                             'SETUP_MACHINE_FLAGS (build-shell
+                                                   (hash-ref config 'SETUP_MACHINE_FLAGS "")
+                                                   "-R" (path->complete-path (at-dir "compiled")))
+                             'PLT_SETUP_OPTIONS (build-shell
+                                                 (hash-ref config 'PLT_SETUP_OPTIONS "")
+                                                 "--no-launcher"
+                                                 "--no-foreign-libs"
+                                                 "--no-install"
+                                                 "--no-post-install"
+                                                 "--no-pkg-deps")
+                             'MISSING_PKGS_SOURCE_MODE "yes")
+                  built-racket
+                  #f '()))
+
+(define (in-builtpkgs-distro?)
+  (file-exists? (at-source "../collects/racket/compiled/base_rkt.zo")))
 
 (define (install-license-files sharepltdir)
   (mkdir-p sharepltdir)
@@ -461,6 +592,7 @@
       (map (lambda (dir)
              (at-destdir config (shell-subst (hash-ref config dir) config)))
            '(bindir
+             guibindir
              collectsdir
              pkgsdir
              docdir
@@ -495,7 +627,10 @@
   (when (equal? (hash-ref config 'MAKE_COPYTREE #f) "copytree")
     (unixstyle-install-run config dest-racket cross-racket at-dir
                            "make-install-copytree"
-                           (hash-ref config 'INSTALL_ORIG_TREE "no"))))
+                           (hash-ref config 'INSTALL_ORIG_TREE "no")
+                           (if (hash-ref config 'copytree-prepared-setup-files #f)
+                               (list (at-dir "compiled"))
+                               '()))))
 
 (define (maybe-libzo-move config dest-racket cross-racket at-dir)
   (when (equal? (hash-ref config 'INSTALL_LIBZO #f) "libzo")

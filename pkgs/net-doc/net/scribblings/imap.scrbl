@@ -57,7 +57,8 @@ opaque), @racket[#f] otherwise.}
                        [password (or/c string? bytes?)]
                        [mailbox (or/c string? bytes?)]
                        [#:tls? tls? any/c #f]
-                       [#:try-tls? try-tls? any/c #t])
+                       [#:try-tls? try-tls? any/c #t]
+                       [#:xoauth2? xoauth2? any/c #f])
          (values imap-connection? exact-nonnegative-integer? exact-nonnegative-integer?)]{
 
 Establishes an IMAP connection to the given server using the given
@@ -66,7 +67,10 @@ username and password, and selects the specified mailbox. If
 communicating using the IMAP protocol. If @racket[tls?] is @racket[#f]
 but @racket[try-tls?] is true, then after the IMAP connection is
 initially established, the connection is switched to a TLS connection
-if the server supports it.
+if the server supports it. If @racket[xoauth2?] is true, then
+authentication uses @tt{XOAUTH2}, and @racket[password] is used
+as an access token (which must obtained somehow before
+calling @racket[imap-connect]).
 
 The first result value represents the connection.
 The second and third return values indicate the total number of
@@ -81,7 +85,9 @@ name.)
 
 Updated message-count and recent-count values are available through
 @racket[imap-messages] and @racket[imap-recent]. See also @racket[imap-new?] and
-@racket[imap-reset-new!].}
+@racket[imap-reset-new!].
+
+@history[#:changed "1.2" @elem{Added the @racket[xoauth2?] argument.}]}
 
 
 @defparam[imap-port-number k (integer-in 0 65535)]{
@@ -96,11 +102,14 @@ is @racket[143].}
                         [password (or/c string? bytes?)]
                         [mailbox (or/c string? bytes?)]
                         [#:tls? tls? any/c #f]
-                        [#:try-tls? try-tls? any/c #t])
+                        [#:try-tls? try-tls? any/c #t]
+                        [#:xoauth2? xoauth2? any/c #f])
          (values imap-connection? exact-nonnegative-integer? exact-nonnegative-integer?)]{
 
 Like @racket[imap-connect], but given input and output ports (e.g.,
-ports for an SSL session) instead of a server address.}
+ports for an SSL session) instead of a server address.
+
+@history[#:changed "1.2" @elem{Added the @racket[xoauth2?] argument.}]}
 
 
 @defproc[(imap-disconnect [imap imap-connection?]) void?]{
@@ -283,7 +292,8 @@ list, @racket[#t] otherwise.}
                             [fields (listof (or/c 'uid
                                                   'header
                                                   'body
-                                                  'flags))])
+                                                  'flags
+                                                  'date))])
          (listof list?)]{
 
 Downloads information for a set of messages. The @racket[msg-nums]
@@ -304,6 +314,10 @@ information to download for each message. The available fields are:
  @item{@racket['flags] --- the value is a list of symbols that
        correspond to IMAP flags; see @racket[imap-flag->symbol]}
 
+ @item{@racket['date] --- the value is a byte string following IMAP's
+       format for internal message dates (which is distinct
+       from any date field in the message's header)}
+
 ]
 
 The return value is a list of entry items in parallel to
@@ -318,7 +332,9 @@ Pending expunges must be handled before calling this function; see
            '((107 #"From: larry@stooges.com ...")
              (110 #"From: moe@stooges.com ...")
              (112 #"From: curly@stooges.com ...")))
-]}
+]
+
+@history[#:changed "1.2" @elem{Added the @racket['date] field option.}]}
 
 @deftogether[(
 @defproc[(imap-flag->symbol [flag symbol?]) symbol?]
@@ -414,16 +430,40 @@ Pending expunges must be handled before calling this function; see
 @racket[imap-get-expunges].}
 
 
+@defproc[(imap-move [imap imap-connection?]
+                    [msg-nums (listof exact-nonnegative-integer?)]
+                    [dest-mailbox (or/c string? bytes?)])
+          void?]{
+
+Moves the specified messages from the currently selected mailbox to
+the specified mailbox---equivalent to copying and then expunging the
+messages, but this single step works only when the IMAP server
+supports the MOVE extension.
+
+Pending expunges must be handled before calling this function; see
+@racket[imap-get-expunges].
+
+@history[#:added "1.3"]}
+
+
 @defproc[(imap-append [imap imap-connection?]
                       [mailbox string?]
                       [message (or/c string? bytes?)]
                       [flags (listof (or/c 'seen 'answered 'flagged 
                                            'deleted 'draft 'recent)) 
-                             '(seen)])
+                             '(seen)]
+                      [#:date date (or/c string? bytes? #f) #f])
          void?]{
 
 Adds a new message (containing @racket[message]) to the given
-mailbox.}
+mailbox.
+
+The @racket[date] string, if provided, determines the internal date
+associated with the message, as opposed to the date in the message
+header. The date-string format is defined by IMAP, and the same format
+is used for a @racket['date] result from @racket[imap-get-messages].
+
+@history[#:changed "1.2" @elem{Added the optional @racket[date] argument.}]}
 
 
 @defproc[(imap-status [imap imap-connection?]
@@ -527,4 +567,5 @@ Imports nothing, exports @racket[imap^].}
 
 @defsignature[imap^ ()]{}
 
-Includes everything exported by the @racketmodname[net/imap] module.
+Includes everything exported by the @racketmodname[net/imap] module,
+except for @racket[imap-move].

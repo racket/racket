@@ -6,7 +6,9 @@
 (require racket/serialize
          racket/file
          racket/flonum
-         racket/fixnum)
+         racket/fixnum
+         racket/treelist
+         racket/mutable-treelist)
 
 ;; ----------------------------------------
 
@@ -203,6 +205,12 @@
 
 (test-ser (make-srcloc 1 2 3 4 5))
 (test-ser (make-srcloc (string->path "/tmp/test.rkt") 2 3 4 5))
+
+(test-ser (treelist 1 "b" 'cee))
+(test-ser (mutable-treelist 1 "b" 'cee))
+(test-ser (let ([mtl (mutable-treelist 1 "b" 'cee)])
+            (mutable-treelist-add! mtl mtl)
+            mtl))
 
 ;; Simple sharing
 (let ([p (cons 1 2)])

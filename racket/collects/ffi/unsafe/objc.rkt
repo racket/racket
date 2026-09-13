@@ -1,5 +1,7 @@
 #lang racket/base
 (require ffi/unsafe
+         (only-in ffi/unsafe
+                  [_fun _fun/dynamic])
          racket/stxparam
          (for-syntax racket/base)
          "atomic.rkt"
@@ -274,17 +276,18 @@
 (define-objc/private objc_msgSendSuper_stret _fpointer)
 
 (define use-stret?
-  (case (string->symbol (path->string (system-library-subpath #f)))
-    [(i386-macosx i386-darwin) (lambda (v) (not (memq (ctype-sizeof v) '(1 2 4 8))))]
-    [(ppc-macosx ppc-darwin) (lambda (v) (not (memq (ctype-sizeof v) '(1 2 3 4))))]
-    [(x86_64-macosx x86_64-darwin) 
+  (case (system-type 'arch)
+    [(i386) (lambda (v) (not (memq (ctype-sizeof v) '(1 2 4 8))))]
+    [(ppc) (lambda (v) (not (memq (ctype-sizeof v) '(1 2 3 4))))]
+    [(x86_64)
      (lambda (v)
        ;; Remarkably complex rules govern sizes > 8 and <= 32.
        ;; But if we assume no unaligned data and that fancy types
        ;; like _m256 won't show up with ObjC, it seems to be as
        ;; simple as this:
        ((ctype-sizeof v) . > . 16))]
-    [(aarch64-macosx aarch64-darwin) (lambda (v) #f)]))
+    [(aarch64) (lambda (v) #f)]
+    [else (lambda (v) (error "unknown architecture for stret") #f)]))
 
 ;; Make `msgSends' access atomic, so that a thread cannot be suspended
 ;; or killed during access, which would block other threads.
@@ -880,10 +883,10 @@
                                                                        [super-tell do-super-tell])
                                                    body0 body ...
                                                    dealloc-body ...)))
-                                           (_fun #:atomic? atomic? 
-                                                 #:keep save-method! 
-                                                 #:async-apply async
-                                                 _id _id arg-type ... -> rt)
+                                           (_fun/dynamic #:atomic? atomic? 
+                                                         #:keep save-method! 
+                                                         #:async-apply async
+                                                         _id _id arg-type ... -> rt)
                                            (generate-layout rt (list arg-id ...)))))))))]
          [(kind result-type (id arg ...) body0 body ...)
           (loop stx 
@@ -993,6 +996,8 @@
 
 ;; --------------------------------------------------
 
+(provide objc-class-has-instance-method?)
+
 (define-objc class_getInstanceMethod (_fun _Class _SEL -> _Method))
 (define-objc method_setImplementation (_fun _Method _IMP -> _IMP)
   #:fail (lambda () (lambda (meth imp)
@@ -1000,9 +1005,13 @@
                        (cast meth _Method _objc_method-pointer) 
                        (function-ptr imp _IMP)))))
 
+(define (objc-class-has-instance-method? c sel)
+  (and (class_getInstanceMethod c sel) #t))
+
 ;; --------------------------------------------------
 
-(provide objc-block)
+(provide objc-block
+         objc-block-function-pointer)
 
 (define-cstruct _block ([isa _pointer]
                         [flags _int]
@@ -1032,3 +1041,6 @@
                 desc))
   (set-box! keep (list* blk desc (unbox keep)))
   blk)
+
+(define (objc-block-function-pointer id)
+  (block-invoke (cast id _pointer _block-pointer)))

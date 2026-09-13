@@ -10,7 +10,7 @@
     (define-values (ids syms) (as-expand-time-top-level-bindings (list id) orig-s ctx))
     (define sym (car syms))
     (when phase
-      (define t (portal-syntax portal-stx))
+      (define t (portal-syntax portal-stx #f))
       (namespace-set-transformer! ns phase sym t))
     (set-box! generated-syms (cons sym (unbox generated-syms)))
     sym))

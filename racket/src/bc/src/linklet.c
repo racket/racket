@@ -14,6 +14,7 @@ static Scheme_Object *serializable_symbol;
 static Scheme_Object *unsafe_symbol;
 static Scheme_Object *static_symbol;
 static Scheme_Object *use_prompt_symbol;
+static Scheme_Object *unlimited_compile_symbol;
 static Scheme_Object *uninterned_literal_symbol;
 static Scheme_Object *quick_symbol;
 static Scheme_Object *constant_symbol;
@@ -41,8 +42,11 @@ static Scheme_Object *eval_linklet(int argc, Scheme_Object **argv);
 static Scheme_Object *instantiate_linklet(int argc, Scheme_Object **argv);
 static Scheme_Object *linklet_import_variables(int argc, Scheme_Object **argv);
 static Scheme_Object *linklet_export_variables(int argc, Scheme_Object **argv);
+static Scheme_Object *linklet_add_target_machine_info(int argc, Scheme_Object **argv);
+static Scheme_Object *linklet_summarize_target_machine_info(int argc, Scheme_Object **argv);
 
 static Scheme_Object *linklet_vm_bytes(int argc, Scheme_Object **argv);
+static Scheme_Object *linklet_cross_machine_type(int argc, Scheme_Object **argv);
 static Scheme_Object *write_linklet_bundle_hash(int argc, Scheme_Object **argv);
 static Scheme_Object *read_linklet_bundle_hash(int argc, Scheme_Object **argv);
 
@@ -103,12 +107,14 @@ void scheme_init_linklet(Scheme_Startup_Env *env)
   REGISTER_SO(unsafe_symbol);
   REGISTER_SO(static_symbol);
   REGISTER_SO(use_prompt_symbol);
+  REGISTER_SO(unlimited_compile_symbol);
   REGISTER_SO(uninterned_literal_symbol);
   REGISTER_SO(quick_symbol);
   serializable_symbol = scheme_intern_symbol("serializable");
   unsafe_symbol = scheme_intern_symbol("unsafe");
   static_symbol = scheme_intern_symbol("static");
   use_prompt_symbol = scheme_intern_symbol("use-prompt");
+  unlimited_compile_symbol = scheme_intern_symbol("unlimited-compile");
   uninterned_literal_symbol = scheme_intern_symbol("uninterned-literal");
   quick_symbol = scheme_intern_symbol("quick");
 
@@ -140,10 +146,13 @@ void scheme_init_linklet(Scheme_Startup_Env *env)
   ADD_PRIM_W_ARITY2("instantiate-linklet", instantiate_linklet, 2, 4, 0, -1, env);
   ADD_PRIM_W_ARITY("linklet-import-variables", linklet_import_variables, 1, 1, env);
   ADD_PRIM_W_ARITY("linklet-export-variables", linklet_export_variables, 1, 1, env);
+  ADD_PRIM_W_ARITY("linklet-add-target-machine-info", linklet_add_target_machine_info, 2, 2, env);
+  ADD_PRIM_W_ARITY("linklet-summarize-target-machine-info", linklet_summarize_target_machine_info, 1, 1, env);
 
   ADD_PRIM_W_ARITY("linklet-virtual-machine-bytes", linklet_vm_bytes, 0, 0, env);
+  ADD_PRIM_W_ARITY("linklet-cross-machine-type", linklet_cross_machine_type, 1, 1, env);
   ADD_PRIM_W_ARITY("write-linklet-bundle-hash", write_linklet_bundle_hash, 2, 2, env);
-  ADD_PRIM_W_ARITY("read-linklet-bundle-hash", read_linklet_bundle_hash, 1, 1, env);
+  ADD_PRIM_W_ARITY("read-linklet-bundle-hash", read_linklet_bundle_hash, 2, 2, env);
 
   ADD_FOLDING_PRIM("instance?", instance_p, 1, 1, 1, env);
   ADD_PRIM_W_ARITY("make-instance", make_instance, 1, -1, env);
@@ -380,6 +389,7 @@ static void parse_compile_options(const char *who, int arg_pos,
   int unsafe = *_unsafe;
   int static_mode = *_static_mode;
   int use_prompt_mode = 0;
+  int unlimited_compile_mode = 0;
   int uninterned_literal_mode = 0;
   int quick_mode = 0;
   
@@ -401,6 +411,10 @@ static void parse_compile_options(const char *who, int arg_pos,
       if (use_prompt_mode && !redundant)
         redundant = flag;
       use_prompt_mode = 1;
+    } else if (SAME_OBJ(flag, unlimited_compile_symbol)) {
+      if (unlimited_compile_mode && !redundant)
+        redundant = flag;
+      unlimited_compile_mode = 1;
     } else if (SAME_OBJ(flag, uninterned_literal_symbol)) {
       if (uninterned_literal_mode && !redundant)
         redundant = flag;
@@ -437,10 +451,16 @@ static Scheme_Object *compile_linklet(int argc, Scheme_Object **argv)
 
   extract_import_info("compile-linklet", argc, argv, &import_keys, &get_import);
 
-  if ((argc > 1) && SCHEME_TRUEP(argv[1]))
-    name = argv[1];
-  else
-    name = scheme_intern_symbol("anonymous");
+  name = scheme_intern_symbol("anonymous");
+  if (argc > 1) {
+    if (SCHEME_HASHTRP(argv[1])) {
+      Scheme_Object *hn;
+      hn = scheme_hash_tree_get((Scheme_Hash_Tree *)argv[1], scheme_intern_symbol("name"));
+      if (hn)
+        name = hn;
+    } else if (SCHEME_TRUEP(argv[1]))
+      name = argv[1];
+  }
 
   e = argv[0];
   if (!SCHEME_STXP(e))
@@ -482,10 +502,16 @@ static Scheme_Object *recompile_linklet(int argc, Scheme_Object **argv)
 
   extract_import_info("recompile-linklet", argc, argv, &import_keys, &get_import);
 
-  if ((argc > 1) && SCHEME_TRUEP(argv[1]))
-    name = argv[1];
-  else
-    name = ((Scheme_Linklet *)argv[0])->name;
+  name = ((Scheme_Linklet *)argv[0])->name;
+  if (argc > 1) {
+    if (SCHEME_HASHTRP(argv[1])) {
+      Scheme_Object *hn;
+      hn = scheme_hash_tree_get((Scheme_Hash_Tree *)argv[1], scheme_intern_symbol("name"));
+      if (hn)
+        name = hn;
+    } else if (SCHEME_TRUEP(argv[1]))
+      name = argv[1];
+  }
 
   if (import_keys && (SCHEME_VEC_SIZE(import_keys) != SCHEME_VEC_SIZE(linklet->importss))) {
     scheme_contract_error("recompile-linklet",
@@ -554,6 +580,11 @@ static Scheme_Object *eval_linklet(int argc, Scheme_Object **argv)
 static Scheme_Object *linklet_vm_bytes(int argc, Scheme_Object **argv)
 {
   return scheme_make_byte_string("racket");
+}
+
+static Scheme_Object *linklet_cross_machine_type(int argc, Scheme_Object **argv)
+{
+  return scheme_false;
 }
 
 static Scheme_Object *read_linklet_bundle_hash(int argc, Scheme_Object **argv)
@@ -701,6 +732,25 @@ static Scheme_Object *linklet_export_variables(int argc, Scheme_Object **argv)
   }
 
   return l;
+}
+
+static Scheme_Object *linklet_add_target_machine_info(int argc, Scheme_Object **argv)
+{
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_linklet_type))
+    scheme_wrong_contract("linklet-add-target-machine-info", "linklet?", 0, argc, argv);
+  if (!SAME_TYPE(SCHEME_TYPE(argv[1]), scheme_linklet_type)
+      && !SCHEME_HASHTP(argv[1]))
+    scheme_wrong_contract("linklet-add-target-machine-info", "(or/c linklet? hash?)", 1, argc, argv);
+
+  /* we only have one target, so cross-module information is already target-indepedent */
+  return argv[0];
+}
+
+static Scheme_Object *linklet_summarize_target_machine_info(int argc, Scheme_Object **argv)
+{
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_linklet_type))
+    scheme_wrong_contract("linklet-summarize-target-machine-info", "linklet?", 0, argc, argv);
+  return (Scheme_Object *)scheme_make_hash_tree(0);
 }
 
 static Scheme_Object *instance_p(int argc, Scheme_Object **argv)

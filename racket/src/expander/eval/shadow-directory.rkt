@@ -11,7 +11,7 @@
 ;; filesystem-change evt, it's worth caching subpath results with
 ;; respect to collection-root directories. The number of relevant
 ;; directories in practice will be large enough to take a while to
-;; check the filesystem. At the same time, the number is als small
+;; check the filesystem. At the same time, the number is also small
 ;; enough to keep filesystem change events for each directory.
 
 (struct shadow-directory (evt    ; filesystem-change event that determines whether `table` is valid
@@ -29,18 +29,23 @@
 
 ;; map from paths to cached directory-existence information:
 (define-place-local shadow-directory-cache (make-cache))
+(define-place-local shadow-directory-cache-lock (make-uninterruptible-lock))
 
 (define (shadow-directory-place-init!)
   (set! shadow-directory-cache (make-cache)))
 
 (define (lookup-shadow-directory orig)
-  (define sd (call-as-atomic (lambda () (hash-ref shadow-directory-cache orig #f))))
+  (uninterruptible-lock-acquire shadow-directory-cache-lock)
+  (define sd (hash-ref shadow-directory-cache orig #f))
+  (uninterruptible-lock-release shadow-directory-cache-lock)
   (cond
     [sd
      (cond
        [(sync/timeout 0 (shadow-directory-evt sd))
         ;; Cached information is out of date, so reset it
-        (call-as-atomic (lambda () (hash-remove! shadow-directory-cache orig)))
+        (uninterruptible-lock-acquire shadow-directory-cache-lock)
+        (hash-remove! shadow-directory-cache orig)
+        (uninterruptible-lock-release shadow-directory-cache-lock)
         (lookup-shadow-directory orig)]
        [else sd])]
     [else
@@ -51,7 +56,9 @@
                                  #:when (directory-exists? (build-path orig p)))
                         (values (normal-case-path p) #t)))
         (define sd (shadow-directory evt table))
-        (call-as-atomic (lambda () (hash-set! shadow-directory-cache orig sd)))
+        (uninterruptible-lock-acquire shadow-directory-cache-lock)
+        (hash-set! shadow-directory-cache orig sd)
+        (uninterruptible-lock-release shadow-directory-cache-lock)
         sd]
        [else #f])]))
 

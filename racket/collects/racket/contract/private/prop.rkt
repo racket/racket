@@ -2,6 +2,7 @@
 
 (require "blame.rkt"
          "generate-base.rkt"
+         racket/pretty
          racket/private/performance-hint)
 
 (provide prop:contract
@@ -300,6 +301,11 @@
          [get-predicate (contract-property-first-order impl)])
     (lambda (c x) ((get-predicate c) x))))
 
+(define (flat-contract-property->object-name-property prop)
+  (define get-name (contract-property-name (flat-contract-property-implementation prop)))
+  (λ (c)
+    (string->symbol (pretty-format (get-name c) 'infinity #:mode 'write))))
+
 (define-values [ prop:flat-contract
                  flat-contract-struct?
                  flat-contract-struct-property ]
@@ -307,7 +313,8 @@
    'prop:flat-contract
    flat-contract-property-guard
    (list (cons prop:chaperone-contract flat-contract-property->chaperone-contract-property)
-         (cons prop:procedure flat-contract-property->procedure-property))))
+         (cons prop:procedure flat-contract-property->procedure-property)
+         (cons prop:object-name flat-contract-property->object-name-property))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -330,6 +337,19 @@
          #:exercise [exercise (λ (ctc) (λ (fuel) (values void '())))]
          #:list-contract? [list-contract? (λ (c) #f)]
          #:trusted [trusted #f])
+
+  (unless (or (not get-name)
+              (and (procedure? get-name)
+                   (procedure-arity-includes? get-name 1)))
+    (error proc-name
+           (string-append
+            "contract violation:\n"
+            "  expected: ~s\n"
+            "  given: ~e\n"
+            "  in: the #:get-name argument")
+           '(or/c #f (-> contract? any/c))
+           get-name))
+
   (unless (or get-first-order
               get-projection
               get-val-first-projection

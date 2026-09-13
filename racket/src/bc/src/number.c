@@ -66,6 +66,7 @@ static Scheme_Object *bitwise_xor (int argc, Scheme_Object *argv[]);
 static Scheme_Object *bitwise_not (int argc, Scheme_Object *argv[]);
 static Scheme_Object *bitwise_bit_set_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *bitwise_bit_field (int argc, Scheme_Object *argv[]);
+static Scheme_Object *bitwise_first_bit_set (int argc, Scheme_Object *argv[]);
 static Scheme_Object *integer_length (int argc, Scheme_Object *argv[]);
 static Scheme_Object *gcd (int argc, Scheme_Object *argv[]);
 static Scheme_Object *lcm (int argc, Scheme_Object *argv[]);
@@ -134,6 +135,7 @@ static Scheme_Object *fl_ceiling (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_truncate (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_round (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_single (int argc, Scheme_Object *argv[]);
+static Scheme_Object *fl_bit_field (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_sin (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_cos (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_tan (int argc, Scheme_Object *argv[]);
@@ -202,6 +204,7 @@ static Scheme_Object *unsafe_flimag_part (int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *unsafe_flrandom (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_flsingle (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_flbit_field (int argc, Scheme_Object *argv[]);
 
 #ifdef MZ_USE_SINGLE_FLOATS
 static Scheme_Object *TO_FLOAT(const Scheme_Object *n);
@@ -599,6 +602,10 @@ scheme_init_number (Scheme_Startup_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("bitwise-not", p, env);
+
+  p = scheme_make_folding_prim(bitwise_first_bit_set, "bitwise-first-bit-set", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_PRODUCES_FIXNUM);
+  scheme_addto_prim_instance("bitwise-first-bit-set", p, env);
 
   p = scheme_make_folding_prim(bitwise_bit_set_p, "bitwise-bit-set?", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
@@ -1004,6 +1011,9 @@ void scheme_init_flfxnum_number(Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_WANTS_FLONUM_FIRST
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
   scheme_addto_prim_instance("flsingle", p, env);
+
+  p = scheme_make_folding_prim(fl_bit_field, "flbit-field", 3, 3, 1);
+  scheme_addto_prim_instance("flbit-field", p, env);
 
   p = scheme_make_folding_prim(fl_sin, "flsin", 1, 1, 1);
   if (scheme_can_inline_fp_op())
@@ -1595,6 +1605,9 @@ void scheme_init_unsafe_number(Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_PRODUCES_FLONUM
                                                             | SCHEME_PRIM_WANTS_FLONUM_FIRST);
   scheme_addto_prim_instance("unsafe-flsingle", p, env);
+
+  p = scheme_make_folding_prim(unsafe_flbit_field, "unsafe-flbit-field", 3, 3, 1);
+  scheme_addto_prim_instance("unsafe-flbit-field", p, env);
 }
 
 void scheme_init_extfl_unsafe_number(Scheme_Startup_Env *env)
@@ -2383,7 +2396,8 @@ static Scheme_Object *bin_lcm (Scheme_Object *n1, Scheme_Object *n2);
 
 static Scheme_Object *int_abs(Scheme_Object *v)
 {
-  if (scheme_is_negative(v))
+  if (scheme_is_negative(v)
+      || (SCHEME_FLOATP(v) && scheme_minus_zero_p(SCHEME_FLOAT_VAL(v))))
     return scheme_bin_minus(scheme_make_integer(0), v);
   else
     return v;
@@ -2454,9 +2468,9 @@ scheme_bin_gcd (const Scheme_Object *n1, const Scheme_Object *n2)
     else
       i2 = scheme_bignum_to_double(n2);
 
-    if (i1 < 0)
+    if (i1 < 0 || minus_zero_p(i1))
       i1 = -i1;
-    if (i2 < 0)
+    if (i2 < 0 || minus_zero_p(i2))
       i2 = -i2;
     if (i1 > i2) {
       a = i1;
@@ -2511,8 +2525,12 @@ bin_lcm (Scheme_Object *n1, Scheme_Object *n2)
 
   d = scheme_bin_gcd(n1, n2);
 
-  if (scheme_is_zero(d))
+  if (scheme_is_zero(d)) {
+    if (SAME_OBJ(n1, scheme_make_integer(0))
+        || SAME_OBJ(n2, scheme_make_integer(0)))
+      return scheme_make_integer(0);
     return d;
+  }
   
   ret = scheme_bin_mult(n1, scheme_bin_div(n2, d));
 
@@ -2880,20 +2898,39 @@ static Scheme_Object *complex_exp(Scheme_Object *c)
 {
   Scheme_Object *r = _scheme_complex_real_part(c);
   Scheme_Object *i = _scheme_complex_imaginary_part(c);
-  Scheme_Object *cos_a, *sin_a;
-
-  r = exp_prim(1, &r);
+  Scheme_Object *cos_a, *sin_a, *tmp;
 
   /* If i is 0.0, avoid computing the cos/sin, since that can end up
      producing NaN. */
   if (SCHEME_FLOATP(i) && (SCHEME_FLOAT_VAL(i) == 0.0)) {
-    return scheme_make_complex(r, i);
+    return scheme_make_complex(exp_prim(1, &r), i);
   }
-
   cos_a = cos_prim(1, &i);
   sin_a = sin_prim(1, &i);
-
-  return scheme_bin_mult(r, scheme_bin_plus(cos_a, scheme_bin_mult(sin_a, scheme_plus_i)));
+  /* is this the best way to check this? or is math/flonum's +max.0 and (log +max.0) defined */
+#ifdef MZ_USE_SINGLE_FLOATS
+  if (SCHEME_FLTP(r) ? (SCHEME_FLOAT_VAL(r) <= 88.72284f) : (scheme_real_to_double(r) <= 709.782712893384e0))
+#else
+  if (scheme_real_to_double(r) <= 709.782712893384e0)
+#endif
+  {
+    r = exp_prim(1, &r);
+    return scheme_bin_mult(r, scheme_bin_plus(cos_a, scheme_bin_mult(sin_a, scheme_plus_i)));
+  }
+  else {
+    /* imag part first, before mutating r */
+    tmp = scheme_abs(1, &sin_a);
+    i = scheme_bin_plus(r, log_e_prim(1, &tmp));
+    i = exp_prim(1, &i);
+    if (scheme_is_negative(sin_a)) { i = scheme_bin_minus(scheme_zerod, i); }
+    
+    tmp = scheme_abs(1, &cos_a);
+    r = scheme_bin_plus(r, log_e_prim(1, &tmp));
+    r = exp_prim(1, &r);
+    if (scheme_is_negative(cos_a)) { r = scheme_bin_minus(scheme_zerod, r); }
+    
+    return scheme_make_complex(r, i);
+  }
 }
 
 static Scheme_Object *complex_log(Scheme_Object *c);
@@ -2902,11 +2939,39 @@ static Scheme_Object *complex_log(Scheme_Object *c)
 {
   Scheme_Object *m, *theta;
 
-  m = magnitude(1, &c);
   theta = angle(1, &c);
-
-  return scheme_bin_plus(log_e_prim(1, &m),
-                         scheme_bin_mult(scheme_plus_i, theta));
+  if (SCHEME_COMPLEXP(c)) {
+    Scheme_Object *r, *i;
+    double x;
+    r = scheme_abs(1, &_scheme_complex_real_part(c));
+    i = scheme_abs(1, &_scheme_complex_imaginary_part(c));
+    /* impossible: is not complex
+    if (SAME_OBJ(r, scheme_exact_zero) && SAME_OBJ(i, scheme_exact_zero)) { return log_e_prim(1, &r); } */
+    m = scheme_bin_minus(r, i);
+    if (MZ_IS_NAN(scheme_real_to_double(m))) return scheme_make_complex(m, theta);
+    if   (scheme_is_negative(m)) { m = i; }
+    else                         { m = r; r = i; }
+    if (SAME_OBJ(m, scheme_exact_zero)) { m = scheme_zerod; x = 0.0; }
+    else {
+      x = scheme_real_to_double(scheme_bin_div(r, m));
+      if (MZ_IS_NAN(x)) { x = 0.0; }
+    }
+    m = log_e_prim(1, &m);
+    x = 0.5 * log1p( x * x );
+#ifdef MZ_USE_SINGLE_FLOATS
+    if (SCHEME_FLTP(m)) {
+      m = scheme_bin_plus( m, scheme_make_float((float)x));
+      return scheme_make_complex(m, theta);
+    }
+#endif
+    m = scheme_bin_plus( m, scheme_make_double(x));
+    return scheme_make_complex(m, theta);
+  }
+  else {
+    m = magnitude(1, &c);
+    return scheme_bin_plus(log_e_prim(1, &m),
+                           scheme_bin_mult(scheme_plus_i, theta));
+  }
 }
 
 static Scheme_Object *bignum_log(Scheme_Object *b)
@@ -3811,28 +3876,68 @@ scheme_expt(int argc, Scheme_Object *argv[])
           || (v < -((mzlonglong)1 << 53))
           || (v > ((mzlonglong)1 << 53))) {
         /* `e` loses precision as a flonum */
+        /* The implementaton here is based on Brad Lucier's implementation for Gambit */
 #ifdef MZ_USE_SINGLE_FLOATS
         int sgl = !SCHEME_DBLP(n);
 #endif
         double d = SCHEME_FLOAT_VAL(n), a = 1.0;
         intptr_t i;
         int invert = 0;
-        if (scheme_is_negative(e)) {
-          invert = 1;
-          e = scheme_bin_minus(scheme_make_integer(0), e);
-        }
-        i = scheme_integer_length(e);
-        while (i >= 0) {
-          a = a * a;
-          if (scheme_bin_bitwise_bit_set_p(e, scheme_make_integer(i)))
-            a *= d;
-          i--;
-        }
-        if (invert) a = 1.0 / a;
+        Scheme_Object *args[2];
+
+        if (d == 1.0) {
+          return n;
+        } else if (d == -1.0) {
+          if (SCHEME_TRUEP(scheme_even_p(1, &e))) {
 #ifdef MZ_USE_SINGLE_FLOATS
-        if (sgl) return scheme_make_float(a);
+            if (sgl) return scheme_make_float(1.0);
 #endif
-        return scheme_make_double(a);
+            return scheme_make_double(1.0);
+          }
+          return n;
+        }
+
+        args[0] = scheme_make_integer(1);
+        args[1] = scheme_make_integer(63);
+        r = scheme_bitwise_shift(2, args);
+        if (scheme_bin_lt_eq(r, e)
+            || scheme_bin_lt_eq(e, scheme_bin_minus(scheme_make_integer(0), r))) {
+          /* Only extreme values (zero and infinity) are possible */
+          int is_neg;
+          is_neg = SCHEME_TRUEP(scheme_odd_p(1, &e)) && (d < 0.0);
+          if (((d > 1.0) || (d < -1.0)) == scheme_is_positive(e)) {
+            if (is_neg)
+              return SELECT_EXPT_PRECISION(scheme_single_minus_inf_object,
+                                           scheme_minus_inf_object);
+            else
+              return SELECT_EXPT_PRECISION(scheme_single_inf_object,
+                                           scheme_inf_object);
+          } else {
+            if (is_neg)
+              return SELECT_EXPT_PRECISION(scheme_nzerof, scheme_nzerod);
+            else
+              return SELECT_EXPT_PRECISION(scheme_zerof, scheme_zerod);
+          }          
+        } else {
+          Scheme_Object *abs_big_e, *big_part_of_e, *rest_of_e;
+          args[0] = e;
+          args[0] = scheme_abs(1, args);
+          args[1] = scheme_make_integer(-12);
+          args[0] = scheme_bitwise_shift(2, args);
+          args[1] = scheme_make_integer(12);
+          abs_big_e = scheme_bitwise_shift(2, args);
+          if (scheme_is_negative(e))
+            big_part_of_e = scheme_bin_minus(scheme_make_integer(0), abs_big_e);
+          else
+            big_part_of_e = abs_big_e;
+          rest_of_e = scheme_bin_minus(e, abs_big_e);
+          d = (sch_pow(d, scheme_real_to_double(big_part_of_e))
+               * sch_pow(d, scheme_real_to_double(rest_of_e)));
+#ifdef MZ_USE_SINGLE_FLOATS
+          if (sgl) return scheme_make_float(d);
+#endif
+          return scheme_make_double(d);
+        }
       }
     }
 
@@ -4056,6 +4161,7 @@ static Scheme_Object *angle(int argc, Scheme_Object *argv[])
   if (SCHEME_COMPLEXP(o)) {
     Scheme_Object *r = (Scheme_Object *)_scheme_complex_real_part(o);
     Scheme_Object *i = (Scheme_Object *)_scheme_complex_imaginary_part(o);
+    Scheme_Object *m, *n;
     double rd, id, v;
 #ifdef MZ_USE_SINGLE_FLOATS
 # ifdef USE_SINGLE_FLOATS_AS_DEFAULT
@@ -4064,6 +4170,13 @@ static Scheme_Object *angle(int argc, Scheme_Object *argv[])
     int was_single = (SCHEME_FLTP(r) || SCHEME_FLTP(i));
 # endif
 #endif
+    if (scheme_is_exact(r)) {
+      m = scheme_abs(1, &r);
+      n = scheme_abs(1, &i);
+      if (scheme_bin_lt(m, n)) { m = n; }
+      r = scheme_bin_div(r, m);
+      i = scheme_bin_div(i, m);
+    }
 
     id = TO_DOUBLE_VAL(i);
     rd = TO_DOUBLE_VAL(r);
@@ -4577,6 +4690,55 @@ static Scheme_Object *bitwise_bit_field (int argc, Scheme_Object *argv[])
   }
 
   return slow_bitwise_bit_field(argc, argv, so, sb1, sb2);
+}
+
+static Scheme_Object *
+bitwise_first_bit_set (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *o = argv[0];
+
+  if (SCHEME_INTP(o)) {
+    intptr_t a = SCHEME_INT_VAL(o);
+    int i = 0;
+
+    if (a == 0)
+      return scheme_make_integer(-1);
+
+    while (!(a & 0x1)) {
+      if (!(a & 0xFFFF)) {
+        i += 16;
+        a >>= 16;
+      } else if (!(a & 0xF)) {
+        i += 4;
+        a >>= 4;
+      } else {
+        i++;
+        a >>= 1;
+      }
+    }
+
+    return scheme_make_integer(i);
+  } else if (SCHEME_BIGNUMP(o)) {
+     /* As noted in the Chez Scheme implementation:
+        first bit set in signed magnitude is same as for two's complement,
+        since if x ends with k zeros, ~x+1 also ends with k zeros. */
+    bigdig d;
+    intptr_t i = 0;
+    while (((Scheme_Bignum *)o)->digits[i] == 0) {
+      i++;
+    }
+    d = ((Scheme_Bignum *)o)->digits[i];
+    i *= (sizeof(bigdig) * 8);
+    while (!(d & 0x1)) {
+      d >>= 1;
+      i++;
+    }
+
+    return scheme_make_integer(i);
+  } else {
+    scheme_wrong_contract("bitwise-first-bit-set", "exact-integer?", 0, argc, argv);
+    ESCAPED_BEFORE_HERE;
+  }
 }
 
 static Scheme_Object *
@@ -5538,6 +5700,48 @@ SAFE_FL(log)
 
 SAFE_BIN_FL(expt)
 
+static Scheme_Object *fl_bit_field (int argc, Scheme_Object *argv[])
+{
+  static char *who = "flbit-field";
+  intptr_t s, e;
+  double d;
+  umzlonglong i;
+
+  if (!SCHEME_DBLP(argv[0]))
+    scheme_wrong_contract(who, "flonum?", 0, argc, argv);
+  if (SCHEME_INTP(argv[1]))
+    s = SCHEME_INT_VAL(argv[1]);
+  else
+    s = -1;
+  if (SCHEME_INTP(argv[2]))
+    e = SCHEME_INT_VAL(argv[2]);
+  else
+    e = -1;
+
+  if (s < 0 || s > 64)
+    scheme_wrong_contract(who, "(integer-in 0 64)", 1, argc, argv);
+  if (e < 0 || e > 64)
+    scheme_wrong_contract(who, "(integer-in 0 64)", 2, argc, argv);
+  if (e < s)
+    scheme_contract_error("bitwise-bit-field",
+                          "first index is more than second index",
+                          "first index", 1, argv[1],
+                          "second index", 1, argv[2],
+                          NULL);
+
+  if (s == 64) /* right shift by 64 with `>>` is not allowed */
+    return scheme_make_integer(0);
+
+  d = SCHEME_DBL_VAL(argv[0]);
+  memcpy(&i, &d, sizeof(double));
+  if ((e - s) < 64) {
+    i = i >> s;
+    i = i & (((umzlonglong)1 << (e - s)) - 1);
+  }
+
+  return scheme_make_integer_value_from_unsigned_long_long(i);
+}
+
 static Scheme_Object *fx_to_extfl (int argc, Scheme_Object *argv[])
 {
 #ifdef MZ_LONG_DOUBLE
@@ -5913,6 +6117,11 @@ static Scheme_Object *unsafe_flrandom (int argc, Scheme_Object *argv[])
 static Scheme_Object *unsafe_flsingle (int argc, Scheme_Object *argv[])
 {
   return fl_single(argc, argv);
+}
+
+static Scheme_Object *unsafe_flbit_field (int argc, Scheme_Object *argv[])
+{
+  return fl_bit_field(argc, argv);
 }
 
 static Scheme_Object *integer_to_extfl (int argc, Scheme_Object *argv[])

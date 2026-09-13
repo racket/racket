@@ -331,6 +331,7 @@
 (define (mod-name m) (list-ref m 3))
 (define (mod-full-name m) (list-ref m 4))
 (define (mod-mappings m) (unbox (list-ref m 5)))
+(define (mod-mappings-box m) (list-ref m 5))
 (define (mod-runtime-paths m) (list-ref m 6))
 (define (mod-runtime-module-syms m) (list-ref m 7))
 (define (mod-actual-file m) (list-ref m 8))
@@ -443,7 +444,7 @@
 
 ;; Loads module code, using .zo if there, compiling from .scm if not
 (define (get-code filename module-path ready-code use-submods codes file-mod-names verbose? collects-dest on-extension 
-                  compiler expand-namespace src-filter get-extra-imports working gen-state)
+                  compiler expand-namespace src-filter get-extra-imports working gen-state compile-cache)
   ;; filename can have the form `(submod ,filename ,sym ...)
   (let* ([a (assoc filename (unbox codes))]
          ;; If we didn't fine `filename` as-is, check now for
@@ -514,6 +515,14 @@
                 ;; Re-used when swapping code during cross-compilation.
                 (lambda (#:roots [roots (current-compiled-file-roots)]
                          #:host? [host? #f])
+                  (define (cache-compiled-module get)
+                    ;; caching is useful when a module has submodules, because we
+                    ;; may need multiple submodules of the to-be-compiled source module
+                    (define cache-key (list just-filename roots host?))
+                    (or (hash-ref compile-cache cache-key #f)
+                        (let ([c (get)])
+                          (hash-set! compile-cache cache-key c)
+                          c)))
                   (get-module-code just-filename
                                    #:roots roots
                                    #:submodule-path submod-path
@@ -521,11 +530,32 @@
                                      (if (pair? l)
                                          (car l)
                                          "compiled"))
-                                   (if (and host? (cross-compiling?))
-                                       (lambda (e)
-                                         (parameterize ([current-compile-target-machine (system-type 'target-machine)])
-                                           (compiler e)))
-                                       compiler)
+                                   (cond
+                                     [(and host? (cross-compiling?))
+                                      (lambda (e)
+                                        (cache-compiled-module
+                                         (lambda ()
+                                           (parameterize ([current-compile-target-machine (system-type 'target-machine)])
+                                             (compiler e)))))]
+                                     [host?
+                                      (lambda (e)
+                                        ;; point at host compiled code for dependencies
+                                        (cache-compiled-module
+                                         (lambda ()
+                                           (parameterize ([current-compiled-file-roots (list (car (current-compiled-file-roots)))])
+                                             (compiler e)))))]
+                                     [(cross-compiling?)
+                                      ;; compile to machine-independent first, then recompile; this
+                                      ;; two-step process is needed to compile submodules that may
+                                      ;; refer to each other
+                                      (lambda (e)
+                                        (cache-compiled-module
+                                         (lambda ()
+                                           (compiled-expression-recompile
+                                            (parameterize ([current-compile-target-machine (system-type 'target-machine)])
+                                              (compiler e))))))]
+                                     [else
+                                      compiler])
                                    (if on-extension
                                        (lambda (f l?)
                                          (on-extension f l?)
@@ -658,7 +688,8 @@
                                 expand-namespace
                                 src-filter get-extra-imports
                                 working
-                                gen-state))
+                                gen-state
+                                compile-cache))
                     (define (get-one-submodule-code m)
                       (define name (cadr (module-compiled-name m)))
                       (define mp `(submod "." ,name))
@@ -1216,6 +1247,7 @@
                                                    "bad prefix: ~e"
                                                    p)]))))
                               files modules)]
+         [compile-cache (make-hash)]
          ;; Each element is created with `make-mod'.
          ;; As we descend the module tree, we append to the front after
          ;; loading imports, so the list in the right order.
@@ -1224,7 +1256,7 @@
                         (get-code f mp #f submods codes file-mod-names verbose? collects-dest
                                   on-extension compiler expand-namespace
                                   src-filter get-extra-imports
-                                  (make-hash) gen-state))]
+                                  (make-hash) gen-state compile-cache))]
          [__
           ;; Load all code:
           (for-each get-code-at files collapsed-mps use-submoduless)]
@@ -1245,6 +1277,11 @@
                        null))))
     ;; Drop elements of `codes' that just record copied libs:
     (set-box! codes (filter mod-code (unbox codes)))
+    ;; As an accomodation to `raco demod`, make sure sibling modules of a top-level module
+    ;; are reachable from each other, and submodules are reachable from the root,
+    ;; because `raco demod` generates relative references directly (e.g., in bindings in
+    ;; scopes in syntax objects) instead of going through a sequence of `require` paths:
+    (saturate-immediate-submodule-mappings! (unbox codes))
     ;; Bind `module' to get started:
     (write (compile-using-kernel '(namespace-require '(only '#%kernel module))) outp)
     ;; Install a module name resolver that redirects
@@ -1967,6 +2004,8 @@
 		       ;; name array:
 		       (for/sum ([p (in-list names)])
 			 (+ 2 (bytes-length (string->bytes/utf-8 p))))
+		       ;; mode array:
+		       (* 4 (length names))
 		       ;; starting-position array:
 		       (* 4 (add1 (length names)))))
   (define-values (rev-offsets total)
@@ -1980,7 +2019,43 @@
     (for/list ([p (in-list names)])
       (define bstr (string->bytes/utf-8 p))
       (bytes-append (integer->integer-bytes (bytes-length bstr) 2 #t #f) bstr))
+    (for/list ([offset (in-list names)])
+      ;; 0 => default, 1 => in-memory, 2 => via file
+      (integer->integer-bytes 0 4 #t #f))
     (for/list ([offset (in-list (reverse rev-offsets))])
       (integer->integer-bytes offset 4 #t #f))
     (list (integer->integer-bytes total 4 #t #f))
     bstrs)))
+
+;; See note at call site for this function:
+(define (saturate-immediate-submodule-mappings! mods)
+  (define submods (make-hash)) ; root module name -> submod sym -> full name
+  (define (immediate-submod? mp)
+    (and (pair? mp)
+         (eq? (car mp) 'submod)
+         (pair? (cddr mp))
+         (null? (cdddr mp))))
+  (for ([m (in-list mods)])
+    (define mp (mod-mod-path m))
+    (when (immediate-submod? mp)
+      (hash-update! submods (cadr mp)
+                    (lambda (ht) (hash-set ht (caddr mp) (mod-full-name m)))
+                    #hasheq())))
+  (for ([m (in-list mods)])
+    (define mp (mod-mod-path m))
+    (define (add-submods! root-name make-submod-path)
+      (define avail (for/hash ([m (in-list (mod-mappings m))])
+                      (values (car m) #t)))
+      (define additions
+        (for/list ([(subm name) (in-hash (hash-ref submods root-name #hasheq()))]
+                   #:do [(define rel-mp (make-submod-path subm))]
+                   #:when (not (hash-ref avail rel-mp #f)))
+          (cons rel-mp name)))
+      (unless (null? additions)
+        (define bx (mod-mappings-box m))
+        (set-box! bx (append (unbox bx) additions))))
+    (cond
+      [(immediate-submod? mp)
+       (add-submods! (cadr mp) (lambda (subm) `(submod ".." ,subm)))]
+      [(not (and (pair? mp) (eq? (car mp) 'submod)))
+       (add-submods! mp (lambda (subm) `(submod "." ,subm)))])))

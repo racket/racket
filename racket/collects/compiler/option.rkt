@@ -23,10 +23,15 @@
 	 ;; default = #t
 	 )
 
-(define somewhat-verbose (make-parameter #f))
-(define verbose (make-parameter #f))
-(define 3m (make-parameter (eq? '3m (system-type 'gc))))
+(define (make-bool-parameter val name)
+  (make-parameter val (lambda (v) (and v #t)) name))
 
-(define setup-prefix (make-parameter ""))
+(define somewhat-verbose (make-bool-parameter #f 'somewhat-verbose))
 
-(define compile-subcollections (make-parameter #t))
+(define verbose (make-bool-parameter #f 'verbose))
+
+(define 3m (make-bool-parameter (eq? '3m (system-type 'gc)) '3m))
+
+(define setup-prefix (make-parameter "" #f 'setup-prefix))
+
+(define compile-subcollections (make-bool-parameter #t 'compile-subcollections))

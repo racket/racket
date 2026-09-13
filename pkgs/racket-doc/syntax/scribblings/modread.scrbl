@@ -12,8 +12,8 @@ values.}
 
 @defproc[(check-module-form [stx (or/c syntax? eof-object?)] 
                             [expected-module-sym symbol?]
-                            [source-v (or/c string? false/c)])
-         (or/c syntax? false/c)]{
+                            [source-v (or/c string? #f)])
+         (or/c syntax? #f)]{
 
 Inspects @racket[stx] to check whether evaluating it will declare a
 module---at least if @racket[module] is bound in the top-level to

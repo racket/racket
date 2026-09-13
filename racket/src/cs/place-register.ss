@@ -11,10 +11,10 @@
 (meta chez:define io-register-count 32)
 
 (meta chez:define regexp-register-start (+ io-register-start io-register-count))
-(meta chez:define regexp-register-count 32)
+(meta chez:define regexp-register-count 16)
 
 (meta chez:define expander-register-start (+ regexp-register-start regexp-register-count))
-(meta chez:define expander-register-count 32)
+(meta chez:define expander-register-count 48)
 
 ;; ----------------------------------------
 
@@ -37,7 +37,7 @@
            [(_ id (unsafe-make-place-local v))
             (with-syntax ([i (#%datum->syntax #'here (add-place-register! #'id start count))])
               #`(begin
-                  ;; The `id` shoiuld be used only with
+                  ;; The `id` should be used only with
                   ;; `unsafe-place-local-{ref,set!}`:
                   (define-syntax id (syntax-rules ()))
                   ;; Initialize the place value:

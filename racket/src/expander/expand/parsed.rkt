@@ -25,6 +25,7 @@
 (struct parsed-begin0 parsed (body) #:authentic)
 (struct parsed-quote parsed (datum) #:authentic)
 (struct parsed-quote-syntax parsed (datum) #:authentic)
+(struct parsed-foreign-inline parsed (datum mode) #:authentic)
 
 (struct parsed-let_-values parsed (idss clauses body) #:authentic)
 (struct parsed-let-values parsed-let_-values () #:authentic)
@@ -37,12 +38,13 @@
 (struct parsed-#%declare parsed () #:authentic)
 (struct parsed-require parsed (portal-syms) #:authentic)
 
-(struct parsed-#%module-begin parsed (body realm) #:authentic)
+(struct parsed-#%module-begin parsed (body realm flatten-requires?) #:authentic)
 (struct parsed-module parsed (star?
                               name-id
                               self
                               requires
                               recur-requires
+                              flattened-requires    ; #f or a list of lists
                               provides
                               root-ctx-simple?
                               encoded-root-ctx
@@ -51,4 +53,7 @@
                               portal-syntaxes       ; phase -> symbol -> syntax-object
                               compiled-module       ; #f or already-compiled module
                               compiled-submodules)  ; already-compiled submodules
+  #:authentic)
+
+(struct parsed-bundle parsed (bundle)
   #:authentic)

@@ -67,7 +67,11 @@ the following files and directories:
 
  @item{directories/files whose names end with @filepath{~}; and}
 
- @item{directories/files whose names start and end with @filepath{#}.}
+ @item{directories/files whose names start and end with @filepath{#}; and}
+
+ @item{directories/files named @filepath{ephemeral} whose parent is named @filepath{compiled}.
+
+       @history[#:changed "8.17.0.1" @elem{Added @filepath{compiled/ephemeral} directory pruning.}]}
 
 ]
 
@@ -213,6 +217,11 @@ to the main installation's library directory as reported by
 support for copying a package-style directory to a given destination
 with the same file/directory omissions and updates as
 @command-ref{create}.}
+
+When the @racketmodname[pkg/strip] module is run directly, such as
+with @exec{racket -l}, it expects command-line arguments to pass along
+to @racket[generate-stripped-directory]. Provide the @DFlag{help} flag
+for more information.
 
 @defproc[(generate-stripped-directory [mode (or/c 'source 'binary 'binary-lib 'built)]
                                       [src-dir path-string?]

@@ -37,6 +37,8 @@
   #:field
   [name 'port #:immutable] ; anything, reported as `object-name` for the port
 
+  [lock #f] ; keep this as the 2nd field; see "lock.rkt" for possible values
+
   ;; When `(direct-bstr buffer)` is not #f, it enables a shortcut for
   ;; reading and writing, where `(direct-pos buffer)` must also be
   ;; less than `(direct-end buffer)` for the shortcut to apply. The
@@ -74,30 +76,35 @@
 
   #:public
   ;; -*> (void)
-  ;; Called in atomic mode.
+  ;; Called with lock held.
   ;; Reqeusts a close, and the port is closed if/when
-  ;; the method returns.
+  ;; the method returns. May exit and reenter lock, if promoting
+  ;; to atomic is necessary, only before doing anything interesting,
+  ;; and that case it must perform it's own "already closed?"
+  ;; check. The `close-port` implementation relies on the lock
+  ;; being held after an internal close operation so that the `closed?`
+  ;; flag can be set on the port.
   [close (lambda () (void))]
 
   ;; #f or (-*> (void))
-  ;; Called in atomic mode.
+  ;; Called with lock held.
   ;; Notifies the port that line counting is enabled, and
   ;; `get-location` can be called afterward (if it is defined)
   [count-lines! #f]
 
   ;; #f or (-*> (values line-or-#f column-or-#f position-or-#f))
-  ;; Called in atomic mode.
+  ;; Called with lock held.
   ;; Returns the location of the next character. If #f, this method
   ;; is implemented externally.
   [get-location #f]  ; #f or method called in atomic mode
 
   ;; #f or (U (-*> position-k) (position-k -*> (void))
-  ;; Called in atomic mode.
+  ;; Called with lock held.
   ;; If not #f, the port implements `file-position`.
   [file-position #f]
 
   ;; #f or (U (-*> mode-sym) (mode-sym -*> (void))
-  ;; Called in atomic mode.
+  ;; Called with lock held.
   ;; If not #f, the port implements buffer-mode selection.
   [buffer-mode #f]
 
@@ -118,6 +125,7 @@
                   [position #:mutable])  ; count UTF-8 characters
   #:authentic)
 
+;; with p lock
 (define (get-core-port-offset p)
   (define offset (core-port-offset p))
   (define buffer (core-port-buffer p))

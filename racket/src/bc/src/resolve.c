@@ -2141,7 +2141,7 @@ static void prepare_definition_queue(Scheme_Linklet *linklet, Resolve_Info *rslv
           for (j = 0; j < vcnt; j++) {
             int tl_pos;
             var = SCHEME_DEFN_VAR_(e, j);
-            tl_pos = SCHEME_IR_TOPLEVEL_POS(var) + 1 + linklet->num_total_imports;
+            tl_pos = SCHEME_IR_TOPLEVEL_POS(var) + rslv->toplevel_starts[0];
             scheme_hash_set(rslv->toplevel_defns, scheme_make_integer(tl_pos), e);
           }
         }

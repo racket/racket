@@ -179,6 +179,8 @@
 
 # define RKTIO_STAT_TIMESPEC_FIELD
 
+# define RKTIO_KILLPG_EPERM_FOR_ZOMBIE
+
 # endif
 
   /************ QNX *************/
@@ -224,7 +226,7 @@
  /* USER_TIME_IS_CLOCK uses the user time for system milliseconds. */
 
  /* MAX_VALID_DATE_SECONDS_BITS sets a maximum number of bits for
-    seconds to pass to localtime() ro gmtime(). */
+    seconds to pass to localtime() or gmtime(). */
 
  /* MIN_VALID_DATE_SECONDS sets a minimum vald time in seconds. */
 

@@ -61,30 +61,31 @@
  (define (tx:define-*-syntax-class stx splicing?)
    (syntax-case stx ()
      [(_ header . rhss)
-      (parameterize ((current-syntax-context stx))
-        (let-values ([(name formals arity)
-                      (let ([p (check-stxclass-header #'header stx)])
-                        (values (car p) (cadr p) (caddr p)))])
-          (let ([the-rhs (parse-rhs #'rhss splicing? #:context stx
-                                    #:default-description (symbol->string (syntax-e name)))])
-            (with-syntax ([name name]
-                          [formals formals]
-                          [splicing? splicing?]
-                          [desc (cond [(rhs-description the-rhs) => string-expr-value] [else #f])]
-                          [parser (generate-temporary (format-symbol "parse-~a" name))]
-                          [arity arity]
-                          [attrs (rhs-attrs the-rhs)]
-                          [commit? (rhs-commit? the-rhs)]
-                          [delimit-cut? (rhs-delimit-cut? the-rhs)]
-                          [the-rhs-expr (datum->expression the-rhs)])
-              #`(begin (define-syntax name
-                         (stxclass (quote name) (quote arity) (quote attrs)
-                                   (quote-syntax parser)
-                                   (quote splicing?)
-                                   (scopts (length 'attrs) 'commit? 'delimit-cut? desc)
-                                   #f))
-                       (define-values (parser)
-                         (parser/rhs name formals attrs the-rhs-expr splicing? #,stx)))))))])))
+      (with-disappeared-uses
+        (parameterize ((current-syntax-context stx))
+          (let-values ([(name formals arity)
+                        (let ([p (check-stxclass-header #'header stx)])
+                          (values (car p) (cadr p) (caddr p)))])
+            (let ([the-rhs (parse-rhs #'rhss splicing? #:context stx
+                                      #:default-description (symbol->string (syntax-e name)))])
+              (with-syntax ([name name]
+                            [formals formals]
+                            [splicing? splicing?]
+                            [desc (cond [(rhs-description the-rhs) => string-expr-value] [else #f])]
+                            [parser (generate-temporary (format-symbol "parse-~a" name))]
+                            [arity arity]
+                            [attrs (rhs-attrs the-rhs)]
+                            [commit? (rhs-commit? the-rhs)]
+                            [delimit-cut? (rhs-delimit-cut? the-rhs)]
+                            [the-rhs-expr (datum->expression the-rhs)])
+                #`(begin (define-syntax name
+                           (stxclass (quote name) (quote arity) (quote attrs)
+                                     (quote-syntax parser)
+                                     (quote splicing?)
+                                     (scopts (length 'attrs) 'commit? 'delimit-cut? desc)
+                                     #f))
+                         (define-values (parser)
+                           (parser/rhs name formals attrs the-rhs-expr splicing? #,stx))))))))])))
 
 (define-syntax (parser/rhs stx)
   (syntax-case stx ()
@@ -270,52 +271,56 @@
   (define (parse-alt x)
     (syntax-case x (pattern)
       [(pattern alt)
-       #'alt]
-      [else
+       (begin
+         (record-disappeared-uses (list (stx-car x)))
+         #'alt)]
+      [_
        (wrong-syntax x "expected eh-alternative-set alternative")]))
   (parameterize ((current-syntax-context stx))
     (syntax-case stx ()
       [(_ name a ...)
-       (unless (identifier? #'name)
-         (wrong-syntax #'name "expected identifier"))
-       (let* ([alts (map parse-alt (syntax->list #'(a ...)))]
-              [decls (new-declenv null #:conventions null)]
-              [ehpat+hstx-list
-               (apply append
-                      (for/list ([alt (in-list alts)])
-                        (parse-EH-variant alt decls #t #:context stx)))]
-              [eh-alt+defs-list
-               (for/list ([ehpat+hstx (in-list ehpat+hstx-list)])
-                 (let ([ehpat (car ehpat+hstx)]
-                       [hstx (cadr ehpat+hstx)])
-                   (cond [(syntax? hstx)
-                          (define the-pattern (ehpat-head ehpat))
-                          (define attrs (iattrs->sattrs (pattern-attrs the-pattern)))
-                          (define the-variant (variant hstx attrs the-pattern null))
-                          (define the-rhs (rhs attrs #t #f (list the-variant) null #f #f))
-                          (with-syntax ([(parser) (generate-temporaries '(eh-alt-parser))]
-                                        [the-rhs-expr (datum->expression the-rhs)])
-                            (list (eh-alternative (ehpat-repc ehpat) attrs #'parser)
-                                  (list #`(define parser
-                                            (parser/rhs parser () #,attrs
-                                                        the-rhs-expr #t #,stx)))))]
-                         [(eh-alternative? hstx)
-                          (list hstx null)]
-                         [else
-                          (error 'define-eh-alternative-set "internal error: unexpected ~e"
-                                 hstx)])))]
-              [eh-alts (map car eh-alt+defs-list)]
-              [defs (apply append (map cadr eh-alt+defs-list))])
-         (with-syntax ([(def ...) defs]
-                       [(alt-expr ...)
-                        (for/list ([alt (in-list eh-alts)])
-                          (with-syntax ([repc-expr
-                                         (datum->expression (eh-alternative-repc alt))]
-                                        [attrs-expr
-                                         #`(quote #,(eh-alternative-attrs alt))]
-                                        [parser-expr
-                                         #`(quote-syntax #,(eh-alternative-parser alt))])
-                            #'(eh-alternative repc-expr attrs-expr parser-expr)))])
-           #'(begin def ...
-                    (define-syntax name
-                      (eh-alternative-set (list alt-expr ...))))))])))
+       (begin
+         (unless (identifier? #'name)
+           (wrong-syntax #'name "expected identifier"))
+         (with-disappeared-uses
+           (let* ([alts (map parse-alt (syntax->list #'(a ...)))]
+                  [decls (new-declenv null #:conventions null)]
+                  [ehpat+hstx-list
+                   (apply append
+                          (for/list ([alt (in-list alts)])
+                            (parse-EH-variant alt decls #t #:context stx)))]
+                  [eh-alt+defs-list
+                   (for/list ([ehpat+hstx (in-list ehpat+hstx-list)])
+                     (let ([ehpat (car ehpat+hstx)]
+                           [hstx (cadr ehpat+hstx)])
+                       (cond [(syntax? hstx)
+                              (define the-pattern (ehpat-head ehpat))
+                              (define attrs (iattrs->sattrs (pattern-attrs the-pattern)))
+                              (define the-variant (variant hstx attrs the-pattern null))
+                              (define the-rhs (rhs attrs #t #f (list the-variant) null #f #f))
+                              (with-syntax ([(parser) (generate-temporaries '(eh-alt-parser))]
+                                            [the-rhs-expr (datum->expression the-rhs)])
+                                (list (eh-alternative (ehpat-repc ehpat) attrs #'parser)
+                                      (list #`(define parser
+                                                (parser/rhs parser () #,attrs
+                                                            the-rhs-expr #t #,stx)))))]
+                             [(eh-alternative? hstx)
+                              (list hstx null)]
+                             [else
+                              (error 'define-eh-alternative-set "internal error: unexpected ~e"
+                                     hstx)])))]
+                  [eh-alts (map car eh-alt+defs-list)]
+                  [defs (apply append (map cadr eh-alt+defs-list))])
+             (with-syntax ([(def ...) defs]
+                           [(alt-expr ...)
+                            (for/list ([alt (in-list eh-alts)])
+                              (with-syntax ([repc-expr
+                                             (datum->expression (eh-alternative-repc alt))]
+                                            [attrs-expr
+                                             #`(quote #,(eh-alternative-attrs alt))]
+                                            [parser-expr
+                                             #`(quote-syntax #,(eh-alternative-parser alt))])
+                                #'(eh-alternative repc-expr attrs-expr parser-expr)))])
+               #'(begin def ...
+                        (define-syntax name
+                          (eh-alternative-set (list alt-expr ...))))))))])))

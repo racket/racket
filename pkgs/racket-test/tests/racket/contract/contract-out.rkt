@@ -1408,6 +1408,25 @@
        (eval '(b? (b))))
    #t)
 
+  (test/spec-passed
+   'provide/contract-struct-out.2
+   '(begin
+      (eval '(module provide/contract-struct-out.2-m racket/base
+               (require racket/contract/base)
+               (provide
+                (contract-out
+                 (struct srv-rr ((priority (integer-in 0 65535))
+                                 (weight (integer-in 0 65535))
+                                 (port (integer-in 0 65535))
+                                 (target string?)))))
+               (struct srv-rr (priority
+                               weight
+                               port
+                               target)
+                 #:prefab)))
+      (eval '(module provide/contract-struct-out.2-n racket/base
+               (require 'provide/contract-struct-out.2-m)
+               (provide (struct-out srv-rr))))))
 
 
   (contract-error-test
@@ -1587,6 +1606,22 @@
    (λ (x)
      (and (exn:fail:syntax? x)
           (regexp-match #rx"point: .* cannot be used as an expression" (exn-message x)))))
+
+  (contract-error-test
+   'contract-error-test21
+   #'(begin
+       (eval '(module contract-error-test21-m1 racket/base
+                (require racket/contract)
+                (provide (contract-out
+                          (struct contract-error-test21-osc-message
+                            ([args (listof integer?)]))))
+                (struct contract-error-test21-osc-message (args))))
+       (eval '(require 'contract-error-test21-m1))
+       (eval '(contract-error-test21-osc-message 1234)))
+   (λ (x)
+     (and (exn:fail:contract:blame? x)
+          (regexp-match? #rx"^contract-error-test21-osc-message: contract violation"
+                         (exn-message x)))))
   
   (contract-eval
    `(,test
@@ -1848,7 +1883,9 @@
           (regexp-match? #rx"blaming: bad1-client" (exn-message x)))))
 
   (contract-eval
-   '(define (find-p/c-prop stx)
+   '(define (find-p/c-prop stx [extract
+                                (lambda (e)
+                                  (syntax->datum (vector-ref e 1)))])
       (define the-props
         (flatten
          (let loop ([stx stx])
@@ -1862,7 +1899,7 @@
       (remove-duplicates
        (for/list ([e (in-list the-props)]
                   #:when e)
-         (syntax->datum (vector-ref e 1))))))
+         (extract e)))))
   
   (test/spec-passed/result
    'provide/contract.prop1
@@ -1886,6 +1923,42 @@
               [x (>/c 5)]))
             (define x 6)))))
    (list '(>/c 5)))
+
+  (test/spec-passed/result
+   'provide/contract.prop3
+   '(let ()
+      (find-p/c-prop
+       (expand
+        '(module test racket
+            (provide
+             (contract-out
+              [x (>/c 5)]
+              [y (list/c (or/c (</c 0) (>/c 0))
+                         (not/c (=/c 0)))]))
+            (define x 6)
+            (define y (list -1 1))))
+       (lambda (e)
+         (syntax->datum (vector-ref e 0)))))
+   (list 'x 'y))
+
+  (test/spec-passed/result
+   'provide/contract.prop4
+   '(let ()
+      (find-p/c-prop
+       (expand
+        '(module test racket
+            (provide
+             (contract-out
+              [x (>/c 5)]
+              [y (list/c (or/c (</c 0) (>/c 0))
+                         (not/c (=/c 0)))]))
+            (define x 6)
+            (define y (list -1 1))))
+       (lambda (e)
+         (map syntax->datum (vector->list e)))))
+   (list (list 'x '(>/c 5))
+         (list 'y '(list/c (or/c (</c 0) (>/c 0))
+                           (not/c (=/c 0))))))
 
   (test/spec-passed/result
    'struct-field-name-computed-correctly
@@ -1958,4 +2031,39 @@
                #`'#,(struct-field-info-list (syntax-local-value #'foo))))
       (eval '(extract-field-names)))
    (list 'x))
+
+  (test/spec-passed/result
+   'provide/contract-upe-struct-transformer
+   '(begin
+      (eval '(module provide/contract-upe-struct-transformer-def racket/base
+               (require racket/contract/base)
+               (provide (contract-out
+                         #:unprotected-submodule no-contract
+                         (struct s ([x integer?]))))
+               (struct s (x) #:constructor-name make-s)))
+      (eval '(module provide/contract-upe-struct-transformer-ans racket/base
+               (require racket/match
+                        (submod 'provide/contract-upe-struct-transformer-def no-contract))
+               (provide answer)
+               (define answer (match (make-s 1) [(s x) x]))))
+      (dynamic-require ''provide/contract-upe-struct-transformer-ans 'answer))
+   1)
+
+  (test/spec-passed/result
+   'provide/contract-upe-struct-type-descriptor
+   '(begin
+      (eval '(module provide/contract-upe-struct-type-descriptor-def racket/base
+               (require racket/contract/base)
+               (provide (contract-out
+                         #:unprotected-submodule no-contract
+                         (struct s ([x integer?]))))
+               (struct s (x))))
+      (eval '(module provide/contract-upe-struct-type-descriptor-ans racket/base
+               (require racket/match
+                        (submod 'provide/contract-upe-struct-type-descriptor-def no-contract))
+               (provide answer)
+               (struct t s (y))
+               (define answer (match (t 1 2) [(t x y) (list x y)]))))
+      (dynamic-require ''provide/contract-upe-struct-type-descriptor-ans 'answer))
+   (list 1 2))
   )

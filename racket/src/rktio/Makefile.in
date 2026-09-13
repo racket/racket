@@ -59,7 +59,7 @@ OBJS = rktio_fs.@LTO@ \
        rktio_main.@LTO@
 
 via_zuo:
-	zuo $(srcdir)
+	zuo $(srcdir)/build.zuo
 
 librktio.@LTA@: $(OBJS)
 	$(STATIC_AR) $(ARFLAGS) @HIDE_NOT_STANDALONE@librktio.@LTA@ $(OBJS)

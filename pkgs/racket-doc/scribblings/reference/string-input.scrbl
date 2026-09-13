@@ -337,8 +337,12 @@ process if it becomes available during the peek attempt. Furthermore,
 @racket[progress] is checked even before determining whether the port
 is still open.
 
-The result of @racket[peek-bytes-avail!] is @racket[0] only in the
-case that @racket[progress] becomes ready before bytes are peeked.}
+The result of @racket[peek-bytes-avail!] is @racket[0] only
+
+@itemlist[
+  @item{when @racket[start-pos] is equal to @racket[end-pos], or}
+  @item{when @racket[progress] becomes ready before bytes are peeked.}
+]}
 
 @defproc[(peek-bytes-avail!* [bstr (and/c bytes? (not/c immutable?))]
                              [skip-bytes-amt exact-nonnegative-integer?]
@@ -367,7 +371,7 @@ with @racket[skip-bytes-amt] and @racket[progress] arguments like
 
 
 @defproc[(read-char-or-special [in input-port? (current-input-port)]
-                               [special-wrap (or/c (any/c -> any/c) #f) #f]
+                               [special-wrap (or/c (any/c . -> . any/c) #f) #f]
                                [source-name any/c #f])
          (or/c char? eof-object? any/c)]{
 
@@ -383,7 +387,7 @@ then the result of applying @racket[special-wrap] to the
                                    @racket[source-name] arguments.}]}
 
 @defproc[(read-byte-or-special [in input-port? (current-input-port)]
-                               [special-wrap (or/c (any/c -> any/c) #f) #f]
+                               [special-wrap (or/c (any/c . -> . any/c) #f) #f]
                                [source-name any/c #f])
          (or/c byte? eof-object? any/c)]{
 
@@ -410,7 +414,7 @@ character.}
 
 @defproc[(peek-char-or-special [in input-port? (current-input-port)]
                                [skip-bytes-amt exact-nonnegative-integer? 0]
-                               [special-wrap (or/c (any/c -> any/c) #f 'special) #f]
+                               [special-wrap (or/c (any/c . -> . any/c) #f 'special) #f]
                                [source-name any/c #f])
          (or/c char? eof-object? any/c)]{
 
@@ -442,7 +446,7 @@ depends on @racket[special-wrap]:
 @defproc[(peek-byte-or-special [in input-port? (current-input-port)]
                                [skip-bytes-amt exact-nonnegative-integer? 0]
                                [progress (or/c progress-evt? #f) #f]
-                               [special-wrap (or/c (any/c -> any/c) #f 'special) #f]
+                               [special-wrap (or/c (any/c . -> . any/c) #f 'special) #f]
                                [source-name any/c #f])
          (or/c byte? eof-object? any/c)]{
 

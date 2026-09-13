@@ -251,8 +251,8 @@ needed to strip lexical and source-location information recursively.
 Converts the @tech{datum} @racket[v] to a @tech{syntax object}.
 If @racket[v] is already a @tech{syntax object}, then there is no conversion,
 and @racket[v] is returned unmodified.
-The contents of pairs, vectors, and boxes, the fields of @tech{prefab}
-structures, and the values of immutable hash tables are recursively converted.
+The contents of pairs, vectors, and boxes, the values of immutable hash tables,
+and the fields of immutable @tech{prefab} structures are recursively converted.
 The keys of @tech{prefab} structures and the keys of immutable hash tables are
 not converted. Mutable vectors and boxes are replaced by immutable vectors and
 boxes. For any kind of value other than a
@@ -371,8 +371,14 @@ if a former representative becomes otherwise unreachable, then
 Returns a syntax object that is like @racket[stx], but with all of its
 top-level and module bindings shifted by @racket[shift] @tech{phase
 levels}. If @racket[shift] is @racket[#f], then only bindings
-at @tech{phase level} 0 are shifted to the @tech{label phase level}.
-If @racket[shift] is @racket[0], then the result is @racket[stx].}
+at @tech{phase level} 0 are shifted to the @tech{label phase level};
+shifting by an integer @racket[shift] effectively shifts
+which phase has been moved into the @tech{label phase level}.
+If @racket[shift] is @racket[0], then the result is @racket[stx].
+
+@history[#:changed "9.0.0.1" @elem{Shifting by an integer phase level adjust which
+                                   original phase is seen in the
+                                   @tech{label phase level}.}]}
 
 
 @defproc[(generate-temporaries [v stx-list?])

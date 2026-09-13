@@ -12,21 +12,26 @@
 
 @note-lib[racket/future]
 
-@margin-note{Currently, parallel support for @racket[future] is enabled
+@margin-note{
+  Support for parallelism via @racket[future] is normally enabled
+  for all platforms in the @tech{CS} implementation of Racket.
+  In the @tech{BC} implementation,
+  support for parallelism is enabled
   by default for Windows, Linux x86/x86_64, and Mac OS x86/x86_64. To
-  enable support for other platforms, use @DFlag{enable-futures} with
-  @exec{configure} when building Racket.}
+  enable support for other platforms building Racket @tech{BC},
+  use @DFlag{enable-futures} with @exec{configure}.}
 
 The @racket[future] and @racket[touch] functions from
 @racketmodname[racket/future] provide access to parallelism as supported
 by the hardware and operating system.  In contrast to @racket[thread],
 which provides concurrency for arbitrary computations without
-parallelism, @racket[future] provides parallelism for limited
-computations. A @deftech{future} executes its work in parallel (assuming that
+parallelism, @racket[future] provides parallelism.
+A @deftech{future} executes its work in parallel (assuming that
 support for parallelism is available) until it detects an attempt to
-perform an operation that is too complex for the system to run safely in
+perform an operation that cannot run safely in
 parallel. Similarly, work in a future is suspended if it depends in some
-way on the current continuation, such as raising an exception. A
+way on the current continuation, such as raising an exception. Operations
+that suspend a future are @deftech{blocking} operations. A
 suspended computation for a future is resumed when @racket[touch] is
 applied to the future.
 
@@ -40,10 +45,11 @@ futures and threads. Furthermore, guarantees about the visibility of
 effects and ordering are determined by the operating system and
 hardware---which rarely support, for example, the guarantee of
 sequential consistency that is provided for @racket[thread]-based
-concurrency; see also @secref["memory-order"]. At the same time, operations
-that seem obviously safe may
-have a complex enough implementation internally that they cannot run in
-parallel. See also @guidesecref["effective-futures"] in @|Guide|.
+concurrency; see also @secref["memory-order"]. A system operation
+that seems obviously safe may have an internal implementation that cannot run in
+parallel; see @guidesecref["effective-futures"] in @|Guide| for more
+discussion and an introduction to using @racketmodname[future-visualizer #:indirect])
+to understand the behavior of system operations.
 
 A future never runs in parallel if all of the @tech{custodians} that
 allow its creating thread to run are shut down. Such futures can

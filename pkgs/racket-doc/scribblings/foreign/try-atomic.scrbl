@@ -11,7 +11,7 @@ or if some external event causes the attempt to be abandoned.}
 
 @defproc[(call-as-nonatomic-retry-point [thunk (-> any)]) any]{
 
-Calls @racket[thunk] in atomic mode (see @racket[start-atomic] and
+Calls @racket[thunk] in @tech{atomic mode} (see @racket[start-atomic] and
 @racket[end-atomic]) while allowing @racket[thunk] to use
 @racket[try-atomic]. Any incomplete computations started with
 @racket[try-atomic] are run non-atomically after @racket[thunk]
@@ -27,7 +27,7 @@ returns. The result of @racket[thunk] is used as the result of
          any]{
 
 Within the dynamic extent of a @racket[call-as-nonatomic-retry-point]
-call, attempts to run @racket[thunk] in the existing atomic mode. The
+call, attempts to run @racket[thunk] in the existing @tech{atomic mode}. The
 @racket[give-up-proc] procedure is called periodically to determine
 whether atomic mode should be abandoned; the default
 @racket[give-up-proc] returns true after 200 milliseconds. If atomic

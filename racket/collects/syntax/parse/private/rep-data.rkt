@@ -246,7 +246,5 @@ expressions are duplicated, and may be evaluated in different scopes.
 (provide get-eh-alternative-set)
 
 (define (get-eh-alternative-set id)
-  (let ([v (syntax-local-value id (lambda () #f))])
-    (unless (eh-alternative-set? v)
-      (wrong-syntax id "not defined as an eh-alternative-set"))
-    v))
+  (or (syntax-local-value/record id eh-alternative-set?)
+      (wrong-syntax id "not defined as an eh-alternative-set")))

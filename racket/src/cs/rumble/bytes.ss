@@ -197,3 +197,29 @@
       c)]
    [(bstr start)
     (subbytes bstr start (if (bytes? bstr) (bytevector-length bstr) 0))]))
+
+;; See also `apply-string-append*`
+(define (apply-bytes-append* who pre-n strss)
+  (cond
+    [(list? strss)
+     (let ([len
+            (let loop ([len 0] [strs strss])
+              (if (null? strs)
+                  len
+                  (let ([str (car strs)])
+                    (if (bytes? str)
+                        (loop (fx+ len (bytes-length str)) (cdr strs))
+                        (raise-argument-error who "bytes?" str)))))])
+       (let ([acc (make-bytes len)])
+         (let loop ([offset 0] [strs strss])
+           (unless (null? strs)
+             (let* ([str (car strs)]
+                    [len (bytes-length str)])
+               (bytevector-copy! str 0 acc offset len)
+               (loop (fx+ offset len) (cdr strs)))))
+         acc))]
+    [else
+     (raise-argument-error 'apply "list?" (list-tail strss pre-n))]))
+
+(define (apply-bytes-append pre-n strss)
+  (apply-bytes-append* 'bytes-append pre-n strss))

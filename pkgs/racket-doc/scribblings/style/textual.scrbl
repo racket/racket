@@ -119,7 +119,7 @@ for how to implement tabbing.
 @section{Tabs}
 
 Do not use tab characters in your code.  Tabs make it hard to use textual
- tools like git or diff effectively.  To disable tabs,
+ tools like Git or diff effectively.  To disable tabs,
 @itemlist[
 @item{in DrRacket: you are all set. It doesn't insert tabs.}
 @item{in Emacs: add @tt{(setq indent-tabs-mode nil)} to your emacs initialization file.}
@@ -144,10 +144,11 @@ read code on monitors that accommodate close to 250 columns, and on
 occasion, our monitors are even wider. It is time to allow for somewhat
 more width in exchange for meaningful identifiers.
 
-So, when you create a file, add a line with @litchar{;; } followed by ctrl-U 99 and
-@litchar{-}. When you separate "sections" of code in a file, insert the same line.
-These lines help both writers and readers to orient themselves in a file.
-In scribble use @litchar|{@; }| as the prefix.
+So, when you create a file, add a line with @litchar{;; } followed by ctrl-U 99
+and @litchar{-}. @margin-note*{In Vi, the command is 99a- followed by Esc.} When
+you separate "sections" of code in a file, insert the same line. These lines
+help both writers and readers to orient themselves in a file. In Scribble use
+@litchar|{@; }| as the prefix.
 
 @; -----------------------------------------------------------------------------
 @section{Line Breaks}

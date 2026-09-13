@@ -1,5 +1,8 @@
 #lang racket/base
-(require "check.rkt")
+(require "check.rkt"
+         (only-in "custodian-object.rkt"
+                  lock-custodians
+                  unlock-custodians))
 
 (provide current-plumber
          make-plumber
@@ -10,6 +13,10 @@
          plumber-flush-handle?
          plumber-flush-handle-remove!
          plumber-callbacks)
+
+;; plumbers use the custodian lock, because it's convenient
+;; and plumber registeration is often use in conjuction with
+;; custodian registration
 
 (struct plumber (callbacks ; hash table of handles -> callbacks
                  weak-callbacks) ; same, but weak references
@@ -32,11 +39,13 @@
   (check who plumber? p)
   (check who (procedure-arity-includes/c 1) proc)
   (define h (plumber-flush-handle p proc))
+  (lock-custodians)
   (hash-set! (if weak?
                  (plumber-weak-callbacks p)
                  (plumber-callbacks p))
              h
              #t)
+  (unlock-custodians)
   h)
 
 (define/who (plumber-flush-all p)
@@ -45,16 +54,20 @@
 
 (define (plumber-flush-all/wrap p app)
   ;; Spec requires getting all callbacks before running any
+  (lock-custodians)
   (define hs
     (for*/list ([cbs (in-list (list (plumber-callbacks p)
                                     (plumber-weak-callbacks p)))]
                 [h (in-hash-keys cbs)])
       h))
+  (unlock-custodians)
   (for ([h (in-list hs)])
     (app (plumber-flush-handle-proc h) h)))
 
 (define/who (plumber-flush-handle-remove! h)
   (check who plumber-flush-handle? h)
   (define p (plumber-flush-handle-plumber h))
+  (lock-custodians)
   (hash-remove! (plumber-callbacks p) h)
-  (hash-remove! (plumber-weak-callbacks p) h))
+  (hash-remove! (plumber-weak-callbacks p) h)
+  (unlock-custodians))

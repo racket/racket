@@ -106,6 +106,7 @@
 (define ((p-or . ps) x cx pr es renv)
   (let loop ([ps ps])
     (match ps
+      ['() (fail (failure* pr es))]
       [(list p) (p x cx pr es renv)]
       [(cons p ps) (disj* (p x cx pr es renv) (lambda () (loop ps)))])))
 

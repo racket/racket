@@ -61,7 +61,7 @@
 ;; method overridden in `new` can only access `field`s.
 ;;
 ;; Use
-;;   (with-object <class-id> <object-expr)
+;;   (with-object <class-id> <object-expr>
 ;;      <body> ...+)
 ;; to directly reference `field`s and `static`s in the <body>s.
 

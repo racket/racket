@@ -62,6 +62,7 @@
                         #f ; self
                         #f ; requires
                         #f ; recur-requires
+                        #f ; flattened-requires
                         #f ; provides
                         (vector-ref phase-to-link-modules-vector (vector-ref phase-to-link-modules-tree 0))
                         #f ; compile-time-inspector

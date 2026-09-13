@@ -59,7 +59,8 @@
 (define SSL_CTRL_SET_TLSEXT_SERVERNAME_CB 53)
 (define SSL_CTRL_SET_TLSEXT_HOSTNAME 55)
 (define SSL_CTRL_SET_TMP_DH 3)
-(define SSL_CTRL_SET_TMP_ECDH 4)
+(define SSL_CTRL_SET_ECDH_AUTO 94)
+(define SSL_CTRL_SET_DH_AUTO 118)
 (define SSL_CTRL_GET_EXTMS_SUPPORT 122)
 (define SSL_CTRL_SET_MIN_PROTO_VERSION 123)
 (define SSL_CTRL_SET_MAX_PROTO_VERSION 124)
@@ -70,8 +71,7 @@
 (define SSL_OP_NO_TLSv1_2  #x08000000)
 (define SSL_OP_NO_TLSv1_1  #x10000000)
 
-(define SSL_OP_SINGLE_ECDH_USE #x00080000)
-(define SSL_OP_SINGLE_DH_USE #x00100000)
+(define SSL_OP_IGNORE_UNEXPECTED_EOF #x00000080)
 
 (define TLSEXT_NAMETYPE_host_name 0)
 
@@ -101,6 +101,8 @@
 (define-cpointer-type _SSL_METHOD*)
 (define-cpointer-type _SSL_CTX*)
 (define-cpointer-type _SSL*)
+(define-cpointer-type _RSA*)
+(define-cpointer-type _EVP_PKEY*)
 (define-cpointer-type _X509_NAME*)
 (define-cpointer-type _X509_NAME_ENTRY*)
 (define-cpointer-type _X509*)
@@ -146,12 +148,6 @@
   (define-ssl TLS_server_method (_fun -> _SSL_METHOD*)
     #:fail (lambda () SSLv23_server_method)))
 
-(define-crypto DH_free (_fun _DH* -> _void) #:wrap (deallocator))
-(define-crypto EC_KEY_free (_fun _EC_KEY* -> _void) #:wrap (deallocator))
-
-(define-crypto EC_KEY_new_by_curve_name (_fun _int -> _EC_KEY*)
-  #:wrap (allocator EC_KEY_free))
-
 (define-crypto BIO_s_mem (_fun -> _BIO_METHOD*))
 (define-crypto BIO_new (_fun _BIO_METHOD* -> _BIO*/null))
 (define-crypto BIO_new_mem_buf (_fun _pointer _int -> _BIO*))
@@ -174,8 +170,19 @@
 (define-ssl SSL_CTX_ctrl (_fun _SSL_CTX* _int _long _pointer -> _long))
 (define (SSL_CTX_set_mode ctx m)
   (SSL_CTX_ctrl ctx SSL_CTRL_MODE m #f))
-(define (SSL_CTX_set_options ctx opts)
-  (SSL_CTX_ctrl ctx SSL_CTRL_OPTIONS opts #f))
+
+(begin ;; function added in v1.1.0, previously macro
+  (define-ssl SSL_CTX_set_options
+    (if v3.0.0/later?
+        (_fun _SSL_CTX* _uint64 -> _void)
+        (_fun _SSL_CTX* _ulong -> _void))
+    #:fail (lambda ()
+             (lambda (ctx opts) (SSL_CTX_ctrl ctx SSL_CTRL_OPTIONS opts #f)))))
+
+(define-ssl SSL_CTX_use_RSAPrivateKey (_fun _SSL_CTX* _RSA* -> _int))
+(define-crypto PEM_read_bio_RSAPrivateKey (_fun _BIO* _pointer _int _pointer -> _RSA*))
+(define-ssl SSL_CTX_use_PrivateKey (_fun _SSL_CTX* _EVP_PKEY* -> _int))
+(define-crypto PEM_read_bio_PrivateKey (_fun _BIO* _pointer _int _pointer -> _EVP_PKEY*))
 
 (define-ssl SSL_CTX_set_verify (_fun _SSL_CTX* _int _pointer -> _void))
 (define-ssl SSL_CTX_use_certificate_chain_file (_fun _SSL_CTX* _path -> _int))
@@ -248,9 +255,14 @@
   (define-ssl SSL_library_init (_fun -> _void) #:fail (lambda () void))
   (define-ssl SSL_load_error_strings (_fun -> _void) #:fail (lambda () void)))
 
+(begin ;; deprecated in v3.0.0
+  (define-crypto DH_free (_fun _DH* -> _void) #:wrap (deallocator))
+  (define-crypto DH_get_2048_256 (_fun -> _DH*) #:fail (lambda () (lambda () #f))
+    #:wrap (allocator DH_free))
+  (define (SSL_CTX_set_tmp_dh ctx dh)
+    (SSL_CTX_ctrl ctx SSL_CTRL_SET_TMP_DH 0 dh)))
+
 (define-crypto GENERAL_NAME_free _fpointer)
-(define-crypto PEM_read_bio_DHparams (_fun _BIO* _pointer _pointer _pointer -> _DH*)
-  #:wrap (allocator DH_free))
 (define-crypto ASN1_STRING_length (_fun _ASN1_STRING* -> _int))
 (define-crypto ASN1_STRING_data (_fun _ASN1_STRING* -> _pointer))
 (define-crypto X509_NAME_get_index_by_NID (_fun _X509_NAME* _int _int -> _int))
@@ -387,3 +399,10 @@
 (define (SSL_set_tlsext_host_name s hostname)
   (SSL_ctrl/bytes s SSL_CTRL_SET_TLSEXT_HOSTNAME
                   TLSEXT_NAMETYPE_host_name (string->bytes/latin-1 hostname)))
+
+(define (SSL_CTX_set_ecdh_auto ctx onoff)
+  ;; no-op since v1.1.0
+  (SSL_CTX_ctrl ctx SSL_CTRL_SET_ECDH_AUTO onoff #f))
+
+(define (SSL_CTX_set_dh_auto ctx onoff)
+  (SSL_CTX_ctrl ctx SSL_CTRL_SET_DH_AUTO onoff #f))

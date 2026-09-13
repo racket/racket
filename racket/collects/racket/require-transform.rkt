@@ -2,15 +2,14 @@
   (#%require "private/stxcase-scheme.rkt"
              "private/stx.rkt"
              "private/define-struct.rkt"
-             "private/define-et-al.rkt"
-             "private/qq-and-or.rkt"
-             "private/cond.rkt"
-             "private/define.rkt"
+             "private/core-syntax.rkt"
+             "private/require-lift.rkt"
              "phase+space.rkt"
              (for-template (only '#%kernel quote))
              (for-syntax '#%kernel))
   
-  (#%provide expand-import 
+  (#%provide expand-import
+             syntax-local-lift-require-top-level-form
              current-require-module-path convert-relative-module-path
              syntax-local-require-certifier
              make-require-transformer prop:require-transformer require-transformer?
@@ -344,4 +343,15 @@
          (raise-syntax-error
           #f
           "bad syntax for require sub-form"
-          stx)]))))
+          stx)])))
+
+  (define (syntax-local-lift-require-top-level-form exp)
+    (unless (syntax? exp)
+      (raise-argument-error 'syntax-local-lift-require-top-level-form
+                            "syntax?"
+                            exp))
+    (define b (syntax-local-lift-require-definition-param))
+    (unless b
+      (error 'syntax-local-lift-require-definition
+             "not currently expanding `require`"))
+    (set-box! b (cons exp (unbox b)))))

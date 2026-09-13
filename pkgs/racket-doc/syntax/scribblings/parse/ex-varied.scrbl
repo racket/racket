@@ -76,7 +76,7 @@ intermediate representation using idiomatic Racket data structures,
 such as lists, hashes, structs, and even objects.
 
 Thus far we have only used syntax pattern variables and the
-@racket[#:with] keyword to bind attribues, and the values of the
+@racket[#:with] keyword to bind attributes, and the values of the
 attributes have always been syntax. To bind attributes to values other
 than syntax, use the @racket[#:attr] keyword.
 

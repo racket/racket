@@ -1,35 +1,28 @@
-diff -u -r old/cairo-1.16.0/src/cairo-quartz-font.c new/cairo-1.16.0/src/cairo-quartz-font.c
---- old/cairo-1.16.0/src/cairo-quartz-font.c	2022-06-08 13:56:00.000000000 -0600
-+++ new/cairo-1.16.0/src/cairo-quartz-font.c	2022-06-08 13:59:58.000000000 -0600
-@@ -559,6 +559,7 @@
-     CGGlyph glyph = _cairo_quartz_scaled_glyph_index (scaled_glyph);
+diff -u -r old/cairo-1.18.2/src/cairo-quartz-font.c new/cairo-1.18.2/src/cairo-quartz-font.c
+--- old/cairo-1.18.2/src/cairo-quartz-font.c	2024-09-01 07:09:23
++++ new/cairo-1.18.2/src/cairo-quartz-font.c	2025-08-12 15:45:26
+@@ -507,6 +507,7 @@
      CGAffineTransform textMatrix;
      CGPathRef glyphPath;
-+    int empty_path;
      cairo_path_fixed_t *path;
++    int empty_path;
  
      if (unlikely (glyph == CGGLYPH_INVALID)) {
-@@ -573,26 +574,37 @@
- 					-font->base.scale.yy,
- 					0, 0);
+ 	_cairo_scaled_glyph_set_path (scaled_glyph, &font->base, _cairo_path_fixed_create());
+@@ -522,18 +523,30 @@
  
-+    empty_path = 0;
-     if (CTFontCreateWithGraphicsFontPtr && CTFontCreatePathForGlyphPtr) {
- 	CTFontRef ctFont = CTFontCreateWithGraphicsFontPtr (font_face->cgFont, 1.0, NULL, NULL);
- 	glyphPath = CTFontCreatePathForGlyphPtr (ctFont, glyph, &textMatrix);
-+	if (!glyphPath) {
-+	    /* an empty glyph path may just reflect whitespace; check bounding rects */
-+	    CGRect r;
-+	    r = CTFontGetBoundingRectsForGlyphs(ctFont, kCTFontHorizontalOrientation, &glyph, NULL, 1);
-+	    if (memcmp(&CGRectNull, &r, sizeof(CGRect)))
-+		empty_path = 1;
-+	}
- 	CFRelease (ctFont);
-     } else {
- 	glyphPath = CGFontGetGlyphPathPtr (font_face->cgFont, &textMatrix, 0, glyph);
-     }
+     glyphPath = CTFontCreatePathForGlyph (font->ctFont, glyph, &textMatrix);
  
 -    if (!glyphPath)
++    empty_path = 0;
++    if (!glyphPath) {
++	/* an empty glyph path may just reflect whitespace; check bounding rects */
++	CGRect r;
++	r = CTFontGetBoundingRectsForGlyphs(font->ctFont, kCTFontHorizontalOrientation, &glyph, NULL, 1);
++	if (memcmp(&CGRectNull, &r, sizeof(CGRect)))
++	    empty_path = 1;
++    }
++
 +    if (!glyphPath && !empty_path)
  	return CAIRO_INT_STATUS_UNSUPPORTED;
  

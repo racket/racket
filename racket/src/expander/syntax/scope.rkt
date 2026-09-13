@@ -61,6 +61,9 @@
          shifted-multi-scope?
          shifted-multi-scope<?
 
+         interned-scope?
+         interned-scope-key
+
          interned-scope-symbols
          interned-scopes
          syntax-has-interned-scope?
@@ -81,7 +84,7 @@
 ;; faster and to improve GC, since non-nested binding contexts will
 ;; generally not share a most-recent scope.
 
-(struct scope (id             ; internal scope identity; used for sorting
+(struct scope (id             ; internal scope identity as an exact rational; used for sorting
                kind           ; 'macro for macro-introduction scopes, otherwise treated as debug info
                [binding-table #:mutable]) ; see "binding-table.rkt"
   #:authentic
@@ -116,12 +119,14 @@
     ;; the `bindings` field is handled via `prop:scope-with-bindings`
     (void))
   #:property prop:scope-with-bindings
-  (lambda (s get-reachable-scopes extra-shifts reach register-trigger)
+  (lambda (s get-reachable-scopes extra-shifts reach register-trigger reach-implicitly report-shifts)
     (binding-table-register-reachable (scope-binding-table s)
                                       get-reachable-scopes
                                       extra-shifts
                                       reach
-                                      register-trigger)))
+                                      register-trigger
+                                      reach-implicitly
+                                      report-shifts)))
 
 (define deserialize-scope
   (case-lambda
@@ -181,7 +186,8 @@
     (define multi-scope-tables (serialize-state-multi-scope-tables state))
     (ser-push! (or (hash-ref multi-scope-tables (multi-scope-scopes ms) #f)
                    (let ([ht (for/hasheqv ([(phase sc) (in-hash (unbox (multi-scope-scopes ms)))]
-                                           #:when (set-member? (serialize-state-reachable-scopes state) sc))
+                                           #:when (or (set-member? (serialize-state-reachable-scopes state) sc)
+                                                      (set-member? (serialize-state-implicitly-reachable-scopes state) sc)))
                                (values phase sc))])
                      (hash-set! multi-scope-tables (multi-scope-scopes ms) ht)
                      ht))))
@@ -190,7 +196,7 @@
     ;; the `scopes` field is handled via `prop:scope-with-bindings`
     (void))
   #:property prop:scope-with-bindings
-  (lambda (ms get-reachable-scopes bulk-shifts reach register-trigger)
+  (lambda (ms get-reachable-scopes bulk-shifts reach register-trigger reach-implicitly report-shifts)
     ;; This scope is reachable via its multi-scope, but it only
     ;; matters if it's reachable through a binding (otherwise it
     ;; can be re-generated later). We don't want to keep a scope
@@ -233,7 +239,10 @@
   #:property prop:serialize-fill!
   (lambda (s ser-push! state)
     (ser-push! 'tag '#:representative-scope-fill!)
-    (ser-push! (binding-table-prune-to-reachable (scope-binding-table s) state))
+    (if (set-member? (serialize-state-reachable-scopes state) s)
+        (ser-push! (binding-table-prune-to-reachable (scope-binding-table s) state))
+        ;; only implicitly reachable, so we don't need bindings
+        (ser-push! empty-binding-table))
     (ser-push! (representative-scope-owner s)))
   #:property prop:reach-scopes
   (lambda (s bulk-shifts reach)
@@ -305,18 +314,28 @@
 
 ;; Each new scope increments the counter, so we can check whether one
 ;; scope is newer than another.
-(define-place-local id-counter 0)
+(define-place-local id-counter (box 0))
 (define (new-scope-id!)
-  (set! id-counter (add1 id-counter))
-  id-counter)
+  (define c (unbox* id-counter))
+  (cond
+    [(box-cas! id-counter c (add1 c))
+     (add1 c)]
+    [else
+     (new-scope-id!)]))
 
 (define (new-deserialize-scope-id!)
   ;; negative scope ensures that new scopes are recognized as such by
   ;; having a larger id
   (- (new-scope-id!)))
 
-(define (deserialized-scope-id? scope-id)
-  (negative? scope-id))
+(define (make-representative-scope-id scope-id phase)
+  ;; keep a representative scope's age in line with the enclosing multi-scope's
+  ;; age, and make it deterministic for the phase
+  (cond
+    [(eqv? phase 0) (+ scope-id 1/2)]
+    [(not phase) (+ scope-id 7/8)]
+    [(phase . > . 0) (+ scope-id (/ 1 (+ 2 phase)))] ; in (0, 1/3]
+    [else (+ scope-id 1/2 (/ 1 (- 2 phase)))])) ; (1/2, 3/4]
 
 ;; A shared "outside-edge" scope for all top-level contexts
 (define top-level-common-scope (scope 0 'module empty-binding-table))
@@ -324,36 +343,47 @@
 (define (new-scope kind)
   (scope (new-scope-id!) kind empty-binding-table))
 
-;; The intern table used for interned scopes. Access to the table must be
-;; atomic so that the table is not left locked if the expansion thread is
-;; killed.
+;; The intern table used for interned scopes. A lock is needed for
+;; updates to enable `hash-keys` and `in-hash-values. Furthermore,
+;; locked access to the table must be uninterruptible so that the
+;; table is not left locked if the expansion thread is killed.
 (define-place-local interned-scopes-table (make-ephemeron-hasheq))
+(define-place-local interned-scopes-table-lock (make-uninterruptible-lock))
 
 (define (interned-scope-symbols)
-  (call-as-atomic
-   (lambda ()
-     (hash-keys interned-scopes-table))))
+  (uninterruptible-lock-acquire interned-scopes-table-lock)
+  (define keys (hash-keys interned-scopes-table))
+  (uninterruptible-lock-release interned-scopes-table-lock)
+  keys)
 
 (define (interned-scopes)
-  (call-as-atomic
-   (lambda ()
-     (for/seteq ([s (in-hash-values interned-scopes-table)])
-       s))))
+  (uninterruptible-lock-acquire interned-scopes-table-lock)
+  (define scs (for/seteq ([s (in-hash-values interned-scopes-table)])
+                s))
+  (uninterruptible-lock-release interned-scopes-table-lock)
+  scs)
 
 (define (scope-place-init!)
-  (set! interned-scopes-table (make-ephemeron-hasheq)))
+  (set! interned-scopes-table (make-ephemeron-hasheq))
+  (set! interned-scopes-table-lock (make-uninterruptible-lock)))
 
 (define (make-interned-scope sym)
   (define (make)
     ;; since interned scopes are reused by unmarshalled code, and because they’re generally unlikely
     ;; to be a good target for bindings, always create them with a negative id
     (interned-scope (- (new-scope-id!)) 'interned empty-binding-table sym))
-  (call-as-atomic
-   (lambda ()
-     (or (hash-ref! interned-scopes-table sym #f)
-         (let ([new (make)])
-           (hash-set! interned-scopes-table sym new)
-           new)))))
+  (cond
+    [(hash-ref interned-scopes-table sym #f)
+     => (lambda (s) s)]
+    [else
+     (define new (make))
+     (uninterruptible-lock-acquire interned-scopes-table-lock)
+     (define s (or (hash-ref interned-scopes-table sym #f)
+                   (begin
+                     (hash-set! interned-scopes-table sym new)
+                     new)))
+     (uninterruptible-lock-release interned-scopes-table-lock)
+     s]))
 
 (define (syntax-has-interned-scope? s)
   (for/or ([sc (in-set (syntax-scopes s))])
@@ -366,9 +396,9 @@
   ;; Get the identity of `ms` at phase`
   (let ([scopes (unbox (multi-scope-scopes ms))])
     (or (hash-ref scopes phase #f)
-        (let ([s (representative-scope (if (deserialized-scope-id? (multi-scope-id ms))
-                                           (new-deserialize-scope-id!)
-                                           (new-scope-id!))
+        (let ([s (representative-scope (make-representative-scope-id
+                                        (multi-scope-id ms)
+                                        phase)
                                        'module
                                        empty-binding-table
                                        ms phase)])
@@ -786,8 +816,10 @@
       (intern-shifted-multi-scope (shifted-to-label-phase (phase- 0 (shifted-multi-scope-phase sms)))
                                   (shifted-multi-scope-multi-scope sms))])]
    [(shifted-to-label-phase? (shifted-multi-scope-phase sms))
-    ;; Numeric shift has no effect on bindings in phase #f
-    sms]
+    ;; Numeric shift on bindings in phase #f
+    (define from (shifted-to-label-phase-from (shifted-multi-scope-phase sms)))
+    (intern-shifted-multi-scope (shifted-to-label-phase (phase+ delta from))
+                                (shifted-multi-scope-multi-scope sms))]
    [else
     ;; Numeric shift added to an existing numeric shift
     (intern-shifted-multi-scope (phase+ delta (shifted-multi-scope-phase sms))

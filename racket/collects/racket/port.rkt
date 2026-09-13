@@ -28,6 +28,7 @@
 
          ;; `mzlib/port` exports
          open-output-nowhere
+         open-input-nowhere
          make-pipe-with-specials
          make-input-port/read-to-peek
          peeking-input-port

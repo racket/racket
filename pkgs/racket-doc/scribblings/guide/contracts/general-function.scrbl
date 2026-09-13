@@ -80,8 +80,15 @@ arguments.}
   (foldr (lambda (n m) (max (abs n) m)) (abs n) rst))
 ]
 
-Describing this function through a contract requires a further
-extension of @racket[->*]: a @racket[#:rest] keyword specifies a
+To describe this function through a contract, you can use the @racket[...] feature of @racket[->].
+
+@racketblock[
+(provide
+ (contract-out
+  [max-abs (-> real? real? ... real?)]))
+]
+
+Alternatively, you can use @racket[->*] with a @racket[#:rest] keyword, which specifies a
 contract on a list of arguments after the required and optional
 arguments:
 
@@ -606,7 +613,7 @@ glance, this appears to suggest a contract that assigns a
 @racketblock[
 (->* () 
      #:rest (listof any/c)
-     (or/c number? false/c))
+     (or/c number? #f))
 ]
 This contract, however, says that the function must accept @emph{any}
 number of arguments, not a @emph{specific} but
@@ -624,7 +631,7 @@ because the given function accepts only one argument.
   [n-step
    (->i ([proc (inits)
           (and/c (unconstrained-domain-> 
-                  (or/c false/c number?))
+                  (or/c #f number?))
                  (λ (f) (procedure-arity-includes? 
                          f 
                          (length inits))))]

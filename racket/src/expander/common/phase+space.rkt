@@ -54,17 +54,19 @@
          has-default-space?)
 
 (define-place-local interned (make-weak-hash))
+(define-place-local interned-lock (make-uninterruptible-lock))
 
 (define (phase+space-place-init!)
-  (set! interned (make-weak-hash)))
+  (set! interned (make-weak-hash))
+  (set! interned-lock (make-uninterruptible-lock)))
 
 ;; used for both phase+space and phase+space-shift
 (define (intern new-key)
-  (start-atomic)
+  (uninterruptible-lock-acquire interned-lock)
   (define old-key (hash-ref-key interned new-key #f))
   (unless old-key
     (hash-set! interned new-key #t))
-  (end-atomic)
+  (uninterruptible-lock-release interned-lock)
   (or old-key new-key))
 
 (define (space+ s s-level)

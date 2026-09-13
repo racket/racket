@@ -68,3 +68,5 @@ typedef unsigned long long rktio_uint64_t;
 /* In case xlocale is not available: */
 #undef RKTIO_USE_XLOCALE
 #undef RKTIO_USE_XLOCALE_HEADER
+
+#undef RKTIO_HAS_CLOEXEC

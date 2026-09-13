@@ -27,7 +27,8 @@
          "private/catalog-archive.rkt"
          "private/suggestions.rkt"
          "private/archive.rkt"
-         "private/trash.rkt")
+         "private/trash.rkt"
+         "private/timeout.rkt")
   
 (define dep-behavior/c
   (or/c #f 'fail 'force 'search-ask 'search-auto))
@@ -38,8 +39,9 @@
 
 (define pkg-desc/opt
   (let ([pkg-desc (lambda (source type name checksum auto?
-                             #:path [path #f])
-                    (pkg-desc source type name checksum auto? path))])
+                                  #:path [path #f]
+                                  #:adjacent-deps? [adjacent-deps? #f])
+                    (pkg-desc source type name checksum auto? path adjacent-deps?))])
     pkg-desc))
 
 (provide
@@ -70,6 +72,8 @@
    (parameter/c (or/c #f real?))]
   [current-pkg-network-retries
    (parameter/c (or/c #f real?))]
+  [current-pkg-network-timeout
+   (parameter/c (or/c #f real?))]
   [pkg-directory
    (->* (string?)
         (#:cache (or/c #f (and/c hash? (not/c immutable?))))
@@ -77,11 +81,12 @@
   [rename
    pkg-desc/opt pkg-desc
    (->* (string?
-         (or/c #f 'file 'dir 'link 'static-link 'file-url 'dir-url 'git 'git-url 'github 'clone 'name)
+         (or/c #f 'file 'dir 'link 'static-link 'file-url 'dir-url 'git 'git-url 'github 'clone 'name 'attach)
          (or/c string? #f)
          (or/c string? #f)
          boolean?)
-        (#:path (or/c #f path-string?))
+        (#:path (or/c #f path-string?)
+         #:adjacent-deps? boolean?)
         pkg-desc?)]
   [pkg-config
    (->* (boolean? (listof string?))
@@ -94,14 +99,15 @@
   [pkg-new
    (-> path-string? void?)]
   [pkg-create
-   (->* ((or/c 'zip 'tgz 'plt 'MANIFEST)
+   (->* ((or/c 'zip 'tgz 'plt 'dir 'MANIFEST)
          path-string?)
         (#:source (or/c 'dir 'name)
                   #:pkg-name (or/c #f string?)
                   #:mode (or/c 'as-is 'source 'binary 'binary-lib 'built)
                   #:quiet? boolean?
                   #:from-command-line? boolean?
-                  #:dest (or/c (and/c path-string? complete-path?) #f))
+                  #:dest (or/c (and/c path-string? complete-path?) #f)
+                  #:original (or/c string? #f))
         void?)]
   [pkg-update
    (->* ((listof (or/c string? pkg-desc?)))
@@ -157,6 +163,7 @@
                         #:strict-doc-conflicts? boolean?
                         #:use-cache? boolean?
                         #:skip-installed? boolean?
+                        #:skip-auto-installed? boolean?
                         #:quiet? boolean?
                         #:use-trash? boolean?
                         #:from-command-line? boolean?
@@ -165,7 +172,8 @@
                         #:link-dirs? boolean?
                         #:multi-clone-behavior (or/c 'fail 'force 'convert 'ask)
                         #:pull-behavior (or/c 'ff-only 'rebase 'try)
-                        #:dry-run? boolean?)
+                        #:dry-run? boolean?
+                        #:destdir (or/c #f path-string?))
         (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]
   [pkg-migrate
    (->* (string?)
@@ -181,6 +189,8 @@
                         #:force-strip? boolean?
                         #:dry-run? boolean?)
         (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]
+  [pkg-migrate-available-versions
+   (-> (listof string?))]
   [pkg-catalog-show
    (->* ((listof string?))
         (#:all? boolean?
@@ -196,7 +206,7 @@
                         #:relative-sources? boolean?)
         void?)]
   [pkg-catalog-archive
-   (->* (path-string? (listof string?))
+   (->* (path-string? (listof path-string?))
         (#:from-config? boolean?
                         #:state-catalog (or/c path-string? #f)
                         #:relative-sources? boolean?
@@ -205,6 +215,7 @@
                         #:include-deps? boolean?
                         #:include-deps-sys+subpath (or/c #f (cons/c symbol? path-for-some-system?))
                         #:exclude (or/c #f (listof string?))
+                        #:mode (or/c 'as-is 'source 'binary 'binary-lib 'built)
                         #:fast-file-copy? boolean?
                         #:package-exn-handler (string? exn:fail? . -> . any))
         void?)]
@@ -278,7 +289,7 @@
                 (listof module-path?)
                 any/c))]
   [extract-pkg-dependencies
-   (->* ((symbol? (-> any/c) . -> . any/c))
+   (->* ((or/c #f (symbol? (-> any/c) . -> . any/c)))
         (#:build-deps? boolean?
                        #:filter? boolean?
                        #:versions? boolean?)
@@ -298,4 +309,8 @@
                                            (#:namespace namespace?
                                                         #:system-type (or/c #f symbol?)
                                                         #:system-library-subpath (or/c #f path-for-some-system?))
-                                           (listof (cons/c symbol? string?)))]))
+                                           (listof (cons/c symbol? string?)))]
+
+  [call-in-pkg-timeout-sandbox (->* ((-> any))
+                                    (#:make-exn (-> string? continuation-mark-set? any/c))
+                                    any)]))

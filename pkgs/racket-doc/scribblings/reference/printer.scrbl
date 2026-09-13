@@ -552,10 +552,10 @@ unreadably nevertheless counts as @tech{quotable}.
 @section[#:tag "print-compiled"]{Printing Compiled Code}
 
 Compiled code as produced by @racket[compile] prints using
-@litchar{#~}. Compiled code printed with @litchar{#~} is essentially
-assembly code for Racket, and reading such a form produces a compiled
-form when the @racket[read-accept-compiled] parameter is set to
-@racket[#t].
+@as-index{@litchar{#~}}. Compiled code printed with @litchar{#~} is
+essentially assembly code for Racket, and reading such a form produces
+a compiled form when the @racket[read-accept-compiled] parameter is
+set to @racket[#t].
 
 Compiled code parsed from @litchar{#~} is marked as non-runnable if
 the current code inspector (see @racket[current-code-inspector]) is

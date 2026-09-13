@@ -12,7 +12,6 @@
        (println (add1 i))
        (fsemaphore-post mutex)))))
 
-(void
- (map sync
-      (for/list ([f (in-list futures)])
-        (thread (lambda () (touch f))))))
+(for-each sync
+          (for/list ([f (in-list futures)])
+            (thread (lambda () (touch f)))))

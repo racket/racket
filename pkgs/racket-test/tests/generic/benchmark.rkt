@@ -79,7 +79,11 @@
 (define factor 137)
 
 (define-syntax-rule (timing e)
-  (get-timing 'e (lambda () e)))
+  ;; Disable these tests on CGC because they end up being too slow and
+  ;; cause CI to fail.
+  (if (eq? 'cgc (system-type 'gc))
+      (printf "skipped ~s~n" 'e)
+      (get-timing 'e (lambda () e))))
 
 (define (get-timing expr proc)
   (collect-garbage)

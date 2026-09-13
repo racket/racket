@@ -4,6 +4,7 @@
          "parameter.rkt"
          "evt.rkt"
          "waiter.rkt"
+         "semaphore.rkt"
          "../common/queue.rkt")
 
 (provide make-channel
@@ -13,7 +14,10 @@
          
          channel-put-evt
          channel-put-evt?
-         channel-put-do)
+         channel-put-do
+
+         channel-get-poll-or-semaphore
+         channel-put-poll-or-semaphore)
 
 (module+ for-sync
   (provide set-sync-on-channel!))
@@ -26,7 +30,9 @@
 ;; ----------------------------------------
 
 (struct channel (get-queue
-                 put-queue)
+                 put-queue
+                 [get-queued-sema #:mutable]
+                 [put-queued-sema #:mutable])
   #:property
   prop:evt
   (poller (lambda (ch poll-ctx)
@@ -47,7 +53,7 @@
 (struct channel-select-waiter select-waiter (thread))
 
 (define (make-channel)
-  (channel (make-queue) (make-queue)))
+  (channel (make-queue) (make-queue) #f #f))
 
 ;; ----------------------------------------
 
@@ -60,9 +66,9 @@
     [else
      (define b (box #f))
      (let receive () ; loop if a retry is needed
-       ((atomically
+       ((atomically/no-barrier-exit
          (define pw+v (queue-remove! (channel-put-queue ch)))
-         (define gw (current-thread/in-atomic))
+         (define gw (current-thread/in-racket))
          (cond
            [(not pw+v)
             (define gq (channel-get-queue ch))
@@ -80,6 +86,12 @@
      (unbox b)]))
 
 ;; in atomic mode
+;; for cooperation with `port-commit-peeked`
+(define (channel-get-poll-or-semaphore ch)
+  (define-values (results sema) (channel-get/poll ch 'sema))
+  (or results sema))
+
+;; in atomic mode
 (define (channel-get/poll ch poll-ctx)
   ;; Similar to `channel-get`, but works in terms of a
   ;; `select-waiter` instead of a thread
@@ -90,14 +102,24 @@
    [pw+v
     (waiter-resume! (car pw+v) (void))
     (values (list (cdr pw+v)) #f)]
+   [(eq? poll-ctx 'sema)
+    (unless (channel-put-queued-sema ch)
+      (set-channel-put-queued-sema! ch (make-semaphore)))
+    (values #f (channel-put-queued-sema ch))]
    [(poll-ctx-poll? poll-ctx)
     (values #f ch)]
    [else
     (define b (box #f))
     (define gq (channel-get-queue ch))
     (define gw (channel-select-waiter (poll-ctx-select-proc poll-ctx)
-                                      (current-thread/in-atomic)))
+                                      (current-thread/in-racket)))
     (define n (queue-add! gq (cons gw b)))
+    (define (post-queued)
+      (define sema (channel-get-queued-sema ch))
+      (when sema
+        (semaphore-post-all/atomic sema)
+        (set-channel-get-queued-sema! ch #f)))
+    (post-queued)
     (values #f
             (control-state-evt async-evt
                                (lambda (v) (unbox b))
@@ -113,10 +135,10 @@
                                     (values #t #t)]
                                    [else
                                     (set! n (queue-add! gq (cons gw b)))
+                                    (post-queued)
                                     (values #f #f)]))))]))
 
 ;; ----------------------------------------
-
 
 (define/who (channel-put ch v)
   (check who channel? ch)
@@ -124,9 +146,9 @@
     [(channel-put-impersonator? ch)
      (channel-impersonator-put ch v channel-put)]
     [else
-     ((atomically
+     ((atomically/no-barrier-exit
        (define gw+b (queue-remove! (channel-get-queue ch)))
-       (define pw (current-thread/in-atomic))
+       (define pw (current-thread/in-racket))
        (cond
          [(not gw+b)
           (define pq (channel-put-queue ch))
@@ -142,6 +164,14 @@
           (waiter-resume! (car gw+b) v)
           void])))]))
 
+;; in atomic mode
+;; for cooperation with `port-commit-peeked`
+(define (channel-put-poll-or-semaphore put-evt)
+  (define ch (channel-put-evt*-ch put-evt))
+  (define v (channel-put-evt*-v put-evt))
+  (define-values (results sema) (channel-put/poll ch v put-evt 'sema))
+  (or results sema))
+
 ;; In atomic mode
 (define (channel-put/poll ch v self poll-ctx)
   ;; Similar to `channel-put`, but works in terms of a
@@ -154,13 +184,23 @@
     (set-box! (cdr gw+b) v)
     (waiter-resume! (car gw+b) v)
     (values (list self) #f)]
+   [(eq? poll-ctx 'sema)
+    (unless (channel-get-queued-sema ch)
+      (set-channel-get-queued-sema! ch (make-semaphore)))
+    (values #f (channel-get-queued-sema ch))]
    [(poll-ctx-poll? poll-ctx)
     (values #f self)]
    [else
     (define pq (channel-put-queue ch))
     (define pw (channel-select-waiter (poll-ctx-select-proc poll-ctx)
-                                      (current-thread/in-atomic)))
+                                      (current-thread/in-racket)))
     (define n (queue-add! pq (cons pw v)))
+    (define (post-queued)
+      (define sema (channel-put-queued-sema ch))
+      (when sema
+        (semaphore-post-all/atomic sema)
+        (set-channel-put-queued-sema! ch #f)))
+    (post-queued)
     (values #f
             (control-state-evt async-evt
                                (lambda (v) self)
@@ -176,6 +216,7 @@
                                     (values self #t)]
                                    [else
                                     (set! n (queue-add! pq (cons pw v)))
+                                    (post-queued)
                                     (values #f #f)]))))]))
 
 (define/who (channel-put-evt ch v)
@@ -205,7 +246,7 @@
 (define (not-matching-select-waiter w+b/v)
   (define w (car w+b/v))
   (or (not (channel-select-waiter? w))
-      (not (eq? (current-thread/in-atomic)
+      (not (eq? (current-thread/in-racket)
                 (channel-select-waiter-thread w)))))
 
 ;; ----------------------------------------

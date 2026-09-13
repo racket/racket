@@ -17,7 +17,7 @@
   (test 'ok values (with-handlers ([exn? (lambda (x) 'ok)])
                      e)))
 
-(define (test-ssl limit buffer? close?)
+(define (test-ssl limit buffer? close? #:private-bytes? [private-bytes? #f])
   ;; Test SSL communication using a limited pipe.
   ;; (Using a pipe limited to a small buffer helps make sure
   ;; that race conditions and deadlocks are eliminated in the
@@ -44,7 +44,9 @@
       (thread (lambda ()
 		(define ctx (ssl-make-server-context))
 		(ssl-load-certificate-chain! ctx pem)
-		(ssl-load-private-key! ctx pem)
+                (ssl-load-private-key! ctx (if private-bytes?
+                                               (list 'data (file->bytes pem))
+                                               pem))
 		(let-values ([(r w) (ports->ssl-ports
 				     r2 w2
 				     #:context ctx
@@ -78,6 +80,7 @@
 
 (test-ssl 100 #t #f)
 (test-ssl 100 #f #f)
+(test-ssl 100 #f #f #:private-bytes? #t)
 
 (newline)
 (when errs?

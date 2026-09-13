@@ -611,6 +611,58 @@
   (test #(#f 0 0 0 #f 0 2 0) build-kmp-table "abcdabd")
   (test #(#f 0 #f 1 #f 0 #f 3 2 0) build-kmp-table "abacababc"))
 
+;; ---------- string-find ----------
+
+(let ()
+  (test 0 string-find "racket" "racket")
+  (test 2 string-find "racket" "cket")
+  (test 1 string-find "racket" "acke")
+  (test 5 string-find "racket" "t")
+  (test #f string-find "racket" "b")
+  (test #f string-find "racket" "R")
+  (test #f string-find "RACKET" "r")
+  (test #f string-find "racket" "kc")
+  (test #f string-find "racket" "racketr")
+  (test 0 string-find "racket" "")
+  (test 0 string-find "" "")
+  (test #f string-find "" "racket")
+  (test #f string-find "racket" "a..e")
+  (test 1 string-find "ra..et" "a..e")
+  ; string-find sometimes uses different code paths for short and long string,
+  ; so add some long test too.
+  (test 0 string-find "racket012345678901234567890123456789012345678901234567890123456789racket"
+        "racket012345678901234567890123456789012345678901234567890123456789racket")
+  (test 0 string-find "racket012345678901234567890123456789012345678901234567890123456789racket"
+        "racket01234567890123456789")
+  (test 46 string-find "racket012345678901234567890123456789012345678901234567890123456789racket"
+        "01234567890123456789racket")
+  (test 6 string-find "racket012345678901234567890123456789012345678901234567890123456789racket"
+        "012345678901234567890123456789")
+  (test #f string-find "racket012345678901234567890123456789012345678901234567890123456789racket"
+        "racket01234567890123456789racket")
+  (test 46 string-find "racket0123456789012345678901234567890123456789aaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaa")
+  (test 0 string-find "aaaaaaaaaaaaaaaaaaaaaaaaa0123456789012345678901234567890123456789racket"
+        "aaaaaaaaaaaaaaaaaaaaaaaaa")
+  (test #f string-find "aaaaaaaaaaaaaaaaaaaaaaaa_012345678901234567890_aaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaa")
+  (test 0 string-find "aaaaaaaaaaaaaaaaaaaaaaaaa012345678901234567890_aaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaa")
+  (test 46 string-find "aaaaaaaaaaaaaaaaaaaaaaaa_012345678901234567890aaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaa")
+  (test 50 string-find "1234567890aaaaa123456789012345678901234567890aaaaa1234567890123456789012345678901234567890"
+        "1234567890123456789012345678901234567890")
+  (test #f string-find "1234567890aaaaa123456789012345678901234567890aaaaa123456789012345678901234567890aaaa"
+        "1234567890123456789012345678901234567890")
+  (test #f string-find "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy")
+  (test #f string-find "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        "xxxxxxxxxxxxxxxxxxxxxxxxy")
+  (test #f string-find "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        "yxxxxxxxxxxxxxxxxxxxxxxxx")
+  (test #f string-find "xxxxxxxxxxxxxxxxxxxxxxxxyxxxxxxxxxxxxxxxxxxxxxxxxyxxxxxxxxxxxxxxxxxxxxx"
+        "xxxxxxxxxxxxxxxxxxxxxxxxx"))
+
 ;; ---------- regexp-try-match ----------
 
 (define (check-try-match expect pattern in-bstr

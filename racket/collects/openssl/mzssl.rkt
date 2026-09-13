@@ -23,11 +23,10 @@ TO DO:
 |#
 
 #lang racket/base
+
 (require (rename-in racket/contract/base [-> c->])
          ffi/unsafe
-         ffi/unsafe/define
          ffi/unsafe/atomic
-         ffi/unsafe/alloc
          ffi/unsafe/global
          ffi/file
          ffi/unsafe/custodian
@@ -37,6 +36,7 @@ TO DO:
          racket/string
          racket/lazy-require
          racket/include
+         racket/promise
          "libcrypto.rkt"
          "libssl.rkt"
          "private/ffi.rkt"
@@ -56,35 +56,6 @@ TO DO:
 (define (alpn-protocol-bytes/c v)
   (and (bytes? v) (< 0 (bytes-length v) 256)))
 
-(define curve-nid-alist
-  '((sect163k1 . 721)
-    (sect163r1 . 722)
-    (sect163r2 . 723)
-    (sect193r1 . 724)
-    (sect193r2 . 725)
-    (sect233k1 . 726)
-    (sect233r1 . 727)
-    (sect239k1 . 728)
-    (sect283k1 . 729)
-    (sect283r1 . 730)
-    (sect409k1 . 731)
-    (sect409r1 . 732)
-    (sect571k1 . 733)
-    (sect571r1 . 734)
-    (secp160k1 . 708)
-    (secp160r1 . 709)
-    (secp160r2 . 710)
-    (secp192k1 . 711)
-    (secp224k1 . 712)
-    (secp224r1 . 713)
-    (secp256k1 . 714)
-    (secp384r1 . 715)
-    (secp521r1 . 716)
-    (prime192v1 . 409)
-    (prime256v1 . 415)))
-
-(define curve/c (apply or/c (map car curve-nid-alist)))
-
 (define verify-source/c
   (or/c path-string?
         (list/c 'directory path-string?)
@@ -100,7 +71,7 @@ TO DO:
   [ssl-make-client-context
    (->* ()
         (protocol-symbol/c
-         #:private-key (or/c (list/c 'pem path-string?) (list/c 'der path-string?) #f)
+         #:private-key (or/c (list/c 'pem path-string?) (list/c 'pem-data bytes?) (list/c 'der path-string?) #f)
          #:certificate-chain (or/c path-string? #f))
         ssl-client-context?)]
   [ssl-secure-client-context
@@ -108,13 +79,13 @@ TO DO:
   [ssl-make-server-context
    (->* ()
         (protocol-symbol/c
-         #:private-key (or/c (list/c 'pem path-string?) (list/c 'der path-string?) #f)
+         #:private-key (or/c (list/c 'pem path-string?) (list/c 'pem-data bytes?) (list/c 'der path-string?) #f)
          #:certificate-chain (or/c path-string? #f))
         ssl-server-context?)]
   [ssl-server-context-enable-dhe!
-   (->* (ssl-server-context?) ((or/c path-string? bytes?)) void?)]
+   (->* (ssl-server-context?) ((or/c 'auto path-string? bytes?)) void?)]
   [ssl-server-context-enable-ecdhe!
-   (->* (ssl-server-context?) (curve/c) void?)]
+   (->* (ssl-server-context?) (symbol?) void?)]
   [ssl-client-context?
    (c-> any/c boolean?)]
   [ssl-server-context?
@@ -124,7 +95,7 @@ TO DO:
   [ssl-load-certificate-chain!
    (c-> (or/c ssl-context? ssl-listener?) path-string? void?)]
   [ssl-load-private-key!
-   (->* ((or/c ssl-context? ssl-listener?) path-string?)
+   (->* ((or/c ssl-context? ssl-listener?) (or/c path-string? (list/c 'data bytes?)))
         (any/c any/c)
         void?)]
   [ssl-load-verify-root-certificates!
@@ -132,8 +103,8 @@ TO DO:
         path-string?
         void?)]
   [ssl-load-verify-source!
-   (c-> ssl-context?
-        verify-source/c
+   (->* (ssl-context? verify-source/c)
+        (#:try? any/c)
         void?)]
   [ssl-load-suggested-certificate-authorities!
    (c-> (or/c ssl-context? ssl-listener?)
@@ -295,27 +266,33 @@ TO DO:
   (complain-on-cert)
   (set! complain-on-cert void))
 
-(define ssl-default-verify-sources
+(define ssl-default-verify-sources*
   (make-parameter
-   (case (system-type 'os*)
-     [(windows)
-      ;; On Windows, x509-root-sources produces paths like "/usr/local/ssl/certs", which
-      ;; aren't useful. So just skip them.
-      '((win32-store "ROOT"))]
-     [(macosx darwin)
-      '((macosx-keychain #f))]
-     [else
-      (x509-root-sources)])))
+   (delay/sync
+     (case (system-type 'os*)
+       [(windows)
+        ;; On Windows, x509-root-sources produces paths like "/usr/local/ssl/certs", which
+        ;; aren't useful. So just skip them.
+        '((win32-store "ROOT"))]
+       [(macosx darwin)
+        '((macosx-keychain #f))]
+       [(ios)
+        ;; On iOS, the function SecTrustCopyAnchorCertificates is not
+        ;; provided by the Security framework, so applications must
+        ;; bundle and provide their own certificates. Log an error here
+        ;; if the sources have not been changed.
+        (log-openssl-error "ssl-default-verify-sources must be set on iOS")
+        null]
+       [else
+        (x509-root-sources)]))))
 
-(define ssl-dh4096-param-bytes
-  (include/reader "dh4096.pem" (lambda (src port)
-                                 (let loop ([accum '()])
-                                   (define bstr (read-bytes 4096 port))
-                                   (if (eof-object? bstr)
-                                       (if (null? accum)
-                                           eof
-                                           (datum->syntax #'here (apply bytes-append (reverse accum))))
-                                       (loop (cons bstr accum)))))))
+(define ssl-default-verify-sources
+  (make-derived-parameter
+   ssl-default-verify-sources*
+   (λ (p) (delay/sync p))
+   force))
+
+(define ssl-dh4096-param-bytes #"")
 
 ;; Make this bigger than 4096 to accommodate at least
 ;; 4096 of unencrypted data
@@ -477,6 +454,8 @@ TO DO:
   (when cert-chain (ssl-load-certificate-chain! mzctx cert-chain))
   (cond [(and (pair? priv-key) (eq? (car priv-key) 'pem))
          (ssl-load-private-key! mzctx (cadr priv-key) #f #f)]
+        [(and (pair? priv-key) (eq? (car priv-key) 'pem-data))
+         (ssl-load-private-key! mzctx (list 'data (cadr priv-key)) #f #f)]
         [(and (pair? priv-key) (eq? (car priv-key) 'der))
          (ssl-load-private-key! mzctx (cadr priv-key) #f #t)]
         [else (void)])
@@ -491,6 +470,8 @@ TO DO:
        ctx)))
   (SSL_CTX_set_mode ctx (bitwise-ior SSL_MODE_ENABLE_PARTIAL_WRITE
                                      SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER))
+  (when v3.0.0/later?
+    (SSL_CTX_set_options ctx SSL_OP_IGNORE_UNEXPECTED_EOF))
   (when v1.1.0/later?
     (define proto-info (assq protocol-symbol protocol-versions))
     (let ([security-level (max (cadr proto-info) (SSL_CTX_get_security_level ctx))]
@@ -500,6 +481,19 @@ TO DO:
       (unless (and (= 1 (SSL_CTX_set_min_proto_version ctx min-proto))
                    (= 1 (SSL_CTX_set_max_proto_version ctx max-proto)))
         (error who "failed setting min/max protocol versions: ~e" protocol-symbol))))
+  (unless client?
+    ;; Always enable DHE and ECDHE support (only needed for server contexts).
+    (cond [v1.1.0/later?
+           ;; DHE supports automatic selection of DH params:
+           (SSL_CTX_set_dh_auto ctx 1)
+           ;; and ECDHE automatic curve selection is enabled by default.
+           (void)]
+          [else
+           ;; In v1.0.2, DHE requires explicitly setting the group; this is the
+           ;; best built-in available in v1.0.2:
+           (SSL_CTX_set_tmp_dh ctx (DH_get_2048_256))
+           ;; and ECDHE supports automatic curve selection, but must be enabled:
+           (SSL_CTX_set_ecdh_auto ctx 1)]))
   ctx)
 
 (define (encrypt->method who e client?)
@@ -583,37 +577,19 @@ TO DO:
 (define (ssl-seal-context! mzctx)
   (set-ssl-context-sealed?! mzctx #t))
 
-(define (ssl-server-context-enable-ecdhe! context [name 'secp521r1])
-  (define (symbol->nid name)
-    (cond [(assq name curve-nid-alist)
-           => cdr]
-          [else
-           (error 'ssl-server-context-enable-ecdhe!
-                  "bad curve name\n  curve name: ~e" name)]))
-  (define ctx (extract-ctx 'ssl-server-context-enable-ecdhe! #t context))
-  (define key (EC_KEY_new_by_curve_name (symbol->nid name)))
-  (check-valid key 'ssl-server-context-enable-ecdhe! "enabling ECDHE")
-  (unless (= 1 (SSL_CTX_ctrl ctx SSL_CTRL_SET_TMP_ECDH 0 key))
-    (error 'ssl-server-context-enable-ecdhe! "enabling ECDHE"))
-  (SSL_CTX_ctrl ctx SSL_CTRL_OPTIONS SSL_OP_SINGLE_ECDH_USE #f)
+(define (ssl-server-context-enable-ecdhe! context [name 'ignored])
+  ;; No longer necessary, ECDHE enabled in auto mode in (server) context
+  ;; construction.  Can customize with SSL_set1_groups[_list], but generally
+  ;; unnecessary, so currently unsupported.
+  (log-openssl-warning
+   "ssl-server-context-enable-ecdhe!: ignoring given ECDH parameters")
   (void))
 
-(define (ssl-server-context-enable-dhe! context [ssl-dh4096-param ssl-dh4096-param-bytes])
-  (define params (if (bytes? ssl-dh4096-param)
-                     ssl-dh4096-param
-                     (call-with-input-file* ssl-dh4096-param port->bytes)))
-  (define params-bio (BIO_new_mem_buf params (bytes-length params)))
-  (check-valid params-bio 'ssl-server-context-enable-dhe! "loading Diffie-Hellman parameters")
-  (with-failure
-    (lambda ()
-      (BIO_free params-bio))
-    (define ctx (extract-ctx 'ssl-server-context-enable-dhe! #t context))
-    (define dh (PEM_read_bio_DHparams params-bio #f #f #f))
-    (check-valid dh 'ssl-server-context-enable-dhe! "loading Diffie-Hellman parameters")
-    (unless (= 1 (SSL_CTX_ctrl ctx SSL_CTRL_SET_TMP_DH 0 dh))
-      (error 'ssl-server-context-enable-dhe! "failed to enable DHE"))
-    (SSL_CTX_ctrl ctx SSL_CTRL_OPTIONS SSL_OP_SINGLE_DH_USE #f)
-    (void)))
+(define (ssl-server-context-enable-dhe! context [params 'ignored])
+  ;; No effect. DHE enabled in auto mode in (server) context construction.
+  (log-openssl-warning
+   "ssl-server-context-enable-dhe!: ignoring given DH parameters")
+  (void))
 
 (define (ssl-load-... who load-it ssl-context-or-listener pathname
                       #:try? [try? #f])
@@ -646,15 +622,36 @@ TO DO:
                     1))))
           ssl-listener pathname))
 
-(define (ssl-load-private-key! ssl-context-or-listener pathname
+(define (ssl-load-private-key! ssl-context-or-listener path-or-data
                                [rsa? #t] [asn1? #f])
-  (ssl-load-...
-   'ssl-load-private-key!
-   (lambda (ctx path)
-     ((if rsa? SSL_CTX_use_RSAPrivateKey_file SSL_CTX_use_PrivateKey_file)
-      ctx path
-      (if asn1? SSL_FILETYPE_ASN1 SSL_FILETYPE_PEM)))
-   ssl-context-or-listener pathname))
+  (if (and (pair? path-or-data) (eq? (car path-or-data) 'data))
+      (let* ([data (cadr path-or-data)]
+             [ctx (get-context/listener 'ssl-load-private-key! ssl-context-or-listener
+                                        #:need-unsealed? #t)]
+             [bio (BIO_new_mem_buf data (bytes-length data))])
+        (with-failure (lambda () (BIO_free bio))
+          (when asn1?
+            ;; TODO: we can probably use d2i_PrivateKey and d2i_RSAPrivateKey to support this if we want
+            (error 'ssl-load-private-key
+                   "loading ASN.1 from bytes data not currently supported;\n must load from file path"))
+          (define success (if rsa?
+                              (SSL_CTX_use_RSAPrivateKey
+                               ctx
+                               (PEM_read_bio_RSAPrivateKey bio #f 0 #f))
+                              (SSL_CTX_use_PrivateKey
+                               ctx
+                               (PEM_read_bio_PrivateKey bio #f 0 #f))))
+
+          (unless (= 1 success)
+            (error 'ssl-load-private-key "failed to load private key"))
+          (BIO_free bio)))
+      (ssl-load-...
+       'ssl-load-private-key!
+       (lambda (ctx path)
+         ((if rsa? SSL_CTX_use_RSAPrivateKey_file SSL_CTX_use_PrivateKey_file)
+          ctx path
+          (if asn1? SSL_FILETYPE_ASN1 SSL_FILETYPE_PEM)))
+       ssl-context-or-listener path-or-data)))
 
 (define (ssl-load-verify-root-certificates! scl src)
   (ssl-load-... 'ssl-load-verify-root-certificates!
@@ -1386,9 +1383,9 @@ TO DO:
            (if connect? 'connect 'accept)
            (if connect? "client" "server")
            context-or-encrypt-method))
-  (atomically ;; connect functions to subsequent check-valid (ie, ERR_get_error)
-   (let-values ([(mzctx ctx) (get-context who context-or-encrypt-method connect?)])
-     (check-valid ctx who "context creation")
+  (let-values ([(mzctx ctx) (get-context who context-or-encrypt-method connect?)])
+    ;; note: `get-context` above should report any failures itself, so assume `ctx` is valid
+    (atomically ;; ensure finaization and connect functions to subsequent check-valid (ie, ERR_get_error)
      (with-failure
       (lambda () (when (and ctx
                        (need-ctx-free? context-or-encrypt-method))

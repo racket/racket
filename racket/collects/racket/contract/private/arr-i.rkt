@@ -100,7 +100,8 @@
          ctc
          blame swapped-blame ;; used by the #:pre and #:post checking
          (append blames
-                 (->i-pre/post-procs ctc)
+                 (->i-pre-procs ctc)
+                 (->i-post-procs ctc)
                  (->i-param-procs ctc)
                  partial-doms
                  (->i-arg-dep-ctcs ctc)
@@ -120,7 +121,7 @@
 (define (exercise->i ctc)
   (define arg-deps (->i-arg-dep-ctcs ctc))
   (cond
-    [(and (null? arg-deps) (not (->i-rest ctc)))
+    [(and (null? arg-deps) (not (->i-rest ctc)) (null? (->i-pre-procs ctc)))
      (λ (fuel)
        (define gens (for/list ([arg-ctc (in-list (->i-arg-ctcs ctc))]
                                #:when (and (not (->i-arg-optional? arg-ctc))
@@ -194,7 +195,7 @@
 (struct ->i (blame-info
              arg-ctcs arg-dep-ctcs indy-arg-ctcs
              rng-ctcs rng-dep-ctcs indy-rng-ctcs
-             pre/post-procs param-procs
+             pre-procs post-procs param-procs
              mandatory-args opt-args mandatory-kwds opt-kwds rest
              mtd? here mk-wrapper name-info)
         #:property prop:custom-write custom-write-property-proc)
@@ -335,14 +336,14 @@
 (define (make-->i is-chaperone-contract? blame-info
                   arg-ctcs arg-dep-ctcs indy-arg-ctcs
                   rng-ctcs rng-dep-ctcs indy-rng-ctcs
-                  pre/post-procs param-procs
+                  pre-procs post-procs param-procs
                   mandatory-args opt-args mandatory-kwds opt-kwds rest
                   mtd? here mk-wrapper name-info)
   (define maker (if is-chaperone-contract? chaperone->i impersonator->i))
   (maker blame-info
          arg-ctcs arg-dep-ctcs indy-arg-ctcs
          rng-ctcs rng-dep-ctcs indy-rng-ctcs
-         pre/post-procs param-procs
+         pre-procs post-procs param-procs
          mandatory-args opt-args mandatory-kwds opt-kwds rest
          mtd? here mk-wrapper name-info))
 
@@ -1120,11 +1121,11 @@ evaluted left-to-right.)
 (define-for-syntax (build-wrapper-proc-arglist an-istx used-indy-vars)
 
   (define pre+param+args+rst (append (istx-pre an-istx)
-                               (istx-args an-istx)
+                                     (istx-args an-istx)
                                      (istx-params an-istx)
-                               (if (istx-rst an-istx)
-                                   (list (istx-rst an-istx))
-                                   '())))
+                                     (if (istx-rst an-istx)
+                                         (list (istx-rst an-istx))
+                                         '())))
   (define res+post (append (istx-post an-istx)
                            (or (istx-ress an-istx) '())))
   (define-values (ordered-args arg-indices pre-indicies param-indicies)
@@ -1389,6 +1390,13 @@ evaluted left-to-right.)
 
     (define is-chaperone-contract? (istx-is-chaperone-contract? an-istx))
 
+    (define (mk-pre/post-proc pre/post vars-to-look-in)
+      (define orig-vars (find-orig-vars (pre/post-vars pre/post)
+                                        vars-to-look-in))
+      #`(λ #,orig-vars
+          (void #,@(pre/post-vars pre/post))
+          #,(pre/post-exp pre/post)))
+
     #`(let ([arg-exp-xs (coerce-contract '->i arg-exps)] ...
             [res-exp-xs (coerce-contract '->i res-exps)] ...)
         #,(syntax-property
@@ -1465,16 +1473,10 @@ evaluted left-to-right.)
                                             (syntax->list #'(res-exp-xs ...)))))
                     #''())
 
-              #,(let ([func (λ (pre/post vars-to-look-in)
-                              (define orig-vars (find-orig-vars (pre/post-vars pre/post)
-                                                                vars-to-look-in))
-                              #`(λ #,orig-vars
-                                  (void #,@(pre/post-vars pre/post))
-                                  #,(pre/post-exp pre/post)))])
-                  #`(list #,@(for/list ([pre (in-list (istx-pre an-istx))])
-                               (func pre args+rst))
-                          #,@(for/list ([post (in-list (istx-post an-istx))])
-                               (func post args+rst+results))))
+              (list #,@(for/list ([pre (in-list (istx-pre an-istx))])
+                         (mk-pre/post-proc pre args+rst)))
+              (list #,@(for/list ([post (in-list (istx-post an-istx))])
+                         (mk-pre/post-proc post args+rst+results)))
 
               #,(let ([func (λ (param vars-to-look-in)
                               (define orig-vars

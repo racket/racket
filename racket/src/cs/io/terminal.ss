@@ -2,6 +2,7 @@
 (export
  terminal-init
  terminal-read-char
+ terminal-pending-winch?
  terminal-write-char
  terminal-char-width
  terminal-set-color
@@ -23,6 +24,7 @@
 
 (define terminal-init (foreign-procedure "(cs)ee_init_term" (iptr iptr) boolean))
 (define terminal-read-char (foreign-procedure "(cs)ee_read_char" (boolean) scheme-object))
+(define terminal-pending-winch? (foreign-procedure "(cs)ee_pending_winch" () scheme-object))
 (define terminal-write-char (foreign-procedure "(cs)ee_write_char" (wchar_t) int))
 (define terminal-char-width (foreign-procedure "(cs)ee_char_width" (wchar_t) int))
 (define terminal-set-color (foreign-procedure "(cs)ee_set_color" (int boolean) void))

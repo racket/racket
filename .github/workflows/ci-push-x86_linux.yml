@@ -1,6 +1,9 @@
 name: CI Linux x86
 
-on: [push]
+on:
+  push:
+    branches:
+      - master
 
 jobs:
 
@@ -17,9 +20,9 @@ jobs:
       fail-fast: false
       matrix:
         cify: [nocify]
-    
+
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v7
       with:
         fetch-depth: 100
     - name: Setup cify if enabled
@@ -54,7 +57,7 @@ jobs:
     - name: Tarballing
       working-directory: /usr/local
       run: tar -cvjf /tmp/racketcgc-debian10-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2 racketcgc
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v7
       with:
         name: racketcgc-debian10-${{ matrix.cify }}-x64_git${{ github.sha }}
         path: /tmp/racketcgc-debian10-${{ matrix.cify }}-x64_git${{ github.sha }}.tar.bz2
@@ -63,9 +66,9 @@ jobs:
     runs-on: ubuntu-22.04
     container:
       image: racket/racket-ci:latest
-                
+
     needs: build-racketcgc
-      
+
     strategy:
       fail-fast: false
       matrix:
@@ -82,9 +85,9 @@ jobs:
             cify: nocify
             efp: efp
             cc: gcc # clang has a problem with future tests timing out
-  
+
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v7
       with:
         fetch-depth: 100
     - name: Setup cify if enabled
@@ -105,7 +108,7 @@ jobs:
     - name: Setup efp if disabled
       if: matrix.efp == 'noefp'
       run: echo "EFP_OPTIONS=--disable-extflonums --disable-places --disable-futures" >> $GITHUB_ENV
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v8
       with:
         name: racketcgc-debian10-nocify-x64_git${{ github.sha }}
         path: /tmp
@@ -141,7 +144,7 @@ jobs:
     - name: Tarballing
       working-directory: /usr/local
       run: tar -cvjf /tmp/racket3m-debian10-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha}}.tar.bz2 racket3m
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v7
       with:
         name: racket3m-debian10-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}
         path: /tmp/racket3m-debian10-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}.tar.bz2
@@ -152,16 +155,16 @@ jobs:
       image: racket/racket-ci:latest
 
     needs: build-racketcgc
-    
+
     strategy:
       fail-fast: false
       matrix:
         cc: [gcc, clang]
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v7
       with:
         fetch-depth: 100
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v8
       with:
         name: racketcgc-debian10-nocify-x64_git${{ github.sha }}
         path: /tmp
@@ -193,16 +196,14 @@ jobs:
     - name: Tarballing
       working-directory: /usr/local
       run: tar -cvjf /tmp/racketcs-debian10-x64-${{ matrix.cc }}_git${{ github.sha }}.tar.bz2 racketcs
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v7
       with:
         name: racketcs-debian10-x64-${{ matrix.cc }}_git${{ github.sha }}
         path: /tmp/racketcs-debian10-x64-${{ matrix.cc }}_git${{ github.sha }}.tar.bz2
 
   # Tests
-  # Unfortunately Actions does not support atm yaml anchors
-  # otherwise all the following jobs could be simplified
-  # Note: the reason we cannot transform this into a matrix
-  # build is because we cannot use variables in the needs keyword.
+  # Note: the reason we cannot transform this into a matrix build is
+  # because we cannot use variables in the needs keyword.
   test-cgc:
     runs-on: ubuntu-22.04
     container:
@@ -217,8 +218,8 @@ jobs:
         cify: [nocify]
 
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v3
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
           name: racketcgc-debian10-${{ matrix.cify }}-x64_git${{ github.sha }}
           path: /tmp
@@ -235,44 +236,10 @@ jobs:
           raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
       - name: Install racket-test dependency
         run: raco pkg install --auto racket-test
-      - name: Run tests/racket/test
-        run: raco test -l tests/racket/test
-      - name: Run tests/racket/contract/all
-        run: racket -l tests/racket/contract/all
-      - name: Run tests/json/json
-        run: raco test -l tests/json/json
-      - name: Run tests/file/main
-        run: raco test -l tests/file/main
-      - name: Run tests/net/head
-        run: raco test -l tests/net/head
-      - name: Run tests/net/uri-codec
-        run: raco test -l tests/net/uri-codec
-      - name: Run tests/net/url
-        run: raco test -l tests/net/url
-      - name: Run tests/net/url-port
-        run: raco test -l tests/net/url-port
-      - name: Run tests/net/encoders
-        run: raco test -l tests/net/encoders
-      - name: Run tests/openssl/basic
-        run: raco test -l tests/openssl/basic
-      - name: Run tests/openssl/https
-        run: raco test -l tests/openssl/https
-      - name: Run tests/match/main
-        run: raco test -l tests/match/main
-      - name: Run tests/zo-path
-        run: raco test -l tests/zo-path
-      - name: Run tests/xml
-        run: raco test -c tests/xml
-      - name: Run tests/future
-        run: raco test --timeout 300 -c tests/future
-      - name: Run tests/stxparse
-        run: raco test -c tests/stxparse
       - name: Install db tests dependency
         run: raco pkg install --auto db-test
-      - name: Run db tests
-        run: raco test -l tests/db/all-tests
-      - name: Run syntax tests
-        run: raco test -c tests/syntax
+      - name: Test
+        run: bash .github/scripts/run-racket-tests.sh
 
   test-3m:
     runs-on: ubuntu-22.04
@@ -300,8 +267,8 @@ jobs:
             cc: gcc
 
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v3
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
           name: racket3m-debian10-${{ matrix.cify }}-${{ matrix.jit }}-${{ matrix.efp }}-x64_git${{ github.sha }}
           path: /tmp
@@ -318,44 +285,10 @@ jobs:
           raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
       - name: Install racket-test dependency
         run: raco pkg install --auto racket-test
-      - name: Run tests/racket/test
-        run: raco test -l tests/racket/test
-      - name: Run tests/racket/contract/all
-        run: racket -l tests/racket/contract/all
-      - name: Run tests/json/json
-        run: raco test -l tests/json/json
-      - name: Run tests/file/main
-        run: raco test -l tests/file/main
-      - name: Run tests/net/head
-        run: raco test -l tests/net/head
-      - name: Run tests/net/uri-codec
-        run: raco test -l tests/net/uri-codec
-      - name: Run tests/net/url
-        run: raco test -l tests/net/url
-      - name: Run tests/net/url-port
-        run: raco test -l tests/net/url-port
-      - name: Run tests/net/encoders
-        run: raco test -l tests/net/encoders
-      - name: Run tests/openssl/basic
-        run: raco test -l tests/openssl/basic
-      - name: Run tests/openssl/https
-        run: raco test -l tests/openssl/https
-      - name: Run tests/match/main
-        run: raco test -l tests/match/main
-      - name: Run tests/zo-path
-        run: raco test -l tests/zo-path
-      - name: Run tests/xml
-        run: raco test -c tests/xml
-      - name: Run tests/future
-        run: raco test --timeout 300 -c tests/future
-      - name: Run tests/stxparse
-        run: raco test -c tests/stxparse
       - name: Install db tests dependency
         run: raco pkg install --auto db-test
-      - name: Run db tests
-        run: raco test -l tests/db/all-tests
-      - name: Run syntax tests
-        run: raco test -c tests/syntax
+      - name: Test
+        run: bash .github/scripts/run-racket-tests.sh
 
   test-cs:
     runs-on: ubuntu-22.04
@@ -371,8 +304,8 @@ jobs:
         cc: [gcc]
 
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v3
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
           name: racketcs-debian10-x64-${{ matrix.cc }}_git${{ github.sha }}
           path: /tmp
@@ -387,56 +320,20 @@ jobs:
         run: |
           racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
           raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
-      - name: Install racket-test dependency
-        run: raco pkg install --auto racket-test
-      - name: Run tests/racket/test
-        run: raco test -l tests/racket/test
-      - name: Run tests/racket/contract/all
-        run: racket -l tests/racket/contract/all
-      - name: Run tests/json/json
-        run: raco test -l tests/json/json
-      - name: Run tests/file/main
-        run: raco test -l tests/file/main
-      - name: Run tests/net/head
-        run: raco test -l tests/net/head
-      - name: Run tests/net/uri-codec
-        run: raco test -l tests/net/uri-codec
-      - name: Run tests/net/url
-        run: raco test -l tests/net/url
-      - name: Run tests/net/url-port
-        run: raco test -l tests/net/url-port
-      - name: Run tests/net/encoders
-        run: raco test -l tests/net/encoders
-      - name: Run tests/openssl/basic
-        run: raco test -l tests/openssl/basic
-      - name: Run tests/openssl/https
-        run: raco test -l tests/openssl/https
-      - name: Run tests/match/main
-        run: raco test -l tests/match/main
-      - name: Run tests/zo-path
-        run: raco test -l tests/zo-path
-      - name: Run tests/xml
-        run: raco test -c tests/xml
-      - name: Run tests/future
-        run: raco test --timeout 300 -c tests/future
-      - name: Run tests/stxparse
-        run: raco test -c tests/stxparse
-      - name: Install db tests dependency
-        run: raco pkg install --auto db-test
-      - name: Run db tests
-        run: raco test -l tests/db/all-tests
-      - name: Run syntax tests
-        run: raco test -c tests/syntax
+      - name: Test
+        run: bash .github/scripts/run-racket-tests.sh
+
+  # XXX: Do we still need/want this?
   slack:
     runs-on: ubuntu-latest
     needs: [test-cgc, test-3m, test-cs]
 
-    # this is required, otherwise it gets skipped if any needed jobs fail. 
+    # this is required, otherwise it gets skipped if any needed jobs fail.
     # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idneeds
     if: always()
 
     steps:
-      - uses: technote-space/workflow-conclusion-action@v2
+      - uses: technote-space/workflow-conclusion-action@v3
       - name: Send Slack notification
         uses: 8398a7/action-slack@v3
         if: github.repository == 'racket/racket'

@@ -61,7 +61,7 @@
                 (define c (place ch (work ch)))
                 (place-channel-put c (vector max-depth min-depth d))
                 (vector-set! output d (place-channel-get c))))))
-  (map sync thds)
+  (for-each sync thds)
   (for ([e (in-vector output)] #:when e)
     (printf "~a\t trees of depth ~a\t check: ~a\n"
             (vector-ref e 0) (vector-ref e 1) (vector-ref e 2)))

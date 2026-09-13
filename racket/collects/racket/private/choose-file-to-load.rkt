@@ -40,29 +40,30 @@ also got dragged along too.
             (or/c #f (and/c path? complete-path?))))
 
 (define choose-file-to-load
-  (let* ([resolve (lambda (s)
-                    (if (complete-path? s)
-                        s
-                        (let ([d (current-load-relative-directory)])
-                          (if d (path->complete-path s d) s))))]
-         [date-of-1 (lambda (a)
-                      (let ([v (file-or-directory-modify-seconds a #f (lambda () #f))])
-                        (and v (cons a v))))]
-         [date-of (lambda (a modes roots)
-                    (ormap (lambda (root-dir)
-                             (ormap
-                              (lambda (compiled-dir)
-                                (let ([a (a root-dir compiled-dir)])
-                                  (date-of-1 a)))
-                              modes))
-                           roots))]
-         [date>=?
-          (lambda (modes roots a bm)
-            (and a
-                 (let ([am (date-of a modes roots)])
-                   (or (and (not bm) am)
-                       (and am bm (>= (cdr am) (cdr bm)) am)))))])
-    (λ (path expect-module so-okay? rkt-try-ss? choose compiled-file-roots compiled-file-paths)
+  (λ (path expect-module so-okay? rkt-try-ss? choose compiled-file-roots compiled-file-paths file-check)
+    (let* ([resolve (lambda (s)
+                      (if (complete-path? s)
+                          s
+                          (let ([d (current-load-relative-directory)])
+                            (if d (path->complete-path s d) s))))]
+           [use-seconds? (eq? file-check 'modify-seconds)]
+           [date-of-1 (lambda (a)
+                        (let ([v (file-or-directory-modify-seconds a #f (lambda () #f))])
+                          (and v (cons a (if use-seconds? v 0)))))]
+           [date-of (lambda (a modes roots)
+                      (ormap (lambda (root-dir)
+                               (ormap
+                                (lambda (compiled-dir)
+                                  (let ([a (a root-dir compiled-dir)])
+                                    (date-of-1 a)))
+                                modes))
+                             roots))]
+           [date>=?
+            (lambda (modes roots a bm)
+              (and a
+                   (let ([am (date-of a modes roots)])
+                     (or (and (not bm) am)
+                         (and am bm (>= (cdr am) (cdr bm)) am)))))])
       (let*-values ([(orig-path) (resolve path)]
                     [(base orig-file dir?) (split-path path)]
                     [(file alt-file) (if rkt-try-ss?
@@ -192,7 +193,7 @@ also got dragged along too.
 
 (define version-bytes (string->bytes/utf-8 (version)))
 (define version-length (bytes-length version-bytes))
-(define vm-bytes (string->bytes/utf-8 (symbol->string (system-type 'vm))))
+(define vm-bytes (string->bytes/utf-8 (symbol->string (system-type 'target-machine))))
 (define vm-length (bytes-length vm-bytes))
 
 (define (linklet-bundle-or-directory-start i tag)

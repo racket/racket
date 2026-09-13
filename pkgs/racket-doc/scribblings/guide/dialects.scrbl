@@ -138,7 +138,3 @@ information about running @|r6rs| programs with Racket.
 The @|HtDP| textbook relies on pedagogic variants of Racket that
 smooth the introduction of programming concepts for new programmers.
 See @HtDP-doc[].
-
-The @|HtDP| languages are typically not used with @hash-lang[]
-prefixes, but are instead used within DrRacket by selecting the
-language from the @onscreen{Choose Language...} dialog.

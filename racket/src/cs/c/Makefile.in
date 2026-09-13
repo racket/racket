@@ -174,7 +174,9 @@ PACKAGE = racket
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 datarootdir = @datarootdir@
+datadir = @datadir@
 bindir = @bindir@
+guibindir = @guibindir@
 libdir = @libdir@
 includepltdir = @includepltdir@
 libpltdir = @libpltdir@
@@ -189,7 +191,7 @@ appsdir = @appsdir@
 mandir = @mandir@
 
 # Whether `setup/unixstyle-install.rkt copytree` is needed for
-# installation ("yes" or "no")
+# installation ("copytree" or "no")
 MAKE_COPYTREE = @MAKE_COPYTREE@
 
 # Whether copytree should preserve the source shape ("yes")
@@ -204,6 +206,18 @@ MAKE_INSTALL_PKGSCOPE = @MAKE_INSTALL_PKGSCOPE@
 # (e.g., "user")
 INSTALL_PKGSCOPE = @INSTALL_PKGSCOPE@
 
+# Extra packages to install, and where to find then if not
+# the default package catalog
+INSTALL_PKGS = @INSTALL_PKGS@
+INSTALL_PKG_CATALOG = @INSTALL_PKG_CATALOG@
+
+# Can be "yes", "no" (or ""), or "dist" to indicate whether an install
+# step should check for missing packages, especially platform-specific
+# packages like "racket-aarch64-macosx-4"; a value of "dist"
+# means "yes" if "../../source-dist.txt" exists; installation uses
+# `INSTALL_PKG_CATALOG`
+INSTALL_MISSING_PKGS = @INSTALL_MISSING_PKGS@
+
 # Whether ".zo" files should be moved to "lib" instead of "share"
 # for a Unix-style installation ("yes" or "no")
 INSTALL_LIBZO = @INSTALL_LIBZO@
@@ -217,14 +231,16 @@ upsrcdir=@upsrcdir@
 
 ZUO=bin/zuo
 
+BUILD_VARS = MAKE="$(MAKE)"
+
 cs: $(ZUO)
-	$(ZUO) . build
+	$(ZUO) . build-and-prepare $(BUILD_VARS)
 
 install: $(ZUO)
-	$(ZUO) . install
+	$(ZUO) . install $(BUILD_VARS)
 
 plain-install: $(ZUO)
-	$(ZUO) . plain-install
+	$(ZUO) . plain-install $(BUILD_VARS)
 
 $(ZUO): $(srcdir)/../../zuo/zuo.c
 	mkdir -p bin

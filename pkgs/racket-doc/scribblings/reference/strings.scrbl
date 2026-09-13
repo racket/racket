@@ -620,8 +620,8 @@ and @racket[repeat?]  controls matching repeated sequences.
                       [#:repeat? repeat? any/c #f])
          string?]{
 
-Trims the input @racket[str] by removing prefix and suffix @racket[sep],
-which defaults to whitespace. A string @racket[sep] is matched literally
+Trims the input @racket[str] by removing prefix and suffix matching @racket[sep],
+where @racket[sep] defaults to matching whitespace. A string @racket[sep] is matched literally
 (as opposed to being used as a @tech{regular expression}).
 
 Use @racket[#:left? #f] or @racket[#:right? #f] to suppress trimming
@@ -630,6 +630,11 @@ default), only one match is removed from each side; when
 @racket[repeat?] is true, all initial or trailing matches are
 trimmed (which is an alternative to using a @tech{regular expression}
 @racket[sep] that contains @litchar{+}).
+
+When trimming both left and right ends of the string, both matches are
+performed on the original string, as opposed to first trimming on the
+left and then trimming on the right. If the left and right matches
+overlap, then the trimmed result string is empty.
 
 @mz-examples[#:eval string-eval
   (string-trim "  foo bar  baz \r\n\t")
@@ -644,20 +649,25 @@ returns @racket[#f] otherwise.
 }
 
 @deftogether[(
+@defproc[(string-find [s string?] [contained string?]) (or/c exact-nonnegative-integer? #f)]
 @defproc[(string-contains? [s string?] [contained string?]) boolean?]
 @defproc[(string-prefix? [s string?] [prefix string?]) boolean?]
 @defproc[(string-suffix? [s string?] [suffix string?]) boolean?])]{
-Checks whether @racket[s] includes at any location, start with, or ends with
-the second argument, respectively.
+Checks whether @racket[s] includes at any location, starts with, or ends with
+the second argument, respectively. The @racket[string-find] function returns the
+first position within @racket[s] where @racket[contained] is found, if any,
+while @racket[string-contains?] reports only whether it was found.
 
 @mz-examples[#:eval string-eval
   (string-prefix? "Racket" "R")
   (string-prefix? "Jacket" "R")
   (string-suffix? "Racket" "et")
+  (string-find "Racket" "ack")
   (string-contains? "Racket" "ack")
 ]
 
-@history[#:added "6.3"]{}
+@history[#:added "6.3"
+         #:changed "8.15.0.7" @elem{Added @racket[string-find].}]
 }
 
 

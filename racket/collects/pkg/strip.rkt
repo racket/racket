@@ -61,7 +61,8 @@
        (no))]))
 
 (define (generate-stripped-directory mode dir dest-dir
-                                     #:check-status? [check-status? #t])
+                                     #:check-status? [check-status? #t]
+                                     #:original-source [orig-pkg-source #f])
   (unless (path-string? dir)
     (raise-argument-error 'generate-stripped-directory "path-string?" dir))
   (unless (path-string? dest-dir)
@@ -79,8 +80,9 @@
       [else #f]))
 
   (define drop-keep-ns (make-base-namespace))
+  (define bootstrap? (eq? mode 'source))
   (define (add-drop+keeps dir base drops keeps)
-    (define get-info (get-info/full dir #:namespace drop-keep-ns))
+    (define get-info (get-info/full dir #:namespace drop-keep-ns #:bootstrap? bootstrap?))
     (define (get-paths tag)
       (define l (if get-info
                     (get-info tag (lambda () null))
@@ -125,7 +127,7 @@
     (values (add drops more-drops)
             (add keeps more-keeps)))
 
-  (define (drop-by-default? path get-p)
+  (define (drop-by-default? path base get-p)
     (define bstr (path->bytes path))
     (define (immediate-doc/css-or-doc/js?)
       ;; Drop ".css" and ".js" immediately in a "doc" directory:
@@ -139,6 +141,10 @@
                        bstr)
         ;; can appear as a marker in rendered documentation:
         (equal? #"synced.rktd" bstr)
+        (and (equal? #"ephemeral" bstr)
+             (path? base)
+             (let-values ([(base name dir?) (split-path base)])
+               (equal? (bytes->path #"compiled") name)))
         (case mode
           [(source)
            (regexp-match? #rx#"^(?:compiled|doc)$" bstr)]
@@ -190,7 +196,7 @@
          [(binary binary-lib)
           (cond
             [(equal? #"info.rkt" bstr)
-             (fixup-info new-p src-base level mode)]
+             (fixup-info new-p src-base level mode orig-pkg-source)]
             [(regexp-match? #rx"[.]zo$" bstr)
              (fixup-zo new-p)])]
          [(built source)
@@ -198,11 +204,11 @@
                     (eq? level 'package+collection))
             (cond
               [(equal? #"info.rkt" bstr)
-               (fixup-info new-p src-base level mode)]
+               (fixup-info new-p src-base level mode orig-pkg-source)]
               [else (void)]))]
          [else (void)])]))
   
-  (define (explore base   ; containing directory relative to `dir`, 'base at start
+  (define (explore base   ; containing directory relative to `dir`, 'same at start
                    paths  ; paths in `base'
                    drops  ; hash table of paths (relative to start) to drop
                    keeps  ; hash table of paths (relative to start) to keep
@@ -224,6 +230,7 @@
                              (not (or drop-all-by-default?
                                       (drop-by-default?
                                        path
+                                       base
                                        (lambda () (build-path dir p))))))))
       (define old-p (build-path dir p))
       (define new-p (build-path dest-dir p))
@@ -259,7 +266,7 @@
     (add-drop+keeps dir 'same #hash() #hash()))
 
   (define level
-    (let ([i (get-info/full dir #:namespace drop-keep-ns)])
+    (let ([i (get-info/full dir #:namespace drop-keep-ns #:bootstrap? bootstrap?)])
       (cond
        [(or (not i)
             (not (eq? 'multi (i 'collection (lambda () #t)))))
@@ -267,7 +274,7 @@
        [else 'package]))) 
   
   (explore 'same (directory-list dir) drops keeps #f level)
-  (unmove-files dir dest-dir drop-keep-ns)
+  (unmove-files dir dest-dir drop-keep-ns bootstrap?)
   (case mode
     [(built binary binary-lib)
      (create-info-as-needed mode dest-dir level)]
@@ -343,8 +350,8 @@
      p
      (lambda (out) (write-bytes new-bstr out)))))
 
-;; Used in binary[-lib] mode:
-(define (fixup-info new-p src-base level mode)
+;; Used in binary[-lib] mode for collection level, all modes for package level:
+(define (fixup-info new-p src-base level mode orig-pkg-source)
   (define dir (let-values ([(base name dir?) (split-path new-p)])
                 base))
   ;; check format:
@@ -370,8 +377,11 @@
           ,@(case mode
               [(source) '()]
               [else `((define package-content-state '(,mode ,(version))))])
+          ,@(if orig-pkg-source
+                `((define package-original-source ,orig-pkg-source))
+                '())
           . ,(filter values
-                     (map (fixup-info-definition get-info mode) defns)))))
+                     (map (fixup-info-definition get-info mode orig-pkg-source) defns)))))
     (define new-content
       (match content
         [`(module info ,info-lib (#%module-begin . ,defns))
@@ -395,9 +405,11 @@
         (unless (eq? level 'package)
           (managed-compile-zo new-p))))))
 
-(define ((fixup-info-definition get-info mode) defn)
+(define ((fixup-info-definition get-info mode orig-pkg-source) defn)
   (match defn
     [`(define package-content-state . ,v) #f]
+    [`(define package-original-source . ,v)
+     (if orig-pkg-source #f defn)]
     [_
      (case mode
        [(built source) defn]
@@ -418,7 +430,7 @@
              [else defn])]
           [_ defn])])]))
 
-(define (unmove-files dir dest-dir metadata-ns)
+(define (unmove-files dir dest-dir metadata-ns bootstrap?)
   ;; Determine whether any files slated for movement by
   ;; `move-foreign-libs', etc., have been installed
   ;; and need to be uninstalled, and copies moved files
@@ -429,7 +441,7 @@
       (when (directory-exists? d)
         (unmove d (build-path dest-dir f)))))
   (define (unmove dir dest-dir)
-    (define info (get-info/full dir #:namespace metadata-ns))
+    (define info (get-info/full dir #:namespace metadata-ns #:bootstrap? bootstrap?))
     (define (unmove-tag tag find-dir fixup copy-one-file)
       (when info
         (define l (info tag (lambda () null)))
@@ -526,3 +538,28 @@
             (file-or-directory-permissions pth old-mode))))]
     [else
      (run)]))
+
+(module+ main
+  (require racket/cmdline)
+
+  (define pkg-dir (current-directory))
+  (define mode 'built)
+
+  (command-line
+   #:once-each
+   ["--dir" dir "Strip packages in <dir>"
+            (set! pkg-dir dir)]
+   #:once-any
+   ["--source" "Source mode"
+               (set! mode 'source)]
+   ["--binary" "Binary mode"
+               (set! mode 'binary)]
+   ["--binary-lib" "Binary-library mode"
+                   (set! mode 'binary-lib)]
+   ["--built" "Built mode"
+              (set! mode 'built)]
+   #:args
+   pkg
+   (for ([pkg (in-list pkg)])
+     (define dir (build-path pkg-dir pkg))
+     (generate-stripped-directory mode dir dir))))

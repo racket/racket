@@ -121,6 +121,9 @@
     (raise-argument-error 'delay/thread "(or/c thread-group? #f)" group))
   (define initialized-sema (make-semaphore))
   (define orig-c (current-custodian))
+  ;; Use explicit `set!` initialization instead of mutually-recursive
+  ;; non-lambda internal definitions.
+  (define p #f)
   (define (run)
     (semaphore-wait initialized-sema) ; wait until p is properly defined
     (call-with-exception-handler
@@ -129,13 +132,13 @@
        (parameterize ([current-custodian orig-c])
          (kill-thread (current-thread))))
      (λ () (pset! p (call-with-values thunk list)))))
-  (define p
-    (make-promise/thread
-     (make-running-thread
-      (object-name thunk)
-      (if group
-          (parameterize ([current-thread-group group]) (thread run))
-          (thread run)))))
+  (set! p
+        (make-promise/thread
+         (make-running-thread
+          (object-name thunk)
+          (if group
+              (parameterize ([current-thread-group group]) (thread run))
+              (thread run)))))
   ;; The promise thread needs to wait until `p' is defined and assigned its
   ;; value, otherwise the `run' thread can start when `p' is still
   ;; #<undefined>, and end up doing `unsafe-struct-set!' on it.  This was the
@@ -172,6 +175,10 @@
   (define work-time (* tick use))
   (define rest-time (- tick work-time))
   (define orig-c (current-custodian))
+  ;; Use explicit `set!` initialization instead of mutually-recursive
+  ;; non-lambda internal definitions.
+  (define controller-thread #f)
+  (define p #f)
   (define (work)
     (call-with-exception-handler
      (λ (e)
@@ -211,14 +218,14 @@
              (thread-suspend worker)
              (loop))))]))
   ;; I don't think that a thread-group here is needed, but it doesn't hurt
-  (define controller-thread
-    (parameterize ([current-thread-group (make-thread-group)])
-      (thread run)))
+  (set! controller-thread
+        (parameterize ([current-thread-group (make-thread-group)])
+          (thread run)))
   ;; the thunk is not really used in the above, make it a function that returns
   ;; the controller thread so it can be forced (used in the `prop:force')
-  (define p (make-promise/idle
-             (procedure-rename (λ() controller-thread)
-                               (or (object-name thunk) 'idle-thread))))
+  (set! p (make-promise/idle
+           (procedure-rename (λ() controller-thread)
+                             (or (object-name thunk) 'idle-thread))))
   p)
 (define-syntax delay/idle*
   (delayer #'delay/idle (list (cons '#:wait-for   #'(system-idle-evt))

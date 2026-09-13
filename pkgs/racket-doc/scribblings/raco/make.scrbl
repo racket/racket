@@ -187,7 +187,7 @@ implements the compilation and dependency management used by
 @defproc[(make-compilation-manager-load/use-compiled-handler 
           [delete-zos-when-rkt-file-does-not-exist? any/c #f]
           [#:security-guard security-guard (or/c security-guard? #f) #f])
-         (path? (or/c symbol? false/c) . -> . any)]{
+         (path? (or/c symbol? #f) . -> . any)]{
 
 Returns a procedure suitable as a value for the
 @racket[current-load/use-compiled] parameter. The returned procedure
@@ -674,7 +674,7 @@ Racket processes. The callback, @racket[handler], is called with the symbol
 @racket['done] as the @racket[_handler-type] argument for each successfully compiled file, 
 @racket['output] when a
 successful compilation produces stdout/stderr output, @racket['error] when a
-compilation error has occurred, or @racket['fatal-error] when a unrecoverable
+compilation error has occurred, or @racket['fatal-error] when an unrecoverable
 error occurs. The other arguments give more information for each status update.
 The return value is @racket[(void)] if it was successful, or @racket[#f] if there was an error.
  

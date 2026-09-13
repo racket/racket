@@ -353,6 +353,19 @@ name. If the @racket[special-ok?]  argument is true, then the
 resulting port supports @racket[write-special], otherwise it does not.}
 
 
+@defproc[(open-input-nowhere [name any/c 'nowhere])
+         input-port?]{
+@index*['("null-input" "null-input-port" "dev-null"
+          "/dev/null")
+	'("Opening a null input port")]{
+
+Creates} and returns an input port that always returns @racket[eof]
+(without blocking). The @racket[name] argument is used as the port's
+name.
+
+@history[#:added "8.15.0.2"]}
+
+
 @defproc[(peeking-input-port [in input-port?]
                              [name any/c (object-name in)]
                              [skip exact-nonnegative-integer? 0]
@@ -698,14 +711,14 @@ if no bytes are available before an end-of-file, the event's result is
 @racket[eof]. Otherwise, the event's result is a byte string of up to
 @racket[k] bytes, which contains as many bytes as are available (up to
 @racket[k]) before an available end-of-file. (The result is a byte
-string on less than @racket[k] bytes only when an end-of-file is
+string of less than @racket[k] bytes only when an end-of-file is
 encountered.)
 
 Bytes are read from the port if and only if the event is chosen in a
 synchronization, and the returned bytes always represent contiguous
 bytes in the port's stream.
 
-The event can be synchronized multiple times---event
+The event can be synchronized multiple times---even
 concurrently---and each synchronization corresponds to a distinct read
 request.
 

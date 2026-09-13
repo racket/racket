@@ -189,7 +189,7 @@ void scheme_init_flfxnum_numarith(Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("fx-", p, env);
 
-  p = scheme_make_folding_prim(fx_minus_wrap, "fx-/wraparound", 2, 2, 1);
+  p = scheme_make_folding_prim(fx_minus_wrap, "fx-/wraparound", 1, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_NARY_INLINED
@@ -391,7 +391,7 @@ void scheme_init_unsafe_numarith(Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
   scheme_addto_prim_instance("unsafe-fx-", p, env);
 
-  p = scheme_make_folding_prim(unsafe_fx_minus_wrap, "unsafe-fx-/wraparound", 2, 2, 1);
+  p = scheme_make_folding_prim(unsafe_fx_minus_wrap, "unsafe-fx-/wraparound", 1, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_NARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
@@ -898,9 +898,14 @@ do_bin_quotient(const char *name, const Scheme_Object *n1, const Scheme_Object *
 #ifdef MZ_USE_SINGLE_FLOATS
       (SCHEME_FLTP(n2) && (SCHEME_FLT_VAL(n2) == 0.0f)) ||
 #endif
-      (SCHEME_DBLP(n2) && (SCHEME_DBL_VAL(n2) == 0.0)))
+      (SCHEME_DBLP(n2) && (SCHEME_DBL_VAL(n2) == 0.0))) {
+    int neg;
+    neg = scheme_minus_zero_p(SCHEME_FLOAT_VAL(n2));
     scheme_raise_exn(MZEXN_FAIL_CONTRACT_DIVIDE_BY_ZERO,
-		     "%s: undefined for 0.0", name);
+		     "%s: undefined for %s0.0",
+		     name,
+		     neg ? "-" : "");
+  }
 
   if (SCHEME_INTP(n1) && SCHEME_INTP(n2)) {
     /* Beware that most negative fixnum divided by -1
@@ -1043,6 +1048,21 @@ rem_mod (int argc, Scheme_Object *argv[], char *name, int first_sign)
     }
 
     return scheme_make_integer(v);
+  }
+
+  if (!SCHEME_FLOATP(n1) && SCHEME_FLOATP(n2)) {
+    /* avoid roundoff that might happen converting `n1` to inexact */
+    Scheme_Object *a[2], *r;
+    a[0] = n2;
+    a[1] = scheme_inexact_to_exact(1, a);
+    a[0] = n1;
+    a[0] = rem_mod(2, a, name, first_sign);
+    r = scheme_exact_to_inexact(1, a);
+#ifdef MZ_USE_SINGLE_FLOATS
+    if (SCHEME_FLTP(n2))
+      return scheme_make_float(SCHEME_DBL_VAL(r));
+#endif
+    return r;
   }
 
   if (SCHEME_FLOATP(n1) || SCHEME_FLOATP(n2)) {
@@ -1278,8 +1298,21 @@ SAFE_FX(fx_mod, "fxmodulo", scheme_modulo, CHECK_SECOND_ZERO("fxmodulo"))
    return scheme_make_integer(r);                                       \
  }
 
+#define SAFE_FX_UNARY_BINARY_WRAP(name, name_binary, s_name, op) \
+ SAFE_FX_WRAP(name_binary, s_name, op) \
+ static Scheme_Object *name(int argc, Scheme_Object *argv[]) \
+ {                                                           \
+   if (argc == 1) {                                          \
+     uintptr_t r;                                            \
+     if (!SCHEME_INTP(argv[0])) scheme_wrong_contract(s_name, "fixnum?", 0, argc, argv); \
+     r = ((uintptr_t)0 op (uintptr_t)SCHEME_INT_VAL(argv[1])); \
+     return scheme_make_integer(r);                            \
+   } else                                                      \
+     return name_binary(argc, argv);                           \
+ }
+
 SAFE_FX_WRAP(fx_plus_wrap, "fx+/wraparound", +)
-SAFE_FX_WRAP(fx_minus_wrap, "fx-/wraparound", -)
+SAFE_FX_UNARY_BINARY_WRAP(fx_minus_wrap, fx_minus_binary_wrap, "fx-/wraparound", -)
 SAFE_FX_WRAP(fx_mult_wrap, "fx*/wraparound", *)
 
 static Scheme_Object *fx_abs(int argc, Scheme_Object *argv[])

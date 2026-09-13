@@ -83,7 +83,7 @@ produces a @tech{ProgID} with its version.}
 
 
 @defproc[(com-create-instance [clsid-or-progid (or/c clsid? string?)]
-                              [where (or/c (one-of/c 'local 'remote) string?) 'local])
+                              [where (or/c 'local 'remote string?) 'local])
          com-object?]{
 
   Returns an instance of the @tech{COM class} specified by

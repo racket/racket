@@ -449,12 +449,6 @@ typedef struct {
 # define END_IMPLICIT_ATOMIC() do {  } while (0)
 #endif
 
-#define S_cas_load_acquire_voidp(a, old, new) CAS_LOAD_ACQUIRE(a, old, new)
-#define S_cas_store_release_voidp(a, old, new) CAS_STORE_RELEASE(a, old, new)
-#define S_cas_load_acquire_ptr(a, old, new) CAS_LOAD_ACQUIRE(a, TO_VOIDP(old), TO_VOIDP(new))
-#define S_cas_store_release_ptr(a, old, new) CAS_STORE_RELEASE(a, TO_VOIDP(old), TO_VOIDP(new))
-#define S_store_release() RELEASE_FENCE()
-
 #else
 #define get_thread_context() TO_PTR(S_G.thread_context)
 #define deactivate_thread(tc) {}
@@ -465,11 +459,6 @@ typedef struct {
 #define alloc_mutex_release() do {} while (0)
 #define IS_TC_MUTEX_OWNER() 1
 #define IS_ALLOC_MUTEX_OWNER() 1
-#define S_cas_load_acquire_voidp(a, old, new) (*(a) = new, 1)
-#define S_cas_store_release_voidp(a, old, new) (*(a) = new, 1)
-#define S_cas_load_acquire_ptr(a, old, new) (*(a) = new, 1)
-#define S_cas_store_release_ptr(a, old, new) (*(a) = new, 1)
-#define S_store_release() do { } while (0)
 #define BEGIN_IMPLICIT_ATOMIC() do {  } while (0)
 #define END_IMPLICIT_ATOMIC() do {  } while (0)
 #define AS_IMPLICIT_ATOMIC(T, X) X
@@ -520,7 +509,7 @@ typedef struct thread_gc {
 
 #define main_sweeper_index maximum_parallel_collect_threads
 
-#if defined(__MINGW32__) && !defined(HAND_CODED_SETJMP_SIZE)
+#if defined(__MINGW32__) && !defined(HAND_CODED_SETJMP_SIZE) && !defined(__aarch64__)
 /* With MinGW on 64-bit Windows, setjmp/longjmp is not reliable. Using
    __builtin_setjmp/__builtin_longjmp is reliable, but
    __builtin_longjmp requires 1 as its second argument. So, allocate
@@ -539,8 +528,14 @@ typedef struct thread_gc {
 /* assuming malloc will give us required alignment */
 # define CREATEJMPBUF() malloc(sizeof(jmp_buf))
 # define FREEJMPBUF(jb) free(jb)
-# define SETJMP(jb) _setjmp(jb)
-# define LONGJMP(jb,n) _longjmp(jb, n)
+# if defined(__MINGW32__) && defined(__aarch64__)
+   /* no _-prefixed variants */
+#  define SETJMP(jb) setjmp(jb)
+#  define LONGJMP(jb,n) longjmp(jb, n)
+#else
+#  define SETJMP(jb) _setjmp(jb)
+#  define LONGJMP(jb,n) _longjmp(jb, n)
+# endif
 #endif
 
 #define DOUNDERFLOW\
@@ -576,3 +571,27 @@ typedef struct thread_gc {
      else                                                 \
        TRAP(tc) = (ptr)1;                                 \
   } while (0)
+
+typedef struct unbufFaslFileObj {
+  ptr path;
+  INT type;
+  INT fd;
+} *unbufFaslFile;
+
+typedef struct faslFileObj {
+  struct unbufFaslFileObj uf;
+  int buffer_mode;
+  iptr remaining;
+  octet *next;
+  octet *end;
+  octet *buf;
+} *faslFile;
+
+typedef struct fileFaslFileObj {
+  struct faslFileObj f;
+  octet buf_space[SBUFSIZ];
+} *fileFaslFile;
+
+#define FASL_BUFFER_READ_ALL        0
+#define FASL_BUFFER_READ_MINIMAL    1
+#define FASL_BUFFER_READ_REMAINING  2

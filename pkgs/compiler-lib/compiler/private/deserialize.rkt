@@ -3,7 +3,8 @@
          compiler/zo-parse
          compiler/zo-marshal
          compiler/faslable-correlated
-         racket/phase+space)
+         racket/phase+space
+         racket/list)
 
 ;; Re-implement just enough deserialization to deal with 'decl
 ;; linklets, so we can get `required`, etc.
@@ -14,10 +15,14 @@
          deserialize-requires-and-provides
 
          (struct-out faslable-correlated-linklet)
-         strip-correlated)
+         strip-correlated
 
-(struct module-use (module phase))
-(struct provided (binding protected? syntax?))
+         (struct-out provided)
+         (struct-out binding))
+
+(struct module-use (module phase) #:transparent)
+(struct provided (binding protected? syntax?) #:transparent)
+(struct binding (content) #:transparent)
 
 (define (deserialize-module-path-indexes gen-vec order-vec)
   (define gen (make-vector (vector-length gen-vec) #f))
@@ -27,8 +32,10 @@
      gen
      i
      (cond
-      [(eq? d 'top) (error 'deserialize-module-path-indexes "expected top")]
-      [(box? d) (module-path-index-join #f #f)]
+      [(eq? d 'top) (error 'deserialize-module-path-indexes "unexpected top")]
+      [(box? d)
+       (define v (module-path-index-join #f #f))
+       v]
       [else
        (module-path-index-join (vector-ref d 0)
                                (and ((vector-length d) . > . 1)
@@ -60,10 +67,6 @@
 
 (define (decode r mpis shared-vs)
   (let loop ([r r])
-    (define (discard r n)
-      (for/fold ([r (cdr r)]) ([i (in-range n)])
-        (define-values (v v-rest) (loop r))
-        v-rest))
     (cond
       [(null? r) (error 'deserialize "unexpected end of serialized form")]
       [else
@@ -83,6 +86,15 @@
               (define-values (a a-rest) (loop r))
               (values (cons a accum) a-rest)))
           (values (reverse rev) rest)]
+         [(#:vector)
+          (define-values (rev rest)
+            (for/fold ([accum '()] [r (cddr r)]) ([i (in-range (cadr r))])
+              (define-values (a a-rest) (loop r))
+              (values (cons a accum) a-rest)))
+          (values (vector->immutable-vector (list->vector (reverse rev))) rest)]
+         [(#:box)
+          (define-values (v rest) (loop (cdr r)))
+          (values (box-immutable v) rest)]
          [(#:mpi)
           (values (vector-ref mpis (cadr r)) (cddr r))]
          [(#:hash #:hashalw #:hasheq #:hasheqv #:hasheqv/phase+space)
@@ -105,10 +117,17 @@
           (define-values (prot? prot?-rest) (loop bdg-rest))
           (define-values (stx? stx?-rest) (loop prot?-rest))
           (values (provided bdg prot? stx?) stx?-rest)]
-         [(#:module-binding)
-          (values 'binding (discard r 10))]
-         [(#:simple-module-binding)
-          (values 'binding (discard r 4))]
+         [(#:module-binding #:simple-module-binding)
+          (define n
+            (case i
+              [(#:module-binding) 10]
+              [(#:simple-module-binding) 4]))
+          (define-values (v-rest components)
+            (for/fold ([r (cdr r)] [accum '()] #:result (values r (reverse accum)))
+                      ([i (in-range n)])
+              (define-values (v v-rest) (loop r))
+              (values v-rest (cons v accum))))
+          (values (binding components) v-rest)]
          [else
           (cond
             [(or (symbol? i)
@@ -119,7 +138,9 @@
                  (boolean? i)
                  (and (pair? i)
                       (phase? (car i))
-                      (symbol? (cdr i))))
+                      (symbol? (cdr i)))
+                 (and (list? i)
+                      (andmap phase? i)))
              (values i (cdr r))]
             [else
              (error 'deserialize "unsupported instruction: ~s" i)])])])))
@@ -130,11 +151,15 @@
 (define (syntax-shift-phase-level . args)
   (error 'syntax-shift-phase-level "not supported"))
 
+(define (force-syntax-object . args)
+  (error 'force-syntax-object "not supported"))
+
 (define deserialize-instance
   (make-instance 'deserialize #f 'constant
                  'deserialize-module-path-indexes deserialize-module-path-indexes
                  'syntax-module-path-index-shift syntax-module-path-index-shift
                  'syntax-shift-phase-level syntax-shift-phase-level
+                 'force-syntax-object force-syntax-object
                  'module-use module-use
                  'deserialize deserialize))
 
@@ -178,6 +203,7 @@
        (values (instance-variable-value data-i '.mpi-vector)
                (instance-variable-value decl-i 'requires)
                (instance-variable-value decl-i 'recur-requires)
+               (instance-variable-value decl-i 'flattened-requires)
                (instance-variable-value decl-i 'provides)
                (instance-variable-value decl-i 'phase-to-link-modules))]
       [link-l
@@ -187,6 +213,7 @@
        (values (instance-variable-value link-i '.mpi-vector)
                '()
                '()
+               #f
                '#hasheqv()
                (instance-variable-value link-i 'phase-to-link-modules))]
       [else (values '#() '() '() '#hasheqv() '#hasheqv())])))

@@ -13,6 +13,8 @@
 
 @title[#:tag "units" #:style 'toc]{Units@aux-elem{ (Components)}}
 
+@hash-lang-note[racket/unit #:lang racket/base]
+
 @deftech{Units} organize a program into separately compilable and
 reusable @deftech{components}. A unit resembles a procedure in that
 both are first-class values that are used for abstraction. While
@@ -242,6 +244,7 @@ unit's imports using the exports of other linked units.
 #:eval toy-eval
 (eval:alts (require "toy-factory-sig.rkt") (void))
 (eval:alts (require "toy-store-sig.rkt") (void))
+(eval:alts (require "toy-store-unit.rkt") (void))
 (eval:alts (require "store-specific-factory-unit.rkt") (void))
 (define-compound-unit/infer toy-store+factory@
   (import)

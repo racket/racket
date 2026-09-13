@@ -81,6 +81,7 @@
                       identifier-prune-to-source-module
                       syntax-bound-symbols
                       syntax-bound-phases
+                      syntax-bound-interned-scope-symbols
 
                       syntax-srcloc
                       syntax-source
@@ -140,6 +141,7 @@
                       syntax-transforming-with-lifts?
                       syntax-transforming-module-expression?
                       syntax-local-transforming-module-provides?
+                      syntax-local-compiling-module?
                       
                       syntax-local-context
                       syntax-local-introduce
@@ -183,6 +185,7 @@
 
                       internal-definition-context?
                       syntax-local-make-definition-context
+                      syntax-local-make-definition-context-introducer
                       syntax-local-bind-syntaxes
                       internal-definition-context-binding-identifiers
                       internal-definition-context-introduce

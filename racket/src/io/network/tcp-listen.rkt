@@ -16,6 +16,8 @@
          tcp-listener-lnr
          tcp-listener-closed?)
 
+;; a listener is locked by rktio mode, closing is further
+;; and closing is further guarded by rktio-sleep-relevant mode
 (struct tcp-listener (lnr
                       closed ; boxed boolean
                       custodian-reference)
@@ -26,7 +28,7 @@
   (check who exact-nonnegative-integer? max-allow-wait)
   (check who string? #:or-false hostname)
   (define (raise-listen-error what err)
-    (end-atomic)
+    (end-uninterruptible)
     (raise-network-error who err
                          (string-append what
                                         (if hostname
@@ -35,23 +37,32 @@
                                         (format "\n  port number: ~a" port-no))))
   (security-guard-check-network who hostname port-no 'server)
   (let loop ([family RKTIO_FAMILY_ANY])
-    ((atomically
+    (start-uninterruptible)
+    (define get-result
       ;; Result is a thunk that might call `loop`
       ;; or might return a listener
       (call-with-resolved-address
        hostname port-no
        #:family family
        #:passive? #t
-       ;; in atomic mode
+       ;; in uninterruptible mode, *not* rktio mode
        (lambda (addr)
          (cond
            [(rktio-error? addr)
             (raise-listen-error "address-resolution error" addr)]
            [else
-            (check-current-custodian who)
-            (define lnr (rktio_listen rktio addr (min max-allow-wait 10000) reuse?))
+            (start-rktio)
+            (unsafe-uninterruptible-custodian-lock-acquire)
+            (check-current-custodian who #:unlock (lambda ()
+                                                    (unsafe-uninterruptible-custodian-lock-release)
+                                                    (end-uninterruptible)))
+            (define lnr (rktio_listen_opt rktio addr (min max-allow-wait 10000)
+                                          (bitwise-ior (if reuse? RKTIO_LISTEN_REUSE 0)
+                                                       (if (eqv? port-no 0) RKTIO_LISTEN_RETRY_ADDRINUSE 0))))
+            (end-rktio)
             (cond
               [(rktio-error? lnr)
+               (unsafe-uninterruptible-custodian-lock-release)
                (cond
                  [(racket-error? lnr RKTIO_ERROR_TRY_AGAIN_WITH_IPV4)
                   (lambda () (loop (rktio_get_ipv4_family rktio)))]
@@ -66,21 +77,27 @@
                                             (lambda (fd) (do-tcp-close lnr closed))
                                             #f
                                             #f))
+               (unsafe-uninterruptible-custodian-lock-release)
                (lambda ()
-                 (tcp-listener lnr closed custodian-reference))])])))))))
+                 (tcp-listener lnr closed custodian-reference))])]))))
+    (end-uninterruptible)
+    (get-result)))
 
-; in atomic mode
+; in uninterruptible mode
 (define (do-tcp-close lnr closed)
-  (rktio_listen_stop rktio lnr)
-  (set-box! closed #t))
+  (start-rktio-sleep-relevant)
+  (unless (unbox closed)
+    (rktio_listen_stop rktio lnr)
+    (set-box! closed #t))
+  (end-rktio-sleep-relevant))
 
 (define/who (tcp-close listener)
   (check who tcp-listener? listener)
   (define closed (tcp-listener-closed listener))
-  (start-atomic)
+  (start-uninterruptible)
   (cond
     [(unbox closed)
-     (end-atomic)
+     (end-uninterruptible)
      (raise-arguments-error who
                             "listener is closed"
                             "listener" listener)]
@@ -88,9 +105,9 @@
      (define lnr (tcp-listener-lnr listener))
      (do-tcp-close lnr closed)
      (unsafe-custodian-unregister lnr (tcp-listener-custodian-reference listener))
-     (end-atomic)]))
+     (end-uninterruptible)]))
 
-;; in atomic mode
+;; in rktio mode
 (define (tcp-listener-closed? listener)
   (unbox (tcp-listener-closed listener)))
 
@@ -107,6 +124,7 @@
     [else
      (sandman-poll-ctx-add-poll-set-adder!
       ctx
+      ;; in atomic and in rktio-sleep-relevant (not rktio), must not start nested rktio
       (lambda (ps)
         (rktio_poll_add_accept rktio (tcp-listener-lnr l) ps)))
      (values #f l)]))

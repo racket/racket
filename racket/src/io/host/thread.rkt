@@ -4,9 +4,11 @@
 
 (provide start-atomic
          end-atomic
+         start-uninterruptible
+         end-uninterruptible
          atomically
          non-atomically
-         atomically/no-interrupts/no-wind
+         uninterruptibly
          assert-atomic
          check-current-custodian)
 
@@ -51,6 +53,13 @@
         prop:evt
         unsafe-start-atomic
         unsafe-end-atomic
+        unsafe-start-uninterruptible
+        unsafe-end-uninterruptible
+        unsafe-make-uninterruptible-lock
+        unsafe-uninterruptible-lock-acquire
+        unsafe-uninterruptible-lock-release
+        unsafe-uninterruptible-custodian-lock-acquire
+        unsafe-uninterruptible-custodian-lock-release
         current-custodian
         custodian-shut-down?
         current-plumber
@@ -67,13 +76,18 @@
          poll-ctx-select-proc
          poll-ctx-sched-info
          set-poll-ctx-incomplete?!
+         delayed-poll
+         channel-get-poll-or-semaphore
+         channel-put-poll-or-semaphore
          schedule-info-did-work!
          control-state-evt
          async-evt
          schedule-info-current-exts
          current-sandman
-         start-atomic/no-interrupts ; => disable GC, too, if GC can call back
-         end-atomic/no-interrupts
+         start-atomic/no-gc-interrupts ; => disable GC, too, if GC can call back
+         end-atomic/no-gc-interrupts
+         start-uninterruptible/no-gc-interrupts ; => disable GC, too, if GC can call back
+         end-uninterruptible/no-gc-interrupts
          in-atomic-mode?
          unsafe-custodian-register
          unsafe-custodian-unregister
@@ -85,6 +99,8 @@
 
 (define start-atomic unsafe-start-atomic)
 (define end-atomic unsafe-end-atomic)
+(define start-uninterruptible unsafe-start-uninterruptible)
+(define end-uninterruptible unsafe-end-uninterruptible)
 
 (define-syntax-rule (atomically e ...)
   (begin
@@ -100,16 +116,12 @@
       (let () e ...)
       (start-atomic))))
 
-;; Disables host interrupts, but the "no wind" part is
-;; an unforced constraint: don't use anything related
-;; to `dynamic-wind`, continuations, or continuation marks.
-;; Cannot be exited with `non-atomically`.
-(define-syntax-rule (atomically/no-interrupts/no-wind e ...)
+(define-syntax-rule (uninterruptibly e ...)
   (begin
-    (start-atomic/no-interrupts)
+    (start-uninterruptible)
     (begin0
       (let () e ...)
-      (end-atomic/no-interrupts))))
+      (end-uninterruptible))))
 
 ;; Enable for debugging
 (define (assert-atomic)
@@ -118,10 +130,10 @@
   (unless (in-atomic-mode?)
     (error 'assert-atomic "not in atomic mode")))
 
-;; in atomic mode
-(define (check-current-custodian who)
+;; with a lock (if any) balanced by `unlock`
+(define (check-current-custodian who #:unlock unlock)
   (when (custodian-shut-down? (current-custodian))
-    (end-atomic)
+    (unlock)
     (raise
      (exn:fail
       (string-append (symbol->string who) ": the current custodian has been shut down")

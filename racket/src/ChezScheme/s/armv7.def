@@ -1,0 +1,3 @@
+(define-constant arm-isa-version 7)
+(define-constant-default arm-softfp #t)
+(include "arm32.def")

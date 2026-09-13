@@ -103,6 +103,11 @@
                (map (loop init-line!) (vector->list (syntax-e c)))
                (printf ")")
                (set! col (+ col 1))]
+              [(box? (syntax-e c))
+               (advance c init-line!)
+               (printf "#&")
+               (set! col (+ col 2))
+               ((loop init-line!) (unbox (syntax-e c)))]
               [else
                (advance c init-line!)
                (let ([s (format "~s" (syntax-e c))])

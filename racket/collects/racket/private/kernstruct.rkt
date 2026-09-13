@@ -3,7 +3,7 @@
 ;; record for static info produced by structs defined in c
 (module kernstruct '#%kernel
   (#%require (for-syntax '#%kernel))
-  (#%require "define.rkt")
+  (#%require "core-syntax.rkt")
   (#%require (for-syntax "struct-info.rkt"))
   (#%provide (all-defined))
   (define-values-for-syntax

@@ -101,7 +101,7 @@ for @racket["ollie.cs.rice.edu"] might be @racket["cs.rice.edu"].}
 
 
 
-@defproc[(dns-find-nameserver) (or/c string? false/c)]{
+@defproc[(dns-find-nameserver) (or/c string? #f)]{
 
 Attempts to find the address of a nameserver on the present system.
 On Unix and Mac OS, this procedure parses @filepath{/etc/resolv.conf} to

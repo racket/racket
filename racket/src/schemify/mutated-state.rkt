@@ -47,7 +47,7 @@
          state->set!ed-state)
 
 ;; Used for `letrec` bindings to record a name:
-(struct too-early (name set!ed?))
+(struct too-early (name set!ed?) #:authentic)
 
 (define (delayed-mutated-state? v) (procedure? v))
 

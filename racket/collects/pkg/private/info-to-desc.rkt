@@ -19,16 +19,20 @@
                checksum auto?
                (enclosing-path-for-repo url-str
                                         (path->complete-path path
-                                                             (pkg-installed-dir))))]
+                                                             (pkg-installed-dir)))
+               #f)]
     [`(catalog ,lookup-name . ,_)
      (pkg-desc lookup-name 'name name
                checksum auto?
+               #f
                #f)]
     [`(url ,url-str)
      (pkg-desc url-str #f name
                checksum auto?
+               #f
                #f)]
     [`(,kind ,path)
      (pkg-desc (to-absolute-string path) kind name
                checksum auto?
+               #f
                #f)]))

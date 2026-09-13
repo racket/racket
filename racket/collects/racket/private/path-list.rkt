@@ -1,5 +1,7 @@
 (module path-list '#%kernel
-  (#%require "qq-and-or.rkt" "define-et-al.rkt")
+  (#%require "core-syntax.rkt"
+             (rename "core-syntax.rkt" -define define)
+             (rename "core-syntax.rkt" -define-syntax define-syntax))
 
   (#%provide path-list-string->path-list)
 

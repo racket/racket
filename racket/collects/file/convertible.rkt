@@ -1,6 +1,6 @@
 #lang racket/base
-
-(require racket/contract)
+(require racket/contract
+         "private/convertible.rkt")
 
 (define opaque-default/c (new-∀/c))
 
@@ -48,10 +48,3 @@
    (->i ([v convertible?] [request symbol?])
         ([default default-or-f/c])
         [result (request default) (make-result-contract request default)])]))
-
-
-(define-values (prop:convertible convertible? convertible-ref)
-  (make-struct-type-property 'convertible))
-
-(define (convert v request [default #f])
-  ((convertible-ref v) v request default))

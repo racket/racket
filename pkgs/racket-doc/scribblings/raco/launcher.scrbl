@@ -360,8 +360,8 @@ Like @racket[gracket-launcher-add-suffix], but for Racket launchers.}
 
 
 @defproc[(gracket-launcher-put-file-extension+style+filters)
-         (values (or/c string? false/c)
-                 (listof (one-of/c 'packages 'enter-packages))
+         (values (or/c string? #f)
+                 (listof (or/c 'packages 'enter-packages))
                  (listof (list/c string? string?)))]{
 
 Returns three values suitable for use as the @racket[extension],
@@ -375,8 +375,8 @@ string indicating a required extension for the directory name. }
 
 
 @defproc[(racket-launcher-put-file-extension+style+filters)
-         (values (or/c string? false/c)
-                 (listof (one-of/c 'packages 'enter-packages))
+         (values (or/c string? #f)
+                 (listof (or/c 'packages 'enter-packages))
                  (listof (list/c string? string?)))]{
 
 Like @racket[gracket-launcher-get-file-extension+style+filters], but for
@@ -388,8 +388,8 @@ Racket launchers.}
 @defproc[(mred-launcher-is-actually-directory?) boolean?]
 @defproc[(mred-launcher-add-suffix [path-string? path]) path?]
 @defproc[(mred-launcher-put-file-extension+style+filters)
-         (values (or/c string? false/c)
-                 (listof (one-of/c 'packages 'enter-packages))
+         (values (or/c string? #f)
+                 (listof (or/c 'packages 'enter-packages))
                  (listof (list/c string? string?)))]
 )]{
 
@@ -404,8 +404,8 @@ Backward-compatible aliases for
 @defproc[(mzscheme-launcher-is-actually-directory?) boolean?]
 @defproc[(mzscheme-launcher-add-suffix [path-string? path]) path?]
 @defproc[(mzscheme-launcher-put-file-extension+style+filters)
-         (values (or/c string? false/c)
-                 (listof (one-of/c 'packages 'enter-packages))
+         (values (or/c string? #f)
+                 (listof (or/c 'packages 'enter-packages))
                  (listof (list/c string? string?)))]
 )]{
 

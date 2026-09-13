@@ -144,6 +144,42 @@
 (test-sequence [(0 1 2) (a b c)] (in-parallel (in-range 3) (in-list '(a b c d))))
 (test-sequence [(0 1 2) (a b c)] (in-parallel (in-range 3) '(a b c)))
 
+
+(err/rt-test (in-parallel-values #f))
+(err/rt-test (in-parallel-values 1))
+(err/rt-test (in-parallel-values 1 #f))
+(test #t sequence? (in-parallel-values 1 (in-naturals)))
+(test #t sequence? (in-parallel-values 1 (in-naturals) 1 (in-naturals)))
+(test '((0 "x" 1))
+      (for/list ([(i k v) (in-parallel-values 1 (in-naturals)
+                                              2 (in-hash (hash "x" 1)))])
+        (list i k v)))
+(test '((0 "x" 1))
+      (for/list ([(k v i) (in-parallel-values 2 (in-hash (hash "x" 1))
+                                              1 (in-naturals))])
+        (list i k v)))
+(test '((0 "x" 1 "y" 7))
+      (for/list ([(k v i k2 v2) (in-parallel-values 2 (in-hash (hash "x" 1))
+                                                    1 (in-naturals)
+                                                    2 (in-hash (hash "y" 7)))])
+        (list i k v k2 v2)))
+(test '((0 2 0 0 1) (1 3 1 1 2))
+      (for/list ([(i j k l m) (in-parallel-values 2 (in-parallel (in-naturals) (in-naturals 2))
+                                                  1 (in-range 2)
+                                                  2 (in-parallel (in-naturals) (in-naturals 1)))])
+        (list i j k l m)))
+(test '((0 2 0 0 1) (1 3 1 1 2))
+      (for/list ([(i j k l m) (in-parallel-values 2 (in-parallel (in-naturals) (in-naturals 2))
+                                                  1 (stop-after (in-naturals) (lambda (x) (= x 1)))
+                                                  2 (in-parallel (in-naturals) (in-naturals 1)))])
+        (list i j k l m)))
+(test '((0 2 0 0 1) (1 3 1 1 2))
+      (for/list ([(i j k l m) (in-parallel-values 2 (in-parallel (in-naturals) (in-naturals 2))
+                                                  1 (stop-before (in-naturals) (lambda (x) (= x 2)))
+                                                  2 (in-parallel (in-naturals) (in-naturals 1)))])
+        (list i j k l m)))
+
+
 (test-sequence [(a b c)] (stop-after (in-list '(a b c d e)) (lambda (x) (equal? x 'c))))
 (test-sequence [(a b c)] (stop-before (in-list '(a b c d e)) (lambda (x) (equal? x 'd))))
 (test-sequence [(3 4 5)] (stop-before (in-naturals 3) (lambda (x) (= x 6))))
@@ -295,6 +331,30 @@
            #:break (= i 10)
            (number->string i))
          c)))
+
+;; make sure `#:break` is not confused by shadowing
+(test 0 'break-0 (for*/fold ([x 0]) ([x '(1)]) #:break #true (add1 x)))
+(test 0 'break-0 (for*/fold ([x 0]) ([x '(1)] [y '(3)]) #:break #true (add1 x)))
+(test 0 'break-0 (for*/fold ([x 0]) ([x '(1)] #:break #true) (add1 x)))
+(test 0 'break-0 (for*/fold ([x 0]) ([x '(1)] [y '(3)] #:break #true) (add1 x)))
+(test 0 'break-0 (for*/fold ([x 0]) ([x '(1)] #:break #true [y '(3)]) (add1 x)))
+
+(test 2 'break-2 (for*/fold ([x 0]) ([x '(1)]) #:break #false (add1 x)))
+(test 2 'break-2 (for*/fold ([x 0]) ([x '(1)] [y '(3)]) #:break #false (add1 x)))
+(test 2 'break-2 (for*/fold ([x 0]) ([x '(1)] #:break #false) (add1 x)))
+(test 2 'break-2 (for*/fold ([x 0]) ([x '(1)] [y '(3)] #:break #false) (add1 x)))
+(test 2 'break-2 (for*/fold ([x 0]) ([x '(1)] #:break #false [y '(3)]) (add1 x)))
+
+(test 2 'break-v2 (for*/fold ([x 0]) ([x '(1)] [y (in-value 3)]) #:break #false (add1 x)))
+(test 2 'break-v2 (for*/fold ([x 0]) ([x '(1)] [y (in-value 3)] #:break #false) (add1 x)))
+(test 2 'break-v2 (for*/fold ([x 0]) ([x '(1)] #:break #false [y (in-value 3)]) (add1 x)))
+
+;; make sure `#:final` is not treated like `#:break`
+(test 2 'final-0 (for*/fold ([x 0]) ([x '(1)]) #:final #true (add1 x)))
+(test 2 'final-0 (for*/fold ([x 0]) ([x '(1)] [y '(3)]) #:final #true (add1 x)))
+(test 2 'final-0 (for*/fold ([x 0]) ([x '(1)] #:final #true) (add1 x)))
+(test 2 'final-0 (for*/fold ([x 0]) ([x '(1)] [y '(3)] #:final #true) (add1 x)))
+(test 2 'final-0 (for*/fold ([x 0]) ([x '(1)] #:final #true [y '(3)]) (add1 x)))
 
 ;; Basic sanity checks.
 (test '#(1 2 3 4) 'for/vector (for/vector ((i (in-range 4))) (+ i 1)))
@@ -497,6 +557,21 @@
                                            ([x (values (in-value 2))])
                                    x))
 
+;; Check against pre-8.11.1.3 weird effect of shadowing fold variables
+(let ([accum null])
+  (test '("x" 10 10)
+        'weird-shadow
+        (cons (for*/fold ([x 0]) ([x '(10)] [y '(1 2)]) (set! accum (cons x accum)) "x")
+              accum)))
+(let ([accum null])
+  (test '("x" 10 10)
+        'weird-shadow
+        (cons
+         (for*/fold ([x 0]) ([x '(10)] [y '(1 2)] #:break #false) (set! accum (cons x accum)) "x")
+         accum)))
+
+;; Check against pre-8.11.1.3 weird ordering of fold variable's initial value,
+;; but for continued weird absence of fold varibales in the initial clause
 (let ([x 'out]
       [prints '()])
   (for/fold ([x (begin
@@ -507,7 +582,7 @@
                            (list 1 2 3)))])
     (set! prints (cons x prints))
     x)
-  (test '(3 2 1 (top out) (rhs out)) values prints))
+  (test '(3 2 1 (rhs out) (top out)) values prints))
 
 ;; check ranges on `in-vector', especially as a value
 (test '() 'in-empty-vector (let ([v (in-vector '#())]) (for/list ([e v]) e)))
@@ -785,7 +860,7 @@
              #rx"expected\\: list\\?")
 (err/rt-test (for ([x (in-mlist (list 1 2 3))]) x)
              exn:fail:contract?
-             #rx"expected\\: mpair\\?")
+             #rx"expected:.*or/c mpair\\? null\\?")
 (err/rt-test (for ([x (in-vector '(1 2))]) x)
              exn:fail:contract?
              #rx"expected\\: vector")
@@ -1320,6 +1395,23 @@
 (err/rt-test (for/list ([x -1]) x))
 (err/rt-test (for/list ([x 1.5]) x))
 
+;; regression test for `#:delay-with` identifier as non-introduced
+(test
+ #t
+ (let ([s (expand #'(for/foldr ([s empty-stream] #:delay-with delay)
+                               ([n (in-naturals)])
+                      (stream-cons (* n n) (force s))))])
+   (let loop ([s s])
+     (cond
+       [(and (identifier? s)
+             (eq? 'delay (syntax-e s)))
+        (or (syntax-original? s)
+            (loop (syntax-property s 'origin)))]
+       [(syntax? s) (or (loop (syntax-e s))
+                        (loop (syntax-property s 'origin)))]
+       [(pair? s) (or (loop (car s)) (loop (cdr s)))]
+       [else #f]))))
+
 ;; ----------------------------------------
 ;; splicing clauses
 
@@ -1361,6 +1453,71 @@
 (test '(0 1 2 3 4 5 6 7)
       'final-if-7
       (for/list ([i (in-range 10)] #:splice (final-if-7 i)) i))
+
+;; splicing clauses in `for/and`, `for/or`, and `for/first`
+;; These expand differently than in non-splicing cases
+
+(test #f
+      'parallel3/and
+      (for/and (#:splice (parallel3 n m))
+        (and (not (= n m))
+             (list n m))))
+(test #f
+      'parallel3/and
+      (for*/and (#:splice (parallel3 n m))
+        (and (not (= n m))
+             (list n m))))
+
+(test #f
+      'cross3/and
+      (for/and (#:splice (cross3 n m))
+        (and (not (= n m))
+             (list n m))))
+(test #f
+      'cross3/and
+      (for*/and (#:splice (cross3 n m))
+        (and (not (= n m))
+             (list n m))))
+
+(test #f
+      'parallel3/or
+      (for/or (#:splice (parallel3 n m))
+        (and (not (= n m))
+             (list n m))))
+(test #f
+      'parallel3/or
+      (for*/or (#:splice (parallel3 n m))
+        (and (not (= n m))
+             (list n m))))
+
+(test '(0 1)
+      'cross3/or
+      (for/or (#:splice (cross3 n m))
+        (and (not (= n m))
+             (list n m))))
+(test '(0 1)
+      'cross3/or
+      (for*/or (#:splice (cross3 n m))
+        (and (not (= n m))
+             (list n m))))
+
+(test '(0 0)
+      'parallel3/first
+      (for/first (#:splice (parallel3 n m))
+        (list n m)))
+(test '(0 0)
+      'parallel3/first
+      (for*/first (#:splice (parallel3 n m))
+        (list n m)))
+
+(test '(0 0)
+      'cross3/first
+      (for/first (#:splice (cross3 n m))
+        (list n m)))
+(test '(0 0)
+      'cross3/first
+      (for*/first (#:splice (cross3 n m))
+        (list n m)))
 
 ;; ----------------------------------------
 ;; defining sequence syntax
@@ -1480,6 +1637,278 @@
         [_ #f])))
 
   (for ([i (in-digits 12)]) i))
+
+;; ----------------------------------------
+;; Check more fold variables in outermost iteration clauses
+
+(test '(3 2 1)
+      'for/fold-var-in-outermost
+      (let ([a '(1 2 3)])
+        (for/fold ([a '()])
+                  ([x (in-list a)])
+          (cons x a))))
+
+(test '(1 2 3)
+      'for/fold-var-in-outermost/result
+      (let ([a '(1 2 3)])
+        (for/fold ([a '()]
+                   #:result (reverse a))
+                  ([x (in-list a)])
+          (cons x a))))
+
+(test '(1 2 3)
+      'for/foldr-var-in-outermost
+      (let ([a '(1 2 3)])
+        (for/foldr ([a '()])
+                   ([x (in-list a)])
+          (cons x a))))
+
+(test '(3 2 1)
+      'for/foldr-var-in-outermost/result
+      (let ([a '(1 2 3)])
+        (for/foldr ([a '()]
+                    #:result (reverse a))
+                   ([x (in-list a)])
+          (cons x a))))
+
+(test '(1 2 3)
+      'for/foldr-var-in-outermost/delay
+      (let ([a '(1 2 3)])
+        (force
+         (for/foldr ([a '()]
+                     #:delay)
+                    ([x (in-list a)])
+           (cons x (force a))))))
+
+(test '(3 2 1)
+      'for/foldr-var-in-outermost/delay/result
+      (let ([a '(1 2 3)])
+        (for/foldr ([a '()]
+                    #:delay
+                    #:result (reverse (force a)))
+                   ([x (in-list a)])
+          (cons x (force a)))))
+
+(test '()
+      'for/fold-var-not-in-outermost
+      (let ([a '(1 2 3)])
+        (for/fold ([a '()])
+                  (#:when #t
+                   [x (in-list a)])
+          (cons x a))))
+
+(test '()
+      'for/fold-var-not-in-outermost/result
+      (let ([a '(1 2 3)])
+        (for/fold ([a '()]
+                   #:result (reverse a))
+                  (#:when #t
+                   [x (in-list a)])
+          (cons x a))))
+
+(test '(1 2 3)
+      'for/foldr-var-not-in-outermost
+      (let ([a '(1 2 3)])
+        (for/foldr ([a '()])
+                   (#:when #t
+                    [x (in-list a)])
+          (cons x a))))
+
+(test '(3 2 1)
+      'for/foldr-var-not-in-outermost/result
+      (let ([a '(1 2 3)])
+        (for/foldr ([a '()]
+                    #:result (reverse a))
+                   (#:when #t
+                    [x (in-list a)])
+          (cons x a))))
+
+(test '(1 2 3)
+      'for/foldr-var-not-in-outermost/delay
+      (let ([a '(1 2 3)])
+        (force
+         (for/foldr ([a '()]
+                     #:delay)
+                    (#:when #t
+                     [x (in-list a)])
+           (cons x (force a))))))
+
+(test '(3 2 1)
+      'for/foldr-var-not-in-outermost/delay/result
+      (let ([a '(1 2 3)])
+        (for/foldr ([a '()]
+                    #:delay
+                    #:result (reverse (force a)))
+                   (#:when #t
+                    [x (in-list a)])
+          (cons x (force a)))))
+
+;; ----------------------------------------
+;; Check `#:on-length-mismatch`
+
+(test '(0 1 2)
+      (for/list ([i (in-range 3)]
+                 #:on-length-mismatch (error "oops"))
+        i))
+
+(test '(1)
+      (for/list (#:on-length-mismatch (error "oops"))
+        1))
+
+(test '(0 2 4)
+      (for/list ([i (in-range 3)]
+                 [j (in-range 3)]
+                 #:on-length-mismatch (error "oops"))
+        (+ i j)))
+
+(test '((0 0) (0 2) (0 4))
+      (for/list ([i (in-range 3)]
+                 [j (in-range 3)]
+                 #:on-length-mismatch (error "oops")
+                 [k (in-range 1)])
+        (list k (+ i j))))
+
+(err/rt-test (for/list ([i (in-range 2)]
+                        [j (in-range 3)]
+                        #:on-length-mismatch (error "oops"))
+               (+ i j))
+             exn:fail?
+             #rx"oops")
+
+(err/rt-test (for/list ([i (in-range 3)]
+                        [j (in-range 2)]
+                        #:on-length-mismatch (error "oops"))
+               (+ i j))
+             exn:fail?
+             #rx"oops")
+
+(err/rt-test (for/list ([i (in-range 2)]
+                        [v '(1 2 3)]
+                        [j (in-range 2)]
+                        #:on-length-mismatch (error "oops"))
+               (+ i v j))
+             exn:fail?
+             #rx"oops")
+
+(err/rt-test (for/list ([i (in-range 2)]
+                        [j (in-range 3)]
+                        #:on-length-mismatch (error "oops")
+                        [k (in-range 3)])
+               (+ i j))
+             exn:fail?
+             #rx"oops")
+
+(err/rt-test (for/fold ([v #f]) ([i (in-range 2)]
+                                 [j (in-range 3)]
+                                 #:on-length-mismatch (error "oops" v))
+               (+ i j))
+             exn:fail?
+             #rx"oops 2")
+
+(err/rt-test (let ([i 'i]
+                   [j 'j])
+               (for/fold ([v #f]) ([i (in-range 2)]
+                                   [j (in-range 3)]
+                                   #:on-length-mismatch (error "oops" i j))
+                 (+ i j)))
+               exn:fail?
+               #rx"oops 'i 'j")
+
+(test '(0 1 2 3 4)
+      'for/foldr-one-seq
+      (for/foldr ([lst '()])
+                 ([i (in-range 5)]
+                  [j (in-range 5)]
+                  #:on-length-mismatch (error "oops"))
+        (cons i lst)))
+
+(err/rt-test (let ([lst 'lst])
+               (for/foldr ([lst '()])
+                          ([i (in-range 5)]
+                           [j (in-range 4)]
+                           #:on-length-mismatch (error "oops" lst))
+                 (cons i lst)))
+               exn:fail?
+               #rx"oops 'lst")
+
+(test (hash 1 12 13 14)
+      (for/hash ([(k v) (hash 1 2 3 4)]
+                 [i (in-range 2)]
+                 #:on-length-mismatch (error "oops"))
+        (values (+ k (* i 10)) (+ v 10))))
+
+(err/rt-test (for/hash ([(k v) (hash 1 2 3 4)]
+                        [i (in-range 3)]
+                        #:on-length-mismatch (error "oops"))
+               (values (+ k (* i 10)) (+ v 10)))
+             exn:fail?
+             #rx"oops")
+
+(test '((0 0) (1 1) (2 2))
+      (for/list ([i (in-range 3)]
+                 [j (stop-before (in-range 10) (lambda (i) (= i 3)))]
+                 #:on-length-mismatch (error "oops"))
+        (list i j)))
+
+(err/rt-test (for/list ([i (in-range 3)]
+                        [j (stop-before (in-range 10) (lambda (i) (= i 4)))]
+                        #:on-length-mismatch (error "oops"))
+               (list i j))
+             exn:fail?
+             #rx"oops")
+
+(err/rt-test (for/list ([i (in-range 3)]
+                        [j (stop-before (in-range 10) (lambda (i) (= i 2)))]
+                        #:on-length-mismatch (error "oops"))
+               (list i j))
+             exn:fail?
+             #rx"oops")
+
+(test '((0 0) (1 1) (2 2))
+      (for/list ([i (in-range 3)]
+                 [j (stop-after (in-range 10) (lambda (i) (= i 2)))]
+                 #:on-length-mismatch (error "oops"))
+        (list i j)))
+
+(err/rt-test (for/list ([i (in-range 3)]
+                        [j (stop-after (in-range 10) (lambda (i) (= i 3)))]
+                        #:on-length-mismatch (error "oops"))
+               (list i j))
+             exn:fail?
+             #rx"oops")
+
+(err/rt-test (for/list ([i (in-range 3)]
+                        [j (stop-after (in-range 10) (lambda (i) (= i 1)))]
+                        #:on-length-mismatch (error "oops"))
+               (list i j))
+             exn:fail?
+             #rx"oops")
+
+(test '(("a" 1) ("b" 2) ("c" 3))
+      (for/list ([(s i) (in-parallel (in-list '("a" "b" "c"))
+                                     (in-vector '#(1 2 3 4 5)))]
+                 #:on-length-mismatch (error "oops"))
+        (list s i)))
+
+(test '(("a" 0) ("b" 1) ("c" 2))
+      (for/list ([(s i) (in-indexed (in-list '("a" "b" "c")))]
+                 #:on-length-mismatch (error "oops"))
+        (list s i)))
+
+(err/rt-test (for/list ([(s i) (in-parallel (in-list '("a" "b" "c"))
+                                            (in-vector '#(1 2 3 4 5)))]
+                        [(x) (in-list (list 1 2))]
+                        #:on-length-mismatch (error "oops"))
+               (list s i))
+             exn:fail?
+             #rx"oops")
+
+(err/rt-test (for/list ([(s i) (in-indexed (in-list '("a" "b" "c")))]
+                        [(x) (in-list (list 1 2))]
+                        #:on-length-mismatch (error "oops"))
+               (list s i))
+             exn:fail?
+             #rx"oops")
 
 ;; ----------------------------------------
 

@@ -83,7 +83,7 @@ See more in PR8831.
 ;; Draws inspiration from encode-decode.scm by Kurt Normark and a code
 ;; sample provided by Eli Barzilay
 
-(require racket/string racket/list)
+(require racket/string)
 
 (provide uri-encode                         uri-decode
          uri-path-segment-encode            uri-path-segment-decode

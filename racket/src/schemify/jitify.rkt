@@ -34,7 +34,7 @@
 
 (provide jitify-schemified-linklet)
 
-(struct convert-mode (sizes called? lift? no-more-conversions?))
+(struct convert-mode (sizes called? lift? no-more-conversions?) #:authentic)
 
 (define lifts-id (string->uninterned-symbol "_jits"))
 
@@ -95,10 +95,11 @@
     (define arity-mask (argss->arity-mask argss))
     (define i-name (or (wrap-property v 'inferred-name)
                        name))
+    (define i-method? (wrap-property v 'method-arity-error))
     (cond
       [(and (null? captures)
             (no-lifts? body-lifts))
-       (define e (extractable-annotation jitted-proc arity-mask i-name))
+       (define e (extractable-annotation jitted-proc arity-mask i-name i-method?))
        (define-values (get-e new-lifts)
          (cond
            [(convert-mode-need-lift? convert-mode) (add-lift e lifts)]
@@ -115,7 +116,8 @@
                                                         (cons lifts-id captures))
                                              ,jitted-proc))
                                          arity-mask
-                                         i-name))
+                                         i-name
+                                         i-method?))
        (define-values (all-captures new-lifts)
          (cond
            [(no-lifts? body-lifts)
@@ -206,6 +208,11 @@
   ;;  for the current expression. It might be mapped to '(self ...)
   ;;  and need to be unmapped for a more nested function.
   (define (jitify-expr v env mutables free lifts convert-mode name in-name)
+    ;; For a form that must be compiled, but also has no subexpressions
+    (define (must-compile-form)
+      (if (convert-mode-within-conversion? convert-mode)
+          (values v free lifts)
+          (jitify-expr `(#%app (lambda () ,v)) env mutables free lifts (convert-mode-always convert-mode) #f in-name)))
     (match v
       [`(lambda ,args . ,body)
        (define convert? (convert-mode-convert-lambda? convert-mode v))
@@ -306,7 +313,10 @@
        (values (reannotate v `(with-continuation-mark* ,mode ,new-key ,new-val ,new-body))
                new-free/body
                new-lifts/body)]
-      [`(quote ,_) (values v free lifts)]
+      [`(quote ,datum)
+       (values v free lifts)]
+      [`(#%foreign-inline . ,_)
+       (must-compile-form)]
       [`(set! ,var ,rhs)
        (define-values (new-rhs new-free new-lifts)
          (jitify-expr rhs env mutables free lifts (convert-mode-non-tail convert-mode) var in-name))
@@ -351,6 +361,8 @@
        (values (reannotate v `(call-with-module-prompt ,new-proc . ,var-info))
                new-free
                new-lifts)]
+      [`(ffi-static-call-and-callback-core ,_ ...)
+       (must-compile-form)]
       [`(#%app ,_ ...)
        (define-values (new-vs new-free new-lifts)
          (jitify-body (wrap-cdr v) env mutables free lifts (convert-mode-non-tail convert-mode) #f in-name))
@@ -670,11 +682,13 @@
                      (find-mutable env val
                                    (find-mutable env body accum)))]
       [`(quote ,_) accum]
+      [`(#%foreign-inline . ,_) accum]
       [`(set! ,var ,rhs)
        (define id (unwrap var))
        (find-mutable env rhs (if (hash-ref env id #f)
                                  (hash-set accum id #t)
                                  accum))]
+      [`(ffi-static-call-and-callback-core ,_ ...) accum]
       [`(,_ ...) (body-find-mutable env v accum)]
       [`,_ accum]))
 
@@ -703,7 +717,7 @@
   ;;
   ;; If there's no size threshold for conversion, then convert mode is
   ;; a pair of 'called or 'not-called (where the former means "definitely
-  ;; called, so don't bother wrapper) and 'lift or 'no-lift.
+  ;; called, so don't bother with a wrapper) and 'lift or 'no-lift.
   ;;
   ;; If there's a size threshold, then a convert mode is a
   ;; `convert-mode` instance.
@@ -751,6 +765,13 @@
       [else (if (eq? 'no-lift (cdr cm))
                 '(called . no-lift)
                 '(called . lift))]))
+
+  (define (convert-mode-always cm)
+    (convert-mode 'not-needed #f need-lift? #t))
+
+  (define (convert-mode-within-conversion? cm)
+    (and (convert-mode? cm)
+         (convert-mode-no-more-conversions? cm)))
 
   (define (convert-mode-box-mutables? cm)
     (cond
@@ -818,8 +839,10 @@
           (record-sizes! val sizes)
           (record-sizes! body sizes))]
       [`(quote ,_) 1]
+      [`(#%foreign-inline . ,_) 1]
       [`(set! ,_ ,rhs)
        (add1 (record-sizes! rhs sizes))]
+      [`(ffi-static-call-and-callback-core ,_ ...) 1]
       [`(,_ ...) (body-record-sizes! v sizes)]
       [`,_ 1]))
 

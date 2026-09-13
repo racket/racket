@@ -11,9 +11,9 @@ provide the address of an SMTP server; in contrast, the
 @exec{sendmail} on the local system.}
 
 The @racketmodname[net/head] library defines the format of a
-@tech{header} string, which is used by @racket[send-smtp-message]. The
+@tech{header} string, which is used by @racket[smtp-send-message]. The
 @racketmodname[net/head] module also provides utilities to verify the
-formatting of a mail address. The procedures of the @racket[net/smtp]
+formatting of a mail address. The procedures of the @racketmodname[net/smtp]
 module assume that the given string arguments are well-formed.
 
 
@@ -25,19 +25,20 @@ module assume that the given string arguments are well-formed.
                             [header string?]
                             [message (listof (or/c string? bytes?))]
                             [#:port-no port-no/k (integer-in 0 65535) 25]
-                            [#:auth-user user (or/c string? false/c) #f]
-                            [#:auth-passwd pw (or/c string? false/c) #f]
+                            [#:auth-user user (or/c string? #f) #f]
+                            [#:auth-passwd pw (or/c string? #f) #f]
+                            [#:xoauth2? xoauth2? any/c #f]
                             [#:tcp-connect connect
-                                           ((string? (integer-in 0 65535))
-                                            . ->* . (input-port? output-port?))
+                                           (string? (integer-in 0 65535)
+                                            . -> . (values input-port? output-port?))
                                            tcp-connect]
                             [#:tls-encode encode
-                                          (or/c false/c
-                                                ((input-port? output-port?
-                                                  #:mode (one-of/c 'connect)
-                                                  #:encrypt (one-of/c 'tls)
-                                                  #:close-original? (one-of/c #t))
-                                                 . ->* . (input-port? output-port?)))
+                                          (or/c #f
+                                                (input-port? output-port?
+                                                 #:mode 'connect
+                                                 #:encrypt 'tls
+                                                 #:close-original? #t
+                                                 . -> . (values input-port? output-port?)))
                                           #f]
                             [port-no (integer-in 0 65535) port-no/k])
          void?]{
@@ -62,32 +63,37 @@ with the @racket[#:port-no] keyword or, for backward compatibility, as
 an extra argument after keywords---specifies the IP port to use in
 contacting the SMTP server.
 
-The optional @racket[#:auth-user] and @racket[#:auth-passwd] keyword
-argument supply a username and password for authenticated SMTP (using
-the AUTH PLAIN protocol).
+The optional @racket[user] and @racket[pw]
+arguments supply a username and password for authenticated SMTP using
+the AUTH PLAIN protocol. If @racket[xoauth2?] is true, then
+authentication uses the AUTH XOAUTH2 protocol, instead, and @racket[pw] is used
+as an access token (which must obtained somehow before
+calling @racket[smtp-send-message]).
 
-The optional @racket[#:tcp-connect] keyword argument supplies a
+The optional @racket[connect] argument supplies a
 connection procedure to be used in place of @racket[tcp-connect]. For
 example, use @racket[ssl-connect] to connect to the server via SSL.
 
-If the optional @racket[#:tls-encode] keyword argument supplies a
-procedure instead of #f, then the ESMTP STARTTLS protocol is used to
+If the optional @racket[encode] argument supplies a procedure
+instead of @racket[#f], then the ESMTP STARTTLS protocol is used to
 initiate SSL communication with the server. The procedure given as the
-#:tls-encode argument should be like @racket[ports->ssl-ports]; it
+@racket[encode] argument should be like @racket[ports->ssl-ports]; it
 will be called as
 
 @racketblock[
 (encode r w #:mode 'connect #:encrypt 'tls #:close-original? #t)
 ]
 
-and it should return two values: an input port and an export port.
+and it should return two values: an input port and an output port.
 All further SMTP communication uses the returned ports.
 
 For encrypted communication, normally either @racket[ssl-connect]
-should be supplied for @racket[#:tcp-connect], or
+should be supplied for @racket[connect], or
 @racket[ports->ssl-ports] should be supplied for
-@racket[#:tls-encode]---one or the other (depending on what the server
-expects), rather than both.}
+@racket[encode]---one or the other (depending on what the server
+expects), rather than both.
+
+@history[#:changed "1.2" @elem{Added the @racket[xoauth2?] argument.}]}
 
 @defparam[smtp-sending-end-of-message proc (-> any)]{
 

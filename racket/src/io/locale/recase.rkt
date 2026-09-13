@@ -55,14 +55,14 @@
           (not (fx= 0 (fxand (rktio_convert_properties rktio) RKTIO_CONVERT_RECASE_UTF16))))
      ;; The OS provides a UTF-16-based function, so use that
      (define s-16 (utf-16-encode s))
-     (start-atomic)
+     (start-rktio)
      (define r (rktio_recase_utf16 rktio
                                    up?
                                    s-16 (fxrshift (bytes-length s-16) 1)
                                    #f))
      (define sr (rktio_to_shorts r))
      (rktio_free r)
-     (end-atomic)
+     (end-rktio)
      (utf-16-decode sr)]
     [else
      ;; We don't just convert to a locale encoding and recase,
@@ -84,10 +84,10 @@
             [else
              (define-values (bstr in-used status)
                (bytes-convert c in-bstr pos))
-             (start-atomic)
+             (start-rktio)
              (sync-locale!)
              (define sr (locale-recase #:up? up? bstr))
-             (end-atomic)
+             (end-rktio)
              (define ls (bytes->string/locale sr))
              (cond
                [(eq? status 'complete)
@@ -103,7 +103,7 @@
       (lambda ()
         (bytes-close-converter/cached-to c enc)))]))
 
-;; in atomic mode
+;; in rktio mode
 ;; Assumes that the locale is sync'ed
 (define (locale-recase #:up? up? s)
   (define p (rktio_locale_recase rktio up? s))

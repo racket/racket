@@ -14,7 +14,7 @@
                  (integer-in 0 23)
                  (integer-in 1 31)
                  (integer-in 1 12)
-                 exact-nonnegative-integer?)
+                 exact-integer?)
                 (any/c)
                 . ->* .
                 exact-integer?)]

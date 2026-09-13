@@ -1,0 +1,14 @@
+diff -u -r old/cairo-1.18.2/src/cairo-cff-subset.c new/cairo-1.18.2/src/cairo-cff-subset.c
+--- old/cairo-1.18.2/src/cairo-cff-subset.c	2025-07-06 15:18:18
++++ new/cairo-1.18.2/src/cairo-cff-subset.c	2025-07-07 06:58:53
+@@ -953,7 +953,9 @@
+ 
+     num_subs = _cairo_array_num_elements (local_sub_index);
+     *local_subs_used = _cairo_calloc_ab (num_subs, sizeof (cairo_bool_t));
+-    if (unlikely (*local_subs_used == NULL))
++    /* Ideally, we don't get here if `num_subs` is 0. But in case
++       we do, allow a NULL allocation. */
++    if (unlikely (*local_subs_used == NULL && num_subs != 0))
+ 	return _cairo_error (CAIRO_STATUS_NO_MEMORY);
+ 
+     if (num_subs < 1240)

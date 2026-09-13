@@ -492,7 +492,8 @@ transformer environment).
 
 @defproc[(syntax-local-apply-transformer
           [transformer procedure?]
-          [binding-id (or/c identifier? #f)]
+          [binding-id/insp (or/c #f identifier? inspector?
+                                 (list identifier? inspector?))]
           [context-v (or/c 'expression 'top-level 'module 'module-begin list?)]
           [intdef-ctx (or/c internal-definition-context? #f)]
           [v any/c] ...)
@@ -507,14 +508,27 @@ those that are syntax objects.
 
 The @racket[context-v] argument is as in @racket[local-expand], and the
 @racket[intdef-ctx] is an @tech{internal-definition context} value or
-@racket[#f]. The @racket[binding-id] specifies a @tech{binding} associated with
-the @racket[transformer], which the expander uses to determine whether to add
-@tech{use-site scopes} and which @tech{code inspector} to use during
-expansion.
+@racket[#f].
+
+The @racket[binding-id/insp] argument encodes up to two additional
+arguments: @racket[_biding-id] as an identifier and
+@racket[_expander-insp] as an @tech{inspector}. The
+@racket[_binding-id] part, if supplied, specifies a @tech{binding}
+associated with the @racket[transformer], which the expander uses to
+determine whether to add @tech{use-site scopes} and which @tech{code
+inspector} to use during expansion. The @racket[_expander-insp] part
+specifies a @tech{code inspector} for the expander itself, which
+defaults to the code inspector associated with the binding of the
+transformer currently in progress. The relevant inspector is the inferior
+(in the sense of @racket[inspector-superior?]) of the one implied by
+@racket[_binding-id] and @racket[_expander-insp] if the inspector are
+comparable, or no inspector otherwise.
 
 @transform-time[]
 
-@history[#:added "8.2.0.7"]}
+@history[#:added "8.2.0.7"
+         #:changed "8.18.0.15" @elem{Changed the @racket[binding-id/insp] to allow
+                                     an @racket[_expander-insp] component.}]}
 
 
 @defproc[(internal-definition-context? [v any/c]) boolean?]{
@@ -582,6 +596,27 @@ being expanded.
                                no longer necessary.}
          #:changed "8.2.0.7" @elem{Added the @tech{outside-edge scope} and @tech{use-site scope}
                                    tracking behaviors.}]}
+
+@defproc[(syntax-local-make-definition-context-introducer
+          [name (and/c symbol? (not/c 'macro)) 'intdef])
+         ((syntax?) ((or/c 'flip 'add 'remove)) . ->* . syntax?)]{
+
+Like @racket[make-syntax-introducer], but the encapsulated
+@tech{scope} is pruned from @racket[quote-syntax] forms, much like the
+scopes associated with a new definition context (see
+@racket[syntax-local-make-definition-context]). The @racket[name]
+argument is used as the symbolic name, which serves as a debugging
+aid.
+
+Typically, @racket[internal-definition-context-add-scopes] and
+@racket[internal-definition-context-splice-binding-identifier] are
+preferred, but this function can be useful when you are sure that you
+want a single scope that should be pruned from @racket[quote-syntax]
+forms.
+
+@transform-time[]
+
+@history[#:added "8.12.0.8"]}
 
 
 @defproc[(internal-definition-context-add-scopes [intdef-ctx internal-definition-context?]
@@ -673,6 +708,9 @@ for @racket[intdef-ctx] for all parts of @racket[stx].
 This function is provided for backwards compatibility;
 @racket[internal-definition-context-add-scopes] and
 @racket[internal-definition-context-splice-binding-identifier] are preferred.
+See also @racket[syntax-local-make-definition-context-introducer] for
+encapsulating a single scope that should be pruned from
+@racket[quote-syntax] forms.
 
 @history[#:added "6.3"]}
 
@@ -1137,6 +1175,16 @@ transformer} application by the expander for an expression
 within a @racket[module] form, @racket[#f] otherwise.}
 
 
+@defproc[(syntax-local-compiling-module?) boolean?]{
+
+Returns @racket[#t] during the dynamic extent of a @tech{syntax
+transformer} application by the expander in a @tech{module-begin
+context} and when the expansion is part of a compilation process where
+a compiled module can be returned directly. See also @racket[module].
+
+@history[#:added "8.13.0.7"]}
+
+
 @defproc[(syntax-local-identifier-as-binding [id-stx identifier?]
                                              [intdef-ctx (or/c internal-definition-context? #f) #f])
          identifier?]{
@@ -1208,7 +1256,7 @@ and different result procedures use distinct scopes.
 @defproc[(make-interned-syntax-introducer [key (and/c symbol? symbol-interned?)])
          ((syntax?) ((or/c 'flip 'add 'remove)) . ->* . syntax?)]{
 
-Like @racket[make-syntax-introducer], but the encapsulated @tech{scope} is interned. Multiple calls to
+Like @racket[make-syntax-introducer], but the encapsulated @tech{scope} is an @deftech{interned scope}. Multiple calls to
 @racket[make-interned-syntax-introducer] with the same @racket[key] will produce procedures that flip,
 add, or remove the same scope, even across @tech{phases} and module @tech{instantiations}.
 Furthermore, the scope remains consistent even when embedded in @tech{compiled} code, so a scope
@@ -1518,6 +1566,16 @@ converted to an absolute module path that is equivalent to
 @racket[module-path] relative to the value of
 @racket[current-require-module-path].}
 
+@defproc[(syntax-local-lift-require-top-level-form [top-level-stx syntax?])
+         void?]{
+ Lifts @racket[top-level-stx] to the top-level of the enclosing module, immediately
+ following the @racket[require] that is being expanded.
+
+ @transform-time[] In addition, this procedure may only be called while
+ expanding a @tech{require transformer}.
+
+ @history[#:added "8.12.0.13"]
+}
 
 @defproc[(syntax-local-require-certifier)
          ((syntax?) (or/c #f (syntax? . -> . syntax?))
@@ -1764,7 +1822,7 @@ the value a pair of such values, and so on.}
 
 An identifier bound to @deftech{portal syntax} value created by
 @racket[make-portal-syntax] does not act as a transformer, but it
-encapsulates a syntax object that can be accessed in inspected even
+encapsulates a syntax object that can be accessed and inspected even
 without instantiating the enclosing module. Portal syntax is also bound
 using the @racketidfont{portal} form of @racket[#%require].
 

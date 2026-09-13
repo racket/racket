@@ -346,6 +346,38 @@ indiscriminately.
 \endschemedisplay
 
 
+%----------------------------------------------------------------------------
+\entryheader
+\formdef{car-cas!}{\categoryprocedure}{(car-cas! \var{pair} \var{old-obj} \var{new-obj})}
+\formdef{cdr-cas!}{\categoryprocedure}{(cdr-cas! \var{pair} \var{old-obj} \var{new-obj})}
+\returns \scheme{#t} if \var{pair} is changed, \scheme{#f} otherwise
+\listlibraries
+\endentryheader
+
+\noindent
+\scheme{car-cas!} and \scheme{cdr-cas!}  atomically change the content of \var{pair},
+either its \scheme{car} or \scheme{cdr} respectively, to \var{new-obj}
+if the replaced content is \scheme{eq?} to \var{old-obj}.
+If the content of \var{pair} that would be replaced is not \scheme{eq?} to \var{old-obj}, then
+\var{pair} is unchanged.
+
+On an architecture with a weak memory model, \scheme{car-cas!} and \scheme{cdr-cas!} can
+spuriously fail, leaving \var{pair} unchanged and returning
+\scheme{#f} even if the current value in \var{pair} is \var{old-obj}.
+On success, no memory ordering is implied, which means that
+\scheme{memory-order-acquire} and/or \scheme{memory-order-release} may be
+needed to complete an intended synchronization.
+
+\schemedisplay
+(define p (cons 'old-a 'old-d))
+(car-cas! p 'old-a 'new-a) ;=> #t, assuming no spurious failure
+(car p) ;=> 'new-a
+(cdr-cas! p 'old-d 'new-d) ;=> #t, assuming no spurious failure
+(cdr p) ;=> 'new-d
+(car-cas! p 'other 'wrong) ;=> #f
+(car p) ;=> 'new-a
+\endschemedisplay
+
 
 \section{Characters}
 
@@ -503,6 +535,24 @@ the implementation of \scheme{char-grapheme-step}.
 (char-extended-pictographic? #\xA9) ;=> #t
 \endschemedisplay
 
+%----------------------------------------------------------------------------
+\entryheader
+\formdef{char-indic-break-property}{\categoryprocedure}{(char-indic-break-property \var{char})}
+\returns a symbol
+\listlibraries
+\endentryheader
+
+\noindent
+\scheme{char-indic-break-property} reports the Unicode
+Indic\_Conjunct\_Break property of \var{char}, one of \scheme{None},
+\scheme{Consonant}, \scheme{Extend}, or \scheme{Linker}. This function
+is used in the implementation of \scheme{char-grapheme-step}.
+
+\schemedisplay
+(char-indic-break-property #\a)    ;=> None
+(char-indic-break-property #\x915) ;=> Consonant
+\endschemedisplay
+
 
 \section{Strings}
 
@@ -567,8 +617,8 @@ integers.
 The sum of \var{src-start} and \var{n} must not exceed the length of \var{src},
 and the sum of \var{dst-start} and \var{n} must not exceed the length of \var{dst}.
 
-\scheme{string-copy!} overwrites the \var{n} bytes of \var{dst}
-starting at \var{dst-start} with the \var{n} bytes of \var{dst}
+\scheme{string-copy!} overwrites the \var{n} characters of \var{dst}
+starting at \var{dst-start} with the \var{n} characters of \var{src}
 starting at \var{src-start}.
 This works even if \var{dst} is the same string as \var{src} and the
 source and destination locations overlap.
@@ -754,26 +804,111 @@ The length and indices of a vector in {\ChezScheme} are always fixnums.
 \index{immutable vectors}\index{mutable vectors}%
 All vectors are mutable by default, including constants.
 A program can create immutable vectors via
-\index{\scheme{vector->immutable-vector}}\scheme{vector->immutable-vector}.
+\index{\scheme{vector->immutable-vector}}\scheme{vector->immutable-vector},
+\index{\scheme{immutable-vector}}\scheme{immutable-vector},
+and other functions.
 Any attempt to modify an immutable vector causes an exception to be raised.
 
 %----------------------------------------------------------------------------
 \entryheader
 \formdef{vector-copy}{\categoryprocedure}{(vector-copy \var{vector})}
-\returns a copy of \var{vector}
+\formdef{vector-copy}{\categoryprocedure}{(vector-copy \var{vector} \var{start} \var{n})}
+\returns a new vector
 \listlibraries
 \endentryheader
 
 \noindent
-\scheme{vector-copy} creates a new vector of the same length and contents
-as \var{vector}.
-The elements themselves are not copied.
+\var{vector} must be a vector.
+\var{start} and \var{n} must be exact nonnegative integers.
+The sum of \var{start} and \var{n} must not exceed the length
+of \var{vector}. When \var{start}
+and \var{n} are not supplied, \scheme{0} and
+\scheme{(vector-length \var{vector})} are used.
+
+\noindent
+\scheme{vector-copy} creates a new vector
+that contains \var{n} consecutive elements of \var{vector}
+from position \var{start}. When \var{start} and \var{n} are not
+supplied, the result is a copy of \var{vector}. The vector elements
+themselves are not copied.
 
 \schemedisplay
 (vector-copy '#(a b c)) ;=> #(a b c)
+(vector-copy '#(a b c d) 1 2) ;=> #(b c)
 
 (let ([v '#(a b c)])
   (eq? v (vector-copy v))) ;=> #f
+\endschemedisplay
+
+%----------------------------------------------------------------------------
+\entryheader
+\formdef{vector-copy!}{\categoryprocedure}{(vector-copy! \var{src} \var{src-start} \var{dst} \var{dst-start} \var{n})}
+\returns unspecified
+\listlibraries
+\endnoskipentryheader
+
+\noindent
+\var{src} and \var{dst} must be vectors.
+\var{src-start}, \var{dst-start}, and \var{n} must be exact nonnegative
+integers.
+The sum of \var{src-start} and \var{n} must not exceed the length of \var{src},
+and the sum of \var{dst-start} and \var{n} must not exceed the length of \var{dst}.
+
+\scheme{vector-copy!} overwrites the \var{n} elements of \var{dst}
+starting at \var{dst-start} with the \var{n} elements of \var{src}
+starting at \var{src-start}.
+This works even if \var{dst} is the same vector as \var{src} and the
+source and destination locations overlap.
+That is, the destination is filled with the elements that appeared at the
+source before the operation began.
+
+\schemedisplay
+(let ([src (vector 1 2 3)] [dest (vector 0 0 0)])
+  (vector-copy! src 1 dest 0 2)
+  dest) ;=> #(2 3 0)
+
+(let ([v (vector 1 2 3)])
+  (vector-copy! v 1 v 0 2)
+  v) ;=> #(2 3 3)
+\endschemedisplay
+
+%----------------------------------------------------------------------------
+\entryheader
+\formdef{vector-append}{\categoryprocedure}{(vector-append \var{vector} \dots)}
+\returns a new vector
+\listlibraries
+\endentryheader
+
+\noindent
+\scheme{vector-append} creates a new vector whose content is the
+concatenation of the given \var{vector}s in order.
+
+\schemedisplay
+(vector-append '#(a b c)) ;=> #(a b c)
+(vector-append '#(a b c) '#(d e) '#(f)) ;=> #(a b c d e f)
+(vector-append) ;=> #()
+\endschemedisplay
+
+%----------------------------------------------------------------------------
+\entryheader
+\formdef{vector-set/copy}{\categoryprocedure}{(vector-set/copy \var{vector} \var{n} \var{val})}
+\returns a new vector with \var{val} at index \var{n}
+\listlibraries
+\endentryheader
+
+\noindent
+\var{vector} must be a vector.
+\var{n} must be exact nonnegative integer that is a valid element index
+for the vector.
+
+\noindent
+\scheme{vector-set/copy} creates a new vector whose content is the
+same as \var{vector}, except that the element at index \var{n}
+is changed to \var{val}.
+
+\schemedisplay
+(vector-set/copy '#(a b c) 0 'x) ;=> #(x b c)
+(vector-set/copy '#(a b c) 2 'x) ;=> #(a b x)
 \endschemedisplay
 
 %----------------------------------------------------------------------------
@@ -820,9 +955,16 @@ If the \var{n}th element of \var{vector} that would be replaced
 is not \scheme{eq?} to \var{old-obj}, then
 \var{vector} is unchanged.
 
+On an architecture with a weak memory model, \scheme{vector-cas!} can
+spuriously fail, leaving \var{vector} unchanged and returning
+\scheme{#f} even if the current value of element \var{n} is
+\var{old-obj}. On success, no memory ordering is implied, which means
+that \scheme{memory-order-acquire} and/or \scheme{memory-order-release}
+may be needed to complete an intended synchronization.
+
 \schemedisplay
 (define v (vector 'old0 'old1 'old2))
-(vector-cas! v 1 'old1 'new1) ;=> #t
+(vector-cas! v 1 'old1 'new1) ;=> #t, assuming no spurious failure
 (vector-ref v 1) ;=> 'new1
 (vector-cas! v 2 'old1 'new2) ;=> #f
 (vector-ref v 2) ;=> 'old2
@@ -861,6 +1003,22 @@ is immutable; otherwise, the result is an immutable vector with the same content
 (define v (vector->immutable-vector (vector 1 2 3)))
 (vector-set! v 0 0) ;=> \var{exception: not mutable}
 \endschemedisplay
+
+%----------------------------------------------------------------------------
+\entryheader
+\formdef{immutable-vector}{\categoryprocedure}{(immutable-vector \var{obj} \dots)}
+\formdef{immutable-vector-copy}{\categoryprocedure}{(immutable-vector-copy \var{vector})}
+\formdef{immutable-vector-copy}{\categoryprocedure}{(immutable-vector-copy \var{vector} \var{start} \var{n})}
+\formdef{immutable-vector-append}{\categoryprocedure}{(immutable-vector-append \var{vector} \dots)}
+\formdef{immutable-vector-set/copy}{\categoryprocedure}{(vector-set/copy \var{vector} \var{n} \var{val})}
+\listlibraries
+\endentryheader
+
+Like \scheme{vector}, \scheme{vector-copy},  \scheme{vector-append}, and
+\scheme{vector-set/copy}, but these procedures return an immutable vector instead of a mutable
+one, and they may return an existing object instead of allocating a new one.
+In the case of \scheme{immutable-vector-copy}, \scheme{immutable-vector-append}, or
+\scheme{immutable-vector-set/copy}, an argument vector can be mutable or immutable.
 
 %----------------------------------------------------------------------------
 \entryheader
@@ -1077,7 +1235,37 @@ as \var{fxvector}.
   (eq? v (fxvector-copy v))) ;=> #f
 \endschemedisplay
 
+%----------------------------------------------------------------------------
+\entryheader
+\formdef{fxvector-copy!}{\categoryprocedure}{(fxvector-copy! \var{src} \var{src-start} \var{dst} \var{dst-start} \var{n})}
+\returns unspecified
+\listlibraries
+\endnoskipentryheader
 
+\noindent
+\var{src} and \var{dst} must be fxvectors.
+\var{src-start}, \var{dst-start}, and \var{n} must be exact nonnegative
+integers.
+The sum of \var{src-start} and \var{n} must not exceed the length of \var{src},
+and the sum of \var{dst-start} and \var{n} must not exceed the length of \var{dst}.
+
+\scheme{fxvector-copy!} overwrites the \var{n} elements of \var{dst}
+starting at \var{dst-start} with the \var{n} elements of \var{src}
+starting at \var{src-start}.
+This works even if \var{dst} is the same fxvector as \var{src} and the
+source and destination locations overlap.
+That is, the destination is filled with the fixnums that appeared at the
+source before the operation began.
+
+\schemedisplay
+(let ([src (fxvector 1 2 3)] [dest (fxvector 0 0 0)])
+  (fxvector-copy! src 1 dest 0 2)
+  dest) ;=> #vfx(2 3 0)
+
+(let ([fxv (fxvector 1 2 3)])
+  (fxvector-copy! fxv 1 fxv 0 2)
+  fxv) ;=> #vfx(2 3 3)
+\endschemedisplay
     
 \section{Flonum-Only Vectors\label{SECTFLVECTORS}}
 
@@ -1200,7 +1388,7 @@ the length of \var{flvector}.
 
 \schemedisplay
 (let ([v (flvector 1.0 2.0 3.0 4.0 5.0)])
-  (flvector-set! v 2 (fx- (flvector-ref v 2)))
+  (flvector-set! v 2 (fl- (flvector-ref v 2)))
   v) ;=> #vfl(1.0 2.0 -3.0 4.0 5.0)
 \endschemedisplay
 
@@ -1254,7 +1442,7 @@ the length of \var{flvector}.
 
 (let ([v #vfl(1.0 2.0 3.0 4.0 5.0)])
   (let ([ls (flvector->list v)])
-    (list->flvector (map fx* ls ls)))) ;=> #vfl(1.0 4.0 9.0 16.0 25.0)
+    (list->flvector (map fl* ls ls)))) ;=> #vfl(1.0 4.0 9.0 16.0 25.0)
 \endschemedisplay
 
 %----------------------------------------------------------------------------
@@ -1275,7 +1463,37 @@ as \var{flvector}.
   (eq? v (flvector-copy v))) ;=> #f
 \endschemedisplay
 
+%----------------------------------------------------------------------------
+\entryheader
+\formdef{flvector-copy!}{\categoryprocedure}{(flvector-copy! \var{src} \var{src-start} \var{dst} \var{dst-start} \var{n})}
+\returns unspecified
+\listlibraries
+\endnoskipentryheader
 
+\noindent
+\var{src} and \var{dst} must be flvectors.
+\var{src-start}, \var{dst-start}, and \var{n} must be exact nonnegative
+integers.
+The sum of \var{src-start} and \var{n} must not exceed the length of \var{src},
+and the sum of \var{dst-start} and \var{n} must not exceed the length of \var{dst}.
+
+\scheme{flvector-copy!} overwrites the \var{n} elements of \var{dst}
+starting at \var{dst-start} with the \var{n} elements of \var{src}
+starting at \var{src-start}.
+This works even if \var{dst} is the same flvector as \var{src} and the
+source and destination locations overlap.
+That is, the destination is filled with the flonums that appeared at the
+source before the operation began.
+
+\schemedisplay
+(let ([src (flvector 1.0 2.0 3.0)] [dest (flvector 0.0 0.0 0.0)])
+  (flvector-copy! src 1 dest 0 2)
+  dest) ;=> #vfl(2.0 3.0 0.0)
+
+(let ([flv (flvector 1.0 2.0 3.0)])
+  (flvector-copy! flv 1 flv 0 2)
+  flv) ;=> #vfl(2.0 3.0 3.0)
+\endschemedisplay
     
 \section{Bytevectors\label{SECTBYTEVECTORS}}
 
@@ -1852,9 +2070,16 @@ if the replaced content is \scheme{eq?} to \var{old-obj}.
 If the content of \var{box} that would be replaced is not \scheme{eq?} to \var{old-obj}, then
 \var{box} is unchanged.
 
+On an architecture with a weak memory model, \scheme{box-cas!} can
+spuriously fail, leaving \var{box} unchanged and returning
+\scheme{#f} even if the current value in \var{box} is \var{old-obj}.
+On success, no memory ordering is implied, which means that
+\scheme{memory-order-acquire} and/or \scheme{memory-order-release} may be
+needed to complete an intended synchronization.
+
 \schemedisplay
 (define b (box 'old))
-(box-cas! b 'old 'new) ;=> #t
+(box-cas! b 'old 'new) ;=> #t, assuming no spurious failure
 (unbox b) ;=> 'new
 (box-cas! b 'other 'wrong) ;=> #f
 (unbox b) ;=> 'new
@@ -2870,7 +3095,7 @@ and \scheme{eq-hashtable-contains?} are used on a
 particular hash table by any thread. To handle certain forms of
 contention, the result may be \scheme{#f}, in which case the operation
 might be retried. An even more significant constraint is that the hash
-table will not be resized interally as needed to provide constant-time
+table will not be resized internally as needed to provide constant-time
 behavior. Use \scheme{eq-hashtable-set!} or a similar operation from a
 single thread (e.g., during a collect-reqest handler) to allow the
 opportunity of resizing.
@@ -4468,7 +4693,7 @@ is the ``pretty'' name of the gensym (see~\ref{desc:gensym}).
 \var{rtd} must be a record-type descriptor.
 The field names are symbols.
 
-See also the Revised$^6$ Report version of this prodecure (exported from
+See also the Revised$^6$ Report version of this procedure (exported from
 the \scheme{(chezscheme)} library) which returns a vector.
 
 \schemedisplay
@@ -4586,7 +4811,7 @@ new record type has anonymous fields. The \scheme{car} of \var{fields}
 is a field count, and it is added to any fields present in
 \var{parent} to determine the record type's total number of fields.
 The \scheme{cdr} of \var{fields} must be an exact non-negative integer
-that is treated as a bit array; a \scheme{1} bit indicates the the
+that is treated as a bit array; a \scheme{1} bit indicates the
 corresponding field among new fields is mutable. The total number of
 fields in a record type must be a fixnum.
 

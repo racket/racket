@@ -1039,6 +1039,7 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
       rktio_addrinfo_free(scheme_rktio, tcp_connect_src);
 
     rktio_tcp_nodelay(scheme_rktio, s, 1); /* initially block-buffered: */
+    rktio_tcp_keepalive(scheme_rktio, s, 1);
 
     tcp = make_tcp_port_data(s, 2);
     
@@ -1140,7 +1141,9 @@ tcp_listen(int argc, Scheme_Object *argv[])
       listen_failed(pd, "address-resolution error", address, id);
 
     pd->src_addr = tcp_src;
-    lnr = rktio_listen(scheme_rktio, tcp_src, backlog, reuse);
+    lnr = rktio_listen_opt(scheme_rktio, tcp_src, backlog,
+                           (reuse ? RKTIO_LISTEN_REUSE : 0)
+                           | ((id == 0) ? RKTIO_LISTEN_RETRY_ADDRINUSE : 0));
 
     pd->src_addr = NULL;
     rktio_addrinfo_free(scheme_rktio, tcp_src);
@@ -1265,6 +1268,7 @@ do_tcp_accept(int argc, Scheme_Object *argv[], Scheme_Object *cust, char **_fail
     Scheme_Tcp *tcp;
 
     rktio_tcp_nodelay(scheme_rktio, s, 1); /* initially block-buffered: */
+    rktio_tcp_keepalive(scheme_rktio, s, 1);
 
     tcp = make_tcp_port_data(s, 2);
 

@@ -159,8 +159,9 @@
 ;; == Prepare
 
 (define (prepare c stmt)
-  ;; FIXME: handle non-string statements
-  (prepare1 'prepare c stmt #f))
+  (if (virtual-statement? stmt)
+      ((prop:statement-ref stmt) stmt c)
+      (prepare1 'prepare c stmt #f)))
 
 (define (prepare1 fsym c stmt close-on-exec?)
   ;; stmt is string

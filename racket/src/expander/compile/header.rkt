@@ -104,34 +104,24 @@
   `((define-values (,syntax-literals-id)
       (make-vector ,(syntax-literals-count sl) #f))
     (define-values (,get-syntax-literal!-id)
+      ;; Go from a `pos` to a syntax object as fast as possible in the common case
       (lambda (pos)
         (let-values ([(ready-stx) (unsafe-vector*-ref ,syntax-literals-id pos)])
           (if ready-stx
               ready-stx
-              (begin
-                ,@(if skip-deserialize?
-                      null
-                      `((if (unsafe-vector*-ref ,deserialized-syntax-vector-id 0)
-                            (void)
-                            (,deserialize-syntax-id ,bulk-binding-registry-id))))
-                (let-values ([(stx)
-                              (syntax-module-path-index-shift
-                               (syntax-shift-phase-level
-                                (unsafe-vector*-ref ,deserialized-syntax-vector-id pos)
-                                ,phase-shift-id)
-                               ,(add-module-path-index! mpis self)
-                               ,self-id
-                               ,inspector-id)])
-                  ;; loop in case of spurious CAS failure
-                  (letrec-values ([(loop)
-                                   (lambda ()
-                                     (begin
-                                       (vector-cas! ,syntax-literals-id pos #f stx)
-                                       (let-values ([(new-stx) (unsafe-vector*-ref ,syntax-literals-id pos)])
-                                         (if new-stx
-                                             new-stx
-                                             (loop)))))])
-                    (loop))))))))))
+              ;; Ok to take more time when we have to shift a syntax object for
+              ;; a given module instantiation, so redirect to `force-syntax-object-id`
+              (force-syntax-object ,syntax-literals-id
+                                   pos
+                                   ,(add-module-path-index! mpis self)
+                                   ,self-id
+                                   ,phase-shift-id
+                                   ,inspector-id
+                                   ,deserialized-syntax-vector-id
+                                   ,bulk-binding-registry-id
+                                   ,(if skip-deserialize?
+                                        #f
+                                        deserialize-syntax-id))))))))
 
 ;; Generate on-demand deserialization (shared across instances); the
 ;; result defines `deserialize-syntax-id`
@@ -152,16 +142,22 @@
         ;; declaration on the grounds that all declarations should
         ;; provide the same information for bulk bindings.
         (lambda (,bulk-binding-registry-id)
-          (begin
-            (vector-copy!
-             ,deserialized-syntax-vector-id
-             '0
-             (let-values ([(,inspector-id) #f])
-               ,(generate-deserialize (vector->immutable-vector
-                                       (list->vector
-                                        (reverse (syntax-literals-stxes sl))))
-                                      #:mpis mpis)))
-            (set! ,deserialize-syntax-id #f)))))]))
+          (let-values ([(vec) (let-values ([(,inspector-id) #f])
+                                ,(generate-deserialize (vector->immutable-vector
+                                                        (list->vector
+                                                         (reverse (syntax-literals-stxes sl))))
+                                                       #:mpis mpis))])
+            (begin
+              (letrec-values ([(loop)
+                               (lambda ()
+                                 (if (box-cas! ,deserialized-syntax-vector-id #f vec)
+                                     vec
+                                     (let-values ([(other-vec) (unbox ,deserialized-syntax-vector-id)])
+                                       (if other-vec
+                                           other-vec
+                                           (loop)))))])
+                (loop))
+              (set! ,deserialize-syntax-id #f))))))]))
 
 (define (generate-lazy-syntax-literal-lookup pos)
   `(,get-syntax-literal!-id ,pos))

@@ -170,6 +170,21 @@
                         stream-count)
 
 (test 3 'sequence-length (sequence-length #hasheq((1 . 'a) (2 . 'b) (3 . 'c))))
+(let ([v 0])
+  (define s
+    (make-do-sequence
+     (λ ()
+       (define (pos->element _) (set! v (add1 v)) v)
+       (define (continue-with-pos? _) (< v 100))
+       (values pos->element void (void) continue-with-pos? #f #f))))
+  (define-values (more? get) (sequence-generate s))
+  (test 1 'sequence-ref (get))
+  (test 2 'sequence-ref (sequence-ref s 0))
+  (test 3 'sequence-ref (sequence-ref s 0))
+  (test 5 'sequence-ref (sequence-ref s 1))
+  (test 7 'sequence-ref (sequence-ref s 1))
+  (test 8 'sequence-ref (get))
+  (test 92 'sequence-length (sequence-length s)))
 
 (test-values '(2 3) (lambda () (sequence-ref (in-parallel '(2) '(3)) 0)))
 (test-values '(8 12) (lambda () (sequence-ref (in-parallel '(2 5 8 -1) '(3 9 12 0)) 2)))
@@ -278,5 +293,26 @@
 (err/rt-test (for/list ([x (in-slice 0 (in-range 8))]) x) exn:fail:contract?)
 
 ;; ----------------------------------------
+
+;; initiate-sequence
+
+(define (in-alt-list xs)
+  (make-do-sequence
+   (λ ()
+     (initiate-sequence
+      #:pos->element car
+      #:next-pos (λ (xs) (cdr (cdr xs)))
+      #:init-pos xs
+      #:continue-with-pos? pair?
+      #:continue-after-pos+val? (λ (xs _) (pair? (cdr xs)))))))
+
+    (sequence->list (in-alt-list '(1 2 3 4 5 6 7)))
+
+(test '() 'initiate-sequence (sequence->list (in-alt-list '())))
+(test '(1) 'initiate-sequence (sequence->list (in-alt-list '(1))))
+(test '(1) 'initiate-sequence (sequence->list (in-alt-list '(1 2))))
+(test '(1 3) 'initiate-sequence (sequence->list (in-alt-list '(1 2 3))))
+(test '(1 3 5) 'initiate-sequence (sequence->list (in-alt-list '(1 2 3 4 5 6))))
+(test '(1 3 5 7) 'initiate-sequence (sequence->list (in-alt-list '(1 2 3 4 5 6 7))))
 
 (report-errs)

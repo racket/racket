@@ -125,13 +125,14 @@ The class system allows a program to define a new class (a
 ]
 
 An @deftech{interface} is a collection of method names to be
-implemented by a class, combined with a derivation requirement. A
+implemented by a class, potentially with default implementations
+some methods, combined with a @deftech{derivation requirement}. A
 class @deftech{implements} an interface when it
 
 @itemize[
 
- @item{declares (or inherits) a public method for each variable in the
- interface;}
+ @item{declares (or inherits) a public method for each method in the
+ interface (that does not have an implementation in the interface);}
 
  @item{is derived from the class required by the interface, if any; and}
 
@@ -145,6 +146,9 @@ implements. Each class also implements an implicitly-defined interface
 that is associated with the class. The implicitly-defined interface
 contains all of the class's public method names, and it requires that
 all other implementations of the interface are derived from the class.
+When a class implements an interface but does not explicitly
+declare an implementation of a method that has a default implementation
+in the interface, then the default implementation is used for the class.
 
 A new interface can @deftech{extend} one or more interfaces with
 additional method names; each class that implements the extended
@@ -168,7 +172,11 @@ interface is not an object (i.e., there are no ``meta-classes'' or
 @defform/subs[(interface (super-interface-expr ...) name-clause ...)
               ([name-clause
                 id
-                (id contract-expr)])]{
+                (id contract-expr)
+                (id #:public default-expr)
+                (id #:override default-expr)
+                (id contract-expr #:public impl-expr)
+                (id contract-expr #:override impl-expr)])]{
 
 Produces an interface. The @racket[id]s must be mutually distinct.
 
@@ -183,37 +191,64 @@ superinterfaces.
 
 The result of an @racket[interface] expression is an interface that
 includes all of the specified @racket[id]s, plus all identifiers from
-the superinterfaces. Duplicate identifier names among the
-superinterfaces are ignored, but if a superinterface contains one of
-the @racket[id]s in the @racket[interface] expression, the
-@exnraise[exn:fail:object]. A given @racket[id] may be paired with
-a corresponding @racket[contract-expr].
+the superinterfaces. A given @racket[id] may be paired with
+a corresponding @racket[contract-expr], and it may have a @racket[impl-expr],
+which supplies an implementation of @racket[id] to be inherited or overridden
+in an implementing class. Each @racket[impl-expr] must
+be a @racket[_method-procedure]; see @secref["clmethoddefs"].
+Duplicate identifier names among the
+superinterfaces are ignored, as long as no more than one of them provides
+a default implementation for each identifier that originated in a
+different interface.
 
-If no @racket[super-interface-expr]s are provided, then the derivation
-requirement of the resulting interface is trivial: any class that
+An interface can provide an implementation of a method using
+@racket[#:public] if no superinterface has an implementation of the
+method, or using @racket[#:override] otherwise. If multiple superinterfaces
+provide implementations of a method that originate from different ancestor
+interfaces, then the method must be overridden. The @racket[super]
+form is not supported within an interface method implementation.
+
+If no @racket[super-interface-expr]s are provided, then the @tech{derivation
+requirement} of the resulting interface is trivial: any class that
 implements the interface must be derived from @racket[object%].
 Otherwise, the implementation requirement of the resulting interface
 is the most specific requirement from its superinterfaces. If the
-superinterfaces specify inconsistent derivation requirements, the
-@exnraise[exn:fail:object].
+superinterfaces specify inconsistent @tech{derivation requirements}, then
+@exnraise[exn:fail:object] is raised.
 
 @examples[
 #:eval class-ctc-eval
 #:no-prompt
 (define file-interface<%>
-  (interface () open close read-byte write-byte))
+  (interface ()
+    open close read-byte write-byte
+    [append-line
+     #:public
+     (λ (bts)
+       (send this open 'append)
+       (for ([b (in-bytes bts)])
+         (send this write-byte b))
+       (send this close))]))
 (define directory-interface<%>
   (interface (file-interface<%>)
     [file-list (->m (listof (is-a?/c file-interface<%>)))]
     parent-directory))
-]}
+]
+
+@history[#:changed "8.17.0.4" @elem{Added support for @racket[#:public]
+                                    and @racket[#:override] method
+                                    implementations.}]}
 
 @defform/subs[(interface* (super-interface-expr ...)
                           ([property-expr val-expr] ...)
                 name-clause ...)
               ([name-clause
                 id
-                (id contract-expr)])]{
+                (id contract-expr)
+                (id #:public default-expr)
+                (id #:override default-expr)
+                (id contract-expr #:public default-expr)
+                (id contract-expr #:override default-expr)])]{
 
 Like @racket[interface], but also associates to the interface the
 structure-type properties produced by the @racket[property-expr]s with
@@ -234,7 +269,11 @@ structure type property's guard, if any).
 (define i<%> (interface* () ([prop:custom-write
                               (lambda (obj port mode) (void))])
                method1 method2 method3))
-]}
+]
+
+@history[#:changed "8.17.0.4" @elem{Added support for @racket[#:public] and
+                                    @racket[#:override] method
+                                    implementations.}]}
 
 @; ------------------------------------------------------------------------
 
@@ -884,7 +923,8 @@ transformed to access methods and fields through the object argument.
 
 A method declared with @racket[public], @racket[pubment], or
 @racket[public-final] introduces a new method into a class. The method
-must not be present already in the superclass, otherwise the
+must not be present already in the superclass or have an implementation
+in any superinterface, otherwise the
 @exnraise[exn:fail:object] when the class expression is evaluated. A
 method declared with @racket[public] can be overridden in a subclass
 that uses @racket[override], @racket[overment], or
@@ -895,7 +935,7 @@ be augmented in a subclass that uses @racket[augment],
 
 A method declared with @racket[override], @racket[overment], or
 @racket[override-final] overrides a definition already present in the
-superclass. If the method is not already present, the
+superclass or a superinterface. If the method is not already present, the
 @exnraise[exn:fail:object] when the class expression is evaluated.  A
 method declared with @racket[override] can be overridden again in a
 subclass that uses @racket[override], @racket[overment], or
@@ -923,8 +963,10 @@ class expression, cannot be overridden, and never overrides a method
 in the superclass.
 
 When a method is declared with @racket[override], @racket[overment],
-or @racket[override-final], then the superclass implementation of the
-method can be called using @racket[super] form.
+or @racket[override-final], then the superclass or superinterface implementation of the
+method can be called using @racket[super] form. If multiple superinterfaces
+provide an implementation of the overridden method, then @racket[super]
+raises @racket[exn:fail:object] when it is evaluated.
 
 When a method is declared with @racket[pubment], @racket[augment], or
 @racket[overment], then a subclass augmenting method can be called
@@ -942,7 +984,7 @@ considered abstract and cannot be instantiated.
 @defform*[[(super id arg ...)
            (super id arg ... . arg-list-expr)]]{
 
-Always accesses the superclass method, independent of whether the
+Always accesses the superclass method or a superinterface method, independent of whether the
 method is overridden again in subclasses. Using the @racket[super]
 form outside of @racket[class*] is a syntax error. Each @racket[arg]
 is as for @racket[#%app]: either @racket[_arg-expr] or
@@ -1520,10 +1562,38 @@ field, the @exnraise[exn:fail:object].}
 
 @; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-@subsection{Generics}
+@subsection[#:tag "sec:generics"]{Generics}
 
 A @deftech{generic} can be used instead of a method name to avoid the
-cost of relocating a method by name within a class.
+cost of relocating a method by name within a class, making method
+invocation more efficient.
+
+@examples[
+ #:eval class-eval
+ (eval:no-prompt
+  (define woody%
+    (class object%
+      (define/public (draw who)
+        (format "reach for the sky, ~a" who))
+      (super-new))))
+ 
+ (eval:no-prompt
+  (define gen-draw (generic woody% draw)))
+
+ (eval:no-prompt
+  (define (call-draw o)
+    (send-generic o gen-draw "partner")))
+
+ (call-draw (new woody%))
+
+ (eval:no-prompt
+  (define woody2%
+    (class woody%
+      (define/override (draw who)
+        (string-append (super draw who)
+                       "–there's a snake in my boot!"))
+      (super-new))))
+ (call-draw (new woody2%))]
 
 @defform[(generic class-or-interface-expr id)]{
 
@@ -1535,7 +1605,10 @@ method with (external) name @racket[id].
 If @racket[class-or-interface-expr] does not produce a class or
 interface, the @exnraise[exn:fail:contract]. If the resulting class or
 interface does not contain a method named @racket[id], the
-@exnraise[exn:fail:object].}
+@exnraise[exn:fail:object].
+
+See the introduction to @secref["sec:generics"] for some examples.
+}
 
 @defform*[[(send-generic obj-expr generic-expr arg ...)
            (send-generic obj-expr generic-expr arg ... . arg-list-expr)]]{
@@ -1551,7 +1624,10 @@ If @racket[obj-expr] does not produce an object, or if
 @racket[generic-expr] does not produce a generic, the
 @exnraise[exn:fail:contract]. If the result of @racket[obj-expr] is
 not an instance of the class or interface encapsulated by the result
-of @racket[generic-expr], the @exnraise[exn:fail:object].}
+of @racket[generic-expr], the @exnraise[exn:fail:object].
+
+See the introduction to @secref["sec:generics"] for some examples.
+}
 
 @defproc[(make-generic [type (or/c class? interface?)]
                        [method-name symbol?])
@@ -2129,7 +2205,11 @@ of @racket[this] need to be checked.}
 
 ([member-spec
   method-spec
-  (field field-spec ...)]
+  (field field-spec ...)
+  (code:line #:opaque opaque-expr)
+  (code:line #:opaque-except opaque-expr)
+  (code:line #:opaque-fields opaque-fields-expr)
+  #:do-not-check-class-field-accessor-or-mutator-access]
  
  [method-spec
   method-id
@@ -2137,16 +2217,73 @@ of @racket[this] need to be checked.}
  [field-spec
   field-id
   (field-id contract-expr)])]{
-Produces a contract for an object.
+Produces a contract for an object. Each field and method is checked
+against the supplied contract. Note that each method contract should
+be written to accept an extra, “this” argument; consider using @racket[->m]
+or @racket[->*m] contract combinators.
 
-Unlike the older form @racket[object-contract], but like
-@racket[class/c], arbitrary contract expressions are allowed.
-Also, method contracts for @racket[object/c] follow those for
-@racket[class/c].  An object wrapped with @racket[object/c]
-behaves as if its class had been wrapped with the equivalent
-@racket[class/c] contract.
+ If present, the @racket[opaque-expr] controls how methods
+ that are present in the object but not listed in
+ the contract are handled:
+ @itemlist[
+ @item{If the @racket[opaque-expr] follows the keyword
+   @racket[#:opaque] and it evaluates to @racket[#f], then
+   calls to such methods are always allowed.}
+ @item{If it follows @racket[#:opaque] and it evaluates to
+   @racket[#t], then such methods are never allowed.}
+ @item{If it follows @racket[#:opaque] and it
+   evaluates to a predicate procedure produced by
+   @racket[make-impersonator-property], then method procedures
+   that have that property set are allowed.}
+ @item{If the @racket[opaque-expr]
+   follows the keyword @racket[#:opaque-except] then
+   it must evaluate to a predicate procedure produced by
+   @racket[make-impersonator-property]. In that case, methods that have
+   that property are disallowed and others are allowed.}
+ @item{ If no @racket[opaque-expr] is not present, then
+   method methods calls to methods not listed in the contract
+   are always allowed.}]
+
+ In a manner analogous to @racket[opaque-expr] but for fields, the
+ @racket[opaque-fields-expr] controls how fields that are
+ present in the object, but not listed in the contract, are
+ handled:
+ @itemlist[
+ @item{If @racket[opaque-fields-expr] is present and
+   evaluates to @racket[#true], fields not listed in the
+   contract are not allowed to be accessed.}
+ @item{If @racket[opaque-fields-expr] is present and
+   evaluates to @racket[#false], such fields are allowed to be
+   accessed.}
+ @item{ If @racket[opaque-fields-expr] is not present and
+   @racket[opaque-expr] evaluates to a predicate procedure
+   produced by @racket[make-impersonator-property] then the
+   fields are disallowed if @racket[#:opaque] is present and
+   allowed if @racket[#:opaque-except] is present. }
+ @item{If @racket[opaque-fields-expr] is not present but
+   @racket[opaque-expr] is, then @racket[opaque-fields-expr]
+   defaults based on the value of @racket[opaque-expr],
+   disallowing fields if @racket[opaque-expr] disallowed
+   methods and allowing them if it does not. }]
+
+ If neither @racket[opaque-fields-expr] nor
+ @racket[opaque-expr] are present, all unlisted fields and
+ methods are allowed to be accessed.
+
+ If
+ @racket[#:do-not-check-class-field-accessor-or-mutator-access]
+ is present, then field accesses accesses via the procedures
+ returned from @racket[class-field-mutator] and
+ @racket[class-field-accessor] are always allowed, even if
+ they would otherwise be diallowed (either because field
+ access is not allowed or because the field violates the
+ contract). This behavior is questionable but corresponds to
+ a bug that existed in previous versions of @racket[object/c]
+ for more than a decade, so this option is here to give
+ flexibility in the timing of the transition to
+ properly-checked contracts.
+
 }
-
 @defproc[(instanceof/c [class-contract contract?]) contract?]{
 Produces a contract for an object, where the object is an
 instance of a class that conforms to @racket[class-contract].

@@ -225,7 +225,7 @@
                  (extension (read-config-source config) in))]
                [else
                 (raise-argument-error who
-                                      "(or/c (procedure-arity-includes?/c 2) (procedure-arity-includes?/c 6))"
+                                      "(or/c (procedure-arity-includes/c 2) (procedure-arity-includes/c 6))"
                                       extension)])]
             [else
              (cond
@@ -239,7 +239,7 @@
                             (read-config-pos config)))]
                [get-info?
                 (raise-argument-error who
-                                      "(procedure-arity-includes?/c 5)"
+                                      "(procedure-arity-includes/c 5)"
                                       extension)]
                [(procedure-arity-includes? extension 1)
                 (parameterize-like
@@ -247,13 +247,13 @@
                  (extension in))]
                [else
                 (raise-argument-error who
-                                      "(or/c (procedure-arity-includes?/c 1) (procedure-arity-includes?/c 5))"
+                                      "(or/c (procedure-arity-includes/c 1) (procedure-arity-includes/c 5))"
                                       extension)])]))
 
         (cond
           [get-info?
            (unless (and (procedure? result-v) (procedure-arity-includes? result-v 2))
-             (raise-result-error 'read-language "(procedure-arity-includes?/c 2)" result-v))
+             (raise-result-error 'read-language "(procedure-arity-includes/c 2)" result-v))
            result-v]
           [(special-comment? result-v)
            (read-recur #f in config)]

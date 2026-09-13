@@ -38,6 +38,7 @@
                            equal?
                            vector? mutable-vector? vector-length vector-ref vector-set!
                            vector-copy vector-fill! vector->immutable-vector vector->list
+                           vector-append vector-set/copy vector-copy!
                            immutable-vector?
                            random random-seed
                            box? unbox set-box! immutable-box? mutable-box?
@@ -54,6 +55,10 @@
                            fxquotient
                            expt
                            make-flvector flvector-copy
+                           make-pseudo-random-generator
+                           pseudo-random-generator?
+                           pseudo-random-generator-next!
+                           pseudo-random-generator->vector
                            vector->pseudo-random-generator
                            vector->pseudo-random-generator!)
                    [make-parameter chez:make-parameter]

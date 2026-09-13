@@ -75,7 +75,7 @@
         [(make-struct-field-mutator)
          (and (ok-make-struct-field-accessor/mutator? e locals 'general-mutator defns)
               1)]
-        [(make-struct-type-property)
+        [(make-struct-type-property unsafe-make-struct-type-property/guard-calls-no-arguments)
          (and (ok-make-struct-type-property? e defns)
               3)]
         [(gensym)

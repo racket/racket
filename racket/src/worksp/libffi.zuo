@@ -29,7 +29,7 @@
             [(equal? mach "ti3nt")
              (at-source "../bc/foreign/libffi/src/x86/sysv.S")]
             [else
-             (at-source "../bc/foreign/libffi/src/aarch64/win64_armasm.S")]))))
+             (at-source "../bc/foreign/libffi/src/aarch64/sysv.S")]))))
 
   (define win32.obj
     (at-dir "win32.obj"))
@@ -80,6 +80,7 @@
      [:target ,win32.obj (,win32_plain.asm)
               ,(lambda (path token)
                  (define mach (hash-ref config 'MACH))
+                 (mkdir-p (path-only path))
                  (cond
                    [(not msvc?)
                     (c-compile path

@@ -40,7 +40,7 @@ by deserialization produces a value with the same graph structure and
 mutability as the original value, but the serialized value is a plain
 tree (i.e., no sharing).
 
-The following kinds of values are serializable:
+The following kinds of values are @deftech{serializable}:
 
 @itemize[
 
@@ -59,7 +59,7 @@ The following kinds of values are serializable:
        specific convention), @tech{regexp values}, @|void-const|, and the empty list;}
 
  @item{@tech{pairs}, @tech{mutable pairs}, @tech{vectors}, @tech{flvectors}, @tech{fxvectors},
-       @tech{box}es, @tech{hash tables}, and @tech{sets};}
+       @tech{box}es, @tech{hash tables}, @tech{sets}, and @tech{treelists};}
 
  @item{@racket[date], @racket[date*], @racket[arity-at-least] and @racket[srcloc]
        structures; and}
@@ -575,10 +575,10 @@ transfers the field values of this instance into @racket[x].}
 
 @; ----------------------------------------------------------------------
 
-@defthing[prop:serializable property?]{
+@defthing[prop:serializable struct-type-property?]{
 
 This property identifies structures and structure types that are
-serializable. The property value should be constructed with
+@tech{serializable}. The property value should be constructed with
 @racket[make-serialize-info].}
 
 @; ----------------------------------------------------------------------
@@ -676,6 +676,18 @@ relative path with respect to the top level. Usually, it should be
  beamed-up-pie
  (pie-type beamed-up-pie)
  (equal? beamed-up-pie original-pie)]
+
+@; ----------------------------------------------------------------------
+
+@section{Serialization Structures}
+
+@defmodule[racket/serialize-structs]{The
+@racketmodname[racket/serialize-structs] module provides only
+@racket[prop:serializable], @racket[make-serialize-info],
+@racket[make-deserialize-info], which is useful for minimizing
+dependencies with supporting serialization.}
+
+@history[#:added "8.15.0.3"]
 
 @; ----------------------------------------------------------------------
 

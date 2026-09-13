@@ -25,7 +25,7 @@
 
 (define/who (variable-reference->namespace vr)
   (check who variable-reference? vr)
-  (define ns (variable-reference->namespace* vr))
+  (define ns (variable-reference->namespace* who vr))
   (define mpi (namespace-mpi ns))
   (when (non-self-module-path-index? mpi)
     ;; Ensure that the module is available
@@ -33,7 +33,15 @@
       (namespace-module-make-available! ns mpi (namespace-0-phase ns))))
   ns)
 
-(define (variable-reference->namespace* vr)
+(define (check-got-ns who vr maybe-ns)
+  (unless (namespace? maybe-ns)
+    (raise-arguments-error who
+                           "variable reference has no associated namespace"
+                           "variable reference" vr
+                           "hint" (unquoted-printing-string "is the variable reference from a non-module, non-top-level linklet?")))
+  maybe-ns)
+
+(define (variable-reference->namespace* who vr)
   (define inst (variable-reference->instance vr))
   (cond
     [(symbol? inst)
@@ -41,17 +49,17 @@
      ;; refers directly to a primitive. We get a namespace for a
      ;; primitive instance; that might not be the same module as
      ;; reorted by `identifier-binding`, but close enough.
-     (module->namespace `',inst (instance-data (variable-reference->instance vr #t)))]
+     (module->namespace `',inst (check-got-ns who vr (instance-data (variable-reference->instance vr #t))))]
     [(not inst)
      ;; Anonymous variable reference; use the referencing namespace
-     (instance-data (variable-reference->instance vr #t))]
+     (check-got-ns who vr (instance-data (variable-reference->instance vr #t)))]
     [else
      ;; Get the defining namespace for the referenced variable
-     (instance-data inst)]))
+     (check-got-ns who vr (instance-data inst))]))
 
 (define/who (variable-reference->module-path-index vr)
   (check who variable-reference? vr)
-  (define mpi (namespace-mpi (variable-reference->namespace* vr)))
+  (define mpi (namespace-mpi (variable-reference->namespace* who vr)))
   (if (top-level-module-path-index? mpi)
       #f
       mpi))
@@ -63,16 +71,16 @@
 
 (define/who (variable-reference->module-source vr)
   (check who variable-reference? vr)
-  (define ns (variable-reference->namespace* vr))
+  (define ns (variable-reference->namespace* who vr))
   (namespace-source-name ns))
 
 (define/who (variable-reference->phase vr)
  (check who variable-reference? vr)
- (namespace-phase (variable-reference->namespace* vr)))
+ (namespace-phase (variable-reference->namespace* who vr)))
 
 (define/who (variable-reference->module-base-phase vr)
   (check who variable-reference? vr)
-  (namespace-0-phase (variable-reference->namespace* vr)))
+  (namespace-0-phase (variable-reference->namespace* who vr)))
 
 (define/who (variable-reference->module-declaration-inspector vr)
   (check who variable-reference? vr)
@@ -80,6 +88,6 @@
     (raise-arguments-error who
                            "variable reference does not refer to an anonymous module variable"
                            "variable reference" vr))
-  (or (namespace-declaration-inspector (variable-reference->namespace* vr))
+  (or (namespace-declaration-inspector (variable-reference->namespace* who vr))
       (raise-arguments-error who
                              "given variable reference is not from a module")))

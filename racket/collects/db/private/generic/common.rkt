@@ -100,75 +100,89 @@
 ;; ----------------------------------------
 
 (module lock racket/base
-  (require ffi/unsafe/atomic)
+  (require ffi/unsafe/atomic
+           racket/unsafe/ops)
   (provide lock?
            make-lock
            lock-release
-           call-with-lock
-           (protect-out
-            lock-acquire/start-atomic))
+           call-with-lock)
 
   ;; Goal: we would like to be able to detect if a thread has
   ;; acquired the lock and then died, leaving the connection
   ;; permanently locked.
 
-  ;; A lock has two states, and state changes are atomic.
-  ;; - locked:   sema = 0, owner = thread-dead-evt of owner
-  ;; - unlocked: sema = 1, owner = never-evt
+  ;; Lock = (lock LockState)
+  ;; INV: in all previous lockedstates, the semaphore value is 1
+  (struct lock ([state #:mutable]))
+  (define (lock-cas-state! lk old new) (unsafe-struct*-cas! lk 0 old new))
 
-  (struct lock (sema sema-peek [owner #:mutable]))
+  ;; LockState =
+  ;; - #f, represents unlocked
+  ;; - (lockedstate ThreadDeadEvt Semaphore Boolean)
+  ;; INV: no thread syncs on sema unless contended? is #t
+  (struct lockedstate (owner sema [contended? #:mutable]))
 
-  (define (make-lock)
-    (define sema (make-semaphore 1))
-    (lock sema (semaphore-peek-evt sema) never-evt))
+  ;; ulock : UninterruptibleLock
+  ;; Guards contended? fields.
+  (define ulock (make-uninterruptible-lock))
 
-  ;; PRE: not in atomic mode
-  ;; Returns #t if acquired and in atomic mode
-  ;;         #f if hopeless and not in atomic mode
-  (define (lock-acquire/start-atomic lk
-                                     #:enable-break? [enable-break? #f])
-    (unless (lock? lk) (raise-argument-error 'lock-acquire/start-atomic "lock?" lk))
-    (define me (thread-dead-evt (current-thread)))
-    (define sema (lock-sema lk))
-    (define sema-peek (lock-sema-peek lk))
-    (let loop ()
-      (define result
-        (let ([owner (lock-owner lk)])
-          (cond [(eq? owner me)
-                 (error 'lock-acquire "attempted to recursively acquire lock")]
-                [enable-break? (sync/enable-break sema-peek owner)]
-                [else (sync sema-peek owner)])))
-      (cond [(eq? result sema-peek)
-             ;; Got past outer stage
-             (start-atomic)
-             (cond [(eq? (lock-owner lk) never-evt)
-                    ;; Currently unlocked => acquire
-                    (set-lock-owner! lk me)
-                    (semaphore-wait sema)
-                    ;; Still in atomic mode!
-                    #t]
-                   [else
-                    ;; Other thread got here first => retry
-                    (end-atomic)
-                    (loop)])]
-            [(eq? result (lock-owner lk))
-             ;; Thread holding lock is dead
-             #f]
+  ;; make-lock : -> Lock
+  (define (make-lock) (lock #f))
+
+  ;; lock-acquire : Lock -> (U 'uninterruptible 'hopeless)
+  ;; PRE: in normal mode (not atomic, not uninterruptible)
+  ;; Returns 'uninterruptible if acquired; still in uninterruptible mode.
+  ;; Returns 'hopeless if lock hopeless; not in atomic mode.
+  (define (lock-acquire lk #:enable-break? [enable-break? #f])
+    (unless (lock? lk) (raise-argument-error 'lock-acquire "lock?" lk))
+    (define me (lockedstate (thread-dead-evt (current-thread)) (make-semaphore 0) #f))
+    (define (rush)
+      (start-uninterruptible)
+      (cond [(lock-cas-state! lk #f me)
+             'uninterruptible]
+            [(lock-state lk)
+             => (lambda (st)
+                  (end-uninterruptible)
+                  (wait st))]
             [else
-             ;; Owner was stale => retry
-             ;; This can happen if the thread holding the lock releases
-             ;; it and then immediately dies.
-             (loop)])))
+             (end-uninterruptible)
+             (rush)]))
+    (define (wait st)
+      (define owner (lockedstate-owner st))
+      (define sema-peek (semaphore-peek-evt (lockedstate-sema st)))
+      (unless (lockedstate-contended? st)
+        (uninterruptible-lock-acquire ulock)
+        (set-lockedstate-contended?! st #t)
+        (uninterruptible-lock-release ulock))
+      (define result
+        (cond [enable-break? (sync/enable-break owner sema-peek)]
+              [else (sync owner sema-peek)]))
+      (cond [(and (eq? result owner)
+                  (lock-cas-state! lk st st))
+             'hopeless]
+            [else (rush)]))
+    (rush))
 
-  ;; safe to call in atomic mode
+  ;; lock-release : Lock -> Void
+  ;; PRE: in normal or atomic mode (not uninterruptible)
   (define (lock-release lk)
     (unless (lock? lk) (raise-argument-error 'lock-release "lock?" lk))
-    (start-atomic)
-    (set-lock-owner! lk never-evt)
-    (semaphore-post (lock-sema lk))
-    (end-atomic))
+    (define st (lock-state lk))
+    (define sema (lockedstate-sema st))
+    (uninterruptible-lock-acquire ulock)
+    (cond [(lockedstate-contended? st)
+           (uninterruptible-lock-release ulock)
+           (start-atomic)
+           (set-lock-state! lk #f)
+           (semaphore-post sema)
+           (end-atomic)]
+          [else
+           (set-lock-state! lk #f)
+           (semaphore-post sema)
+           (uninterruptible-lock-release ulock)])
+    (void))
 
-  ;; PRE: not in atomic mode
+  ;; PRE: in normal mode (not atomic, not uninterruptible)
   (define (call-with-lock lk proc [hopeless #f]
                           #:enable-break? [enable-break? #f])
     (unless (lock? lk) (raise-argument-error 'call-with-lock "lock?" lk))
@@ -176,15 +190,17 @@
       (raise-argument-error 'call-with-lock "procedure?" proc))
     (unless (or (eq? hopeless #f) (procedure? hopeless) (symbol? hopeless))
       (raise-argument-error 'call-with-lock "(or/c #f procedure? symbol?)" hopeless))
-    (if (lock-acquire/start-atomic lk #:enable-break? enable-break?)
-        (with-handlers ([(lambda (e) #t)
-                         (lambda (e) (lock-release lk) (raise e))])
-          (end-atomic)
-          (begin0 (proc)
-            (lock-release lk)))
-        (if (procedure? hopeless)
-            (hopeless)
-            (error (or hopeless 'call-with-lock) "the thread owning the lock is dead")))))
+    (case (lock-acquire lk #:enable-break? enable-break?)
+      [(uninterruptible)
+       (with-handlers ([(lambda (e) #t)
+                        (lambda (e) (lock-release lk) (raise e))])
+         (end-uninterruptible)
+         (begin0 (proc)
+           (lock-release lk)))]
+      [(hopeless)
+       (if (procedure? hopeless)
+           (hopeless)
+           (error (or hopeless 'call-with-lock) "the thread owning the lock is dead"))])))
 
 (require (rename-in (submod "." lock)
                     [call-with-lock lock:call-with-lock]))

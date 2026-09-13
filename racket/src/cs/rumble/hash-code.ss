@@ -87,9 +87,10 @@
                                       (fxmax next-i (fx+ i (fx/ (fx- len i) 2))))
                                   (fx+/wraparound (bitwise-bit-field z i next-i)
                                                   (mix-hash-code hc))))])))]
-      [(ratnum? z) (number-hash (+ (* (numerator z) 5) (denominator z)))]
-      [else (logand (logxor (lognot (number-hash (real-part z))) (number-hash (imag-part z)))
-                    (most-positive-fixnum))])))
+      [(ratnum? z) (hash-code-combine (number-hash (numerator z))
+                                      (number-hash (denominator z)))]
+      [else (hash-code-combine (number-hash (real-part z))
+                               (number-hash (imag-part z)))])))
 
 (define (eqv-hash-code x)
   (cond
@@ -122,7 +123,7 @@
       (char? x)
       (symbol? x)
       (and (#%$record? x)
-           (not (struct-property-ref prop:equal+hash (#%$record-type-descriptor x) #f)))))
+           (not (struct-equal+hash-property-ref (#%$record-type-descriptor x) #f)))))
 
 (define (equal-secondary-hash-code x)
   (let-values ([(hc burn) (equal-secondary-hash-loop x 0 0 'equal?)])
@@ -208,11 +209,19 @@
      (let-values ([(hc0 burn) (recur-hash-loop (mcar x) (fx+ burn 2) 0 mode recur)])
        (let ([hc (fx+/wraparound hc (fx+/wraparound hc0 5))])
          (recur-hash-loop (mcdr x) burn (mix-hash-code hc) mode recur)))]
+    [(ftype-pointer? x)
+     (if (ftype-scheme-object-pointer? x)
+         (values (fx+/wraparound (fx+/wraparound hc (eq-hash-code (ftype-scheme-object-pointer-object x)))
+                                 (number-hash (ftype-scheme-object-pointer-offset x)))
+                 burn)
+         (values (number-hash (ftype-pointer-address x))
+                 burn))]
     [(and (#%$record? x)
-          (let ([eq+hash (struct-property-ref prop:equal+hash (#%$record-type-descriptor x) #f)])
+          (let ([eq+hash (struct-equal+hash-property-ref (#%$record-type-descriptor x) #f)])
             (and eq+hash
                  (or (eq? mode 'equal?)
-                     (not (struct-type-mutable? (#%$record-type-descriptor x)))
+                     (not (or (struct-type-mutable? (#%$record-type-descriptor x))
+                              (impersonator? x)))
                      ;; 'equal-always? and a mutable field: must use new protocol:
                      (equal+hash-supports-mode? eq+hash))
                  eq+hash)))
@@ -293,10 +302,11 @@
        (let ([hc (fx+/wraparound hc hc0)])
          (equal-secondary-hash-loop (mcdr x) burn (mix-hash-code hc) mode)))]
     [(and (#%$record? x)
-          (let ([eq+hash (struct-property-ref prop:equal+hash (#%$record-type-descriptor x) #f)])
+          (let ([eq+hash (struct-equal+hash-property-ref (#%$record-type-descriptor x) #f)])
             (and eq+hash
                  (or (eq? mode 'equal?)
-                     (not (struct-type-mutable? (#%$record-type-descriptor x)))
+                     (not (or (struct-type-mutable? (#%$record-type-descriptor x))
+                              (impersonator? x)))
                      ;; 'equal-always? and a mutable field: must use new protocol:
                      (equal+hash-supports-mode? eq+hash))
                  eq+hash)))

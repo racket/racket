@@ -12,6 +12,7 @@
          "../port/fd-port.rkt"
          "../port/file-stream.rkt"
          "../port/check.rkt"
+         "../port/insist-lock.rkt"
          "../file/host.rkt"
          "../string/convert.rkt"
          "../locale/string.rkt"
@@ -29,18 +30,19 @@
          current-subprocess-keep-file-descriptors
          shell-execute)
 
-(struct subprocess ([process #:mutable]
+(struct subprocess ([process #:mutable] ; locked by atomic mode
                     [cust-ref #:mutable]
                     is-group?)
   #:constructor-name make-subprocess
   #:property
   prop:evt
-  (poller (lambda (sp ctx)
-            (define v (rktio_poll_process_done rktio (subprocess-process sp)))
+  (poller (lambda (sp ctx) ; in atomic mode
+            (define v (rktioly (rktio_poll_process_done rktio (subprocess-process sp))))
             (cond
               [(eqv? v 0)
                (sandman-poll-ctx-add-poll-set-adder!
                 ctx
+                ;; in atomic and in rktio-sleep-relevant (not rktio), must not start nested rktio
                 (lambda (ps)
                   (rktio_poll_add_process rktio (subprocess-process sp) ps)))
                (values #f sp)]
@@ -52,19 +54,24 @@
 
 (define do-subprocess
   (let ()
-    (define/who (subprocess stdout stdin stderr group/command . command/args)
+    (define/who (subprocess orig-stdout orig-stdin orig-stderr group/command . command/args)
       (check who
              (lambda (p) (or (not p) (and (output-port? p) (file-stream-port? p))))
              #:contract "(or/c (and/c output-port? file-stream-port?) #f)"
-             stdout)
+             orig-stdout)
       (check who
              (lambda (p) (or (not p) (and (input-port? p) (file-stream-port? p))))
              #:contract "(or/c (and/c input-port? file-stream-port?) #f)"
-             stdin)
+             orig-stdin)
       (check who
              (lambda (p) (or (not p) (eq? p 'stdout) (and (output-port? p) (file-stream-port? p))))
              #:contract "(or/c (and/c output-port? file-stream-port?) #f 'stdout)"
-             stderr)
+             orig-stderr)
+      (define stdout (and orig-stdout (->core-output-port orig-stdout)))
+      (define stdin (and orig-stdin (->core-input-port orig-stdin)))
+      (define stderr (if (eq? orig-stderr 'stdout)
+                         'stdout
+                         (and orig-stderr (->core-output-port orig-stderr))))
       (define-values (group command exact/args)
         (cond
           [(path-string? group/command)
@@ -88,7 +95,9 @@
       (define-values (exact? args)
         (cond
           [(and (pair? exact/args)
-                (eq? 'exact (car exact/args)))
+                (eq? 'exact (car exact/args))
+                (pair? (cdr exact/args))
+                (null? (cddr exact/args)))
            (values #t (cdr exact/args))]
           [else
            (values #f exact/args)]))
@@ -103,8 +112,12 @@
                               "(or/c path? string-no-nuls? bytes-no-nuls?)")
                arg))
 
+      (when (and exact? (not (eq? 'windows (system-type))))
+        (raise-arguments-error who "exact command line not supported on this platform"
+                               "exact command" (car args)))
+
       (define cust-mode (current-subprocess-custodian-mode))
-      (define env-vars (current-environment-variables))
+      (define env-vars (environment-variables-copy (current-environment-variables)))
 
       (let* ([flags (if (eq? stderr 'stdout)
                         RKTIO_PROCESS_STDOUT_AS_STDERR
@@ -127,33 +140,39 @@
         
         (define command-bstr (->host (->path command) who '(execute)))
 
+        (define send-args-list (cons command-bstr
+                                     (for/list ([arg (in-list args)])
+                                       (cond
+                                         [(string? arg)
+                                          (string->bytes/locale arg (char->integer #\?))]
+                                         [(path? arg)
+                                          (path-bytes arg)]
+                                         [else arg]))))
+
         ;; If `stdout` or `stderr` is a fifo with no read end open, wait for it:
-        (define (maybe-wait fd)
-          (when (and fd (rktio_fd_is_pending_open rktio (fd-port-fd fd)))
-            (sync fd)))
+        (define (maybe-wait port)
+          (when (and port (port-waiting-peer? port))
+            (sync port)))
         (maybe-wait stdout)
         (unless (eq? stderr 'stdout)
           (maybe-wait stderr))
 
+        (when stdout (port-insist-atomic-lock stdout))
+        (when stdin (port-insist-atomic-lock stdin))
+        (when (and stderr (not (eq? stderr 'stdout))) (port-insist-atomic-lock stderr))
+
         (start-atomic)
-        (when stdout (check-not-closed who stdout))
-        (when stdin (check-not-closed who stdin))
-        (when (and stderr (not (eq? stderr 'stdout))) (check-not-closed who stderr))
+        (when stdout (check-not-closed who stdout #:unlock end-atomic))
+        (when stdin (check-not-closed who stdin #:unlock end-atomic))
+        (when (and stderr (not (eq? stderr 'stdout))) (check-not-closed who stderr #:unlock end-atomic))
         (poll-subprocess-finalizations)
-        (check-current-custodian who)
+        (check-current-custodian who #:unlock end-atomic)
+        (start-rktio)
         (define envvars (rktio_empty_envvars rktio))
         (for ([name (in-list (environment-variables-names env-vars))])
           (rktio_envvars_set rktio envvars name (environment-variables-ref env-vars name)))
 
-        (define send-args (rktio_from_bytes_list
-                           (cons command-bstr
-                                 (for/list ([arg (in-list args)])
-                                   (cond
-                                     [(string? arg)
-                                      (string->bytes/locale arg (char->integer #\?))]
-                                     [(path? arg)
-                                      (path-bytes arg)]
-                                     [else arg])))))
+        (define send-args (rktio_from_bytes_list send-args-list))
 
         (define r (rktio_process rktio command-bstr (add1 (length args)) send-args
                                  (and stdout (fd-port-fd stdout))
@@ -168,13 +187,14 @@
           (rktio_envvars_free rktio envvars))
 
         (when (rktio-error? r)
+          (end-rktio)
           (end-atomic)
           (raise-rktio-error who r "process creation failed"))
 
         (define in (let ([fd (rktio_process_result_stdout_fd r)])
                      (and fd (open-input-fd fd 'subprocess-stdout))))
         (define out (let ([fd (rktio_process_result_stdin_fd r)])
-                      (and fd (open-output-fd fd 'subprocess-stdin))))
+                      (and fd (open-output-fd fd 'subprocess-stdin #:is-terminal? (rktio_fd_is_terminal rktio fd)))))
         (define err (let ([fd (rktio_process_result_stderr_fd r)])
                       (and fd (open-input-fd fd 'subprocess-stderr))))
         (define sp (make-subprocess (rktio_process_result_process r)
@@ -188,6 +208,7 @@
 
         (rktio_free r)
 
+        (end-rktio)
         (end-atomic)
         (values sp in out err)))
     subprocess))
@@ -202,47 +223,53 @@
 
 (define/who (subprocess-status sp)
   (check who subprocess? sp)
-  (start-atomic)
+  (start-atomic) ; because `no-custodian!`
+  (start-rktio)
   (define r (rktio_process_status rktio (subprocess-process sp)))
   (cond
     [(rktio-error? r)
+     (end-rktio)
      (end-atomic)
      (raise-rktio-error who r "status access failed")]
     [(rktio_status_running r)
      (rktio_free r)
+     (end-rktio)
      (end-atomic)
      'running]
     [else
      (no-custodian! sp)
      (define v (rktio_status_result r))
      (rktio_free r)
+     (end-rktio)
      (end-atomic)
      v]))
   
 (define/who (subprocess-pid sp)
   (check who subprocess? sp)
-  (atomically
+  (rktioly
    (rktio_process_pid rktio (subprocess-process sp))))
 
 ;; ----------------------------------------
 
-;; in atomic mode
+;; in rktio mode
 (define (kill-subprocess sp)
   (define p (subprocess-process sp))
-  (when p
-    (rktio_process_kill rktio p)))
+  (and p
+       (rktio_process_kill rktio p)))
 
-;; in atomic mode
+;; in rktio mode
 (define (interrupt-subprocess sp)
   (define p (subprocess-process sp))
-  (when p
-    (rktio_process_interrupt rktio p)))
+  (and p
+       (rktio_process_interrupt rktio p)))
 
 (define/who (subprocess-kill sp force?)
   (check who subprocess? sp)
-  (atomically (if force?
-                  (kill-subprocess sp)
-                  (interrupt-subprocess sp))))
+  (define r (rktioly (if force?
+                         (kill-subprocess sp)
+                         (interrupt-subprocess sp))))
+  (when (rktio-error? r)
+    (raise-rktio-error who r "operation failed")))
 
 ;; ----------------------------------------
 
@@ -263,7 +290,7 @@
                  sp
                  (lambda (sp)
                    (when (subprocess-process sp)
-                     (rktio_process_forget rktio (subprocess-process sp))
+                     (rktioly (rktio_process_forget rktio (subprocess-process sp)))
                      (set-subprocess-process! sp #f))
                    (no-custodian! sp)
                    #t)))
@@ -317,12 +344,17 @@
   ;; Let `rktio_shell_execute` handle its own atomicity. That's because
   ;; it can yield to Windows events, and events need to be handled by callbacks
   ;; starting from a mode that's like a Racket foreign call.
-  (define r (rktio_shell_execute rktio
-                                 (and verb (string->bytes/utf-8 verb))
-                                 (string->bytes/utf-8 target)
-                                 (string->bytes/utf-8 parameters)
-                                 (->host (->path dir) who '(exists))
-                                 show_mode))
+  (define verb-bytes (and verb (string->bytes/utf-8 verb)))
+  (define target-bytes (string->bytes/utf-8 target))
+  (define param-bytes (string->bytes/utf-8 parameters))
+  (define host-dir-path (->host (->path dir) who '(exists)))
+  (define r (rktioly
+             (rktio_shell_execute rktio
+                                  verb-bytes
+                                  target-bytes
+                                  param-bytes
+                                  host-dir-path
+                                  show_mode)))
   (when (rktio-error? r) (raise-rktio-error who r "failed"))
   #f)
 
@@ -331,4 +363,5 @@
 (void
  (set-get-subprocesses-time!
   (lambda ()
-    (rktio_get_process_children_milliseconds rktio))))
+    (rktioly
+     (rktio_get_process_children_milliseconds rktio)))))

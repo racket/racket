@@ -5,6 +5,7 @@
          "import.rkt"
          "simple.rkt"
          "parameter-result.rkt"
+         "make-ctype.rkt"
          "constructed-procedure.rkt"
          "literal.rkt"
          "inline.rkt"
@@ -12,20 +13,22 @@
          "optimize.rkt"
          "single-valued.rkt"
          "lambda.rkt"
-         "aim.rkt")
+         "aim.rkt"
+         "unwrap-let.rkt")
 
 (provide infer-known
          can-improve-infer-known?
-         lambda?)
+         lambda?
+         unsafe-body?)
 
 ;; For definitions, it's useful to infer `a-known-constant` to reflect
 ;; that the variable will get a value without referencing anything
 ;; too early. If `post-schemify?`, then `rhs` has been schemified.
-(define (infer-known rhs defn id knowns prim-knowns imports mutated simples unsafe-mode? target
-                     #:primitives [primitives #hasheq()] ; for `optimize-inline?` mode
-                     #:optimize-inline? [optimize-inline? #f]
-                     #:post-schemify? [post-schemify? #f])
-  (let loop ([rhs rhs])
+(define (infer-known rhs id knowns prim-knowns imports mutated simples unsafe-mode? target
+                     #:post-schemify? [post-schemify? #f]
+                     #:compiler-query [compiler-query (lambda (v) #f)]
+                     #:defn [defn #f]) ; either `#t` or `'inline`
+  (let loop ([rhs (if post-schemify? rhs (unwrap-let rhs))])
     (cond
       [(lambda? rhs)
        (define-values (lam inlinable?) (extract-lambda rhs))
@@ -33,14 +36,12 @@
        (cond
          [(and inlinable?
                (not post-schemify?)
-               (or (can-inline? lam)
-                   (wrap-property defn 'compiler-hint:cross-module-inline)))
-          (let ([lam (if optimize-inline?
-                         (optimize* lam prim-knowns primitives knowns imports mutated unsafe-mode?)
-                         lam)])
-            (known-procedure/can-inline arity-mask (if (and unsafe-mode? (not (aim? target 'cify)))
-                                                       (add-begin-unsafe lam)
-                                                       lam)))]
+               (or (eq? defn 'inline)
+                   (can-inline? lam)))
+          (known-procedure/can-inline arity-mask (if (or (and unsafe-mode? (not (aim? target 'cify)))
+                                                         (wrap-property lam 'body-as-unsafe))
+                                                     (add-begin-unsafe lam)
+                                                     lam))]
          [(single-valued-lambda? lam knowns prim-knowns imports mutated)
           (known-procedure/single-valued arity-mask)]
          [else
@@ -86,14 +87,33 @@
          [else (known-copy rhs)])]
       [(parameter-result? rhs prim-knowns knowns mutated)
        (known-procedure 3)]
+      [(make-ctype?/rep rhs prim-knowns knowns imports mutated)
+       => (lambda (rep) (known-ctype rep))]
       [(constructed-procedure-arity-mask rhs)
        => (lambda (m) (known-procedure m))]
       [else
        (match rhs
-         [`(let-values () ,e)
-          (loop e)]
-         [`(begin ,e)
-          (loop e)]
+         [`(assert-ctype-representation ,type1 ,type2)
+          (define k (loop type1))
+          (cond
+            [(known-ctype? k) k]
+            [(known-copy? k)
+             (define u-rhs (unwrap (known-copy-id k)))
+             (cond
+               [(hash-ref prim-knowns u-rhs #f)
+                => (lambda (k)
+                     (and (known-ctype? k) k))]
+               [(not (simple-mutated-state? (hash-ref mutated u-rhs #f)))
+                #f]
+               [(hash-ref-either knowns imports u-rhs)
+                => (lambda (k)
+                     (and (known-ctype? k) k))]
+               [else #f])]
+            [else #f])]
+         [`(#%foreign-inline ,_ copy)
+          (known-foreign-inline rhs)]
+         [`(#%foreign-inline ,_ copy*)
+          (known-foreign-inline rhs)]
          [`,_
           (cond
             [(and defn
@@ -120,3 +140,9 @@
                                  [body (in-list bodys)])
                         `[,args (begin-unsafe . ,body)]))]
      [`,_ lam])))
+
+(define (unsafe-body? expr)
+  (match expr
+    [`(lambda ,_ (begin-unsafe . ,_)) #t]
+    [`(case-lambda [,_ (begin-unsafe . ,_)] ...) #t]
+    [`,_ #f]))

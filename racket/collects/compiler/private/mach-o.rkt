@@ -4,32 +4,44 @@
 (provide add-plt-segment
          remove-signature
          add-ad-hoc-signature
-         get/set-dylib-path)
+         get/set-dylib-path
+         executable-for-signing?
+         file-has-signature?)
 
-(define (check-exe-id exe-id)
-  (unless (memv exe-id '(#xFeedFacf #xFeedFace))
-    (error 'mach-o "unrecognized #x~x" exe-id)))
+(define current-big-endian (make-parameter (system-big-endian?)))
+
+(define (check-exe-id exe-id #:error? [error? #t])
+  (cond
+    [(memv exe-id '(#xcfFaedFe #xceFaedFe))
+     (current-big-endian (not (current-big-endian)))
+     #t]
+    [else
+     (or (memv exe-id '(#xFeedFacf #xFeedFace))
+         (and error?
+              (error 'mach-o "unrecognized #x~x" exe-id)))]))
 
 (define aarch64-machine-type #x0100000C)
+(define MH_EXECUTE #x2)
+(define MH_DYLIB #x6)
 
 (define (read-ulong p)
-  (integer-bytes->integer (read-bytes 4 p) #f))
+  (integer-bytes->integer (read-bytes 4 p) #f (current-big-endian)))
 
 (define (read-xulong p)
-  (integer-bytes->integer (read-bytes 8 p) #f))
+  (integer-bytes->integer (read-bytes 8 p) #f (current-big-endian)))
 
 (define (write-ulong v out)
-  (display (integer->integer-bytes v 4 #f) out))
+  (display (integer->integer-bytes v 4 #f (current-big-endian)) out))
 
 (define (write-xulong v out)
-  (display (integer->integer-bytes v 8 #f) out))
+  (display (integer->integer-bytes v 8 #f (current-big-endian)) out))
 
 (define (write-be-ulong v out)
   (display (integer->integer-bytes v 4 #f #t) out))
 
-(define (check-same a b)
-  (unless (= a b)
-    (error 'check-same "not: ~e ~e" a b)))
+(define (check-member b as)
+  (unless (memv b as)
+    (error 'check-member "not: ~e ~e" b as)))
 
 (define (round-up-page v machine-type)
   (if (eqv? machine-type aarch64-machine-type)
@@ -76,7 +88,7 @@
           (check-exe-id exe-id)
           (define machine-id (read-ulong p))
           (read-ulong p)
-          (check-same #x2 (read-ulong p))
+          (check-member (read-ulong p) (list MH_EXECUTE MH_DYLIB))
           (let* ([total-cnt (read-ulong p)]
                  [cmdssz (read-ulong p)]
                  [min-used (round-up-page cmdssz machine-id)]
@@ -244,22 +256,20 @@
                        (set! linkedit-limit-offset (max linkedit-limit-offset (+ offset size))))]
                     [(#x1D)
                      ;; LC_CODE_SIGNATURE
-                     (if (= cnt 1)
-                         (let ([offset (read-ulong p)]
-                               [size (read-ulong p)])
-                           (file-position p (+ offset size))
-                           (if (eof-object? (read-byte p))
-                               (begin
-                                 (unless ((abs (- offset linkedit-limit-offset)) . < . 16)
-                                   (error 'check-header
-                                          "code signature does not line up with end of other linkedit blocks: ~s vs. ~s"
-                                          offset linkedit-limit-offset))
-                                 (set! code-signature-pos pos)
-                                 (set! code-signature-lc-sz sz)
-                                 ;; Claim a larger size to account for padding:
-                                 (set! code-signature-size (- link-edit-len (- linkedit-limit-offset link-edit-offset))))
-                               (log-warning "WARNING: code signature is not at end of file")))
-                         (log-warning "WARNING: code signature is not last load command"))]
+                     (let ([offset (read-ulong p)]
+                           [size (read-ulong p)])
+                       (file-position p (+ offset size))
+                       (if (eof-object? (read-byte p))
+                           (begin
+                             (unless ((abs (- offset linkedit-limit-offset)) . < . 16)
+                               (error 'check-header
+                                      "code signature does not line up with end of other linkedit blocks: ~s vs. ~s"
+                                      offset linkedit-limit-offset))
+                             (set! code-signature-pos pos)
+                             (set! code-signature-lc-sz sz)
+                             ;; Claim a larger size to account for padding:
+                             (set! code-signature-size (- link-edit-len (- linkedit-limit-offset link-edit-offset))))
+                           (error "code signature is not at end of file")))]
                     [(#x2B)
                      ;; LC_DYLIB_CODE_SIGN_DRS
                      (let ([offset (read-ulong p)]
@@ -283,7 +293,8 @@
                                 (if (equal? exe-id #xFeedFacf) 32 28)
                                 (- code-signature-lc-sz))]
                     [new-cmd-sz (if segdata
-                                    (if link-edit-64? 72 56)
+                                    (+ (if link-edit-64? 72 56)  ; segment
+                                       (if link-edit-64? 80 68)) ; section
                                     0)]
                     [outlen (if segdata
                                 (round-up-page (bytes-length segdata) machine-id)
@@ -298,6 +309,13 @@
                   (error 'check-header 
                          "no room for a new section load command (current end is ~a; min used is ~a; need ~a)"
                          end-cmd min-used new-cmd-sz))
+                ;; Shift commands (if any) after removed code-signature command (if any)
+                (when (and code-signature-pos
+                           (> end-cmd (+ code-signature-pos code-signature-lc-sz)))
+                  (file-position p (+ code-signature-pos code-signature-lc-sz))
+                  (let ([s (read-bytes (- end-cmd (+ code-signature-pos code-signature-lc-sz)) p)])
+                    (file-position out code-signature-pos)
+                    (display s out)))
                 ;; Shift commands starting with link-edit command:
                 (unless link-edit-pos (error "LINKEDIT not found"))
                 (file-position p link-edit-pos)
@@ -321,8 +339,22 @@
                    ((if link-edit-64? write-xulong write-ulong) outlen out)
                    (write-ulong 0 out) ; maxprot
                    (write-ulong 0 out) ; minprot
-                   (write-ulong 0 out)
+                   (write-ulong 1 out) ; 1 segment
                    (write-ulong 4 out) ; 4 means SG_NORELOC
+                   (display (pad-segment-name
+                             ;; create secction name as downcased segment name:
+                             (string->bytes/utf-8 (string-downcase (bytes->string/utf-8 segment-name)))) out)
+                   (display (pad-segment-name segment-name) out)
+                   ((if link-edit-64? write-xulong write-ulong) out-addr out)
+                   ((if link-edit-64? write-xulong write-ulong) outlen out)
+                   (write-ulong out-offset out)
+                   (write-ulong 0 out) ; alignment
+                   (write-ulong 0 out) ; reloff
+                   (write-ulong 0 out) ; nreloc
+                   (write-ulong #x10000000 #| S_ATTR_NO_DEAD_STRIP |# out) ; flags
+                   (write-ulong 0 out) ; reserved1
+                   (write-ulong 0 out) ; reserved2
+                   (when link-edit-64? (write-ulong 0 out)) ; reserved3
                    ;; Shift command positions
                    (unless sym-tab-pos
                      (error 'mach-o "symtab position not found"))
@@ -446,11 +478,15 @@
         (write-ulong (+ offset delta) out)
         (flush-output out)))))
 
+(define (sign-machine-id? machine-id)
+  (eqv? machine-id aarch64-machine-type))
+
 (define (remove-signature file)
   (add-plt-segment file #f))
 
 ;; requires that a signature is not already present
-(define (add-ad-hoc-signature file)
+(define (add-ad-hoc-signature file
+                              #:entitlements [entitlements #f])
   (let-values ([(p out) (open-input-output-file file #:exists 'update)])
     (dynamic-wind
      void
@@ -460,12 +496,12 @@
        (check-exe-id exe-id)
        (define machine-id (read-ulong p))
        (cond
-         [(eqv? machine-id aarch64-machine-type)
+         [(sign-machine-id? machine-id)
           (define orig-size (file-size file))
           (define file-identity (let-values ([(base name dir?) (split-path file)])
                                   (bytes-append (path->bytes name) #"\0")))
           (read-ulong p)
-          (check-same #x2 (read-ulong p))
+          (check-member (read-ulong p) (list MH_EXECUTE MH_DYLIB))
           (let* ([total-cnt (read-ulong p)]
                  [cmdssz (read-ulong p)]
                  [min-used (round-up-page cmdssz machine-id)]
@@ -507,10 +543,22 @@
                    [hash-code-size 32]
                    [padded-size (mult-of-16 orig-size)]
                    [num-slots (quotient (+ padded-size (sub1 page-size)) page-size)]
-                   [data-size (+ 20
-                                 88
-                                 (bytes-length file-identity)
-                                 (* num-slots hash-code-size))])
+                   [super-blob-size (+ 20
+                                       (if entitlements
+                                           8
+                                           0))]
+                   [num-special-slots (if entitlements 5 0)] ; need to write entitlements hash
+                   [code-dir-pre-size 88]
+                   [code-dir-size (+ code-dir-pre-size
+                                     (bytes-length file-identity)
+                                     (* (+ num-slots num-special-slots)
+                                        hash-code-size))]
+                   [entitlements-size (if entitlements
+                                          (+ 8 (bytes-length entitlements))
+                                          0)]
+                   [data-size (+ super-blob-size
+                                 code-dir-size
+                                 entitlements-size)])
               (unless ((+ end-cmd new-cmd-sz) . < . min-used)
                 (error 'check-header 
                        "no room for a new section load command (current end is ~a; min used is ~a; need ~a)"
@@ -554,30 +602,54 @@
               (file-position out padded-size)
               (write-be-ulong #xfade0cc0 out) ; CSMAGIC_EMBEDDED_SIGNATURE
               (write-be-ulong data-size out)
-              (write-be-ulong 1 out) ; count
+              (write-be-ulong (if entitlements 2 1) out) ; count
               (write-be-ulong 0 out) ; type
-              (write-be-ulong 20 out) ; offset
+              (write-be-ulong super-blob-size out) ; offset
+              (when entitlements
+                (write-be-ulong 5 out) ; type CSSLOT_ENTITLEMENTS
+                (write-be-ulong (+ super-blob-size code-dir-size) out)) ; offset
 
               (write-be-ulong #xfade0c02 out) ; CSMAGIC_CODEDIRECTORY
-              (write-be-ulong (- data-size 20) out) ; length (remaining)
+              (write-be-ulong code-dir-size out) ; length
               (write-be-ulong #x20400 out) ; version
               (write-be-ulong #x20002 out) ; flags = CS_ADHOC #x0000002 + ???
-              (write-be-ulong (+ 88 (bytes-length file-identity)) out) ; hash array offset
-              (write-be-ulong 88 out) ; identity offset
-              (write-be-ulong 0 out) ; special slots
-              (write-be-ulong num-slots out) ; special slots
+              (write-be-ulong (+ code-dir-pre-size
+                                 (* num-special-slots hash-code-size)
+                                 (bytes-length file-identity))
+                              out) ; hash array offset (after special slots)
+              (write-be-ulong code-dir-pre-size out) ; identity offset
+              (write-be-ulong num-special-slots out) ; special slots
+              (write-be-ulong num-slots out) ; ordinary slots
               (write-be-ulong padded-size out) ; limit (i.e., original file size plus padding)
               (write-byte hash-code-size out)
               (write-byte 2 out) ; SHA-256
               (write-byte 0 out) ; spare
               (write-byte log-page-size out)
               ;; etc.:
-              (write-bytes #"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0" out)
-              (write-bytes #"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0@\0\0\0\0\0\0\0\0\1" out)
+              (write-bytes #"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0" out) ; 24 bytes
+              (write-bytes #"\0\0\0\0\0\0\0\0\0\0\0\0\0\0@\0\0\0\0\0\0\0\0\1" out) ; 24 bytes
 
               (write-bytes file-identity out)
+
+              (define (write-entitlements out)
+                (write-be-ulong #xfade7171 out) ; CSMAGIC_EMBEDDED_ENTITLEMENTS
+                (write-be-ulong entitlements-size out) ; length
+                (write-bytes entitlements out))
+
+              (when entitlements
+                ;; special slots, where -5 is entitlements hash
+                (define e (open-output-bytes))
+                (write-entitlements e)
+                (write-bytes (sha256-bytes (get-output-bytes e)) out)
+                (for ([i (in-range (sub1 num-special-slots))])
+                  (write-bytes (make-bytes hash-code-size 0) out)))
               (for ([hash-code (in-list hash-codes)])
-                (write-bytes hash-code out))))]
+                (write-bytes hash-code out))
+
+              (when entitlements
+                (write-entitlements out))
+
+              ))]
          [else
           ;; no signing
           (void)]))
@@ -585,7 +657,9 @@
        (close-input-port p)
        (close-output-port out)))))
 
-(define (get/set-dylib-path file rx new-path)
+(define (get/set-dylib-path file rx new-path
+                            #:path-callback [path-callback void]
+                            #:include-self? [include-self? #f])
   (let-values ([(p out) (if new-path
                             (open-input-output-file file #:exists 'update)
                             (values (open-input-file file)
@@ -609,15 +683,15 @@
                   (let ([pos (file-position p)]
                         [cmd (read-ulong p)]
                         [sz (read-ulong p)])
-                    (case cmd
-                      [(#xC)
-                       ;; LC_LOAD_DYLIB
+                    (define (fixup self?)
                        (let ([offset (read-ulong p)])
                          (file-position p (+ pos offset))
                          (let* ([namelen (- sz offset)]
                                 [segname (read-bytes namelen p)]
                                 [segname (car (regexp-match #rx#"^[^\0]*" segname))])
-                           (if (regexp-match rx segname)
+                           (unless self?
+                             (path-callback segname))
+                           (if (and rx (regexp-match rx segname))
                                (let* ([newnamelen (and out
                                                        (mult-of-8 (+ 1 (bytes-length new-path))))]
                                       [delta (if out
@@ -653,11 +727,63 @@
                                  (loop (sub1 cnt) pos delta (cons segname result)))
                                (begin
                                  (file-position p (+ pos sz))
-                                 (loop (sub1 cnt) base delta result)))))]
+                                 (loop (sub1 cnt) base delta result))))))
+                    (define (no-fixup)
+                      (file-position p (+ pos sz))
+                      (loop (sub1 cnt) base delta result))
+                    (case cmd
+                      [(#xC)
+                       ;; LC_LOAD_DYLIB
+                       (fixup #f)]
+                      [(#xD)
+                       ;; LC_ID_DYLIB
+                       (if include-self?
+                           (fixup #t)
+                           (no-fixup))]
                       [else
-                       (file-position p (+ pos sz))
-                       (loop (sub1 cnt) base delta result)]))))))
+                       (no-fixup)]))))))
         (lambda ()
           (close-input-port p)
           (when out
             (close-output-port out))))))
+
+(define (executable-for-signing? path)
+  (call-with-input-file*
+   path
+   (lambda (p)
+     (define bstr (peek-bytes 16 0 p))
+     (and (bytes? bstr)
+          (= 16 (bytes-length bstr))
+          (check-exe-id (read-ulong p) #:error? #f)
+          (sign-machine-id? (read-ulong p))
+          (begin (read-ulong p) #t)
+          (equal? MH_EXECUTE (read-ulong p))))))
+
+(define (file-has-signature? file)
+  (call-with-input-file*
+   file
+   (lambda (p)
+     (define exe-id (read-ulong p))
+     (check-exe-id exe-id)
+     (define machine-id (read-ulong p))
+     (read-ulong p)
+     (check-member (read-ulong p) (list MH_EXECUTE MH_DYLIB))
+     (let* ([total-cnt (read-ulong p)]
+            [cmdssz (read-ulong p)])
+       (read-ulong p) ; flags
+       (when (equal? exe-id #xFeedFacf)
+         (read-ulong p)) ; extra reserved word for 64-bit header
+       (let loop ([cnt total-cnt])
+         (cond
+           [(zero? cnt) #f]
+           [else
+            (let ([pos (file-position p)]
+                  [cmd (read-ulong p)]
+                  [sz (read-ulong p)])
+              (case cmd
+                [(#x1D)
+                 ;; LC_CODE_SIGNATURE
+                 #t]
+                [else
+                 (file-position p (+ pos sz))
+                 (loop (sub1 cnt))]))]))))))

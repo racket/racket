@@ -1,5 +1,7 @@
 #lang racket/base
-(require "../common/check.rkt"
+(require (only-in racket/unsafe/ops
+                  unsafe-bytes->immutable-bytes!)
+         "../common/check.rkt"
          "../host/rktio.rkt"
          "../host/thread.rkt"
          "../host/error.rkt"
@@ -43,9 +45,9 @@
                                  "key" (car args))]
          [else
           (define val0 (cadr args))
-          (define val (and (bytes? val0)
-                           (bytes->immutable-bytes val0)
-                           val0))
+          (define val (if (bytes? val0)
+                          (bytes->immutable-bytes val0)
+                          val0))
           (check who bytes-no-nuls? val)
           (loop (cddr args) (hash-set ht (normalize-key key) (cons key val)))])])))
 
@@ -55,14 +57,14 @@
   (define ht (environment-variables-ht e))
   (cond
     [(not ht)
-     (start-atomic)
+     (start-rktio)
      (define v (rktio_getenv rktio k))
      (define s (and (not (rktio-error? v))
                     (begin0
                       (rktio_to_bytes v)
                       (rktio_free v))))
-     (end-atomic)
-     s]
+     (end-rktio)
+     (and s (unsafe-bytes->immutable-bytes! s))]
     [else
      (cdr (hash-ref ht (normalize-key k) '(#f . #f)))]))
 
@@ -79,7 +81,7 @@
   (define ht (environment-variables-ht e))
   (cond
     [(not ht)
-     (define r (rktio_setenv rktio k v))
+     (define r (rktioly (rktio_setenv rktio k v)))
      (when (rktio-error? r)
        (cond
          [(eq? fail none)
@@ -97,7 +99,7 @@
   (cond
     [(not ht)
      ;; Make a copy of current OS-level environment variables
-     (start-atomic)
+     (start-rktio)
      (define ev (rktio_envvars rktio))
      (define ht
        (cond
@@ -119,7 +121,7 @@
                   (bytes->immutable-bytes (rktio_to_bytes v))
                   (rktio_free v)))))
             (rktio_envvars_free rktio ev))]))
-     (end-atomic)
+     (end-rktio)
      (environment-variables ht)]
     [else
      ;; Copy wrapper around immutable `ht`:

@@ -1,12 +1,12 @@
 ;;; 4.ms
 ;;; Copyright 1984-2017 Cisco Systems, Inc.
-;;; 
+;;;
 ;;; Licensed under the Apache License, Version 2.0 (the "License");
 ;;; you may not use this file except in compliance with the License.
 ;;; You may obtain a copy of the License at
-;;; 
+;;;
 ;;; http://www.apache.org/licenses/LICENSE-2.0
-;;; 
+;;;
 ;;; Unless required by applicable law or agreed to in writing, software
 ;;; distributed under the License is distributed on an "AS IS" BASIS,
 ;;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -293,37 +293,37 @@
       (if (eq? x 'a) (set! x 'c))
       (eq? x 'b))
 
-   (equivalent-expansion? 
+   (equivalent-expansion?
      (parameterize ([optimize-level 2] [enable-cp0 #t] [#%$suppress-primitive-inlining #f])
        (expand/optimize '(if (not (not (f x))) e1 e2)))
      '(if (f x) e1 e2))
 
-   (equivalent-expansion? 
+   (equivalent-expansion?
      (parameterize ([optimize-level 2] [enable-cp0 #t] [#%$suppress-primitive-inlining #f])
        (expand/optimize '(if (begin (set! x y) (if (begin (set! z y) (zero? h)) #f #t)) e1 e2)))
      '(begin (set! x y) (if (begin (set! z y) (#2%zero? h)) e2 e1)))
 
-  (equivalent-expansion? 
+  (equivalent-expansion?
      (parameterize ([optimize-level 2] [enable-cp0 #t] [#%$suppress-primitive-inlining #f])
        (expand/optimize '(if (begin (set! x y) (if (begin (set! z y) (zero? h)) #f #f)) e1 e2)))
      '(begin (set! x y) (set! z y) (#2%zero? h) e2))
 
-  (equivalent-expansion? 
+  (equivalent-expansion?
      (parameterize ([optimize-level 2] [enable-cp0 #t] [#%$suppress-primitive-inlining #f])
        (expand/optimize '(if (begin (set! x y) (if (begin (set! z y) (zero? h)) #t #t)) e1 e2)))
      '(begin (set! x y) (set! z y) (#2%zero? h) e1))
-  
-  (equivalent-expansion? 
+
+  (equivalent-expansion?
      (parameterize ([optimize-level 2] [enable-cp0 #t] [#%$suppress-primitive-inlining #f])
        (expand/optimize '(if (begin (set! x y) (if (begin (set! z y) (zero? h)) #t #f)) e1 e2)))
      '(if (begin (set! x y) (set! z y) (#2%zero? h)) e1 e2))
 
-  (equivalent-expansion? 
+  (equivalent-expansion?
      (parameterize ([optimize-level 2] [enable-cp0 #t] [#%$suppress-primitive-inlining #f])
        (expand/optimize '(if (begin (set! x y) (if (begin (set! z y) (zero? h)) (begin (set! l z) #t) (begin (set! l y) #f))) e1 e2)))
      '(begin (set! x y) (if (begin (set! z y) (#2%zero? h)) (begin (set! l z) e1) (begin (set! l y) e2))))
 
-  (equivalent-expansion? 
+  (equivalent-expansion?
      (parameterize ([optimize-level 2] [enable-cp0 #t] [#%$suppress-primitive-inlining #f])
        (expand/optimize '(if (begin (set! x y) (if (begin (set! z y) (zero? h)) (begin (set! l z) #t) (begin (set! l y) #t))) e1 e2)))
      '(begin (set! x y) (if (begin (set! z y) (#2%zero? h)) (set! l z) (set! l y)) e1))
@@ -333,7 +333,7 @@
        (expand/optimize '(if (begin (set! x y) (if (begin (set! z y) (zero? h)) (begin (set! l z) #f) (begin (set! l y) #f))) e1 e2)))
      '(begin (set! x y) (if (begin (set! z y) (#2%zero? h)) (set! l z) (set! l y)) e2))
 
-  (equivalent-expansion? 
+  (equivalent-expansion?
      (parameterize ([optimize-level 2] [enable-cp0 #t] [#%$suppress-primitive-inlining #f])
        (expand/optimize '(if (begin (set! x y) (if (begin (set! z y) (zero? h)) (begin (set! l z) #f) (begin (set! l y) #t))) e1 e2)))
      '(begin (set! x y) (if (begin (set! z y) (#2%zero? h)) (begin (set! l z) e2) (begin (set! l y) e1))))
@@ -1205,7 +1205,7 @@
               (set! next 0)))
         (let ([m next])
           (unless (= m n)
-            (set! next (fx+ next 1)) 
+            (set! next (fx+ next 1))
             (let ([p (list-ref orig-ls m)])
               (unless (eqv? (cdr p) m)
                 (errorf #f "unexpected cdr value (~s instead of ~s)" (cdr p) m))
@@ -1257,48 +1257,48 @@
   ;; avoid creating each list and doing the actual map
   (equivalent-expansion?
     (parameterize ([optimize-level 2] [enable-cp0 #t] [#%$suppress-primitive-inlining #f])
-      (expand/optimize 
-        '(map (lambda (x y z) (apply + x y z)) 
+      (expand/optimize
+        '(map (lambda (x y z) (apply + x y z))
            (list 1 2 3)
            (list 4 5 6)
            (list '(7) '(8) '(9)))))
     '(#2%list 12 15 18))
   (equivalent-expansion?
     (parameterize ([optimize-level 3] [enable-cp0 #t] [#%$suppress-primitive-inlining #f])
-      (expand/optimize 
-        '(map (lambda (x y z) (apply + x y z)) 
+      (expand/optimize
+        '(map (lambda (x y z) (apply + x y z))
            (list 1 2 3)
            (list 4 5 6)
            (list '(7) '(8) '(9)))))
     '(#3%list 12 15 18))
   (equivalent-expansion?
     (parameterize ([optimize-level 2] [enable-cp0 #t] [#%$suppress-primitive-inlining #f])
-      (expand/optimize 
-        '(map (lambda (x y z) (apply + x y z)) 
+      (expand/optimize
+        '(map (lambda (x y z) (apply + x y z))
            '(1 2 3)
            (list 4 5 6)
            (list '(7) '(8) '(9)))))
     '(#2%list 12 15 18))
   (equivalent-expansion?
     (parameterize ([optimize-level 3] [enable-cp0 #t] [#%$suppress-primitive-inlining #f])
-      (expand/optimize 
-        '(map (lambda (x y z) (apply + x y z)) 
+      (expand/optimize
+        '(map (lambda (x y z) (apply + x y z))
            '(1 2 3)
            (list 4 5 6)
            (list '(7) '(8) '(9)))))
     '(#3%list 12 15 18))
   (equivalent-expansion?
     (parameterize ([optimize-level 2] [enable-cp0 #t] [#%$suppress-primitive-inlining #f])
-      (expand/optimize 
-        '(map (lambda (x y z) (apply + x y z)) 
+      (expand/optimize
+        '(map (lambda (x y z) (apply + x y z))
            '(1 2 3)
            '(4 5 6)
            '((7) (8) (9)))))
     '(#2%list 12 15 18))
   (equivalent-expansion?
     (parameterize ([optimize-level 3] [enable-cp0 #t] [#%$suppress-primitive-inlining #f])
-      (expand/optimize 
-        '(map (lambda (x y z) (apply + x y z)) 
+      (expand/optimize
+        '(map (lambda (x y z) (apply + x y z))
            '(1 2 3)
            '(4 5 6)
            '((7) (8) (9)))))
@@ -1430,7 +1430,7 @@
   (equal?
     (fold-left cons '(q) '(a b c))
     '((((q) . a) . b) . c))
-  (eqv? 
+  (eqv?
     (fold-left + 0 '(1 2 3) '(4 5 6))
     21)
   (procedure? (lambda (x) (fold-left x)))
@@ -2125,48 +2125,48 @@
   ;; avoid creating each list and doing the actual for-each
   (equivalent-expansion?
     (parameterize ([optimize-level 2] [enable-cp0 #t] [#%$suppress-primitive-inlining #f])
-      (expand/optimize 
-        '(for-each (lambda (x y z) (display (apply + x y z))) 
+      (expand/optimize
+        '(for-each (lambda (x y z) (display (apply + x y z)))
            (list 1 2 3)
            (list 4 5 6)
            (list '(7) '(8) '(9)))))
     '(begin (#2%display 12) (#2%display 15) (#2%display 18)))
   (equivalent-expansion?
     (parameterize ([optimize-level 3] [enable-cp0 #t] [#%$suppress-primitive-inlining #f])
-      (expand/optimize 
-        '(for-each (lambda (x y z) (display (apply + x y z))) 
+      (expand/optimize
+        '(for-each (lambda (x y z) (display (apply + x y z)))
            (list 1 2 3)
            (list 4 5 6)
            (list '(7) '(8) '(9)))))
     '(begin (#3%display 12) (#3%display 15) (#3%display 18)))
   (equivalent-expansion?
     (parameterize ([optimize-level 2] [enable-cp0 #t] [#%$suppress-primitive-inlining #f])
-      (expand/optimize 
-        '(for-each (lambda (x y z) (display (apply + x y z))) 
+      (expand/optimize
+        '(for-each (lambda (x y z) (display (apply + x y z)))
            '(1 2 3)
            (list 4 5 6)
            (list '(7) '(8) '(9)))))
     '(begin (#2%display 12) (#2%display 15) (#2%display 18)))
   (equivalent-expansion?
     (parameterize ([optimize-level 3] [enable-cp0 #t] [#%$suppress-primitive-inlining #f])
-      (expand/optimize 
-        '(for-each (lambda (x y z) (display (apply + x y z))) 
+      (expand/optimize
+        '(for-each (lambda (x y z) (display (apply + x y z)))
            '(1 2 3)
            (list 4 5 6)
            (list '(7) '(8) '(9)))))
     '(begin (#3%display 12) (#3%display 15) (#3%display 18)))
   (equivalent-expansion?
     (parameterize ([optimize-level 2] [enable-cp0 #t] [#%$suppress-primitive-inlining #f])
-      (expand/optimize 
-        '(for-each (lambda (x y z) (display (apply + x y z))) 
+      (expand/optimize
+        '(for-each (lambda (x y z) (display (apply + x y z)))
            '(1 2 3)
            '(4 5 6)
            '((7) (8) (9)))))
     '(begin (#2%display 12) (#2%display 15) (#2%display 18)))
   (equivalent-expansion?
     (parameterize ([optimize-level 3] [enable-cp0 #t] [#%$suppress-primitive-inlining #f])
-      (expand/optimize 
-        '(for-each (lambda (x y z) (display (apply + x y z))) 
+      (expand/optimize
+        '(for-each (lambda (x y z) (display (apply + x y z)))
            '(1 2 3)
            '(4 5 6)
            '((7) (8) (9)))))
@@ -2684,19 +2684,19 @@
             (l #f))
         'hi)
    (((call/cc call/cc) (lambda (x) x)) #t)
-   (let () 
+   (let ()
      (define f
        (lambda (n)
          (let f ((n n))
-           (or (fx= n 0) 
+           (or (fx= n 0)
                (and (call/cc (lambda (k) k))
                     (f (fx- n 1)))))))
      (f 100000))
-   (let () 
+   (let ()
      (define f
        (lambda (n)
          (let f ((n n))
-           (or (fx= n 0) 
+           (or (fx= n 0)
                (and (call/cc (lambda (k) (k k)))
                     (f (fx- n 1)))))))
      (f 100000))
@@ -2790,7 +2790,7 @@
     (and (eq? (leaf-eq? '(a (b (c))) '((a) b c)) #t)
          (eq? (leaf-eq? '(a (b (c))) '((a) b c d)) #f)))
  )
- 
+
 (mat dynamic-wind
    (let ([x 3])
       (and (eqv? x 3)
@@ -3075,11 +3075,11 @@
         (case-lambda
           [() me]
           [(x) #t]))))
-   (let () 
+   (let ()
      (define f
        (lambda (n)
          (let f ((n n))
-           (or (fx= n 0) 
+           (or (fx= n 0)
                (and (call/cc (lambda (k) (k k)))
                     (f (fx- n 1)))))))
      (f 100000))
@@ -3453,7 +3453,7 @@
   (error? (call-with-yep (lambda () (call-with-yeah* (lambda () ((returns-not-a-procedure)))))))
   (error? (call-with-yep (lambda () (list (call-with-yeah* (lambda () ((returns-not-a-procedure))))))))
   (error? (call-with-yep (lambda () (act-like-list (call-with-yeah* (lambda () ((returns-not-a-procedure))))))))
-  
+
   (equal? '() (if (call-with-yep list)
                   (#%$current-attachments)
                   #f))
@@ -3736,7 +3736,7 @@
        [(marks keys) ($mark-iter->lists (continuation-marks->iterator marks (list->vector keys)))]
        [(marks keys no) ($mark-iter->lists (continuation-marks->iterator marks (list->vector keys) no))]))
     #t)
-  
+
   (equal? '((xv1 yv)) (with-continuation-mark
                           'x 'xv0
                         (with-continuation-mark
@@ -3789,6 +3789,26 @@
                                               (call/cc (lambda (k) k))))))
                  'x))
 
+  (equal? '42
+          (with-continuation-mark 'a 42
+            (with-continuation-mark 'b (continuation-marks-first (current-continuation-marks) 'a)
+              (continuation-marks-first (current-continuation-marks) 'b))))
+  (equal? '42
+          (with-continuation-mark 'a 42
+            (values
+             (with-continuation-mark 'b (continuation-marks-first (current-continuation-marks) 'a)
+               (continuation-marks-first (current-continuation-marks) 'b)))))
+
+  (equal? '43
+          (with-continuation-mark 'a 'b
+            (with-continuation-mark (continuation-marks-first (current-continuation-marks) 'a) 43
+              (continuation-marks-first (current-continuation-marks) 'b))))
+  (equal? '43
+          (with-continuation-mark 'a 'b
+            (values
+             (with-continuation-mark (continuation-marks-first (current-continuation-marks) 'a) 43
+               (continuation-marks-first (current-continuation-marks) 'b)))))
+
   ;; if this goes quadratic, then it will look like non-termination:
   (with-continuation-mark
       'x 'yes
@@ -3808,6 +3828,32 @@
                  (with-continuation-mark
                      'other 'no
                    (loop (sub1 depth)))))))))
+
+  (with-continuation-mark
+      'key #t
+    (guard
+        (c [#t (call-with-immediate-continuation-mark 'key values)])
+      (raise #f)))
+
+  (with-continuation-mark
+      'key #t
+    (guard
+        (c [#t (call-with-immediate-continuation-mark 'key values)]
+           [else #f])
+      (raise #f)))
+
+  (equal? 'inner
+    (call/cc
+      (lambda (k)
+        (with-continuation-mark 'key 'outer
+          (with-exception-handler
+              (lambda (c)
+                (k (continuation-marks-first (current-continuation-marks) 'key)))
+            (lambda ()
+              (guard (c [#f #f])
+                (with-continuation-mark 'key 'inner
+                  (raise #f)))))))))
+
   )
 
 (mat call-in-continuation
@@ -3939,7 +3985,7 @@
             (lambda (k)
               (#%$call-in-continuation
                k
-               (lambda () 
+               (lambda ()
                  (#%$call-consuming-continuation-attachment
                   'also-unknown
                   (lambda (v)
@@ -4135,6 +4181,180 @@
       (eqv?
         (test6B/counter 125 (lambda () (spin n)))
         n)))
+
+  ;; check that some operations that end up calling `memmove`/`memcpy`
+  ;; use a suitable amount of fuel
+  (begin
+    (define (check-uses-fuel make copy!)
+      (and (eq? (let ([vec (make 1024)])
+                  ((make-engine (lambda ()
+                                  (copy! vec 512)
+                                  'done))
+                   4096
+                   (lambda (fuel v) v)
+                   (lambda (e) 'not-done)))
+                'done)
+           (eq? (let ([vec (make 8192)])
+                  ((make-engine (lambda ()
+                                  (copy! vec 4096)
+                                  'done))
+                   128
+                   (lambda (fuel v) v)
+                   (lambda (e) 'not-done)))
+                'not-done)))
+    (define (fill-hashtable! ht n)
+      (let loop ([i 0])
+        (unless (= i n)
+          (hashtable-set! ht (gensym) i)
+          (loop (add1 i)))))
+    (define (make-filled-hashtable n)
+      (let ([ht (make-hashtable equal-hash equal?)])
+        (fill-hashtable! ht n)
+        ht))
+    (define (make-filled-symbol-hashtable n)
+      (let ([ht (make-hashtable symbol-hash symbol=?)])
+        (fill-hashtable! ht n)
+        ht))
+    (define (make-filled-eq-hashtable n)
+      (let ([ht (make-eq-hashtable)])
+        (fill-hashtable! ht n)
+        ht))
+    #t)
+  (check-uses-fuel make-bytevector
+                   (lambda (src amt)
+                     (bytevector-copy! src 0 src amt amt)))
+  (check-uses-fuel make-bytevector
+                   (lambda (src amt)
+                     (bytevector-copy src)))
+  (check-uses-fuel make-bytevector
+                   (lambda (src amt)
+                     (make-bytevector amt 0)))
+  (check-uses-fuel make-bytevector
+                   (lambda (src amt)
+                     (make-bytevector amt)))
+  (check-uses-fuel make-bytevector
+                   (lambda (src amt)
+                     (make-reference-bytevector amt)))
+  (check-uses-fuel make-bytevector
+                   (lambda (src amt)
+                     (make-immobile-reference-bytevector amt)))
+  (check-uses-fuel make-bytevector
+                   (lambda (src amt)
+                     (bytevector-fill! src 1)))
+  (check-uses-fuel make-vector
+                   (lambda (src amt)
+                     (vector-copy! src 0 src amt amt)))
+  (check-uses-fuel make-vector
+                   (lambda (src amt)
+                     (vector-copy src)))
+  (check-uses-fuel make-vector
+                   (lambda (src amt)
+                     (vector-append src src)))
+  (check-uses-fuel make-vector
+                   (lambda (src amt)
+                     (vector-map (lambda (x) x) src)))
+  (check-uses-fuel make-vector
+                   (lambda (src amt)
+                     (vector-map (lambda (x y) x) src src)))
+  (check-uses-fuel make-vector
+                   (lambda (src amt)
+                     (immutable-vector-append src src)))
+  (check-uses-fuel make-vector
+                   (lambda (src amt)
+                     (vector-set/copy src 0 1)))
+  (check-uses-fuel make-vector
+                   (lambda (src amt)
+                     (immutable-vector-set/copy src 0 1)))
+  (check-uses-fuel make-vector
+                   (lambda (src amt)
+                     (make-vector amt 0)))
+  (check-uses-fuel make-vector
+                   (lambda (src amt)
+                     (make-immobile-vector amt)))
+  (check-uses-fuel make-vector
+                   (lambda (src amt)
+                     (make-immobile-vector amt 0)))
+  (check-uses-fuel make-vector
+                   (lambda (src amt)
+                     (vector-fill! src 1)))
+  (check-uses-fuel make-flvector
+                   (lambda (src amt)
+                     (flvector-copy! src 0 src amt amt)))
+  (check-uses-fuel make-flvector
+                   (lambda (src amt)
+                     (flvector-copy src)))
+  (check-uses-fuel make-flvector
+                   (lambda (src amt)
+                     (make-flvector amt)))
+  (check-uses-fuel make-fxvector
+                   (lambda (src amt)
+                     (fxvector-copy! src 0 src amt amt)))
+  (check-uses-fuel make-fxvector
+                   (lambda (src amt)
+                     (fxvector-copy src)))
+  (check-uses-fuel make-fxvector
+                   (lambda (src amt)
+                     (make-fxvector amt)))
+  (check-uses-fuel make-string
+                   (lambda (src amt)
+                     (string-append src src)))
+  (check-uses-fuel make-string
+                   (lambda (src amt)
+                     (make-string amt)))
+  (check-uses-fuel make-string
+                   (lambda (src amt)
+                     (make-string amt #\x)))
+  (check-uses-fuel make-string
+                   (lambda (src amt)
+                     (string-fill! src #\x)))
+  (check-uses-fuel make-filled-hashtable
+                   (lambda (src amt)
+                     (hashtable-copy src)))
+  (check-uses-fuel make-filled-symbol-hashtable
+                   (lambda (src amt)
+                     (hashtable-copy src)))
+  (check-uses-fuel make-filled-eq-hashtable
+                   (lambda (src amt)
+                     (hashtable-copy src)))
+  (check-uses-fuel make-filled-eq-hashtable
+                   (lambda (src amt)
+                     (hashtable-keys src)))
+  (check-uses-fuel make-filled-eq-hashtable
+                   (lambda (src amt)
+                     (hashtable-values src)))
+  (check-uses-fuel make-filled-eq-hashtable
+                   (lambda (src amt)
+                     (hashtable-entries src)))
+  (check-uses-fuel make-filled-eq-hashtable
+                   (lambda (src amt)
+                     (hashtable-cells src)))
+  (check-uses-fuel make-filled-eq-hashtable
+                   (lambda (src amt)
+                     (hashtable-clear! src)))
+
+  ;; list operations are not obligated to use fuel in unsafe mode
+  (check-uses-fuel make-list
+                   (lambda (src amt)
+                     (#2%length src)))
+  (check-uses-fuel make-list
+                   (lambda (src amt)
+                     (#2%list-tail src amt)))
+  (check-uses-fuel make-list
+                   (lambda (src amt)
+                     (#2%list-ref src amt)))
+  (check-uses-fuel make-list
+                   (lambda (src amt)
+                     (#2%memq 'not-there src)))
+  (check-uses-fuel (lambda (n) (make-list n '(here)))
+                   (lambda (src amt)
+                     (#2%assq 'not-there src)))
+  (check-uses-fuel make-list
+                   (lambda (src amt)
+                     (#2%append src src)))
+  (check-uses-fuel make-list
+                   (lambda (src amt)
+                     (#2%reverse src)))
+
 )
 
 ;;; section 4-8:
@@ -4369,11 +4589,14 @@
        ;; report how long a collection takes averaged
        ;; over `iters` tries
        (define iters 10)
-       (let loop ([g #f] [accum 0] [j iters])
+       (let loop ([g #f] [accum 0] [j iters] [iters-mult 1])
          (if (zero? j)
              (if (zero? accum)
-                 g
-                 (/ accum iters))
+                 ;; more iterations to get non-0 CPU time:
+                 (loop g accum iters (add1 iters-mult))
+                 (begin
+                   (keep-live g)
+                   (/ accum (* iters iters-mult))))
              (let ([g (let loop ([i n])
                         (let ([g (make-guardian ordered?)])
                           (if (zero? i)
@@ -4381,14 +4604,15 @@
                               (let ([next-g (loop (sub1 i))])
                                 (g (get-key next-g) next-g)
                                 g))))])
-               (let ([start (current-time)])
+               (let ([start (current-time 'time-process)])
                  (collect (collect-maximum-generation))
-                 (let ([delta (time-difference (current-time) start)])
+                 (let ([delta (time-difference (current-time 'time-process) start)])
                    (loop g
                          (+ accum
                             (* (time-second delta) 1e9)
                             (time-nanosecond delta))
-                         (sub1 j))))))))
+                         (sub1 j)
+                         iters-mult)))))))
 
      ;; Make sure guardian chains imply GC times that
      ;; look linear, as opposed to quadratic
@@ -4819,13 +5043,30 @@
               (begin (set-car! x (cons 'd 'e)) (equal? (car x) '(d . e)))
               (begin (collect (collect-maximum-generation))
                      (bwp-object? (car x))))))
+   ;; check interaction of weak pairs, generations, and specific target generations for collection
+   (with-interrupts-disabled
+    (parameterize ([#%$enable-check-heap #t]
+                   [collect-maximum-generation (max (collect-maximum-generation) 2)])
+      (let ([key "key"])
+        (let ([e (weak-cons key #f)])
+          (collect 0 1 1)
+          (let ([key2 (gensym key)])
+            ;; e is gen 1, key2 is gen 0:
+            (set-car! e key2)
+            (collect 1 1 2)
+            ;; Now, e is gen 1, key2 is gen 0
+            (and (eq? (car e) key2)
+                 (begin
+                   (collect 1 2 2)
+                   ;; Check that the GC update the reference to `key2` in `e`:
+                   (eq? (car e) key2))))))))
  )
 
 (mat ephemeron
    (begin
      (define ephemeron-key car)
      (define ephemeron-value cdr)
-     
+
      (define gdn (make-guardian))
      #t)
 
@@ -4850,7 +5091,7 @@
                                es))
                    (weak-cons k1 (weak-cons k2 wps))
                    (cons k1 saved)))])))
-     
+
      (collect (collect-maximum-generation))
 
      ;; All now waiting to be reported by the guardian
@@ -4893,7 +5134,7 @@
    ;; behavior
    (let ()
      (define (wrapper v) (list 1 2 3 4 5 v))
-     
+
      ;; Create a chain of ephemerons where we have all
      ;; the the ephemerons immediately in a list,
      ;; but we discover the keys one at a time
@@ -4931,11 +5172,11 @@
          (collect 2)
          (let*-values ([(key es) (mk n (gensym) '())]
                        [(root holds) (mk* n key es)])
-           (let ([start (current-time)])
+           (let ([start (current-time 'time-process)])
              (collect 0 1)
              (collect 1 2)
              (collect 2 2)
-             (let ([delta (time-difference (current-time) start)])
+             (let ([delta (time-difference (current-time 'time-process) start)])
                ;; Sanity check on ephemerons
                (for-each (lambda (e)
                            (when (eq? #!bwp (ephemeron-key e))
@@ -4967,7 +5208,7 @@
 
    ;; ----------------------------------------
    ;; Check interaction of mutation and generations
-   
+
    ;; This check disables interrupts so that a garbage collection
    ;; happens only for the explicit `collect` request.
    (with-interrupts-disabled
@@ -4993,20 +5234,22 @@
    ;; ----------------------------------------
    ;; Check interaction of mutation and incremental generation promotion
 
-   (parameterize ([collect-request-handler void] [collect-maximum-generation (max (collect-maximum-generation) 2)])
-    (let ([key "key"])
-      (let ([e (ephemeron-cons key #f)])
-        (collect 0 1 1)
-        (let ([key2 (gensym key)])
-          ;; e is gen 1, key2 is gen 0:
-          (set-car! e key2)
-          (collect 1 1 2)
-          ;; Now, e is gen 1, key2 is gen 0
-          (and (eq? (car e) key2)
-               (begin
-                 (collect 1 2 2)
-                 ;; Check that the GC update the reference to `key2` in `e`:
-                 (eq? (car e) key2)))))))
+   (with-interrupts-disabled
+    (parameterize ([#%$enable-check-heap #t]
+                   [collect-maximum-generation (max (collect-maximum-generation) 2)])
+      (let ([key "key"])
+        (let ([e (ephemeron-cons key #f)])
+          (collect 0 1 1)
+          (let ([key2 (gensym key)])
+            ;; e is gen 1, key2 is gen 0:
+            (set-car! e key2)
+            (collect 1 1 2)
+            ;; Now, e is gen 1, key2 is gen 0
+            (and (eq? (car e) key2)
+                 (begin
+                   (collect 1 2 2)
+                   ;; Check that the GC update the reference to `key2` in `e`:
+                   (eq? (car e) key2))))))))
 
    ;; ----------------------------------------
    ;; Check GC interaction with zero-sized contnuations - unlikely

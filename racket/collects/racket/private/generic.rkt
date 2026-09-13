@@ -1,7 +1,22 @@
 #lang racket/base
+
+;; Note that this module only semi-private, in the sense that other packages
+;; which are in the main distribution but in separate repositories require
+;; it. This means any backwards-incompatible API changes need coordination.
+;; The following packages are known to use this module:
+;;
+;; - data-lib
+;;
+;; Please try not to add more packages which require this file. Instead,
+;; consider whether a public API is appropriate, or if a currently-private
+;; API should be made public. If not, then make a new file
+;; "racket/private/for-yourpackage.rkt" which exports the necessary
+;; definitions. See "racket/private/for-compatibility-lib.rkt" for an example.
+
 (require (for-syntax racket/base
                      racket/local
                      racket/syntax
+                     racket/private/stx
                      syntax/stx
                      (only-in syntax/private/boundmap
                               [make-module-identifier-mapping make-free-identifier-mapping]
@@ -164,7 +179,9 @@
               (list
                (cons derived-prop
                      (lambda (impl)
-                       (let ([method-name (vector-ref impl 'method-index)] ...)
+                       (let ([method-name
+                              (or (vector-ref impl 'method-index)
+                                  fallback)] ...)
                          derived-impl)))
                ...)
               #t))
@@ -244,8 +261,11 @@
   (define (method-formals/application name-stx proc-stx self-id sig-stx)
 
     (define (check-method-signature!)
-      (define dup (check-duplicate-identifier ids))
-      (when dup (wrong-syntax dup "duplicate method argument"))
+      (let-values ([(dup origs) (stx-find-duplicate-identifiers ids)])
+        (when dup
+          (raise-syntax-error #f "duplicate method argument"
+                              (current-syntax-context)
+                              dup origs)))
       (for ([id (in-list non-req)]
             #:when (free-identifier=? id self-id))
         (wrong-syntax id

@@ -161,6 +161,26 @@
         ;; Invalid UTF-8 input.
         (bytes->jsexpr #"\"\377\377\377\"") =error> exn:fail?
 
+        ;; high surrogate only
+        (string->jsexpr "\"\\uDBFF\"") =error> exn:fail?
+        (string->jsexpr "\"\\uDBFF\"" #:replace-malformed-surrogate? #t) => "\uFFFD"
+        (string->jsexpr "\"\\uDBFFZ\""  #:replace-malformed-surrogate? #t) => "\uFFFDZ"
+        (string->jsexpr "\"\\uDBFF\\u007A\"" #:replace-malformed-surrogate? #t) => "\uFFFDz"
+
+        ;; high surrogate followed by valid pair
+        (string->jsexpr "\"\\ud83d\\ud83d\\ude00\""  #:replace-malformed-surrogate? #t) => "\uFFFD\U1F600"
+
+        ;; low without high surrogate
+        (string->jsexpr "\"\\ude00Z\""  #:replace-malformed-surrogate? #t) => "\uFFFDZ"
+        (string->jsexpr "\"\\ude00\\u007A\"" #:replace-malformed-surrogate? #t) => "\uFFFDz"
+        (string->jsexpr "\"\\ude00\\ud83d\\ude00\""  #:replace-malformed-surrogate? #t) => "\uFFFD\U1F600"
+
+        ;; reversed surrogates
+        (string->jsexpr "\"\\ude00\\ud83d\""  #:replace-malformed-surrogate? #t) => "\uFFFD\UFFFD"
+
+        ;; two low surrogates
+        (string->jsexpr "\"\\ude00\\ude00\""  #:replace-malformed-surrogate? #t) => "\uFFFD\UFFFD"
+
         ;; whitespace should be only the four allowed charactes
         (string->jsexpr (string-append
                          "{ \"x\" :"

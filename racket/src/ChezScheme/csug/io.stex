@@ -3297,10 +3297,8 @@ prints
 
 \noindent
 When \scheme{print-vector-length} is set to a true value,
-\scheme{write}, \scheme{put-datum}, and \scheme{pretty-print} includes the length
-for all vectors between the ``\scheme{#}'' and open parenthesis,
-all bytevectors between the ``\scheme{#vu8}'' and open parenthesis,
-and all fxvectors between the ``\scheme{#vfx}'' and open parenthesis.
+\scheme{write}, \scheme{put-datum}, and \scheme{pretty-print} include the length
+for all vectors, bytevectors, and fxvectors immediately after the ``\scheme{#}''.
 This parameter is set to \scheme{#f} by default.
 
 \index{vector printing}When \scheme{print-vector-length} is set to a
@@ -3546,7 +3544,7 @@ fasl objects from a compressed file.
 \noindent
 If present, \var{situation} must be one of the symbols \scheme{load},
 \scheme{visit}, or \scheme{revisit}; it defaults to \scheme{load}.
-If present, \var{exterrnals} must be a vector; it defaults to
+If present, \var{externals} must be a vector; it defaults to
 \scheme{'#()}.
 
 \scheme{fasl-read} reads one object from
@@ -3889,6 +3887,7 @@ The preferred directory separator is \scheme{#\\} for Windows and
 
 Combines \var{dir-path} and \var{path}, adding a directory separator
 between them if needed.
+If \var{dir-path} is the empty string, \var{path} is returned.
 
 %----------------------------------------------------------------------------
 \entryheader

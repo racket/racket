@@ -3,7 +3,8 @@
           "common.rkt"
           (for-label racket/base
                      racket/contract
-                     setup/dirs))
+                     setup/dirs
+                     setup/getinfo))
 
 @title[#:tag "config-file"]{Installation Configuration and Search Paths}
 
@@ -197,6 +198,14 @@ directory}:
        @racket[doc-search-dirs], but for directories containing C
        header files.}
 
+ @item{@indexed-racket['info-domain-root] --- a path, string, byte
+       string, of @racket[#f]; used as a prefix to redirect the paths
+       used for recording and finding @filepath{info.rkt} information via
+       @racket[find-relevant-directories]. It defaults to @racket[#f], which
+       uses paths as-is.
+
+       @history[#:added "8.10.0.4"]}
+
  @item{@indexed-racket['catalogs] --- a list of URL strings used as the search
        path for resolving package names. An @racket[#f] in the list
        is replaced with the default search path. A string that does not
@@ -224,7 +233,33 @@ directory}:
  @item{@indexed-racket['build-stamp] --- a string that identifies a build,
        which can be used to augment the Racket version number to more
        specifically identify the build. An empty string is normally
-       appropriate for a release build.}
+       appropriate for a release build. The default @racket{banner}
+       also shows the build stamp when non-empty.}
+
+       @history[#:changed "8.11.1.7" @elem{Added build stamp to
+                                           @racket{banner}.}]
+
+ @item{@indexed-racket['main-language-family] --- a string that names
+       the main @tech{language family}. The default is @racket["Racket"].
+
+       @history[#:added "8.14.0.5"]}
+
+ @item{@indexed-racket['base-documentation-packages] --- a list of
+       strings, each of which names a package. Any documentation
+       provided by the package and its dependencies is considered part
+       of the distribution's base language. This classification affects
+       the way that documentation search results are sorted and reported.
+       The default is @racket['("racket-doc")].
+
+       @history[#:added "8.14.0.5"]}
+
+ @item{@indexed-racket['distribution-documentation-packages] --- like
+       @racket['base-documentation-packages], but identifies a larger set of
+       documentation that is considered part of the distribution
+       beyond (but normally including) the base language. The default
+       is @racket['("main-distribution")].
+
+       @history[#:added "8.14.0.5"]}
 
  @item{@indexed-racket['absolute-installation?] --- a boolean that is
        @racket[#t] if the installation uses absolute path names,

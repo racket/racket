@@ -65,11 +65,53 @@
            [else
             (and (simple? (car es) #f)
                  (loop (cdr es)))]))))
+    (define (ok-to-call? proc-name v n-args)
+      (if pure?
+          (and (or (if no-alloc?
+                       (known-procedure/pure? v)
+                       (or (known-procedure/allocates? v)
+                           (and n-args
+                                (or (eq? proc-name 'hasheq)
+                                    (eq? proc-name 'hasheqv))
+                                (even? n-args))))
+                   (and ordered?
+                        (or (known-procedure/then-pure? v)
+                            (and succeeds?
+                                 (eqv? n-args 0)
+                                 (known-procedure/parameter? v))
+                            ;; in unsafe mode, we can assume no contract error:
+                            (and unsafe-mode?
+                                 (known-field-accessor? v)
+                                 (known-field-accessor-authentic? v)
+                                 (known-field-accessor-known-immutable? v)))))
+               (returns 1))
+          (or (and (known-procedure/no-prompt? v)
+                   (returns 1))
+              (and (eqv? n-args 0)
+                   (known-procedure/parameter? v)
+                   (returns 1))
+              (and (known-procedure/no-prompt/multi? v)
+                   (eqv? result-arity #f))
+              (and (known-field-accessor? v)
+                   (known-field-accessor-authentic? v)
+                   (returns 1))
+              (and (known-field-mutator? v)
+                   (known-field-mutator-authentic? v)
+                   (returns 1))
+              (and (known-procedure/no-prompt-up-to? v)
+                   n-args
+                   (<= n-args (known-procedure/no-prompt-up-to-n v))
+                   (returns 1)))))
     (match e
       [`(lambda . ,_) (returns 1)]
       [`(case-lambda . ,_) (returns 1)]
       [`(quote . ,_) (returns 1)]
       [`(#%variable-reference . ,_) (returns 1)]
+      [`(#%foreign-inline ,_ ,mode) (and (case mode
+                                           [(copy copy*) #t]
+                                           [(pure pure*) (not no-alloc?)]
+                                           [else (not (or pure? no-alloc?))])
+                                         (returns 1))]
       [`(let-values ([,idss ,rhss] ...) ,body)
        (cached
         (and (for/and ([ids (in-list idss)]
@@ -115,45 +157,37 @@
         (and (returns (length es))
              (for/and ([e (in-list es)])
                (simple? e 1))))]
+      [`(apply ,proc ,es ...)
+       (cached
+        (and (not result-arity)
+             (not pure?) ; because we can't statically check arity
+             (let ([proc (unwrap proc)])
+               (and (symbol? proc)
+                    (let ([v (or (hash-ref-either knowns imports proc)
+                                 (hash-ref prim-knowns proc #f))])
+                      (ok-to-call? proc v #f))))
+             (for/and ([e (in-list es)])
+               (simple? e 1))))]
       [`(,proc . ,args)
        (cached
         (let ([proc (unwrap proc)])
-          (and (symbol? proc)
-               (let ([v (or (hash-ref-either knowns imports proc)
-                            (hash-ref prim-knowns proc #f))])
-                 (and (if pure?
-                          (and (or (if no-alloc?
-                                       (known-procedure/pure? v)
-                                       (known-procedure/allocates? v))
-                                   (and ordered?
-                                        (or (known-procedure/then-pure? v)
-                                            (and succeeds?
-                                                 (null? args)
-                                                 (known-procedure/parameter? v))
-                                            ;; in unsafe mode, we can assume no contract error:
-                                            (and unsafe-mode?
-                                                 (known-field-accessor? v)
-                                                 (known-field-accessor-authentic? v)
-                                                 (known-field-accessor-known-immutable? v)))))
-                               (returns 1))
-                          (or (and (known-procedure/no-prompt? v)
-                                   (returns 1))
-                              (and succeeds?
-                                   (null? args)
-                                   (known-procedure/parameter? v)
-                                   (returns 1))
-                              (and (known-procedure/no-prompt/multi? v)
-                                   (eqv? result-arity #f))
-                              (and (known-field-accessor? v)
-                                   (known-field-accessor-authentic? v)
-                                   (returns 1))
-                              (and (known-field-mutator? v)
-                                   (known-field-mutator-authentic? v)
-                                   (returns 1))))
-                      (bitwise-bit-set? (known-procedure-arity-mask v) (length args))))
-               (simple-mutated-state? (hash-ref mutated proc #f))
-               (for/and ([arg (in-list args)])
-                 (simple? arg 1)))))]
+          (and
+           (or (and (symbol? proc)
+                    (let ([v (or (hash-ref-either knowns imports proc)
+                                 (hash-ref prim-knowns proc #f))])
+                      (and (ok-to-call? proc v (length args))
+                           (bitwise-bit-set? (known-procedure-arity-mask v) (length args))))
+                    (simple-mutated-state? (hash-ref mutated proc #f)))
+               (match proc
+                 [`(#%foreign-inline ,_ ,mode)
+                  (and (case mode
+                         [(copy*) #t]
+                         [(pure*) (not no-alloc?)]
+                         [else #f])
+                       (returns 1))]
+                 [`,_ #f]))
+           (for/and ([arg (in-list args)])
+             (simple? arg 1)))))]
       [`,_
        (let ([e (unwrap e)])
          (and (returns 1)

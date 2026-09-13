@@ -699,6 +699,8 @@ primvars.mo:Expected error in mat trace-output-port: "trace-output-port: #<input
 5_2.mo:Expected error in mat cdr: "cdr: 3 is not a pair".
 5_2.mo:Expected error in mat set-car!: "set-car!: a is not a pair".
 5_2.mo:Expected error in mat set-cdr!: "set-cdr!: a is not a pair".
+5_2.mo:Expected error in mat car-cas!: "car-cas!: a is not a pair".
+5_2.mo:Expected error in mat cdr-cas!: "cdr-cas!: a is not a pair".
 5_2.mo:Expected error in mat c....r-errors: "caar: incorrect list structure (a . b)".
 5_2.mo:Expected error in mat c....r-errors: "cadr: incorrect list structure (a . b)".
 5_2.mo:Expected error in mat c....r-errors: "cdar: incorrect list structure (a . b)".
@@ -1028,6 +1030,7 @@ primvars.mo:Expected error in mat trace-output-port: "trace-output-port: #<input
 5_3.mo:Expected error in mat <: "<: 3.4+0.0i is not a real number".
 5_3.mo:Expected error in mat <: "<: 3.4+0.0i is not a real number".
 5_3.mo:Expected error in mat <: "<: 3.4+0.0i is not a real number".
+5_3.mo:Expected error in mat <: "<: 1.0+0.0i is not a real number".
 5_3.mo:Expected error in mat <: "<: 2.0+1.0i is not a real number".
 5_3.mo:Expected error in mat <: "<: 2+1i is not a real number".
 5_3.mo:Expected error in mat <: "<: 3+1i is not a real number".
@@ -1048,6 +1051,7 @@ primvars.mo:Expected error in mat trace-output-port: "trace-output-port: #<input
 5_3.mo:Expected error in mat <=: "<=: 3.4+0.0i is not a real number".
 5_3.mo:Expected error in mat <=: "<=: 3.4+0.0i is not a real number".
 5_3.mo:Expected error in mat <=: "<=: 3.4+0.0i is not a real number".
+5_3.mo:Expected error in mat <=: "<=: 1.0+0.0i is not a real number".
 5_3.mo:Expected error in mat <=: "<=: 2.0+1.0i is not a real number".
 5_3.mo:Expected error in mat <=: "<=: 2+1i is not a real number".
 5_3.mo:Expected error in mat <=: "<=: 3+1i is not a real number".
@@ -1068,6 +1072,7 @@ primvars.mo:Expected error in mat trace-output-port: "trace-output-port: #<input
 5_3.mo:Expected error in mat >: ">: 3.4+0.0i is not a real number".
 5_3.mo:Expected error in mat >: ">: 3.4+0.0i is not a real number".
 5_3.mo:Expected error in mat >: ">: 3.4+0.0i is not a real number".
+5_3.mo:Expected error in mat >: ">: 1.0+0.0i is not a real number".
 5_3.mo:Expected error in mat >: ">: 2.0+1.0i is not a real number".
 5_3.mo:Expected error in mat >: ">: 2+1i is not a real number".
 5_3.mo:Expected error in mat >: ">: 3+1i is not a real number".
@@ -1088,6 +1093,7 @@ primvars.mo:Expected error in mat trace-output-port: "trace-output-port: #<input
 5_3.mo:Expected error in mat >=: ">=: 3.4+0.0i is not a real number".
 5_3.mo:Expected error in mat >=: ">=: 3.4+0.0i is not a real number".
 5_3.mo:Expected error in mat >=: ">=: 3.4+0.0i is not a real number".
+5_3.mo:Expected error in mat >=: ">=: 1.0+0.0i is not a real number".
 5_3.mo:Expected error in mat >=: ">=: 2.0+1.0i is not a real number".
 5_3.mo:Expected error in mat >=: ">=: 2+1i is not a real number".
 5_3.mo:Expected error in mat >=: ">=: 3+1i is not a real number".
@@ -1109,6 +1115,7 @@ primvars.mo:Expected error in mat trace-output-port: "trace-output-port: #<input
 5_3.mo:Expected error in mat r6rs:<: "<: a is not a real number".
 5_3.mo:Expected error in mat r6rs:<: "<: a is not a real number".
 5_3.mo:Expected error in mat r6rs:<: "<: a is not a real number".
+5_3.mo:Expected error in mat r6rs:<: "<: 1.0+0.0i is not a real number".
 5_3.mo:Expected error in mat r6rs:<: "<: 2.0+1.0i is not a real number".
 5_3.mo:Expected error in mat r6rs:<: "<: 2+1i is not a real number".
 5_3.mo:Expected error in mat r6rs:<: "<: 3+1i is not a real number".
@@ -1121,6 +1128,7 @@ primvars.mo:Expected error in mat trace-output-port: "trace-output-port: #<input
 5_3.mo:Expected error in mat r6rs:<=: "<=: a is not a real number".
 5_3.mo:Expected error in mat r6rs:<=: "<=: a is not a real number".
 5_3.mo:Expected error in mat r6rs:<=: "<=: a is not a real number".
+5_3.mo:Expected error in mat r6rs:<=: "<=: 1.0+0.0i is not a real number".
 5_3.mo:Expected error in mat r6rs:<=: "<=: 2.0+1.0i is not a real number".
 5_3.mo:Expected error in mat r6rs:<=: "<=: 2+1i is not a real number".
 5_3.mo:Expected error in mat r6rs:<=: "<=: 3+1i is not a real number".
@@ -1133,6 +1141,7 @@ primvars.mo:Expected error in mat trace-output-port: "trace-output-port: #<input
 5_3.mo:Expected error in mat r6rs:>: ">: a is not a real number".
 5_3.mo:Expected error in mat r6rs:>: ">: a is not a real number".
 5_3.mo:Expected error in mat r6rs:>: ">: a is not a real number".
+5_3.mo:Expected error in mat r6rs:>: ">: 1.0+0.0i is not a real number".
 5_3.mo:Expected error in mat r6rs:>: ">: 2.0+1.0i is not a real number".
 5_3.mo:Expected error in mat r6rs:>: ">: 2+1i is not a real number".
 5_3.mo:Expected error in mat r6rs:>: ">: 3+1i is not a real number".
@@ -1145,6 +1154,7 @@ primvars.mo:Expected error in mat trace-output-port: "trace-output-port: #<input
 5_3.mo:Expected error in mat r6rs:>=: ">=: a is not a real number".
 5_3.mo:Expected error in mat r6rs:>=: ">=: a is not a real number".
 5_3.mo:Expected error in mat r6rs:>=: ">=: a is not a real number".
+5_3.mo:Expected error in mat r6rs:>=: ">=: 1.0+0.0i is not a real number".
 5_3.mo:Expected error in mat r6rs:>=: ">=: 2.0+1.0i is not a real number".
 5_3.mo:Expected error in mat r6rs:>=: ">=: 2+1i is not a real number".
 5_3.mo:Expected error in mat r6rs:>=: ">=: 3+1i is not a real number".
@@ -1400,6 +1410,10 @@ primvars.mo:Expected error in mat trace-output-port: "trace-output-port: #<input
 5_3.mo:Expected error in mat expt: "expt: undefined for values 0 and +nan.0+3.0i".
 5_3.mo:Expected error in mat expt: "expt: undefined for values 0 and 0+3i".
 5_3.mo:Expected error in mat expt: "expt: undefined for values 0 and -1/2".
+5_3.mo:Expected error in mat expt: "expt: out of memory".
+5_3.mo:Expected error in mat expt: "expt: out of memory".
+5_3.mo:Expected error in mat expt: "expt: out of memory".
+5_3.mo:Expected error in mat expt: "expt: out of memory".
 5_3.mo:Expected error in mat expt-mod: "incorrect argument count in call (expt-mod)".
 5_3.mo:Expected error in mat expt-mod: "incorrect argument count in call (expt-mod 5)".
 5_3.mo:Expected error in mat expt-mod: "incorrect argument count in call (expt-mod 4 5)".
@@ -1437,7 +1451,7 @@ primvars.mo:Expected error in mat trace-output-port: "trace-output-port: #<input
 5_3.mo:Expected error in mat pseudo-random-generator: "vector->pseudo-random-generator: not a valid pseudo-random generator state vector 0".
 5_3.mo:Expected error in mat pseudo-random-generator: "vector->pseudo-random-generator: not a valid pseudo-random generator state vector #(1 2 3 4 5)".
 5_3.mo:Expected error in mat pseudo-random-generator: "vector->pseudo-random-generator: not a valid pseudo-random generator state vector #(1.0 2 3 4 5 6)".
-5_3.mo:Expected error in mat pseudo-random-generator: "exact?: #f is not a number".
+5_3.mo:Expected error in mat pseudo-random-generator: "vector->pseudo-random-generator: not a valid pseudo-random generator state vector #(1 #f 3 4 5 6)".
 5_3.mo:Expected error in mat pseudo-random-generator: "vector->pseudo-random-generator: not a valid pseudo-random generator state vector #(0 0 0 0 0 0)".
 5_3.mo:Expected error in mat pseudo-random-generator: "vector->pseudo-random-generator!: not a pseudo-random generator 0".
 5_3.mo:Expected error in mat pseudo-random-generator: "vector->pseudo-random-generator!: not a valid pseudo-random generator state vector 0".
@@ -1502,6 +1516,7 @@ primvars.mo:Expected error in mat trace-output-port: "trace-output-port: #<input
 5_3.mo:Expected error in mat log: "incorrect argument count in call (log)".
 5_3.mo:Expected error in mat log: "log: a is not a number".
 5_3.mo:Expected error in mat log: "log: undefined for 0".
+5_3.mo:Expected error in mat log: "log: undefined for values 5 and 1".
 5_3.mo:Expected error in mat sin: "incorrect argument count in call (sin)".
 5_3.mo:Expected error in mat sin: "incorrect argument count in call (sin 3 4)".
 5_3.mo:Expected error in mat sin: "sin: a is not a number".
@@ -1772,7 +1787,7 @@ primvars.mo:Expected error in mat trace-output-port: "trace-output-port: #<input
 5_3.mo:Expected error in mat logbit?: "incorrect argument count in call (logbit?)".
 5_3.mo:Expected error in mat logbit?: "incorrect argument count in call (logbit? 1)".
 5_3.mo:Expected error in mat logbit?: "incorrect argument count in call (logbit? 1 2 3)".
-5_3.mo:Expected error in mat logbit?: "logbit?: 3.4 is not an exact integer".
+5_3.mo:Expected error in mat logbit?: "logbit?: invalid bit index 3.4".
 5_3.mo:Expected error in mat logbit?: "logbit?: "3" is not an exact integer".
 5_3.mo:Expected error in mat logbit?: "logbit?: invalid bit index -1".
 5_3.mo:Expected error in mat bitwise-bit-set?: "incorrect argument count in call (bitwise-bit-set?)".
@@ -1780,19 +1795,19 @@ primvars.mo:Expected error in mat trace-output-port: "trace-output-port: #<input
 5_3.mo:Expected error in mat bitwise-bit-set?: "incorrect argument count in call (bitwise-bit-set? 3 4 5)".
 5_3.mo:Expected error in mat bitwise-bit-set?: "bitwise-bit-set?: 3.0 is not an exact integer".
 5_3.mo:Expected error in mat bitwise-bit-set?: "bitwise-bit-set?: "hi" is not an exact integer".
-5_3.mo:Expected error in mat bitwise-bit-set?: "bitwise-bit-set?: 4/3 is not an exact integer".
-5_3.mo:Expected error in mat bitwise-bit-set?: "bitwise-bit-set?: a is not an exact integer".
+5_3.mo:Expected error in mat bitwise-bit-set?: "bitwise-bit-set?: invalid bit index 4/3".
+5_3.mo:Expected error in mat bitwise-bit-set?: "bitwise-bit-set?: invalid bit index a".
 5_3.mo:Expected error in mat bitwise-bit-set?: "bitwise-bit-set?: invalid bit index -3".
 5_3.mo:Expected error in mat logbit0: "incorrect argument count in call (logbit0)".
 5_3.mo:Expected error in mat logbit0: "incorrect argument count in call (logbit0 1)".
 5_3.mo:Expected error in mat logbit0: "incorrect argument count in call (logbit0 1 2 3)".
-5_3.mo:Expected error in mat logbit0: "logbit0: 3.4 is not an exact integer".
+5_3.mo:Expected error in mat logbit0: "logbit0: invalid bit index 3.4".
 5_3.mo:Expected error in mat logbit0: "logbit0: "3" is not an exact integer".
 5_3.mo:Expected error in mat logbit0: "logbit0: invalid bit index -1".
 5_3.mo:Expected error in mat logbit1: "incorrect argument count in call (logbit1)".
 5_3.mo:Expected error in mat logbit1: "incorrect argument count in call (logbit1 1)".
 5_3.mo:Expected error in mat logbit1: "incorrect argument count in call (logbit1 1 2 3)".
-5_3.mo:Expected error in mat logbit1: "logbit1: 3.4 is not an exact integer".
+5_3.mo:Expected error in mat logbit1: "logbit1: invalid bit index 3.4".
 5_3.mo:Expected error in mat logbit1: "logbit1: "3" is not an exact integer".
 5_3.mo:Expected error in mat logbit1: "logbit1: invalid bit index -1".
 5_3.mo:Expected error in mat bitwise-copy-bit: "incorrect argument count in call (bitwise-copy-bit)".
@@ -1800,8 +1815,8 @@ primvars.mo:Expected error in mat trace-output-port: "trace-output-port: #<input
 5_3.mo:Expected error in mat bitwise-copy-bit: "incorrect argument count in call (bitwise-copy-bit 1 2)".
 5_3.mo:Expected error in mat bitwise-copy-bit: "incorrect argument count in call (bitwise-copy-bit 1 2 0 4)".
 5_3.mo:Expected error in mat bitwise-copy-bit: "bitwise-copy-bit: 3.4 is not an exact integer".
-5_3.mo:Expected error in mat bitwise-copy-bit: "bitwise-copy-bit: a is not a nonnegative exact integer".
-5_3.mo:Expected error in mat bitwise-copy-bit: "bitwise-copy-bit: -2 is not a nonnegative exact integer".
+5_3.mo:Expected error in mat bitwise-copy-bit: "bitwise-copy-bit: invalid bit index a".
+5_3.mo:Expected error in mat bitwise-copy-bit: "bitwise-copy-bit: invalid bit index -2".
 5_3.mo:Expected error in mat bitwise-copy-bit: "bitwise-copy-bit: bit argument 2 is not 0 or 1".
 5_3.mo:Expected error in mat bitwise-copy-bit: "bitwise-copy-bit: bit argument -1 is not 0 or 1".
 5_3.mo:Expected error in mat bitwise-copy-bit: "bitwise-copy-bit: bit argument a is not 0 or 1".
@@ -2078,6 +2093,9 @@ primvars.mo:Expected error in mat trace-output-port: "trace-output-port: #<input
 5_4.mo:Expected error in mat char-extended-pictographic?: "incorrect argument count in call (char-extended-pictographic?)".
 5_4.mo:Expected error in mat char-extended-pictographic?: "incorrect argument count in call (char-extended-pictographic? #\a #\b)".
 5_4.mo:Expected error in mat char-extended-pictographic?: "char-extended-pictographic?: a is not a character".
+5_4.mo:Expected error in mat char-indic-break-property: "incorrect argument count in call (char-indic-break-property)".
+5_4.mo:Expected error in mat char-indic-break-property: "incorrect argument count in call (char-indic-break-property #\a #\b)".
+5_4.mo:Expected error in mat char-indic-break-property: "char-indic-break-property: a is not a character".
 5_4.mo:Expected error in mat char-upcase: "incorrect argument count in call (char-upcase)".
 5_4.mo:Expected error in mat char-upcase: "incorrect argument count in call (char-upcase #\a #\b)".
 5_4.mo:Expected error in mat char-upcase: "char-upcase: a is not a character".
@@ -4071,6 +4089,8 @@ misc.mo:Expected error in mat eval: "attempt to reference unbound identifier con
 misc.mo:Expected error in mat eval: "attempt to reference unbound identifier sort".
 misc.mo:Expected error in mat eval: "attempt to reference unbound identifier sort".
 misc.mo:Expected error in mat eval: "attempt to reference unbound identifier sort".
+misc.mo:Expected error in mat eval: "incorrect argument count in call (< 3)".
+misc.mo:Expected error in mat eval: "incorrect argument count in call (< 3)".
 misc.mo:Expected error in mat eval2: "attempt to reference unbound identifier list".
 misc.mo:Expected error in mat eval2: "attempt to reference unbound identifier force".
 misc.mo:Expected error in mat eval2: "attempt to reference unbound identifier force".
@@ -4122,13 +4142,14 @@ misc.mo:Expected error in mat $fasl-file-equal?: "$fasl-file-equal?: failed for 
 misc.mo:Expected error in mat $fasl-file-equal?: "$fasl-file-equal?: failed for probably-does-not-exist: no such file or directory".
 misc.mo:Expected error in mat $fasl-file-equal?: "$fasl-file-equal?: failed for probably-does-not-exist: no such file or directory".
 misc.mo:Expected error in mat $fasl-file-equal?: "$fasl-file-equal?: record comparison failed while comparing testfile-fatfib1.so and testfile-fatfib3.so within fasl entry 4".
-misc.mo:Expected error in mat cost-center: "incorrect argument count in call (make-cost-center (quote foo))".
+misc.mo:Expected error in mat cost-center: "incorrect argument count in call (make-cost-center (quote foo) (quote bar))".
 misc.mo:Expected error in mat cost-center: "with-cost-center: foo is not a cost center".
 misc.mo:Expected error in mat cost-center: "with-cost-center: bar is not a procedure".
 misc.mo:Expected error in mat cost-center: "cost-center-instruction-count: 5 is not a cost center".
 misc.mo:Expected error in mat cost-center: "cost-center-allocation-count: "test" is not a cost center".
 misc.mo:Expected error in mat cost-center: "cost-center-time: 4.7 is not a cost center".
 misc.mo:Expected error in mat cost-center: "reset-cost-center!: #\c is not a cost center".
+misc.mo:Expected error in mat cost-center: "cost-center-name: "test" is not a cost center".
 misc.mo:Expected error in mat (argcnt eval-error): "incorrect argument count in call (car) at line 3, char 38 of testfile.ss".
 misc.mo:Expected error in mat (argcnt eval-error): "incorrect argument count in call (car (quote (a b)) (quote (c d))) at line 3, char 38 of testfile.ss".
 misc.mo:Expected error in mat (argcnt eval-error): "incorrect argument count in call (g 7) at line 3, char 47 of testfile.ss".
@@ -4276,11 +4297,73 @@ cp0.mo:Expected error in mat expand/optimize-output: "expand/optimize-output: #<
 5_6.mo:Expected error in mat vector-set-fixnum!: "vector-set-fixnum!: #\d is not a fixnum".
 5_6.mo:Expected error in mat vector-set-fixnum!: "vector-set-fixnum!: (a b c) is not a fixnum".
 5_6.mo:Expected error in mat vector-copy: "vector-copy: (a b c) is not a vector".
+5_6.mo:Expected error in mat vector-copy: "vector-copy: invalid start value x".
+5_6.mo:Expected error in mat vector-copy: "vector-copy: invalid count x".
+5_6.mo:Expected error in mat vector-copy: "vector-copy: invalid start value -1".
+5_6.mo:Expected error in mat vector-copy: "vector-copy: index 1 + count 3 is beyond the end of #(a b c)".
+5_6.mo:Expected error in mat vector-copy: "vector-copy: invalid count -1".
+5_6.mo:Expected error in mat immutable-vector-copy: "immutable-vector-copy: (a b c) is not a vector".
+5_6.mo:Expected error in mat immutable-vector-copy: "immutable-vector-copy: invalid start value x".
+5_6.mo:Expected error in mat immutable-vector-copy: "immutable-vector-copy: invalid count x".
+5_6.mo:Expected error in mat immutable-vector-copy: "immutable-vector-copy: invalid start value -1".
+5_6.mo:Expected error in mat immutable-vector-copy: "immutable-vector-copy: index 1 + count 3 is beyond the end of #(a b c)".
+5_6.mo:Expected error in mat immutable-vector-copy: "immutable-vector-copy: invalid count -1".
+5_6.mo:Expected error in mat vector-set/copy: "incorrect argument count in call (vector-set/copy 1)".
+5_6.mo:Expected error in mat vector-set/copy: "incorrect argument count in call (vector-set/copy (quote #(a b c)))".
+5_6.mo:Expected error in mat vector-set/copy: "incorrect argument count in call (vector-set/copy (quote #(a b c)) 1)".
+5_6.mo:Expected error in mat vector-set/copy: "vector-set/copy: y is not a valid index for #(a b c)".
+5_6.mo:Expected error in mat vector-set/copy: "vector-set/copy: -1 is not a valid index for #(a b c)".
+5_6.mo:Expected error in mat vector-set/copy: "vector-set/copy: 3 is not a valid index for #(a b c)".
+5_6.mo:Expected error in mat immutable-vector-set/copy: "incorrect argument count in call (immutable-vector-set/copy 1)".
+5_6.mo:Expected error in mat immutable-vector-set/copy: "incorrect argument count in call (immutable-vector-set/copy (quote #(a b c)))".
+5_6.mo:Expected error in mat immutable-vector-set/copy: "incorrect argument count in call (immutable-vector-set/copy (quote #(a b c)) 1)".
+5_6.mo:Expected error in mat immutable-vector-set/copy: "immutable-vector-set/copy: y is not a valid index for #(a b c)".
+5_6.mo:Expected error in mat immutable-vector-set/copy: "immutable-vector-set/copy: -1 is not a valid index for #(a b c)".
+5_6.mo:Expected error in mat immutable-vector-set/copy: "immutable-vector-set/copy: 3 is not a valid index for #(a b c)".
+5_6.mo:Expected error in mat vector-append: "vector-append: 1 is not a vector".
+5_6.mo:Expected error in mat vector-append: "vector-append: x is not a vector".
+5_6.mo:Expected error in mat vector-append: "vector-append: x is not a vector".
+5_6.mo:Expected error in mat vector-append: "vector-append: x is not a vector".
+5_6.mo:Expected error in mat vector-append: "make-vector: -1 is not a valid vector length".
+5_6.mo:Expected error in mat immutable-vector-append: "immutable-vector-append: 1 is not a vector".
+5_6.mo:Expected error in mat immutable-vector-append: "immutable-vector-append: x is not a vector".
+5_6.mo:Expected error in mat immutable-vector-append: "immutable-vector-append: x is not a vector".
+5_6.mo:Expected error in mat immutable-vector-append: "immutable-vector-append: x is not a vector".
+5_6.mo:Expected error in mat immutable-vector-append: "make-vector: -1 is not a valid vector length".
 5_6.mo:Expected error in mat vector-fill!: "vector-fill!: #vfx() is not a mutable vector".
 5_6.mo:Expected error in mat list->vector: "list->vector: #(a b c) is not a proper list".
 5_6.mo:Expected error in mat list->vector: "list->vector: (#\a #\b . #\c) is not a proper list".
 5_6.mo:Expected error in mat list->vector: "list->vector: (#\a #\b #\c #\b #\c #\b ...) is circular".
 5_6.mo:Expected error in mat vector->list: "vector->list: (a b c) is not a vector".
+5_6.mo:Expected error in mat vector-copy!: "incorrect argument count in call (vector-copy!)".
+5_6.mo:Expected error in mat vector-copy!: "incorrect argument count in call (vector-copy! $v2)".
+5_6.mo:Expected error in mat vector-copy!: "incorrect argument count in call (vector-copy! $v2 3)".
+5_6.mo:Expected error in mat vector-copy!: "incorrect argument count in call (vector-copy! $v2 3 $v1)".
+5_6.mo:Expected error in mat vector-copy!: "incorrect argument count in call (vector-copy! $v2 3 $v1 1)".
+5_6.mo:Expected error in mat vector-copy!: "incorrect argument count in call (vector-copy! $v2 3 $v1 1 2 ...)".
+5_6.mo:Expected error in mat vector-copy!: "vector-copy!: 0 is not an vector".
+5_6.mo:Expected error in mat vector-copy!: "vector-copy!: #vfx(1 2 3) is not an vector".
+5_6.mo:Expected error in mat vector-copy!: "vector-copy!: invalid start value -1".
+5_6.mo:Expected error in mat vector-copy!: "vector-copy!: invalid start value -1".
+5_6.mo:Expected error in mat vector-copy!: "vector-copy!: invalid start value a".
+5_6.mo:Expected error in mat vector-copy!: "vector-copy!: invalid start value 0.0".
+5_6.mo:Expected error in mat vector-copy!: "vector-copy!: invalid start value <int>".
+5_6.mo:Expected error in mat vector-copy!: "vector-copy!: invalid start value <int>".
+5_6.mo:Expected error in mat vector-copy!: "vector-copy!: invalid count -1".
+5_6.mo:Expected error in mat vector-copy!: "vector-copy!: invalid count <int>".
+5_6.mo:Expected error in mat vector-copy!: "vector-copy!: invalid count a".
+5_6.mo:Expected error in mat vector-copy!: "vector-copy!: index 0 + count 5 is beyond the end of #(1 2 3 4)".
+5_6.mo:Expected error in mat vector-copy!: "vector-copy!: index 0 + count 5 is beyond the end of #(1 2 3 4)".
+5_6.mo:Expected error in mat vector-copy!: "vector-copy!: index 1 + count 4 is beyond the end of #(1 2 3 4)".
+5_6.mo:Expected error in mat vector-copy!: "vector-copy!: index 1 + count 4 is beyond the end of #(1 2 3 4)".
+5_6.mo:Expected error in mat vector-copy!: "vector-copy!: index 2 + count 3 is beyond the end of #(1 2 3 4)".
+5_6.mo:Expected error in mat vector-copy!: "vector-copy!: index 2 + count 3 is beyond the end of #(1 2 3 4)".
+5_6.mo:Expected error in mat vector-copy!: "vector-copy!: index 3 + count 2 is beyond the end of #(1 2 3 4)".
+5_6.mo:Expected error in mat vector-copy!: "vector-copy!: index 3 + count 2 is beyond the end of #(1 2 3 4)".
+5_6.mo:Expected error in mat vector-copy!: "vector-copy!: index 4 + count 1 is beyond the end of #(1 2 3 4)".
+5_6.mo:Expected error in mat vector-copy!: "vector-copy!: index 4 + count 1 is beyond the end of #(1 2 3 4)".
+5_6.mo:Expected error in mat vector-copy!: "vector-copy!: index 0 + count 500 is beyond the end of #(255 254 253 252 251 250 ...)".
+5_6.mo:Expected error in mat vector-copy!: "vector-copy!: index 500 + count 0 is beyond the end of #(255 254 253 252 251 250 ...)".
 5_6.mo:Expected error in mat fxvector: "fxvector: <int> is not a fixnum".
 5_6.mo:Expected error in mat fxvector: "fxvector: <-int> is not a fixnum".
 5_6.mo:Expected error in mat fxvector: "fxvector: a is not a fixnum".
@@ -4311,6 +4394,35 @@ cp0.mo:Expected error in mat expand/optimize-output: "expand/optimize-output: #<
 5_6.mo:Expected error in mat fxvector-set!: "fxvector-set!: <-int> is not a fixnum".
 5_6.mo:Expected error in mat fxvector-set!: "fxvector-set!: a is not a fixnum".
 5_6.mo:Expected error in mat fxvector-copy: "fxvector-copy: (a b c) is not an fxvector".
+5_6.mo:Expected error in mat fxvector-copy!: "incorrect argument count in call (fxvector-copy!)".
+5_6.mo:Expected error in mat fxvector-copy!: "incorrect argument count in call (fxvector-copy! $v2)".
+5_6.mo:Expected error in mat fxvector-copy!: "incorrect argument count in call (fxvector-copy! $v2 3)".
+5_6.mo:Expected error in mat fxvector-copy!: "incorrect argument count in call (fxvector-copy! $v2 3 $v1)".
+5_6.mo:Expected error in mat fxvector-copy!: "incorrect argument count in call (fxvector-copy! $v2 3 $v1 1)".
+5_6.mo:Expected error in mat fxvector-copy!: "incorrect argument count in call (fxvector-copy! $v2 3 $v1 1 2 ...)".
+5_6.mo:Expected error in mat fxvector-copy!: "fxvector-copy!: 0 is not an fxvector".
+5_6.mo:Expected error in mat fxvector-copy!: "fxvector-copy!: #(1 2 3) is not an fxvector".
+5_6.mo:Expected error in mat fxvector-copy!: "fxvector-copy!: invalid start value -1".
+5_6.mo:Expected error in mat fxvector-copy!: "fxvector-copy!: invalid start value -1".
+5_6.mo:Expected error in mat fxvector-copy!: "fxvector-copy!: invalid start value a".
+5_6.mo:Expected error in mat fxvector-copy!: "fxvector-copy!: invalid start value 0.0".
+5_6.mo:Expected error in mat fxvector-copy!: "fxvector-copy!: invalid start value <int>".
+5_6.mo:Expected error in mat fxvector-copy!: "fxvector-copy!: invalid start value <int>".
+5_6.mo:Expected error in mat fxvector-copy!: "fxvector-copy!: invalid count -1".
+5_6.mo:Expected error in mat fxvector-copy!: "fxvector-copy!: invalid count <int>".
+5_6.mo:Expected error in mat fxvector-copy!: "fxvector-copy!: invalid count a".
+5_6.mo:Expected error in mat fxvector-copy!: "fxvector-copy!: index 0 + count 5 is beyond the end of #vfx(1 2 3 4)".
+5_6.mo:Expected error in mat fxvector-copy!: "fxvector-copy!: index 0 + count 5 is beyond the end of #vfx(1 2 3 4)".
+5_6.mo:Expected error in mat fxvector-copy!: "fxvector-copy!: index 1 + count 4 is beyond the end of #vfx(1 2 3 4)".
+5_6.mo:Expected error in mat fxvector-copy!: "fxvector-copy!: index 1 + count 4 is beyond the end of #vfx(1 2 3 4)".
+5_6.mo:Expected error in mat fxvector-copy!: "fxvector-copy!: index 2 + count 3 is beyond the end of #vfx(1 2 3 4)".
+5_6.mo:Expected error in mat fxvector-copy!: "fxvector-copy!: index 2 + count 3 is beyond the end of #vfx(1 2 3 4)".
+5_6.mo:Expected error in mat fxvector-copy!: "fxvector-copy!: index 3 + count 2 is beyond the end of #vfx(1 2 3 4)".
+5_6.mo:Expected error in mat fxvector-copy!: "fxvector-copy!: index 3 + count 2 is beyond the end of #vfx(1 2 3 4)".
+5_6.mo:Expected error in mat fxvector-copy!: "fxvector-copy!: index 4 + count 1 is beyond the end of #vfx(1 2 3 4)".
+5_6.mo:Expected error in mat fxvector-copy!: "fxvector-copy!: index 4 + count 1 is beyond the end of #vfx(1 2 3 4)".
+5_6.mo:Expected error in mat fxvector-copy!: "fxvector-copy!: index 0 + count 500 is beyond the end of #vfx(255 254 253 252 251 250 ...)".
+5_6.mo:Expected error in mat fxvector-copy!: "fxvector-copy!: index 500 + count 0 is beyond the end of #vfx(255 254 253 252 251 250 ...)".
 5_6.mo:Expected error in mat fxvector-fill!: "fxvector-fill!: a is not a fixnum".
 5_6.mo:Expected error in mat fxvector-fill!: "fxvector-fill!: #(1) is not a fxvector".
 5_6.mo:Expected error in mat list->fxvector: "list->fxvector: #(a b c) is not a proper list".
@@ -4346,6 +4458,35 @@ cp0.mo:Expected error in mat expand/optimize-output: "expand/optimize-output: #<
 5_6.mo:Expected error in mat flvector-set!: "flvector-set!: 1 is not a flonum".
 5_6.mo:Expected error in mat flvector-set!: "flvector-set!: a is not a flonum".
 5_6.mo:Expected error in mat flvector-copy: "flvector-copy: (a b c) is not an flvector".
+5_6.mo:Expected error in mat flvector-copy!: "incorrect argument count in call (flvector-copy!)".
+5_6.mo:Expected error in mat flvector-copy!: "incorrect argument count in call (flvector-copy! $v2)".
+5_6.mo:Expected error in mat flvector-copy!: "incorrect argument count in call (flvector-copy! $v2 3)".
+5_6.mo:Expected error in mat flvector-copy!: "incorrect argument count in call (flvector-copy! $v2 3 $v1)".
+5_6.mo:Expected error in mat flvector-copy!: "incorrect argument count in call (flvector-copy! $v2 3 $v1 1)".
+5_6.mo:Expected error in mat flvector-copy!: "incorrect argument count in call (flvector-copy! $v2 3 $v1 1 2 ...)".
+5_6.mo:Expected error in mat flvector-copy!: "flvector-copy!: 0 is not an flvector".
+5_6.mo:Expected error in mat flvector-copy!: "flvector-copy!: #(1 2 3) is not an flvector".
+5_6.mo:Expected error in mat flvector-copy!: "flvector-copy!: invalid start value -1".
+5_6.mo:Expected error in mat flvector-copy!: "flvector-copy!: invalid start value -1".
+5_6.mo:Expected error in mat flvector-copy!: "flvector-copy!: invalid start value a".
+5_6.mo:Expected error in mat flvector-copy!: "flvector-copy!: invalid start value 0.0".
+5_6.mo:Expected error in mat flvector-copy!: "flvector-copy!: invalid start value <int>".
+5_6.mo:Expected error in mat flvector-copy!: "flvector-copy!: invalid start value <int>".
+5_6.mo:Expected error in mat flvector-copy!: "flvector-copy!: invalid count -1".
+5_6.mo:Expected error in mat flvector-copy!: "flvector-copy!: invalid count <int>".
+5_6.mo:Expected error in mat flvector-copy!: "flvector-copy!: invalid count a".
+5_6.mo:Expected error in mat flvector-copy!: "flvector-copy!: index 0 + count 5 is beyond the end of #vfl(1.0 2.0 3.0 4.0)".
+5_6.mo:Expected error in mat flvector-copy!: "flvector-copy!: index 0 + count 5 is beyond the end of #vfl(1.0 2.0 3.0 4.0)".
+5_6.mo:Expected error in mat flvector-copy!: "flvector-copy!: index 1 + count 4 is beyond the end of #vfl(1.0 2.0 3.0 4.0)".
+5_6.mo:Expected error in mat flvector-copy!: "flvector-copy!: index 1 + count 4 is beyond the end of #vfl(1.0 2.0 3.0 4.0)".
+5_6.mo:Expected error in mat flvector-copy!: "flvector-copy!: index 2 + count 3 is beyond the end of #vfl(1.0 2.0 3.0 4.0)".
+5_6.mo:Expected error in mat flvector-copy!: "flvector-copy!: index 2 + count 3 is beyond the end of #vfl(1.0 2.0 3.0 4.0)".
+5_6.mo:Expected error in mat flvector-copy!: "flvector-copy!: index 3 + count 2 is beyond the end of #vfl(1.0 2.0 3.0 4.0)".
+5_6.mo:Expected error in mat flvector-copy!: "flvector-copy!: index 3 + count 2 is beyond the end of #vfl(1.0 2.0 3.0 4.0)".
+5_6.mo:Expected error in mat flvector-copy!: "flvector-copy!: index 4 + count 1 is beyond the end of #vfl(1.0 2.0 3.0 4.0)".
+5_6.mo:Expected error in mat flvector-copy!: "flvector-copy!: index 4 + count 1 is beyond the end of #vfl(1.0 2.0 3.0 4.0)".
+5_6.mo:Expected error in mat flvector-copy!: "flvector-copy!: index 0 + count 500 is beyond the end of #vfl(255.0 254.0 253.0 252.0 251.0 250.0 ...)".
+5_6.mo:Expected error in mat flvector-copy!: "flvector-copy!: index 500 + count 0 is beyond the end of #vfl(255.0 254.0 253.0 252.0 251.0 250.0 ...)".
 5_6.mo:Expected error in mat flvector-fill!: "flvector-fill!: a is not a flonum".
 5_6.mo:Expected error in mat flvector-fill!: "flvector-fill!: #(1.0) is not a flvector".
 5_6.mo:Expected error in mat list->flvector: "list->flvector: #(a b c) is not a proper list".
@@ -4578,8 +4719,8 @@ cp0.mo:Expected error in mat expand/optimize-output: "expand/optimize-output: #<
 6.mo:Expected error in mat fasl: "fasl-write: 10 is not #f or a procedure".
 6.mo:Expected error in mat fasl: "fasl-read: not a vector #f".
 6.mo:Expected error in mat fasl: "fasl-read: not a vector 10".
-6.mo:Expected error in mat fasl: "incompatible external vector length 0, expected 1".
-6.mo:Expected error in mat fasl: "incompatible external vector length 1, expected 2".
+6.mo:Expected error in mat fasl: "incompatible fasl graph external vector length 0 (expected 1) found in bytevector".
+6.mo:Expected error in mat fasl: "incompatible fasl graph external vector length 1 (expected 2) found in bytevector".
 6.mo:Expected warning in mat cp1in-verify-format-warnings: "compile: too few arguments for control string "~a~~~s" in call to format".
 6.mo:Expected warning in mat cp1in-verify-format-warnings: "compile: too many arguments for control string "~a~a~a~s" in call to format".
 6.mo:Expected warning in mat cp1in-verify-format-warnings: "compile: too few arguments for control string "~a~~~s" in call to format at line 1, char 28 of testfile.ss".
@@ -4694,8 +4835,8 @@ cp0.mo:Expected error in mat expand/optimize-output: "expand/optimize-output: #<
 6.mo:Expected error in mat read-test: "read: non-fixnum found in fxvector at line 3, char 23 of testfile.ss".
 6.mo:Expected error in mat read-test: "read: non-fixnum found in fxvector at line 3, char 24 of testfile.ss".
 6.mo:Expected error in mat read-test: "read: too many flvector elements supplied at line 3, char 16 of testfile.ss".
-6.mo:Expected error in mat read-test: "read: non-fixnum found in flvector at line 3, char 25 of testfile.ss".
-6.mo:Expected error in mat read-test: "read: non-fixnum found in flvector at line 3, char 26 of testfile.ss".
+6.mo:Expected error in mat read-test: "read: non-flonum found in flvector at line 3, char 25 of testfile.ss".
+6.mo:Expected error in mat read-test: "read: non-flonum found in flvector at line 3, char 26 of testfile.ss".
 6.mo:Expected error in mat read-test: "read: too many fxvector elements supplied at line 3, char 16 of testfile.ss".
 6.mo:Expected error in mat read-test: "read: too many stencil vector elements supplied at line 3, char 16 of testfile.ss".
 6.mo:Expected error in mat read-test: "read: not enough stencil vector elements supplied at line 3, char 24 of testfile.ss".
@@ -4846,7 +4987,7 @@ cp0.mo:Expected error in mat expand/optimize-output: "expand/optimize-output: #<
 6.mo:Expected error in mat read-test: "read: |...| symbol escape syntax is not allowed in #!r6rs mode at line 3, char 8 of testfile.ss".
 6.mo:Expected error in mat read-test: "read: @abc symbol syntax is not allowed in #!r6rs mode at line 3, char 8 of testfile.ss".
 6.mo:Expected error in mat read-test: "read: 123a symbol syntax is not allowed in #!r6rs mode at line 3, char 8 of testfile.ss".
-6.mo:Expected error in mat read-test: "read: 123# number syntax is not allowed in #!r6rs mode at line 3, char 8 of testfile.ss".
+6.mo:Expected error in mat read-test: "read: invalid sharp-sign prefix #
 6.mo:Expected error in mat read-test: "read: 1/2e2 number syntax is not allowed in #!r6rs mode at line 3, char 8 of testfile.ss".
 6.mo:Expected error in mat read-test: "read: #x.3 number syntax is not allowed in #!r6rs mode at line 3, char 8 of testfile.ss".
 6.mo:Expected error in mat read-test: "read: alternative boolean syntax is not allowed in #!r6rs mode at line 3, char 8 of testfile.ss".
@@ -5523,8 +5664,8 @@ cp0.mo:Expected error in mat expand/optimize-output: "expand/optimize-output: #<
 6.mo:Expected error in mat load-test: "read: non-fixnum found in fxvector at line 3, char 23 of testfile.ss".
 6.mo:Expected error in mat load-test: "read: non-fixnum found in fxvector at line 3, char 24 of testfile.ss".
 6.mo:Expected error in mat load-test: "read: too many flvector elements supplied at line 3, char 16 of testfile.ss".
-6.mo:Expected error in mat load-test: "read: non-fixnum found in flvector at line 3, char 25 of testfile.ss".
-6.mo:Expected error in mat load-test: "read: non-fixnum found in flvector at line 3, char 26 of testfile.ss".
+6.mo:Expected error in mat load-test: "read: non-flonum found in flvector at line 3, char 25 of testfile.ss".
+6.mo:Expected error in mat load-test: "read: non-flonum found in flvector at line 3, char 26 of testfile.ss".
 6.mo:Expected error in mat load-test: "read: too many fxvector elements supplied at line 3, char 16 of testfile.ss".
 6.mo:Expected error in mat load-test: "read: too many stencil vector elements supplied at line 3, char 16 of testfile.ss".
 6.mo:Expected error in mat load-test: "read: not enough stencil vector elements supplied at line 3, char 24 of testfile.ss".
@@ -5675,7 +5816,7 @@ cp0.mo:Expected error in mat expand/optimize-output: "expand/optimize-output: #<
 6.mo:Expected error in mat load-test: "read: |...| symbol escape syntax is not allowed in #!r6rs mode at line 3, char 8 of testfile.ss".
 6.mo:Expected error in mat load-test: "read: @abc symbol syntax is not allowed in #!r6rs mode at line 3, char 8 of testfile.ss".
 6.mo:Expected error in mat load-test: "read: 123a symbol syntax is not allowed in #!r6rs mode at line 3, char 8 of testfile.ss".
-6.mo:Expected error in mat load-test: "read: 123# number syntax is not allowed in #!r6rs mode at line 3, char 8 of testfile.ss".
+6.mo:Expected error in mat load-test: "read: invalid sharp-sign prefix #
 6.mo:Expected error in mat load-test: "read: 1/2e2 number syntax is not allowed in #!r6rs mode at line 3, char 8 of testfile.ss".
 6.mo:Expected error in mat load-test: "read: #x.3 number syntax is not allowed in #!r6rs mode at line 3, char 8 of testfile.ss".
 6.mo:Expected error in mat load-test: "read: alternative boolean syntax is not allowed in #!r6rs mode at line 3, char 8 of testfile.ss".
@@ -6352,8 +6493,8 @@ cp0.mo:Expected error in mat expand/optimize-output: "expand/optimize-output: #<
 6.mo:Expected error in mat compile-test: "read: non-fixnum found in fxvector at line 3, char 23 of testfile.ss".
 6.mo:Expected error in mat compile-test: "read: non-fixnum found in fxvector at line 3, char 24 of testfile.ss".
 6.mo:Expected error in mat compile-test: "read: too many flvector elements supplied at line 3, char 16 of testfile.ss".
-6.mo:Expected error in mat compile-test: "read: non-fixnum found in flvector at line 3, char 25 of testfile.ss".
-6.mo:Expected error in mat compile-test: "read: non-fixnum found in flvector at line 3, char 26 of testfile.ss".
+6.mo:Expected error in mat compile-test: "read: non-flonum found in flvector at line 3, char 25 of testfile.ss".
+6.mo:Expected error in mat compile-test: "read: non-flonum found in flvector at line 3, char 26 of testfile.ss".
 6.mo:Expected error in mat compile-test: "read: too many fxvector elements supplied at line 3, char 16 of testfile.ss".
 6.mo:Expected error in mat compile-test: "read: too many stencil vector elements supplied at line 3, char 16 of testfile.ss".
 6.mo:Expected error in mat compile-test: "read: not enough stencil vector elements supplied at line 3, char 24 of testfile.ss".
@@ -6504,7 +6645,7 @@ cp0.mo:Expected error in mat expand/optimize-output: "expand/optimize-output: #<
 6.mo:Expected error in mat compile-test: "read: |...| symbol escape syntax is not allowed in #!r6rs mode at line 3, char 8 of testfile.ss".
 6.mo:Expected error in mat compile-test: "read: @abc symbol syntax is not allowed in #!r6rs mode at line 3, char 8 of testfile.ss".
 6.mo:Expected error in mat compile-test: "read: 123a symbol syntax is not allowed in #!r6rs mode at line 3, char 8 of testfile.ss".
-6.mo:Expected error in mat compile-test: "read: 123# number syntax is not allowed in #!r6rs mode at line 3, char 8 of testfile.ss".
+6.mo:Expected error in mat compile-test: "read: invalid sharp-sign prefix #
 6.mo:Expected error in mat compile-test: "read: 1/2e2 number syntax is not allowed in #!r6rs mode at line 3, char 8 of testfile.ss".
 6.mo:Expected error in mat compile-test: "read: #x.3 number syntax is not allowed in #!r6rs mode at line 3, char 8 of testfile.ss".
 6.mo:Expected error in mat compile-test: "read: alternative boolean syntax is not allowed in #!r6rs mode at line 3, char 8 of testfile.ss".
@@ -7164,6 +7305,8 @@ cp0.mo:Expected error in mat expand/optimize-output: "expand/optimize-output: #<
 6.mo:Expected error in mat pathprocs: "path-last: a/b/c is not a string".
 6.mo:Expected error in mat pathprocs: "path-root: a/b/c is not a string".
 6.mo:Expected error in mat pathprocs: "path-extension: a/b/c is not a string".
+6.mo:Expected error in mat pathprocs: "path-build: a is not a string".
+6.mo:Expected error in mat pathprocs: "path-build: b is not a string".
 6.mo:Expected error in mat process: "write-char: not permitted on closed port sanitized-port".
 6.mo:Expected error in mat process: "write-char: not permitted on closed port sanitized-port".
 6.mo:Expected error in mat process: "flush-output-port: not permitted on closed port sanitized-port".
@@ -8081,6 +8224,14 @@ record.mo:Expected error in mat foreign-data: "foreign-set!: invalid value 17 fo
 record.mo:Expected error in mat foreign-data: "foreign-set!: invalid value 17 for foreign type single-float".
 record.mo:Expected error in mat foreign-data: "foreign-set!: invalid value 17 for foreign type double".
 record.mo:Expected error in mat foreign-data: "foreign-set!: invalid value 17 for foreign type double-float".
+record.mo:Expected error in mat record-inheritance: "make-record-constructor-descriptor: "wrong" is not a record-type descriptor".
+record.mo:Expected error in mat record-inheritance: "make-record-constructor-descriptor: invalid protocol "toast"".
+record.mo:Expected error in mat record-inheritance: "make-record-constructor-descriptor: invalid protocol "jam"".
+record.mo:Expected error in mat record-inheritance: "make-record-constructor-descriptor: cannot create constructor descriptor for record type with non-scheme-object fields".
+record.mo:Expected error in mat record-inheritance: "make-record-constructor-descriptor: record constructor descriptor #<record constructor descriptor> specified for base record type #<record type B>".
+record.mo:Expected error in mat record-inheritance: "make-record-constructor-descriptor: record constructor descriptor #<record constructor descriptor> is not for parent of record type #<record type B>".
+record.mo:Expected error in mat record-inheritance: "make-record-constructor-descriptor: no protocol specified, but parent #<record constructor descriptor> has protocol".
+record.mo:Expected error in mat record-inheritance: "make-record-constructor-descriptor: no protocol specified, but parent #<record constructor descriptor> has protocol".
 record.mo:Expected error in mat record-writer: "record-writer: sp is not a record-type descriptor".
 record.mo:Expected error in mat record-writer: "record-writer: "oops" is not a procedure".
 record.mo:Expected error in mat record-writer: "write: ugh is not a textual output port".
@@ -9373,6 +9524,8 @@ enum.mo:Expected error in mat enumeration: "make-record-type: cannot extend seal
 8.mo:Expected error in mat extend-syntax: "extend-syntax: invalid context for ... in (foo x . ...)".
 8.mo:Expected error in mat extend-syntax: "extend-syntax: invalid context for ... in (foo (...))".
 8.mo:Expected error in mat extend-syntax: "extend-syntax: duplicate pattern variable name x in (foo x x)".
+8.mo:Expected error in mat quote-syntax: "invalid syntax (quote-syntax)".
+8.mo:Expected error in mat quote-syntax: "invalid syntax (quote-syntax a b)".
 fx.mo:Expected error in mat fx=: "fx=: (a) is not a fixnum".
 fx.mo:Expected error in mat fx=: "fx=: <int> is not a fixnum".
 fx.mo:Expected error in mat fx=: "fx=: <-int> is not a fixnum".
@@ -10193,6 +10346,17 @@ fl.mo:Expected error in mat fldiv0-and-mod0: "flmod0: 17 is not a flonum".
 fl.mo:Expected error in mat fldiv0-and-mod0: "flmod0: 17 is not a flonum".
 fl.mo:Expected error in mat fldiv0-and-mod0: "flmod0: a is not a flonum".
 fl.mo:Expected error in mat fldiv0-and-mod0: "flmod0: (a) is not a flonum".
+fl.mo:Expected error in mat flbit-field: "incorrect argument count in call (flbit-field)".
+fl.mo:Expected error in mat flbit-field: "incorrect argument count in call (flbit-field 0.0)".
+fl.mo:Expected error in mat flbit-field: "incorrect argument count in call (flbit-field 0.0 1)".
+fl.mo:Expected error in mat flbit-field: "flbit-field: 0 is not a flonum".
+fl.mo:Expected error in mat flbit-field: "flbit-field: invalid start index -1".
+fl.mo:Expected error in mat flbit-field: "flbit-field: invalid end index 1".
+fl.mo:Expected error in mat flbit-field: "flbit-field: invalid end index -1".
+fl.mo:Expected error in mat flbit-field: "flbit-field: invalid start index <int>".
+fl.mo:Expected error in mat flbit-field: "flbit-field: invalid end index <int>".
+fl.mo:Expected error in mat flbit-field: "flbit-field: invalid start index 1267650600228229401496703205376".
+fl.mo:Expected error in mat flbit-field: "flbit-field: invalid end index 1267650600228229401496703205376".
 cfl.mo:Expected error in mat fl-make-rectangular: "fl-make-rectangular: 3 is not a flonum".
 cfl.mo:Expected error in mat fl-make-rectangular: "fl-make-rectangular: b is not a flonum".
 cfl.mo:Expected error in mat fl-make-rectangular: "fl-make-rectangular: 3 is not a flonum".
@@ -10229,12 +10393,20 @@ cfl.mo:Expected error in mat cfl=: "cfl=: a is not a cflonum".
 cfl.mo:Expected error in mat cfl=: "cfl=: a is not a cflonum".
 cfl.mo:Expected error in mat cfl=: "incorrect argument count in call (cfl=)".
 foreign.mo:Expected error in mat load-shared-object: "load-shared-object: invalid path 3".
+foreign.mo:Expected error in mat foreign-procedure: "invalid foreign-procedure convention __get_last_error".
 foreign.mo:Expected error in mat foreign-procedure: "foreign-procedure: no entry for "i do not exist"".
 foreign.mo:Expected error in mat foreign-procedure: "foreign-procedure: no entry for "i do not exist"".
 foreign.mo:Expected error in mat foreign-procedure: "foreign-procedure: no entry for "i do not exist"".
 foreign.mo:Expected error in mat foreign-procedure: "foreign-procedure: invalid foreign procedure handle foo".
 foreign.mo:Expected error in mat foreign-procedure: "foreign-procedure: invalid foreign procedure handle foo".
 foreign.mo:Expected error in mat foreign-procedure: "foreign-procedure: invalid foreign procedure handle foo".
+foreign.mo:Expected error in mat foreign-procedure: "invalid foreign-procedure convention __bad_conv".
+foreign.mo:Expected error in mat foreign-procedure: "conflicting foreign-procedure convention __atomic".
+foreign.mo:Expected error in mat foreign-procedure: "conflicting foreign-procedure convention __collect_safe".
+foreign.mo:Expected error in mat foreign-procedure: "conflicting foreign-procedure convention __get_last_error".
+foreign.mo:Expected error in mat foreign-procedure: "conflicting foreign-procedure convention __errno".
+foreign.mo:Expected error in mat foreign-procedure: "missing __atomic before foreign-procedure convention __alloc".
+foreign.mo:Expected error in mat foreign-procedure: "foreign-procedure: no entry for "i do not exist"".
 foreign.mo:Expected error in mat foreign-procedure: "idint32: invalid foreign-procedure argument <int>".
 foreign.mo:Expected error in mat foreign-procedure: "idint32: invalid foreign-procedure argument <int>".
 foreign.mo:Expected error in mat foreign-procedure: "idint32: invalid foreign-procedure argument 83076749736557242056487941267521535".
@@ -10243,6 +10415,14 @@ foreign.mo:Expected error in mat foreign-procedure: "idint32: invalid foreign-pr
 foreign.mo:Expected error in mat foreign-procedure: "idint32: invalid foreign-procedure argument <-int>".
 foreign.mo:Expected error in mat foreign-procedure: "idint32: invalid foreign-procedure argument #f".
 foreign.mo:Expected error in mat foreign-procedure: "idint32: invalid foreign-procedure argument "hi"".
+foreign.mo:Expected error in mat foreign-procedure: "idint32-a: invalid foreign-procedure argument <int>".
+foreign.mo:Expected error in mat foreign-procedure: "idint32-a: invalid foreign-procedure argument <int>".
+foreign.mo:Expected error in mat foreign-procedure: "idint32-a: invalid foreign-procedure argument 83076749736557242056487941267521535".
+foreign.mo:Expected error in mat foreign-procedure: "idint32-a: invalid foreign-procedure argument <int>".
+foreign.mo:Expected error in mat foreign-procedure: "idint32-a: invalid foreign-procedure argument <-int>".
+foreign.mo:Expected error in mat foreign-procedure: "idint32-a: invalid foreign-procedure argument <-int>".
+foreign.mo:Expected error in mat foreign-procedure: "idint32-a: invalid foreign-procedure argument #f".
+foreign.mo:Expected error in mat foreign-procedure: "idint32-a: invalid foreign-procedure argument "hi"".
 foreign.mo:Expected error in mat foreign-procedure: "iduns32: invalid foreign-procedure argument <int>".
 foreign.mo:Expected error in mat foreign-procedure: "iduns32: invalid foreign-procedure argument <int>".
 foreign.mo:Expected error in mat foreign-procedure: "iduns32: invalid foreign-procedure argument <-int>".
@@ -10258,9 +10438,15 @@ foreign.mo:Expected error in mat foreign-procedure: "invalid foreign-procedure a
 foreign.mo:Expected error in mat foreign-procedure: "invalid foreign-procedure argument type specifier integer-34".
 foreign.mo:Expected error in mat foreign-procedure: "invalid foreign-procedure result type specifier chare".
 foreign.mo:Expected error in mat foreign-procedure: "invalid foreign-procedure argument type specifier void".
+foreign.mo:Expected error in mat foreign-procedure: "invalid foreign-procedure argument type specifier booleen".
+foreign.mo:Expected error in mat foreign-procedure: "invalid foreign-procedure argument type specifier integer-34".
+foreign.mo:Expected error in mat foreign-procedure: "invalid foreign-procedure result type specifier chare".
+foreign.mo:Expected error in mat foreign-procedure: "invalid foreign-procedure argument type specifier void".
 foreign.mo:Expected error in mat foreign-procedure: "id: invalid foreign-procedure argument 0".
 foreign.mo:Expected error in mat foreign-procedure: "id: invalid foreign-procedure argument foo".
+foreign.mo:Expected error in mat foreign-procedure: "id: invalid foreign-procedure argument foo".
 foreign.mo:Expected error in mat foreign-procedure: "foreign-procedure: invalid foreign procedure handle abcde".
+foreign.mo:Expected error in mat foreign-procedure: "float_id: invalid foreign-procedure argument 0".
 foreign.mo:Expected error in mat foreign-procedure: "float_id: invalid foreign-procedure argument 0".
 foreign.mo:Expected error in mat foreign-sizeof: "incorrect argument count in call (foreign-sizeof)".
 foreign.mo:Expected error in mat foreign-sizeof: "incorrect argument count in call (foreign-sizeof (quote int) (quote int))".
@@ -10403,6 +10589,11 @@ foreign.mo:Expected error in mat foreign-ftype: "invalid syntax (make-ftype-poin
 foreign.mo:Expected error in mat foreign-ftype: "foreign-entry: 1000000 is not a string".
 foreign.mo:Expected error in mat foreign-ftype: "foreign-entry: no entry for "i am not defined"".
 foreign.mo:Expected error in mat foreign-ftype: "unexpected function ftype name outside pointer field A".
+foreign.mo:Expected error in mat foreign-ftype: "void*->void*: invalid foreign-procedure argument 0".
+foreign.mo:Expected error in mat foreign-ftype: "invalid syntax (ftype-ref integer-8 (void*->void* (make-ftype-pointer integer-8 0) 0))".
+foreign.mo:Expected error in mat foreign-ftype: "obj-void*->obj-void*: invalid foreign-procedure argument <ftype-pointer>".
+foreign.mo:Expected error in mat foreign-ftype: "get-int-uint-int-as-uint*: invalid foreign-procedure argument <ftype-pointer>".
+foreign.mo:Expected error in mat foreign-ftype: "get-int-uint-int: invalid foreign-procedure argument <ftype-pointer>".
 foreign.mo:Expected error in mat foreign-callable: "foreign-callable: spam is not a procedure".
 foreign.mo:Expected error in mat foreign-callable: "foreign-callable: spam is not a procedure".
 foreign.mo:Expected error in mat foreign-callable: "foreign-callable: spam is not a procedure".
@@ -10423,9 +10614,22 @@ foreign.mo:Expected error in mat collect-safe: "foreign-callable: string result 
 foreign.mo:Expected error in mat reference-bytevector: "make-reference-bytevector: -1 is not a valid bytevector length".
 foreign.mo:Expected error in mat reference-bytevector: "bytevector-reference-ref: #vu8(1 2 3) is not a reference bytevector".
 foreign.mo:Expected error in mat reference-bytevector: "bytevector-reference-ref: invalid index -8 for #vu8(0 0 0 0 0 0 ...)".
+foreign.mo:Expected error in mat reference-bytevector: "bytevector-reference-ref: invalid index 1 for #vu8(0 0 0)".
+foreign.mo:Expected error in mat reference-bytevector: "bytevector-reference-ref: invalid index 0 for #vu8(0 0 0)".
+foreign.mo:Expected error in mat reference-bytevector: "bytevector-reference-ref: invalid index -1 for #vu8(0 0 0)".
+foreign.mo:Expected error in mat reference-bytevector: "bytevector-reference-ref: failed as expected".
 foreign.mo:Expected error in mat reference-bytevector: "bytevector-reference-ref: invalid index oops for #vu8(0 0 0 0 0 0 ...)".
 foreign.mo:Expected error in mat reference-bytevector: "bytevector-reference*-ref: invalid index -8 for #vu8(0 0 0 0 0 0 ...)".
 foreign.mo:Expected error in mat reference-bytevector: "bytevector-reference*-ref: invalid index oops for #vu8(0 0 0 0 0 0 ...)".
+foreign.mo:Expected error in mat reference-bytevector: "bytevector-reference*-ref: invalid index 1 for #vu8(0 0 0)".
+foreign.mo:Expected error in mat reference-bytevector: "bytevector-reference*-ref: invalid index 0 for #vu8(0 0 0)".
+foreign.mo:Expected error in mat reference-bytevector: "bytevector-reference*-ref: invalid index -1 for #vu8(0 0 0)".
+foreign.mo:Expected error in mat reference-bytevector: "bytevector-reference-ref: failed as expected".
+foreign.mo:Expected error in mat reference-bytevector: "bytevector-reference-set!: invalid index -8 for #vu8(0 0 0 0 0 0 ...)".
+foreign.mo:Expected error in mat reference-bytevector: "bytevector-reference-set!: invalid index oops for #vu8(0 0 0 0 0 0 ...)".
+foreign.mo:Expected error in mat reference-bytevector: "bytevector-reference-set!: invalid index 1 for #vu8(0 0 0)".
+foreign.mo:Expected error in mat reference-bytevector: "bytevector-reference-set!: invalid index 0 for #vu8(0 0 0)".
+foreign.mo:Expected error in mat reference-bytevector: "bytevector-reference-set!: failed as expected".
 foreign.mo:Expected error in mat reference-bytevector: "reference-address->object: invalid address #f".
 foreign.mo:Expected error in mat reference-bytevector: "reference*-address->object: invalid address #f".
 ftype.mo:Expected error in mat ftype: "unexpected function ftype outside pointer field (function #f (int) int)".
@@ -10435,6 +10639,16 @@ ftype.mo:Expected error in mat ftype: "unexpected function ftype name outside po
 ftype.mo:Expected error in mat ftype: "unexpected function ftype name outside pointer field F1".
 ftype.mo:Expected error in mat ftype: "unexpected function ftype name outside pointer field F1".
 ftype.mo:Expected error in mat ftype: "unexpected function ftype name outside pointer field F1".
+ftype.mo:Expected error in mat ftype: "invalid syntax (define-ftype P1 ftype-pointer (nongenerative 100))".
+ftype.mo:Expected error in mat ftype: "not a gensym p".
+ftype.mo:Expected error in mat ftype: "invalid syntax (define-ftype I1 int (nongenerative))".
+ftype.mo:Expected error in mat ftype: "invalid syntax (define-ftype I1 int (ng #{int of6r270eh1theews7ikmyh8vo-0}))".
+ftype.mo:Expected error in mat ftype: "invalid syntax (define-ftype I1 int nongenerative)".
+ftype.mo:Expected error in mat ftype: "invalid syntax (define-ftype (I1 int (nongenerative)))".
+ftype.mo:Expected error in mat ftype: "invalid syntax (define-ftype (I1 int (ng #{int of6r270eh1theews7ikmyh8vo-0})))".
+ftype.mo:Expected error in mat ftype: "invalid syntax (define-ftype (I1 int nongenerative))".
+ftype.mo:Expected error in mat ftype: "nongenerative disallowed for alias I1".
+ftype.mo:Expected error in mat ftype: "make-record-type: incompatible record type int - different extra".
 ftype.mo:Expected error in mat ftype: "ftype-sizeof: function ftypes have unknown size".
 ftype.mo:Expected error in mat ftype: "cannot calculate offset for function index 10".
 ftype.mo:Expected error in mat ftype: "cannot calculate offset for function index 1".
@@ -10479,6 +10693,16 @@ ftype.mo:Expected error in mat ftype: "non-scalar value cannot be assigned (ftyp
 ftype.mo:Expected error in mat ftype: "non-scalar value cannot be referenced (ftype-ref B (tail *) b)".
 ftype.mo:Expected error in mat ftype: "recursive or forward reference outside pointer field Qfrob".
 ftype.mo:Expected error in mat ftype: "recursive or forward reference outside pointer field Qsnark".
+ftype.mo:Expected error in mat ftype: "duplicate field name s1".
+ftype.mo:Expected error in mat ftype: "duplicate field name d".
+ftype.mo:Expected error in mat ftype: "duplicate field name k".
+ftype.mo:Expected error in mat ftype: "duplicate field name a1".
+ftype.mo:Expected error in mat ftype: "invalid anonymous field ftype in Qfrob".
+ftype.mo:Expected error in mat ftype: "ftype-ref: ftype mismatch for <ftype-pointer>".
+ftype.mo:Expected error in mat ftype: "ftype-set!: ftype mismatch for <ftype-pointer>".
+ftype.mo:Expected error in mat ftype: "ftype-ref: ftype mismatch for <ftype-pointer>".
+ftype.mo:Expected error in mat ftype: "cannot dereference generic pointer *".
+ftype.mo:Expected error in mat ftype: "invalid syntax (ftype-set! A (x *) bv-p)".
 ftype.mo:Expected error in mat ftype: "ftype-ref: invalid index -1 for #<ftd array>".
 ftype.mo:Expected error in mat ftype: "ftype-ref: invalid index 3.2 for #<ftd array>".
 ftype.mo:Expected error in mat ftype: "ftype-ref: invalid index <int> for #<ftd array>".
@@ -10582,6 +10806,8 @@ ftype.mo:Expected error in mat ftype: "invalid syntax (ftype-pointer? (struct (a
 ftype.mo:Expected error in mat ftype: "invalid syntax (ftype-&ref (struct (a int)) (a) x)".
 ftype.mo:Expected error in mat ftype: "invalid syntax (ftype-ref (struct (a int)) (a) x)".
 ftype.mo:Expected error in mat ftype: "invalid syntax (ftype-set! (struct (a int)) (a) x 0)".
+ftype.mo:Expected error in mat ftype: "cannot use scheme-object pointer ftype s-pointer".
+ftype.mo:Expected error in mat ftype: "not a scheme-object pointer ftype x-pointer".
 ftype.mo:Expected error in mat ftype-pointer-address-optimizations: "ftype-pointer-null?: () is not an ftype pointer".
 ftype.mo:Expected error in mat ftype-pointer-address-optimizations: "ftype-pointer=?: "oops" is not an ftype pointer".
 ftype.mo:Expected error in mat ftype-pointer-address-optimizations: "ftype-pointer=?: 17 is not an ftype pointer".
@@ -10730,6 +10956,7 @@ ftype.mo:Expected error in mat ftype-lock-operations: "locked operation on non-b
 ftype.mo:Expected error in mat ftype-lock-operations: "locked operation on non-integer or non-word-size field unsupported (ftype-unlock! A (f f2 0 f3a) x)".
 ftype.mo:Expected error in mat ftype-lock-operations: "locked operation on non-base-type field unsupported (ftype-unlock! A (g) x)".
 ftype.mo:Expected error in mat ftype-lock-operations: "locked operation on non-native field unsupported (ftype-unlock! A (h) x)".
+ftype.mo:Expected error in mat ftype-compile-file: "incompatible record type ftype-6 in testfile-ftype6.so".
 ftype.mo:Expected error in mat ftype-bits: "ftype-set!: invalid value 113886 for bit field of size 1".
 ftype.mo:Expected error in mat ftype-bits: "ftype-set!: invalid value #\a for bit field of size 3".
 ftype.mo:Expected error in mat ftype-bits: "ftype-set!: invalid value oops for bit field of size 14".

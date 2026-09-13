@@ -23,7 +23,7 @@ is the name of the file to compress. If the file named by
 
 @defproc[(gzip-through-ports [in input-port?]
                              [out output-port?]
-                             [orig-filename (or/c string? false/c)]
+                             [orig-filename (or/c string? #f)]
                              [timestamp exact-integer?])
          void?]{
 
@@ -38,7 +38,8 @@ report on Unix).}
 
 
 @defproc[(deflate [in input-port?]
-                  [out output-port?])
+                  [out output-port?]
+                  [#:level level exact-integer? 6])
          (values exact-nonnegative-integer?
                  exact-nonnegative-integer?
                  exact-nonnegative-integer?)]{
@@ -47,6 +48,10 @@ Writes @exec{pkzip}-format ``deflated'' data to the port @racket[out],
 compressing data from the port @racket[in].  The data in a file
 created by @exec{gzip} uses this format (preceded with header
 information).
+
+The @racket[level] argument controls compression from @racket[0] to
+@racket[9]. A level of @racket[0] produces an uncompressed
+@tt{deflate} stream, while higher levels trade speed for compression.
 
 The result is three values: the number of bytes read from @racket[in],
 the number of bytes written to @racket[out], and a cyclic redundancy

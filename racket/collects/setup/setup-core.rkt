@@ -4,6 +4,7 @@
 #lang racket/base
 
 (require racket/path
+	 racket/promise
          racket/file
          racket/port
          racket/match
@@ -43,6 +44,8 @@
          "private/format-error.rkt"
          "private/encode-relative.rkt"
          "private/time.rkt"
+         "private/setup-fprintf.rkt"
+         "private/relevant-collects.rkt"
          compiler/private/dep
          (only-in pkg/lib pkg-directory
                   pkg-single-collection))
@@ -105,22 +108,6 @@
        ;; the current library collection paths:
        null))
 
-  (define (setup-fprintf p task s . args)
-    (let ([task (if task (string-append task ": ") "")])
-      (define st
-        (string-append name-str ": " task s
-                       (if timestamp-output?
-                           (format " @ ~a" (current-process-milliseconds))
-                           "")
-                       "\n"))
-      (if (null? args)
-          (write-string st p)
-          (apply fprintf p st args))
-      (flush-output p)))
-
-  (define (setup-printf task s . args)
-    (apply setup-fprintf (current-output-port) task s args))
-
   (define (exn->string x) (if (exn? x) (exn-message x) (format "~s" x)))
 
   ;; auto-curried list-of
@@ -179,6 +166,18 @@
   ;; Option to show CPU time since startup on each status line:
   (define timestamp-output?
     (and (getenv "PLT_SETUP_SHOW_TIMESTAMPS") #t))
+
+  (define (maybe-reroot-info-domain p)
+    (define r (get-info-domain-root))
+    (if r (reroot-path p r) p))
+
+  (define setup-fprintf (mk-setup-fprintf name-str timestamp-output?))
+
+  (define (setup-printf #:n [n #f] #:%age [%age #f]
+                        #:only-if-terminal? [only-if-terminal? #f] task s . args)
+    (apply setup-fprintf
+           #:n n #:only-if-terminal? only-if-terminal? #:%age %age
+           (current-output-port) task s args))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;                   Errors                      ;;
@@ -262,6 +261,26 @@
          (set! exit-code 0)])))
       
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;               info and cache                  ;;
+  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pkg-path-cache (make-hash))
+
+  (define info-ns (make-base-namespace))
+  (define getinfo (make-getinfo info-ns))
+
+  (define info-failures (make-hash))
+  (define (getinfo/log-failure path)
+    (with-handlers ([exn:fail? (lambda (exn)
+                                 (if (hash-ref info-failures path #f)
+                                     #f
+                                     (begin
+                                       (hash-set! info-failures path #t)
+                                       (handle-error path "load of info.rkt" exn "" "" "error")
+                                       #f)))])
+      (getinfo path)))
+
+  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;               Archive Unpacking               ;;
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   
@@ -298,10 +317,22 @@
                       make-docs?)
                  (append
                   (if (not (avoid-main-installation))
-                      '(("scribblings/main"))
+                      (append
+                       '(("scribblings/main"))
+                       (map
+                        list
+                        (get-relevant-collections 'main-doc-index getinfo/log-failure
+                                                  #:mode (cond
+                                                           [(make-user) 'preferred]
+                                                           [else 'no-user]))))
                       null)
                   (if (make-user)
-                      '(("scribblings/main/user"))
+                      (append
+                       '(("scribblings/main/user"))
+                       (map
+                        list
+                        (get-relevant-collections 'user-doc-index getinfo/log-failure
+                                                  #:mode 'preferred)))
                       null))
                  null)
              (for/list ([x (in-list (archives))])
@@ -328,22 +359,6 @@
   ;;              Find Collections                 ;;
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define pkg-path-cache (make-hash))
-
-  (define info-ns (make-base-namespace))
-  (define getinfo (make-getinfo info-ns))
-
-  (define info-failures (make-hash))
-  (define (getinfo/log-failure path)
-    (with-handlers ([exn:fail? (lambda (exn)
-                                 (if (hash-ref info-failures path #f)
-                                     #f
-                                     (begin
-                                       (hash-set! info-failures path #t)
-                                       (handle-error path "load of info.rkt" exn "" "" "error")
-                                       #f)))])
-      (getinfo path)))
-
   (define (make-cc* collection parent path omit-root info-root 
                     info-path info-path-mode shadowing-policy 
                     main?)
@@ -358,14 +373,14 @@
            (error name-sym
                   "'name' result from collection ~e is not a string: ~e"
                   path x)))))
-    (define path-name (path->relative-string/setup path #:cache pkg-path-cache))
+    (define path-name (delay (path->relative-string/setup path #:cache pkg-path-cache)))
     (when (info 'compile-subcollections (lambda () #f))
       (setup-printf "WARNING"
                     "ignoring `compile-subcollections' entry in info ~a"
                     path-name))
     (make-cc collection path
              (if name
-                 (format "~a (~a)" path-name name)
+                 (delay (format "~a (~a)" (force path-name) name))
                  path-name)
              info
              parent
@@ -407,7 +422,8 @@
                     omit-root) ; #f => `omitted-paths' can reconstruct it
                 info-root
                 (or info-path
-                    (build-path info-root "info-domain" "compiled" "cache.rktd"))
+                    (maybe-reroot-info-domain
+                     (build-path info-root "info-domain" "compiled" "cache.rktd")))
                 info-path-mode
                 ;; by convention, all collections have "version" 1 0. This
                 ;; forces them to conflict with each other.
@@ -488,7 +504,8 @@
   ;; links:
   (let ()
     (define info-root (find-share-dir))
-    (define info-path (build-path info-root "info-cache.rktd"))
+    (define info-path (maybe-reroot-info-domain
+                       (build-path info-root "info-cache.rktd")))
     (define (cc! col #:path path)
       (collection-cc! col
                       #:path path
@@ -514,7 +531,8 @@
   ;; links:
   (when (make-user)
     (define info-root (find-user-share-dir))
-    (define info-path (build-path info-root "info-cache.rktd"))
+    (define info-path (maybe-reroot-info-domain
+                       (build-path info-root "info-cache.rktd")))
     (define (cc! col #:path path)
       (collection-cc! col
                       #:path path
@@ -556,7 +574,9 @@
 
   ;; `all-collections' lists all top-level collections (not from Planet):
   (define all-collections
-    (apply append (hash-map collection-ccs-table (lambda (k v) v))))
+    (for*/list ([v (in-hash-values collection-ccs-table)]
+		[i (in-list v)])
+      i))
 
   ;; Close over sub-collections
   (define (collection-closure collections-to-compile make-subs)
@@ -907,11 +927,14 @@
         (for ([p (current-library-collection-paths)])
           (unless (or (and (avoid-main-installation) (hash-ref main-collects-dirs p #f))
                       (and (not (make-user)) (not (hash-ref main-collects-dirs p #f))))
-            (check-one-info-domain (build-path p "info-domain" "compiled" "cache.rktd"))))
+            (check-one-info-domain (maybe-reroot-info-domain
+                                    (build-path p "info-domain" "compiled" "cache.rktd")))))
         (unless (avoid-main-installation)
-          (check-one-info-domain (build-path (find-share-dir) "info-cache.rktd")))
+          (check-one-info-domain (maybe-reroot-info-domain
+                                  (build-path (find-share-dir) "info-cache.rktd"))))
         (when (make-user)
-          (check-one-info-domain (build-path (find-user-share-dir) "info-cache.rktd"))))
+          (check-one-info-domain (maybe-reroot-info-domain
+                                  (build-path (find-user-share-dir) "info-cache.rktd")))))
       (when make-docs?
         (setup-printf #f "deleting documentation databases")
         (for ([d (in-list (append (if (avoid-main-installation)
@@ -1195,6 +1218,9 @@
                                              '())
                                          (if (managed-recompile-only)
                                              '(recompile-only)
+                                             '())
+                                         (if (managed-recompile-cache-dir)
+                                             `((recompile-cache ,(path->bytes (managed-recompile-cache-dir))))
                                              '())))
             (for/fold ([gcs 0]) ([cc planet-dirs-to-compile])
               (compile-cc cc gcs has-module-suffix?)))))
@@ -1385,17 +1411,18 @@
         (when (and (directory-exists? c)
                    (not (and (avoid-main-installation)
                              (hash-ref main-collects-dirs c #f))))
-          (define info-path (build-path c "info-domain" "compiled" "cache.rktd"))
+          (define info-path (maybe-reroot-info-domain
+                             (build-path c "info-domain" "compiled" "cache.rktd")))
           (when (file-exists? info-path)
             (get-info-ht c info-path 'relative))))
       (unless (avoid-main-installation)
         (define info-root (find-share-dir))
-        (define info-path (build-path info-root "info-cache.rktd"))
+        (define info-path (maybe-reroot-info-domain (build-path info-root "info-cache.rktd")))
         (when (file-exists? info-path)
           (get-info-ht info-root info-path 'abs-in-relative)))
       (when (make-user)
         (define info-root (find-user-share-dir))
-        (define info-path (build-path info-root "info-cache.rktd"))
+        (define info-path (maybe-reroot-info-domain (build-path info-root "info-cache.rktd")))
         (when (file-exists? info-path)
           (get-info-ht info-root info-path 'abs-in-relative))
         (define planet-info-path (get-planet-cache-path))
@@ -1464,34 +1491,66 @@
         (or (and (not (null? (archives)))
                  (archive-implies-reindex))
             (make-doc-index)))
-      (doc:setup-scribblings #f auto-start-doc?)))
+      (doc:setup-scribblings '() auto-start-doc?)))
 
-  (define (doc-pdf-dest-step)
-    (setup-printf #f (add-time "--- building PDF documentation (via pdflatex) ---"))
-    (define dest-dir (path->complete-path (doc-pdf-dest)))
+  (define (doc-with-temp-step label tmp-prefix dest-path kind after-build)
+    (setup-printf #f (add-time label))
+    (define dest-dir (path->complete-path dest-path))
     (unless (directory-exists? dest-dir)
       (make-directory dest-dir))
     (define tmp-dir
       (build-path (find-system-path 'temp-dir)
-                  (format "pltpdfdoc~a" (current-seconds))))
+                  (format "~a~a" tmp-prefix (current-seconds))))
     (dynamic-wind
       void
       (lambda ()
         (make-directory tmp-dir)
         (set-doc:verbose)
-        (doc:setup-scribblings tmp-dir #f)
-        (parameterize ([current-directory tmp-dir])
-          (for ([f (directory-list)]
-                #:when (path-has-extension? f #".tex"))
-            (define pdf (scr:call 'run-pdflatex f
-                                  (lambda (fmt . xs)
-                                    (apply setup-printf #f fmt xs))))
-            (define target (build-path dest-dir pdf))
-            (when (file-exists? target) (delete-file target))
-            (copy-file pdf target))))
+        (doc:setup-scribblings (list (list kind tmp-dir)) #f)
+        (after-build tmp-dir dest-dir))
       (lambda ()
         (when (directory-exists? tmp-dir)
           (delete-directory/files tmp-dir)))))
+
+  ;; Replace `dest-dir/name` with `tmp-dir/src` (a file or directory).
+  (define (replace-output! tmp-dir dest-dir src name)
+    (define target (build-path dest-dir name))
+    (when (or (file-exists? target) (directory-exists? target))
+      (delete-directory/files target))
+    (copy-directory/files (build-path tmp-dir src) target
+                          #:keep-modify-seconds? #t))
+
+  (define (doc-pdf-dest-step dest kind via tmp-dir extension run)
+    (when dest
+      (doc-with-temp-step
+       (format "--- building PDF documentation (via ~a) ---" via)
+       tmp-dir
+       dest
+       kind
+       (lambda (tmp-dir dest-dir)
+         (parameterize ([current-directory tmp-dir])
+           (for ([f (in-list (directory-list))]
+                 #:when (path-has-extension? f extension))
+             (define pdf (scr:call run f
+                                   (lambda (fmt . xs)
+                                     (apply setup-printf #f fmt xs))))
+             (replace-output! tmp-dir dest-dir pdf pdf)))))))
+
+  (define (doc-markdown-dest-step)
+    (define (aux? p)
+      (or (path-has-extension? p #".sxref")
+          (let ([name (path->bytes (file-name-from-path p))])
+            (or (bytes=? name #"docindex.sqlite")
+                (bytes=? name #"synced.rktd")))))
+    (doc-with-temp-step
+     "--- building Markdown documentation ---"
+     "pltmdoc"
+     (doc-markdown-dest)
+     'markdown
+     (lambda (tmp-dir dest-dir)
+       (for ([entry (in-list (directory-list tmp-dir))]
+             #:unless (aux? entry))
+         (replace-output! tmp-dir dest-dir entry entry)))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;                  Make Launchers               ;;
@@ -1857,10 +1916,12 @@
                                           (let ([p (build-dest-path s-dir lib-name)])
                                             (and (or (file-exists? p)
                                                      (directory-exists? p))
-                                                 (or (and moving?
-                                                          (not (file-exists? src))
-                                                          (not (directory-exists? src)))
-                                                     (same-content? src p))))))
+                                                 ;; In `moving?` mode, either the move hasn't
+                                                 ;; happened, in which case `same-content?` compares
+                                                 ;; as intended, or the move has already happened,
+                                                 ;; in which case `same-content?` will report `#f`
+                                                 ;; and the moved library will be kept
+                                                 (same-content? src p)))))
                                    ;; already exists in one of the search directories, so
                                    ;; don't copy/move to this one
                                    #f]
@@ -2174,8 +2235,8 @@
       (setup-printf "compiled-file roots" "")
       (for ([p roots])
         (setup-printf #f "  ~a" p))))
-  (setup-printf "main docs" "~a" (find-doc-dir))
-
+  (when (managed-recompile-cache-dir)
+    (setup-printf "recompile cache" "~a" (managed-recompile-cache-dir)))
   (when (and (not (null? (archives))) no-specific-collections?)
     (done))
 
@@ -2201,7 +2262,10 @@
 
   (when make-docs?
     (make-docs-step))
-  (when (doc-pdf-dest) (doc-pdf-dest-step))
+  (doc-pdf-dest-step (doc-pdf-dest) 'latex "pdflatex" "pltpdfdoc" #".tex" 'run-pdflatex)
+  (doc-pdf-dest-step (doc-xelatex-dest) 'latex "xelatex" "pltxelatexdoc" #".tex" 'run-xelatex)
+  (doc-pdf-dest-step (doc-typst-pdf-dest) 'typst "typst" "plttypstpdfdoc" #".typ" 'run-typst)
+  (when (doc-markdown-dest) (doc-markdown-dest-step))
   
   (do-install-part 'general)
   (do-install-part 'post)

@@ -42,6 +42,8 @@ static void init_extfl(Scheme_Startup_Env *env);
 static void init_futures(Scheme_Startup_Env *env);
 static void init_foreign(Scheme_Startup_Env *env);
 static void init_terminal(Scheme_Startup_Env *env);
+static void init_internal(Scheme_Startup_Env *env);
+static void init_unsafe_internal(Scheme_Startup_Env *env);
 
 static void skip_certain_things(Scheme_Object *o, Scheme_Close_Custodian_Client *f, void *data);
 
@@ -318,11 +320,13 @@ static void init_startup_env(void)
   init_extfl(env);
   init_futures(env);
   init_terminal(env);
+  init_internal(env);
 
   builtin_unsafe_start = builtin_ref_counter;
   scheme_init_unsafe_linklet(env);
   init_unsafe(env);
   init_foreign(env);
+  init_unsafe_internal(env);
   
 #if USE_COMPILED_STARTUP
   if (builtin_ref_counter != EXPECTED_PRIM_COUNT) {
@@ -412,6 +416,24 @@ static void init_terminal(Scheme_Startup_Env *env)
   scheme_restore_prim_instance(env);
 }
 
+static void init_internal(Scheme_Startup_Env *env)
+{
+  scheme_switch_prim_instance(env, "#%internal");
+
+  scheme_init_internal_string(env);
+
+  scheme_restore_prim_instance(env);
+}
+
+static void init_unsafe_internal(Scheme_Startup_Env *env)
+{
+  scheme_switch_prim_instance(env, "#%internal");
+
+  scheme_init_internal_foreign(env);
+
+  scheme_restore_prim_instance(env);
+}
+
 /*========================================================================*/
 /*                     place-specific initialization                       */
 /*========================================================================*/
@@ -468,6 +490,7 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
   /* error handling and buffers */
   /* this check prevents initializing orig ports twice for the first initial
    * place.  The kernel initializes orig_ports early. */
+  scheme_init_char_places();
   scheme_init_fun_places();
   scheme_init_port_places();
   scheme_init_error_escape_proc(NULL);

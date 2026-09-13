@@ -663,4 +663,12 @@
 (test/spec-passed/result
  'make-flat-contract-bad-26
  '(chaperone-contract? prop:late-neg-proj:prime-list/c)
- #t))
+ #t)
+
+  (contract-error-test
+   'make-flat-contract-bad-26
+   '(build-flat-contract-property
+     #:name 'example-contract
+     #:first-order (lambda (obj) (example-foo? obj)))
+   exn:fail?)
+  )

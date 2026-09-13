@@ -7,7 +7,10 @@
                   unsafe-chaperone-vector
                   unsafe-impersonate-vector
                   unsafe-impersonate-procedure
-                  unsafe-chaperone-procedure))
+                  unsafe-chaperone-procedure)
+         (only-in '#%unsafe
+                  unsafe-impersonate-hash)
+         racket/unsafe/undefined)
 
 (define secondary-hash-unused? (eq? 'cs (system-type 'gc)))
 
@@ -373,6 +376,10 @@
 (define chaperone-vector-name "chaperone-vector")
 (define impersonate-vector-name "impersonate-vector")
 
+(test #f impersonator-property-predicate-procedure? void)
+(test #f impersonator-property-predicate-procedure? (lambda (x) x))
+(test #f impersonator-property-accessor-procedure? void)
+(test #f impersonator-property-accessor-procedure? (lambda (x) x))
 
 ;; properties and chaperones
 (as-chaperone-or-impersonator
@@ -383,6 +390,16 @@
 
    (define-values (p1 has1 get1) (make-impersonator-property 'p1))
    (define-values (p2 has2 get2) (make-impersonator-property 'p2))
+
+   (test #t impersonator-property-predicate-procedure? has1)
+   (test #t impersonator-property-predicate-procedure? has2)
+   (test #f impersonator-property-predicate-procedure? get1)
+   (test #f impersonator-property-predicate-procedure? get2)
+
+   (test #t impersonator-property-accessor-procedure? get1)
+   (test #t impersonator-property-accessor-procedure? get2)
+   (test #f impersonator-property-accessor-procedure? has1)
+   (test #f impersonator-property-accessor-procedure? has2)
 
    (define v (vector 1 2 3))
    (define u (vector 7 8 9))
@@ -2131,94 +2148,100 @@
    make-weak-hash make-weak-hasheq make-weak-hasheqv make-weak-hashalw
    make-ephemeron-hash make-ephemeron-hasheq make-ephemeron-hasheqv make-ephemeron-hashalw)))
 
-(for-each
- (lambda (h1)   
-   (let* ([get-k #f]
-          [get-v #f]
-          [set-k #f]
-          [set-v #f]
-          [remove-k #f]
-          [access-k #f]
-          [h2 (chaperone-hash h1
-                              (lambda (h k) 
-                                (set! get-k k)
-                                (values k
-                                        (lambda (h k v)
-                                          (set! get-v v)
-                                          v)))
-                              (lambda (h k v) 
-                                (set! set-k k)
-                                (set! set-v v)
-                                (values k v))
-                              (lambda (h k) 
-                                (set! remove-k k)
-                                k) 
-                              (lambda (h k) 
-                                (set! access-k k)
-                                k))]
-          [test (lambda (val proc . args)
-                  ;; Avoid printing hash-table argument, which implicitly uses `ref':
-                  (let ([got (apply proc args)])
-                    (test #t (format "~s ~s ~s" proc val got) (equal? val got))))])
-     (test #f hash-ref h1 'key #f)
-     (test '(#f #f #f #f #f #f) list get-k get-v set-k set-v remove-k access-k)
-     (test 'nope hash-ref h2 'key 'nope)
-     (test '(key #f #f #f #f #f) list get-k get-v set-k set-v remove-k access-k)
-     (let ([h2 (hash-set h2 'key 'val)])
-       (test '(key #f key val #f #f) list get-k get-v set-k set-v remove-k access-k)
-       (test 'val hash-ref h2 'key #f)
-       (test '(key val key val #f #f) list get-k get-v set-k set-v remove-k access-k)
-       (let ([h2 (hash-set h2 'key2 'val2)])
-         (test '(key val key2 val2 #f #f) list get-k get-v set-k set-v remove-k access-k)
-         (test 'val2 hash-ref h2 'key2 #f)
-         (test '(key2 val2 key2 val2 #f #f) list get-k get-v set-k set-v remove-k access-k)
-         (test 'key2 hash-ref-key h2 'key2)
-         (test '(key2 val2 key2 val2 #f key2) list get-k get-v set-k set-v remove-k access-k)
-         (let ([h2 (hash-remove h2 'key3)])
-           (test '(key2 val2 key2 val2 key3 key2) list get-k get-v set-k set-v remove-k access-k)
-           (test 'val2 hash-ref h2 'key2)
-           (test '(key2 val2 key2 val2 key3 key2) list get-k get-v set-k set-v remove-k access-k)
-           (let ([h2 (hash-remove h2 'key2)])
-             (test '(key2 val2 key2 val2 key2 key2) list get-k get-v set-k set-v remove-k access-k)
-             (test #f hash-ref h2 'key2 #f)
-             (test '(key2 val2 key2 val2 key2 key2) list get-k get-v set-k set-v remove-k access-k)
-             (hash-for-each h2 void)
-             (test '(mid key val key2 val2 key2 key) list 'mid get-k get-v set-k set-v remove-k access-k)
-             (set! get-k #f)
-             (set! get-v #f)
-             (void (equal-hash-code h2))
-             (test '(key val key2 val2 key2 key) list get-k get-v set-k set-v remove-k access-k)
-             (unless secondary-hash-unused?
-               (set! get-k #f)
-               (set! get-v #f)
-               (void (equal-secondary-hash-code h2)))
-             (test '(key val key2 val2 key2 key) list get-k get-v set-k set-v remove-k access-k)
-             (set! get-k #f)
-             (set! get-v #f)
-             (test #t values (equal? h2 (hash-set h1 'key 'val)))
-             (test '(equal?2 key val key2 val2 key2 key) list 'equal?2 get-k get-v set-k set-v remove-k access-k)
-             (void))))))
-   ;; Check that `hash-set` propagates in a way that allows
-   ;; `chaperone-of?` to work recursively:
-   (let ()
-     (define proc (lambda (x) (add1 x)))
-     (define h2 (hash-set h1 1 proc))
-     (define (add-chap h2)
-       (chaperone-hash h2
-                       (λ (h k) (values k (λ (h k v) v)))
-                       (λ (h k v) (values k v))
-                       (λ _ #f)
-                       (λ (h k) k)))
-     (define h3 (add-chap h2))
-     (test #t chaperone-of? h3 h2)
-     (test #f chaperone-of? h3 (add-chap h2))
-     (define h4 (hash-set h3 1 proc))
-     (test #t chaperone-of? h4 h3)
-     (define h5 (hash-set h3 1 (chaperone-procedure proc void)))
-     (test #t chaperone-of? h5 h3)
-     (test #f chaperone-of? (hash-set h3 1 sub1) h3)
-     (test #f chaperone-of? (hash-set h3 2 sub1) h3)))
- (list #hash() #hasheq() #hasheqv() #hashalw()))
+(define (unsafe-impersonate-hash* ht ref set remove key)
+  (unsafe-impersonate-hash #f ht ref set remove key))
+
+(as-chaperone-or-impersonator
+ ([chaperone-hash unsafe-impersonate-hash*]
+  [chaperone-of? impersonator-of?])
+ (for-each
+  (lambda (h1)
+    (let* ([get-k #f]
+           [get-v #f]
+           [set-k #f]
+           [set-v #f]
+           [remove-k #f]
+           [access-k #f]
+           [h2 (chaperone-hash h1
+                               (lambda (h k)
+                                 (set! get-k k)
+                                 (values k
+                                         (lambda (h k v)
+                                           (set! get-v v)
+                                           v)))
+                               (lambda (h k v)
+                                 (set! set-k k)
+                                 (set! set-v v)
+                                 (values k v))
+                               (lambda (h k)
+                                 (set! remove-k k)
+                                 k) 
+                               (lambda (h k)
+                                 (set! access-k k)
+                                 k))]
+           [test (lambda (val proc . args)
+                   ;; Avoid printing hash-table argument, which implicitly uses `ref':
+                   (let ([got (apply proc args)])
+                     (test #t (format "~s ~s ~s" proc val got) (equal? val got))))])
+      (test #f hash-ref h1 'key #f)
+      (test '(#f #f #f #f #f #f) list get-k get-v set-k set-v remove-k access-k)
+      (test 'nope hash-ref h2 'key 'nope)
+      (test '(key #f #f #f #f #f) list get-k get-v set-k set-v remove-k access-k)
+      (let ([h2 (hash-set h2 'key 'val)])
+        (test '(key #f key val #f #f) list get-k get-v set-k set-v remove-k access-k)
+        (test 'val hash-ref h2 'key #f)
+        (test '(key val key val #f #f) list get-k get-v set-k set-v remove-k access-k)
+        (let ([h2 (hash-set h2 'key2 'val2)])
+          (test '(key val key2 val2 #f #f) list get-k get-v set-k set-v remove-k access-k)
+          (test 'val2 hash-ref h2 'key2 #f)
+          (test '(key2 val2 key2 val2 #f #f) list get-k get-v set-k set-v remove-k access-k)
+          (test 'key2 hash-ref-key h2 'key2)
+          (test '(key2 val2 key2 val2 #f key2) list get-k get-v set-k set-v remove-k access-k)
+          (let ([h2 (hash-remove h2 'key3)])
+            (test '(key2 val2 key2 val2 key3 key2) list get-k get-v set-k set-v remove-k access-k)
+            (test 'val2 hash-ref h2 'key2)
+            (test '(key2 val2 key2 val2 key3 key2) list get-k get-v set-k set-v remove-k access-k)
+            (let ([h2 (hash-remove h2 'key2)])
+              (test '(key2 val2 key2 val2 key2 key2) list get-k get-v set-k set-v remove-k access-k)
+              (test #f hash-ref h2 'key2 #f)
+              (test '(key2 val2 key2 val2 key2 key2) list get-k get-v set-k set-v remove-k access-k)
+              (hash-for-each h2 void)
+              (test '(mid key val key2 val2 key2 key) list 'mid get-k get-v set-k set-v remove-k access-k)
+              (set! get-k #f)
+              (set! get-v #f)
+              (void (equal-hash-code h2))
+              (test '(key val key2 val2 key2 key) list get-k get-v set-k set-v remove-k access-k)
+              (unless secondary-hash-unused?
+                (set! get-k #f)
+                (set! get-v #f)
+                (void (equal-secondary-hash-code h2)))
+              (test '(key val key2 val2 key2 key) list get-k get-v set-k set-v remove-k access-k)
+              (set! get-k #f)
+              (set! get-v #f)
+              (test #t values (equal? h2 (hash-set h1 'key 'val)))
+              (test '(equal?2 key val key2 val2 key2 key) list 'equal?2 get-k get-v set-k set-v remove-k access-k)
+              (void))))))
+    ;; Check that `hash-set` propagates in a way that allows
+    ;; `chaperone-of?` to work recursively:
+    (let ()
+      (define proc (lambda (x) (add1 x)))
+      (define h2 (hash-set h1 1 proc))
+      (define (add-chap h2)
+        (chaperone-hash h2
+                        (λ (h k) (values k (λ (h k v) v)))
+                        (λ (h k v) (values k v))
+                        (λ _ #f)
+                        (λ (h k) k)))
+      (define h3 (add-chap h2))
+      (test #t chaperone-of? h3 h2)
+      (test #f chaperone-of? h3 (add-chap h2))
+      (define h4 (hash-set h3 1 proc))
+      (test #t chaperone-of? h4 h3)
+      (define h5 (hash-set h3 1 (chaperone-procedure proc void)))
+      (test #t chaperone-of? h5 h3)
+      (test #f chaperone-of? (hash-set h3 1 sub1) h3)
+      (test #f chaperone-of? (hash-set h3 2 sub1) h3)))
+  (list #hash() #hasheq() #hasheqv() #hashalw())))
 
 ;; Make sure that multiple chaperone/impersonator layers
 ;; are allowed by `chaperone-of?` and `impersonator-of?`
@@ -2880,6 +2903,25 @@
   (err/rt-test/once (channel-get (chaperone-channel ch (lambda (c) (values c (lambda (x) 2.71))) (lambda (c v) v)))))
 
 ;; ----------------------------------------
+;; check impersonator properties check
+(let ()
+  (define rx #rx"missing.+after.+property")
+  (define ch (make-channel))
+  (define (get c) (values c (lambda (v) v)))
+  (define (put c v) v)
+  (define-values (impersonator-prop:prop has-prop? get-prop)
+    (make-impersonator-property 'prop))
+  (err/rt-test (impersonate-channel ch get put impersonator-prop:prop)
+               exn:fail:contract?
+               rx)
+  (err/rt-test (chaperone-channel ch get put impersonator-prop:prop)
+               exn:fail:contract?
+               rx)
+  (err/rt-test (chaperone-evt ch get impersonator-prop:prop)
+               exn:fail:contract?
+               rx))
+
+;; ----------------------------------------
 
 (let ()
   (define-values (prop:blue blue? blue-ref) (make-impersonator-property 'blue))
@@ -2959,6 +3001,169 @@
     (err/rt-test (blue-ref a1))
 
     (void)))
+
+;; ----------------------------------------
+
+(let ()
+  (struct p (x y))
+  (define up (p unsafe-undefined 0))
+  (test #t (eq? unsafe-undefined (p-x up)))
+  (test #t eqv? 0 (p-y up))
+  (define up/no-undefined (chaperone-struct-unsafe-undefined up))
+  (err/rt-test (p-x up/no-undefined))
+  (test #f procedure? up/no-undefined))
+
+(let ()
+  (struct p (x y)
+    #:property prop:chaperone-unsafe-undefined '(y x))
+  (define up (p unsafe-undefined 0))
+  (test #t (eqv? 0 (p-y up)))
+  (err/rt-test (p-x up))
+  (test #f procedure? up))
+
+(let ()
+  (struct p (x y)
+    #:property prop:procedure 1)
+  (define up (p unsafe-undefined (lambda () 0)))
+  (test #t (eq? unsafe-undefined (p-x up)))
+  (test #t eqv? 0 (up))
+  (define up/no-undefined (chaperone-struct-unsafe-undefined up))
+  (err/rt-test (p-x up/no-undefined))
+  (test #t procedure? up/no-undefined))
+
+(let ()
+  (struct p (x y)
+    #:property prop:procedure 1
+    #:property prop:chaperone-unsafe-undefined '(y x))
+  (define up (p unsafe-undefined (lambda () 0)))
+  (test #t (eqv? 0 (up)))
+  (err/rt-test (p-x up))
+  (test #t procedure? up))
+
+;; ----------------------------------------
+
+(define-syntax-rule (struct-metatype-tests [defn ...]
+                                           struct:klass make-klass klass? klass-ref
+                                           klass-one klass-two
+                                           klass-meta-one klass-meta-two)
+  (let ()
+    defn
+    ...
+    (define another-klass-meta-one (make-struct-field-metaaccessor klass-ref 0))
+    (define another-klass-meta-two (make-struct-field-metaaccessor klass-ref 1))
+    (define-values (s:b make-b b? b-ref b-set!) (make-klass 'b #f 2 0 #f null #f #f '(1) #f #f (box 'One) (box 'Two)))
+    (define b (make-b 1 2))
+
+    (define chap-s:b (chaperone-struct s:b klass-one (lambda (s bx) (chaperone-box bx (lambda (b v) v) (lambda (b v) v)))))
+
+    (test #t chaperone-of? chap-s:b s:b)
+    (test #t chaperone-of? (klass-one chap-s:b) (klass-one s:b))
+    (test #f eq? (klass-one chap-s:b) (klass-one s:b))
+    (test #t eq? (klass-two chap-s:b) (klass-two s:b))
+
+    (define chap-b (chaperone-struct b klass-ref
+                                     (lambda (o s:t)
+                                       (chaperone-struct s:t klass-two (lambda (s bx) (chaperone-box bx (lambda (b v) v) (lambda (b v) v)))))))
+    (test #t chaperone-of? chap-b b)
+    (test #t chaperone-of? (klass-meta-two chap-b 'no1) (klass-meta-two b 'no2))
+    (test #t eq? (klass-meta-one chap-b 'no1) (klass-meta-one b 'no2))
+    (test #f eq? (klass-meta-two chap-b 'no1) (klass-meta-two b 'no2))
+    (test #t eq? (another-klass-meta-one chap-b 'no1) (klass-meta-one b 'no2))
+    (test #f eq? (another-klass-meta-two chap-b 'no1) (klass-meta-two b 'no2))
+
+    (err/rt-test (impersonate-struct b klass-ref (lambda (o s:t) 'no)))
+
+    (let ()
+      (define-values (struct:klass2 make-klass2 klass2? klass2-ref) (make-struct-metatype 'klass2 #f 2 #f))
+      (define klass2-meta-one (make-struct-field-metaaccessor klass2-ref 0))
+      (test 'no1 klass2-meta-one b 'no1)
+      (test 'no1 klass2-meta-one chap-b 'no1))
+
+    (define bad-chap-b (chaperone-struct b klass-ref (lambda (o s:t) 'oops)))
+    (test #t chaperone-of? bad-chap-b b)
+    (err/rt-test (klass-meta-one bad-chap-b 'no1)
+                 exn:fail:contract?
+                 #rx"non-chaperone result")))
+
+(define-syntax-rule (struct-metatype-tests/non-optimized struct-metatype-tests authenticity ...)
+  (struct-metatype-tests [(define-values (struct:klass make-klass klass? klass-ref)
+                            ((black-box make-struct-metatype) 'klass #f 2 authenticity ...))
+                          (define klass-one (make-struct-field-accessor klass-ref 0 'one-ref))
+                          (define klass-two (make-struct-field-accessor klass-ref 1 'two-ref))
+                          (define klass-meta-one (make-struct-field-metaaccessor klass-ref 0))
+                          (define klass-meta-two (make-struct-field-metaaccessor klass-ref 1))]
+                         struct:klass make-klass klass? klass-ref
+                         klass-one klass-two
+                         klass-meta-one klass-meta-two))
+
+(struct-metatype-tests/non-optimized struct-metatype-tests #f)
+
+;; optimized:
+(define-syntax-rule (struct-metatype-tests/optimized struct-metatype-tests authenticity ...)
+  (struct-metatype-tests [(define-values (struct:klass make-klass klass? klass-ref
+                                                       klass-one klass-two
+                                                       klass-meta-one klass-meta-two)
+                            (let-values ([(struct:klass make-klass klass? klass-ref)
+                                          (make-struct-metatype 'klass #f 2 authenticity ...)])
+                              (values struct:klass make-klass klass? klass-ref
+                                      (make-struct-field-accessor klass-ref 0 'one-ref)
+                                      (make-struct-field-accessor klass-ref 1 'two-ref)
+                                      (make-struct-field-metaaccessor klass-ref 0)
+                                      (make-struct-field-metaaccessor klass-ref 1))))]
+                         struct:klass make-klass klass? klass-ref
+                         klass-one klass-two
+                         klass-meta-one klass-meta-two))
+
+(struct-metatype-tests/optimized struct-metatype-tests #f)
+
+(define-syntax-rule (struct-metatype-metaauthentic-tests
+                     [defn ...]
+                     struct:klass make-klass klass? klass-ref
+                     klass-one klass-two
+                     klass-meta-one klass-meta-two)
+  (let ()
+    defn
+    ...
+    (define-values (s:b make-b b? b-ref b-set!) (make-klass 'b #f 2 0 #f null #f #f '(1) #f #f (box 'One) (box 'Two)))
+    (define b-x (make-struct-field-accessor b-ref 0 'x))
+    (define b (make-b 1 2))
+
+    (err/rt-test (chaperone-struct s:b klass-one (lambda (s bx) bx))
+                 exn:fail:contract?
+                 #rx"cannot chaperone instance of an authentic structure type")
+
+    (define chap-b (chaperone-struct b b-x (lambda (o v) v)))
+    (test #t chaperone-of? chap-b b)
+    (test #t chaperone-of? (klass-meta-two chap-b 'no1) (klass-meta-two b 'no2))
+    (test #t eq? (klass-meta-one chap-b 'no1) (klass-meta-one b 'no2))
+    (test #t eq? (klass-meta-two chap-b 'no1) (klass-meta-two b 'no2))))
+
+(struct-metatype-tests/non-optimized struct-metatype-metaauthentic-tests)
+(struct-metatype-tests/non-optimized struct-metatype-metaauthentic-tests 'metaauthentic)
+(struct-metatype-tests/optimized struct-metatype-metaauthentic-tests)
+(struct-metatype-tests/optimized struct-metatype-metaauthentic-tests 'metaauthentic)
+
+(define-syntax-rule (struct-metatype-authentic-tests
+                     [defn ...]
+                     struct:klass make-klass klass? klass-ref
+                     klass-one klass-two
+                     klass-meta-one klass-meta-two)
+  (let ()
+    defn
+    ...
+    (define-values (s:b make-b b? b-ref b-set!) (make-klass 'b #f 2 0 #f null #f #f '(1) #f #f (box 'One) (box 'Two)))
+    (define b-x (make-struct-field-accessor b-ref 0 'x))
+    (define b (make-b 1 2))
+
+    (err/rt-test (chaperone-struct s:b klass-one (lambda (s bx) bx))
+                 exn:fail:contract?
+                 #rx"cannot chaperone instance of an authentic structure type")
+    (err/rt-test (chaperone-struct b b-x (lambda (o v) v)))
+                 exn:fail:contract?
+                 #rx"cannot chaperone instance of an authentic structure type"))
+
+(struct-metatype-tests/non-optimized struct-metatype-authentic-tests 'authentic)
+(struct-metatype-tests/optimized struct-metatype-authentic-tests 'authentic)
 
 ;; ----------------------------------------
 

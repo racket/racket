@@ -6,7 +6,8 @@
 
 ;; user-doc-mode can be `false-if-missing' or `never'
 (define (doc-path dir name flags under-main? [user-doc-mode #f]
-                  #:main? [main? #t])
+                  #:main? [main? #t]
+                  #:doc-destdir [doc-destdir #f])
   (define (user-doc [sub #f])
     (and (not (eq? 'never user-doc-mode))
          (let ([d (find-user-doc-dir)])
@@ -14,11 +15,17 @@
                     (directory-exists? d))
                 (if sub (build-path d sub) d)))))
   (cond [(memq 'main-doc-root flags) (if under-main?
-                                         (and main? (find-doc-dir))
+                                         (and main? (or doc-destdir (find-doc-dir)))
                                          ;; Effectively no main doc dir:
                                          (user-doc (build-path "main" name)))]
         [(memq 'user-doc-root flags) (user-doc)]
         [(memq 'user-doc flags)      (user-doc name)]
+        [(and (not under-main?)
+              (not (memq 'every-main-layer flags))
+              (and (or (memq 'depends-all flags)
+                       (memq 'depends-all-main flags)
+                       (memq 'depends-all-user flags))))
+         (user-doc name)]
         [(or under-main?
              (memq 'main-doc flags)
              (pair? (path->main-collects-relative dir)))
@@ -30,7 +37,7 @@
                          (define p (build-path dir name))
                          (and (directory-exists? p)
                               p)))
-                  (build-path (find-doc-dir) name)))]
+                  (build-path (or doc-destdir (find-doc-dir)) name)))]
         [else 
          (and (not (eq? 'never user-doc-mode))
               (build-path dir "doc" name))]))

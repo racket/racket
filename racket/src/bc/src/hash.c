@@ -230,6 +230,24 @@ static int equal_always_w_key_wraps(Scheme_Object *ekey, Scheme_Object *tkey, Sc
   return scheme_equal_always(ekey, tkey);
 }
 
+XFORM_NONGCING static int same_kind_via_impersonator(Scheme_Object *orig_t1,
+                                                     Scheme_Object *orig_t2)
+{
+  Scheme_Object *v, *v2;
+  
+  if (SCHEME_NP_CHAPERONEP(orig_t1))
+    v = scheme_chaperone_props_get(((Scheme_Chaperone *)orig_t1)->props, scheme_hash_kind_key);
+  else
+    v = NULL;
+
+  if (SCHEME_NP_CHAPERONEP(orig_t2))
+    v2 = scheme_chaperone_props_get(((Scheme_Chaperone *)orig_t2)->props, scheme_hash_kind_key);
+  else
+    v2 = NULL;
+
+  return SAME_OBJ(v, v2);
+}
+    
 /*========================================================================*/
 /*                      normal mutable hash table                         */
 /*========================================================================*/
@@ -634,6 +652,9 @@ int scheme_hash_table_equal_rec(Scheme_Hash_Table *t1, Scheme_Object *orig_t1,
       || (t1->make_hash_indices != t2->make_hash_indices)
       || (t1->compare != t2->compare))
     return 0;
+  
+  if (!same_kind_via_impersonator(orig_t1, orig_t2))
+    return 0;
     
   keys = t1->keys;
   vals = t1->vals;
@@ -719,11 +740,9 @@ void scheme_reset_hash_table(Scheme_Hash_Table *table, int *history)
 Scheme_Object *scheme_hash_table_next(Scheme_Hash_Table *hash,
 				      mzlonglong start)
 {
-    int i, sz = hash->size;
-    if (start >= 0) {
-      if ((start >= sz) || !hash->vals[start])
-        return NULL;
-    }
+    intptr_t i, sz = hash->size;
+    if (start >= sz)
+      return NULL;
     for (i = start + 1; i < sz; i++) {
       if (hash->vals[i])
         return scheme_make_integer(i);
@@ -1119,6 +1138,9 @@ int scheme_bucket_table_equal_rec(Scheme_Bucket_Table *t1, Scheme_Object *orig_t
       || (t1->make_hash_indices != t2->make_hash_indices)
       || (t1->compare != t2->compare))
     return 0;
+
+  if (!same_kind_via_impersonator(orig_t1, orig_t2))
+    return 0;
   
   buckets = t1->buckets;
   weak = t1->weak;
@@ -1245,13 +1267,10 @@ Scheme_Object *scheme_bucket_table_next(Scheme_Bucket_Table *hash,
 					mzlonglong start)
 {
   Scheme_Bucket *bucket;
-  int i, sz = hash->size;
+  intptr_t i, sz = hash->size;
     
-  if (start >= 0) {
-    bucket = ((start < sz) ? hash->buckets[start] : NULL);
-    if (!bucket || !bucket->val || !bucket->key)
-      return NULL;      
-  }
+  if (start >= sz)
+    return NULL;
   for (i = start + 1; i < sz; i++) {
     bucket = hash->buckets[i];
     if (bucket && bucket->val && bucket->key) {
@@ -1525,6 +1544,7 @@ XFORM_NONGCING static uintptr_t fast_equal_hash_key(Scheme_Object *o, uintptr_t 
   case scheme_windows_path_type:
     {
       if ((mode == EQUAL_MODE_EQUAL)
+          || (t != scheme_byte_string_type)
           || SCHEME_IMMUTABLEP(o)) {
         int i = SCHEME_BYTE_STRLEN_VAL(o);
         char *s = SCHEME_BYTE_STR_VAL(o);
@@ -1689,7 +1709,7 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
 #     include "mzhashchk.inc"
 
       if ((hi->mode == EQUAL_MODE_EQUAL)
-          || SCHEME_IMMUTABLEP(o)) {
+          || ((t == scheme_vector_type) && SCHEME_IMMUTABLEP(o))) {
         if (!len)
           return k + 1;
 
@@ -1720,8 +1740,7 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
       intptr_t len = SCHEME_FLVEC_SIZE(o), i;
       double d;
 
-      if ((hi->mode == EQUAL_MODE_EQUAL)
-          || SCHEME_IMMUTABLEP(o)) {
+      if (hi->mode == EQUAL_MODE_EQUAL) {
         if (!len)
           return k + 1;
 
@@ -1742,8 +1761,7 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
       intptr_t len = SCHEME_EXTFLVEC_SIZE(o), i;
       long_double d;
 
-      if ((hi->mode == EQUAL_MODE_EQUAL)
-          || SCHEME_IMMUTABLEP(o)) {
+      if (hi->mode == EQUAL_MODE_EQUAL) {
         if (!len)
           return k + 1;
 
@@ -2351,7 +2369,7 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
 #     include "mzhashchk.inc"
 
       if ((hi->mode == EQUAL_MODE_EQUAL)
-          || SCHEME_IMMUTABLEP(o)) {
+          || ((t == scheme_vector_type) && SCHEME_IMMUTABLEP(o))) {
         hi->depth += 2;
 
         for (i = 0; i < len; i++) {
@@ -2374,8 +2392,7 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
       double d;
       uintptr_t k = 0;
 
-      if ((hi->mode == EQUAL_MODE_EQUAL)
-          || SCHEME_IMMUTABLEP(o)) {
+      if (hi->mode == EQUAL_MODE_EQUAL) {
         if (!len)
           return k + 1;
 
@@ -2397,8 +2414,7 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
       long_double d;
       uintptr_t k = 0;
 
-      if ((hi->mode == EQUAL_MODE_EQUAL)
-          || SCHEME_IMMUTABLEP(o)) {
+      if (hi->mode == EQUAL_MODE_EQUAL) {
         if (!len)
           return k + 1;
 
@@ -2445,6 +2461,7 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
       char *s = SCHEME_BYTE_STR_VAL(o);
     
       if ((hi->mode == EQUAL_MODE_EQUAL)
+          || (t != scheme_byte_string_type)
           || SCHEME_IMMUTABLEP(o)) {
         while (i--) {
           k += s[i];
@@ -4007,7 +4024,10 @@ int scheme_hash_tree_equal_rec(Scheme_Hash_Tree *t1, Scheme_Object *orig_t1,
   if (SAME_OBJ((Scheme_Object *)t1, orig_t1)
       && SAME_OBJ((Scheme_Object *)t2, orig_t2))
     return hamt_subset_of(t1, t2, 0, SCHEME_TYPE(t1), eql);
-    
+
+  if (!same_kind_via_impersonator(orig_t1, orig_t2))
+    return 0;
+
   for (i = scheme_hash_tree_next(t1, -1); i != -1; i = scheme_hash_tree_next(t1, i)) {
     scheme_hash_tree_index(t1, i, &k, &v);
 

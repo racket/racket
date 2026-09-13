@@ -10,8 +10,12 @@
   [future? (known-procedure 2)]
   [futures-enabled? (known-procedure 1)]
   [make-fsemaphore (known-procedure 2)]
+  [make-parallel-thread-pool (known-procedure 3)]
   [mark-future-trace-end! (known-procedure 1)]
+  [parallel-thread-pool? (known-procedure 2)]
+  [parallel-thread-pool-close (known-procedure 2)]
   [processor-count (known-procedure 1)]
   [reset-future-logs-for-tracing! (known-procedure 1)]
+  [thread/parallel (known-procedure 14)]
   [touch (known-procedure 2)]
   [would-be-future (known-procedure 2)])

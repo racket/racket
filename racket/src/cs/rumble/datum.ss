@@ -4,9 +4,8 @@
 (define (set-intern-regexp?! p) (set! intern-regexp? p))
 
 (define (datum-intern-literal v)
-  (when (current-future) (block-future))
   (let ([intern (lambda (v)
-                  (with-interrupts-disabled*
+                  (with-global-lock
                    (car (hashtable-cell datums v #f))))])
     (cond
       [(or (and (number? v)
@@ -18,4 +17,3 @@
       [(string? v) (intern (string->immutable-string v))]
       [(bytes? v) (intern (bytes->immutable-bytes v))]
       [else v])))
-

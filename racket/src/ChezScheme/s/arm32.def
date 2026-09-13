@@ -13,4 +13,6 @@
 (define-constant unaligned-floats #f)
 (define-constant unaligned-integers #t)
 
-(define-constant arm-isa-version 6)
+(define-constant-default arm-isa-version 6)
+
+(define-constant-default arm-softfp #f) ; affects ABI, not use of FP instructions

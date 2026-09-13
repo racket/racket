@@ -69,12 +69,11 @@
 
       (define-who fresh-alt
         (lambda (alt)
-          ((cond
-             [(pair-alt? alt) make-pair-alt]
-             [(terminal-alt? alt) make-terminal-alt]
-             [(nonterminal-alt? alt) make-nonterminal-alt]
-             [else (error who "unexpected alt" alt)])
-            (alt-syn alt) (alt-pretty alt) (alt-pretty-procedure? alt))))
+          (cond
+            [(pair-alt? alt) (make-pair-alt (alt-syn alt) (alt-pretty alt) (alt-pretty-procedure? alt))]
+            [(terminal-alt? alt) (make-terminal-alt (alt-syn alt) (alt-pretty alt) (alt-pretty-procedure? alt))]
+            [(nonterminal-alt? alt) (make-nonterminal-alt (alt-syn alt) (alt-pretty alt) (alt-pretty-procedure? alt))]
+            [else (error who "unexpected alt" alt)])))
 
       (define fresh-ntspec
         (lambda (ntspec)

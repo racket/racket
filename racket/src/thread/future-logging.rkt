@@ -7,6 +7,7 @@
 (provide log-future
          logging-futures?
          flush-future-log
+         continuation-current-primitive*
 
          init-future-logging-place!
          install-future-logging-procs!)
@@ -22,14 +23,16 @@
 ;; called with no future locks held
 (define (log-future action [future-id #f]
                     #:prim-name [prim-name #f]
-                    #:data [data #f])
+                    #:pthread-id [pthread-id #f]
+                    #:data [data #f]
+                    #:timestamp [timestamp (current-inexact-milliseconds)])
   (cond
     [(current-future)
      => (lambda (me-f)
           (define e (future-event (or future-id (future*-id me-f))
-                                  (get-pthread-id)
+                                  (or pthread-id (get-pthread-id))
                                   action
-                                  (current-inexact-milliseconds)
+                                  timestamp
                                   prim-name
                                   data))
           (let loop ()
@@ -42,7 +45,7 @@
                     (let ([f (currently-running-future)])
                       (and f
                            (future*-id f)))))
-     (log-future-event* (future-event id 0 action (current-inexact-milliseconds) prim-name data))]))
+     (log-future-event* (future-event id (or pthread-id 0) action timestamp prim-name data))]))
 
 ;; maybe in atomic mode and only in main pthread
 (define (logging-futures?)
@@ -98,6 +101,12 @@
     [(touch-pause) "paused for touch"]
     [(touch-resume) "resumed for touch"]
     [else "[unknown action]"]))
+
+(define (continuation-current-primitive* thunk)
+  (continuation-current-primitive
+   thunk
+   '(unsafe-start-atomic dynamic-wind)
+   '(thread-yield)))
 
 ;; ----------------------------------------
 

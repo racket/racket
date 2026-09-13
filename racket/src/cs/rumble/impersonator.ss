@@ -1,6 +1,10 @@
 
-(define-record impersonator (val next props))
-(define-record chaperone impersonator ())
+(define-racket-record-type impersonator
+  [fields (immutable val)
+          (immutable next)
+          (immutable props)])
+(define-racket-record-type chaperone impersonator
+  (fields))
 
 (define (impersonator-ephemeron i)
   (if (impersonator? i)
@@ -24,16 +28,60 @@
    "original" orig
    "received" naya))
 
-(define (hash-ref2 ht key1 key2 default)
-  (let ([ht/val (intmap-ref ht key1 #f)])
-    (if (and key2 ht/val)
-        (intmap-ref ht/val key2 #f)
-        ht/val)))
+;; keep impersonator mapping as a list up to some size, then
+;; start using `eq?`-based hash tables; we need two layers of
+;; of keys in the struct-type accessor case, or just one layer for
+;; struct-type property accessors
+(define (imp-procs-set2 procs key1 key2 val)
+  (cond
+    [(list? procs)
+     (cond
+       [(< (length procs) 3)
+        (cons (cons (if key2
+                        (cons key1 key2)
+                        key1)
+                    val)
+              procs)]
+       [else
+        (let loop ([lst procs] [procs (imp-procs-set2 empty-hasheq key1 key2 val)])
+          (cond
+            [(null? lst) procs]
+            [else
+             (loop (cdr lst)
+                   (let* ([p (car lst)]
+                          [k (car p)])
+                     (if (pair? k)
+                         (imp-procs-set2 procs (car k) (cdr k) (cdr p))
+                         (imp-procs-set2 procs k #f (cdr p)))))]))])]
+    [else
+     (intmap-set procs key1 (if key2
+                                (intmap-set (intmap-ref procs key1 empty-hasheq) key2 val)
+                                val))]))
 
-(define (hash-set2 ht key1 key2 val)
-  (intmap-set ht key1 (if key2
-                          (intmap-set (intmap-ref ht key1 empty-hasheq) key2 val)
-                          val)))
+;; see `imp-procs-set2`
+(define (imp-procs-ref2 procs key1 key2)
+  (cond
+    [(null? procs) #f]
+    [(pair? procs) (let* ([p (car procs)]
+                          [pk (car p)])
+                     (if (and (pair? pk)
+                              (eq? key1 (car pk))
+                              (eq? key2 (cdr pk)))
+                         (cdr p)
+                         (imp-procs-ref2 (cdr procs) key1 key2)))]
+    [else (let ([procs/val (intmap-ref procs key1 #f)])
+            (and procs/val
+                 (intmap-ref procs/val key2 #f)))]))
+
+;; see `imp-procs-set2`
+(define (imp-procs-ref1 procs key1)
+  (cond
+    [(null? procs) #f]
+    [(pair? procs) (let ([p (car procs)])
+                     (if (eq? key1 (car p))
+                         (cdr p)
+                         (imp-procs-ref1 (cdr procs) key1)))]
+    [else (intmap-ref procs key1 #f)]))
 
 (define impersonate-ref
   (case-lambda
@@ -42,29 +90,24 @@
    [(acc rtd pos orig proc-name contract realm)
     (#%$app/no-inline do-impersonate-ref acc rtd pos orig proc-name contract realm)]))
 
-(define (do-impersonate-ref acc rtd pos orig proc-name contract realm)
-  (impersonate-struct-or-property-ref acc rtd rtd pos orig proc-name contract realm))
-
 ;; `val/acc` is an accessor if `rtd`, a value otherwise;
 ;; `key2/pos` is a pos if `rtd`
-(define (impersonate-struct-or-property-ref val/acc rtd key1 key2/pos orig field/proc-name contract realm)
+(define (do-impersonate-ref acc rtd pos orig proc-name contract realm)
   (cond
    [(and (impersonator? orig)
-         (or (not rtd)
-             (record? (impersonator-val orig) rtd)))
+         (record? (impersonator-val orig) rtd))
     (let loop ([v orig])
       (cond
-       [(and rtd
-             (struct-undefined-chaperone? v))
+       [(struct-undefined-chaperone? v)
         ;; Must be the only wrapper left
-        (let ([abs-pos (fx+ key2/pos (struct-type-parent-total*-count rtd))])
+        (let ([abs-pos (fx+ pos (struct-type-parent-total*-count rtd))])
           (let ([r (unsafe-struct*-ref (impersonator-val v) abs-pos)])
             (when (eq? r unsafe-undefined)
-              (raise-unsafe-undefined 'struct-ref "undefined" "use" val/acc (impersonator-val v) abs-pos))
+              (raise-unsafe-undefined 'struct-ref "undefined" "use" acc (impersonator-val v) abs-pos))
             r))]
        [(or (struct-impersonator? v)
             (struct-chaperone? v))
-        (let ([wrapper (hash-ref2 (struct-impersonator/chaperone-procs v) key1 key2/pos #f)])
+        (let ([wrapper (imp-procs-ref2 (struct-impersonator/chaperone-procs v) rtd pos)])
           (cond
            [wrapper
             (let* ([r (cond
@@ -85,15 +128,51 @@
        [(impersonator? v)
         (loop (impersonator-next v))]
        [else
-        (cond
-         [rtd
-          (let ([abs-pos (fx+ key2/pos (struct-type-parent-total*-count rtd))])
-            (unsafe-struct*-ref v abs-pos))]
-         [else val/acc])]))]
+        (let ([abs-pos (fx+ pos (struct-type-parent-total*-count rtd))])
+          (unsafe-struct*-ref v abs-pos))]))]
    [else
     (if contract
-        (struct-ref-error orig field/proc-name contract realm)
-        (struct-ref-error orig (record-type-name rtd) field/proc-name))]))
+        (struct-ref-error orig proc-name contract realm)
+        (struct-ref-error orig (record-type-name rtd) proc-name))]))
+
+;; `orig` is known to be an impersonator, `acc` is a struct-type
+;; property accessor (but we use just it just as a key), and `val`
+;; is the result that would be returned without impersonators
+(define (impersonate-struct-property-ref val acc orig)
+  (let loop ([v orig])
+    (cond
+      [(not (impersonator? v)) val]
+      [(struct-impersonator? v)
+       (let ([wrapper (imp-procs-ref1 (struct-impersonator-procs v) acc)])
+         (cond
+           [(pair? wrapper)
+            (let ([r (|#%app| (car wrapper) (impersonator-next v))])
+              (|#%app| (cdr wrapper) orig r))]
+           [wrapper
+            (let ([r (loop (impersonator-next v))])
+              (|#%app| wrapper orig r))]
+           [else
+            (loop (impersonator-next v))]))]
+      [(struct-chaperone? v)
+       (let ([wrapper (imp-procs-ref1 (struct-chaperone-procs v) acc)])
+         (cond
+           [wrapper
+            (let* ([r (cond
+                        [(pair? wrapper)
+                         (|#%app| (car wrapper) (impersonator-next v))]
+                        [else
+                         (loop (impersonator-next v))])]
+                   [new-r (cond
+                            [(pair? wrapper)
+                             (|#%app| (cdr wrapper) orig r)]
+                            [else (|#%app| wrapper orig r)])])
+              (unless (chaperone-of? new-r r)
+                (raise-chaperone-error 'struct-ref "value" r new-r))
+              new-r)]
+           [else
+            (loop (impersonator-next v))]))]
+      [else
+       (loop (impersonator-next v))])))
 
 (define impersonate-set!
   (case-lambda
@@ -122,7 +201,7 @@
             (unsafe-struct*-set! v abs-pos a))]
          [(or (struct-impersonator? v)
               (struct-chaperone? v))
-          (let ([wrapper (hash-ref2 (struct-impersonator/chaperone-procs v) key1 key2 #f)])
+          (let ([wrapper (imp-procs-ref2 (struct-impersonator/chaperone-procs v) key1 key2)])
             (cond
              [wrapper
               (let ([new-a (cond
@@ -153,7 +232,7 @@
   (let loop ([v orig])
     (cond
      [(struct-chaperone? v)
-      (let ([wrapper (hash-ref (struct-impersonator/chaperone-procs v) struct-info #f)])
+      (let ([wrapper (imp-procs-ref1 (struct-impersonator/chaperone-procs v) struct-info)])
         (cond
          [wrapper
           (let-values ([(rtd skipped?) (loop (impersonator-next v))])
@@ -175,20 +254,44 @@
       (loop (impersonator-next v))]
      [else (struct-info v)])))
 
+(define (impersonate-type-ref acc orig)
+  (let loop ([v orig])
+    (cond
+     [(struct-chaperone? v)
+      (let ([wrapper (imp-procs-ref1 (struct-impersonator/chaperone-procs v) acc)])
+        (cond
+         [wrapper
+          (let ([rtd (loop (impersonator-next v))])
+            (let ([new-rtd (|#%app| wrapper orig rtd)])
+              (unless (chaperone-of? new-rtd rtd)
+                (raise-chaperone-error 'struct-ref "value" rtd new-rtd))
+              new-rtd))]
+         [else
+          (loop (impersonator-next v))]))]
+     [(impersonator? v)
+      (loop (impersonator-next v))]
+     [else (unsafe-object-type v)])))
+
 (define (raise-impersonator-result-arity-error who orig n args)
   (raise
    (|#%app|
     exn:fail:contract:arity
-    (string-append
-     (symbol->string who) ": arity mismatch;\n"
-     " received wrong number of values from a chaperone's replacement procedure\n"
-     "  expected: " (number->string n) "\n"
-     "  received: " (number->string (length args)) "\n"
-     "  chaperone: " (error-value->string orig)))))
+    (error-message->adjusted-string
+     who primitive-realm
+     (string-append
+      "arity mismatch;\n"
+      " received wrong number of values from a chaperone's replacement procedure\n"
+      "  expected: " (number->string n) "\n"
+      "  received: " (number->string (length args)) "\n"
+      "  chaperone: " (error-value->string orig))
+     primitive-realm))))
 
 ;; ----------------------------------------
 
-(define-record struct-type-chaperone chaperone (struct-info make-constructor guard))
+(define-racket-record-type struct-type-chaperone chaperone
+  [fields (immutable struct-info)
+          (immutable make-constructor)
+          (immutable guard)])
 
 (define/who (chaperone-struct-type rtd struct-info-proc make-constructor-proc guard-proc . props)
   (check who struct-type? rtd)
@@ -244,13 +347,32 @@
 
 ;; ----------------------------------------
 
-(define-record-type (impersonator-property create-impersonator-property impersonator-property?)
-  (fields name))
+(define-racket-record-type impersonator-property
+  [fields (immutable name)]
+  [nongenerative]
+  [sealed #t]
+  [constructor create-impersonator-property]
+  [predicate impersonator-property?])
 
-(define-record-type (impersonator-property-accessor-procedure
-                     make-impersonator-property-accessor-procedure
-                     raw:impersonator-property-accessor-procedure?)
-  (fields proc name realm))
+(define-racket-record-type impersonator-property-predicate-procedure
+  [fields (immutable proc)
+          (immutable name)
+          (immutable realm)]
+  [nongenerative]
+  [sealed #t]
+  [constructor make-impersonator-property-predicate-procedure]
+  [predicate raw:impersonator-property-predicate-procedure?]
+  [procedure 0])
+
+(define-racket-record-type impersonator-property-accessor-procedure
+  [fields (immutable proc)
+          (immutable name)
+          (immutable realm)]
+  [nongenerative]
+  [sealed #t]
+  [constructor make-impersonator-property-accessor-procedure]
+  [predicate raw:impersonator-property-accessor-procedure?]
+  [procedure 0])
 
 (define/who make-impersonator-property
   (case-lambda
@@ -303,8 +425,12 @@
                                 (fail)))))]
                    [(v) (accessor v none)])])
           (values p
-                  (make-named-procedure predicate predicate-name realm)
+                  (make-impersonator-property-predicate-procedure predicate predicate-name realm)
                   (make-impersonator-property-accessor-procedure accessor accessor-name realm)))))]))
+
+(define (impersonator-property-predicate-procedure? v)
+  (or (raw:impersonator-property-predicate-procedure? v)
+      (and (impersonator? v) (raw:impersonator-property-predicate-procedure? (impersonator-val v)))))
 
 (define (impersonator-property-accessor-procedure? v)
   (or (raw:impersonator-property-accessor-procedure? v)
@@ -312,15 +438,29 @@
 
 ;; ----------------------------------------
 
-(define-record props-impersonator impersonator ())
-(define-record props-chaperone chaperone ())
+(define-racket-record-type props-impersonator impersonator
+  [fields])
+(define-racket-record-type props-chaperone chaperone
+  [fields])
 
 ;; Applicable variants:
-(define-record props-procedure-impersonator props-impersonator (arity-mask))
-(define-record props-procedure-chaperone props-chaperone (arity-mask))
+(define-racket-record-type props-procedure-impersonator props-impersonator
+  [fields (immutable arity-mask)]
+  [procedure 'impersonate-apply]
+  [procedure-arity 3])
+(define-racket-record-type props-procedure-chaperone props-chaperone
+  [fields (immutable arity-mask)]
+  [procedure 'impersonate-apply]
+  [procedure-arity 3])
 ;; Incomplete-arity variants:
-(define-record props-procedure~-impersonator props-procedure-impersonator ())
-(define-record props-procedure~-chaperone props-procedure-chaperone ())
+(define-racket-record-type props-procedure~-impersonator props-procedure-impersonator
+  [fields]
+  [procedure 'impersonate-apply]
+  [procedure-arity 3])
+(define-racket-record-type props-procedure~-chaperone props-procedure-chaperone
+  [fields]
+  [procedure 'impersonate-apply]
+  [procedure-arity 3])
 
 (define (add-impersonator-properties who props base-props)
   (let loop ([props props] [base-props base-props])
@@ -356,18 +496,32 @@
 
 ;; ----------------------------------------
 
-(define-record struct-impersonator impersonator (procs)) ; hash of proc -> (cons orig-orig wrapper-proc)
-(define-record struct-chaperone chaperone (procs))
+(define-racket-record-type struct-impersonator impersonator
+  [fields (immutable procs)]) ; list/hash to map proc -> wrapper-proc-or-(cons orig-proc wrapper-proc)
+(define-racket-record-type struct-chaperone chaperone
+  [fields (immutable procs)])
 
 (define (struct-impersonator/chaperone-procs i)
   (if (struct-impersonator? i)
       (struct-impersonator-procs i)
       (struct-chaperone-procs i)))
 
-(define-record procedure-struct-impersonator struct-impersonator (arity-mask))
-(define-record procedure-struct-chaperone struct-chaperone (arity-mask))
-(define-record procedure~-struct-impersonator procedure-struct-impersonator ())
-(define-record procedure~-struct-chaperone procedure-struct-chaperone ())
+(define-racket-record-type procedure-struct-impersonator struct-impersonator
+  [fields (immutable arity-mask)]
+  [procedure 'struct-impersonate-apply]
+  [procedure-arity 4])
+(define-racket-record-type procedure-struct-chaperone struct-chaperone
+  [fields (immutable arity-mask)]
+  [procedure 'struct-impersonate-apply]
+  [procedure-arity 4])
+(define-racket-record-type procedure~-struct-impersonator procedure-struct-impersonator
+  [fields]
+  [procedure 'struct-impersonate-apply]
+  [procedure-arity 4])
+(define-racket-record-type procedure~-struct-chaperone procedure-struct-chaperone
+  [fields]
+  [procedure 'struct-impersonate-apply]
+  [procedure-arity 4])
 
 (define (impersonate-struct v . args)
   (do-impersonate-struct 'impersonate-struct #f v args))
@@ -391,8 +545,8 @@
                                "value" v))
       (let loop ([first? (not st)]
                  [args orig-args]
-                 [props empty-hasheq]
-                 [saw-props empty-hasheq]
+                 [props '()]
+                 [saw-props '()]
                  [witnessed? (and st #t)]
                  [iprops orig-iprops])
         (let ([get-proc
@@ -403,7 +557,7 @@
                                           "operation kind" (make-unquoted-printing-string what)
                                           "operation procedure" orig-proc
                                           "value" v))
-                 (when (hash-ref2 saw-props key1 key2 #f)
+                 (when (imp-procs-ref2 saw-props key1 key2)
                    (raise-arguments-error who
                                           "given operation accesses the same value as a previous operation argument"
                                           "operation kind" (make-unquoted-printing-string what)
@@ -434,13 +588,13 @@
                      (loop #f
                            new-args
                            (if proc
-                               (hash-set2 props key1 key2
+                               (imp-procs-set2 props key1 key2
                                           (if (impersonator? orig-proc)
                                               (cons orig-proc ; save original accessor, in case it's impersonated
                                                     proc)     ; the interposition proc
                                               proc))
                                props)
-                           (if (null? new-args) saw-props (hash-set2 saw-props key1 key2 #t))
+                           (if (null? new-args) saw-props (imp-procs-set2 saw-props key1 key2 #t))
                            (or witnessed? now-witnessed?)
                            iprops))))])
           (cond
@@ -456,7 +610,7 @@
                                                     "a structure type, accessor, or mutator acts as a witness\n"
                                                     "   that the given value's representation can be chaperoned or impersonated")
                                      "given value" v))
-            (when (and (authentic? v)
+            (when (and (authentic? val)
                        (not (authentic-override? v)))
               (raise-arguments-error who
                                      (string-append "cannot "
@@ -464,7 +618,7 @@
                                                     " instance of an authentic structure type")
                                      "given value" v))
             (cond
-             [(eq? props empty-hasheq)
+             [(null? props)
               ;; No structure operations chaperoned, so either unchanged or
               ;; a properties-only impersonator
               (cond
@@ -504,7 +658,13 @@
                   saw-props
                   witnessed?
                   (add-impersonator-properties who args iprops))]
-           [(struct-accessor-procedure? (car args))
+           [(and (struct-accessor-procedure? (car args))
+                 ;; defer metaacessor to later case if it does not apply
+                 ;; here as an accessor directly on a structure type
+                 (or (not (struct-metaaccessor-procedure? (car args)))
+                     (record? val (position-based-accessor-rtd (car args)))))
+            ;; for historical reasons, we treat a position-based accessor like
+            ;; an accessor at index 0
             (let* ([orig-proc (car args)]
                    [key-proc (strip-impersonator orig-proc)]
                    [rtd+pos (struct-accessor-procedure-rtd+pos key-proc)])
@@ -540,6 +700,19 @@
                         ((struct-type-property-accessor-procedure-pred key-proc) val)
                         #t))]
            [(and as-chaperone?
+                 (struct-metaaccessor-procedure? (car args)))
+            (let ([pba (car args)])
+              (get-proc "metaccessor" args 2
+                        unsafe-object-type pba #f
+                        (record? (unsafe-object-type val) (position-based-accessor-rtd pba))
+                        #t))]
+           [(and as-chaperone?
+                 (eq? unsafe-object-type (car args)))
+            (get-proc "struct-info procedure" args 2
+                      unsafe-object-type unsafe-object-type #f
+                      #t
+                      #f)]
+           [(and as-chaperone?
                  (equal? struct-info (car args)))
             (get-proc "struct-info procedure" args 2
                       struct-info struct-info #f
@@ -550,7 +723,11 @@
                                   (string-append
                                    "(or/c "
                                    (if first? "struct-type?\n      " "")
-                                   "struct-accessor-procedure?"
+                                   (if as-chaperone?
+                                       "struct-accessor-procedure?"
+                                       (string-append
+                                        "(and/c struct-accessor-procedure?"
+                                        "\n             (not/c struct-metaaccessor-procedure?))"))
                                    "\n      struct-mutator-procedure?"
                                    "\n      struct-type-property-accessor-procedure?"
                                    (if as-chaperone? "\n      struct-info" "")
@@ -587,9 +764,14 @@
 
 ;; ----------------------------------------
 
-(define-record struct-undefined-chaperone chaperone ())
-(define-record procedure-struct-undefined-chaperone chaperone ())
-(define-record procedure~-struct-undefined-chaperone procedure-struct-undefined-chaperone ())
+(define-racket-record-type struct-undefined-chaperone chaperone
+  [fields])
+(define-racket-record-type procedure-struct-undefined-chaperone struct-undefined-chaperone
+  [fields]
+  [procedure 'struct-impersonate-apply])
+(define-racket-record-type procedure~-struct-undefined-chaperone procedure-struct-undefined-chaperone
+  [fields]
+  [procedure 'struct-impersonate-apply])
 
 (define-values (prop:chaperone-unsafe-undefined chaperone-unsafe-undefined? chaperone-unsafe-undefined-ref)
   (make-struct-type-property 'chaperone-unsafe-undefined
@@ -627,16 +809,22 @@
       (raise
        (|#%app|
         exn:fail:contract:variable
-        (format "~a: ~a;\n cannot ~a field before initialization"
-                n short-msg what)
+        (error-message->adjusted-string
+         n primitive-realm
+         (format "~a;\n cannot ~a field before initialization"
+                 short-msg what)
+         primitive-realm)
         (current-continuation-marks)
         n)))]
    [else
     (raise
      (|#%app|
       exn:fail:contract
-      (format "~a: ~a;\n cannot ~as field before initialization"
-              (object-name orig-proc) short-msg what)
+      (error-message->adjusted-string
+       (object-name orig-proc) primitive-realm
+       (format "~a;\n cannot ~a field before initialization"
+               short-msg what)
+       primitive-realm)
       (current-continuation-marks)))])))
 
 ;; ----------------------------------------
@@ -676,25 +864,17 @@
 ;; ----------------------------------------
 
 (define (set-impersonator-applicables!)
-  (let ([add (lambda (rtd)
-               (struct-property-set! prop:procedure rtd 'impersonate-apply)
-               (struct-property-set! prop:procedure-arity rtd 3))])
-    (add (record-type-descriptor props-procedure-impersonator))
-    (add (record-type-descriptor props-procedure-chaperone))
-    (add (record-type-descriptor props-procedure~-impersonator))
-    (add (record-type-descriptor props-procedure~-chaperone)))
-
-  (struct-property-set! prop:procedure
-                        (record-type-descriptor impersonator-property-accessor-procedure)
-                        0)
   (struct-property-set! prop:object-name
-                        (record-type-descriptor impersonator-property-accessor-procedure)
+                        rtd:impersonator-property-predicate-procedure
+                        1)
+  (struct-property-set! prop:object-name
+                        rtd:impersonator-property-accessor-procedure
                         1))
 
 (define (set-impersonator-hash!)
   (let ([struct-impersonator-hash-code
          (lambda (c hash-code mode)
-           (let ([eq+hash (struct-property-ref prop:equal+hash (#%$record-type-descriptor (impersonator-val c)) #f)])
+           (let ([eq+hash (struct-equal+hash-property-ref (#%$record-type-descriptor (impersonator-val c)) #f)])
              (let ([rec-hash (equal+hash-hash-code-proc eq+hash)])
                (if (equal+hash-supports-mode? eq+hash)
                    (rec-hash c hash-code mode)
@@ -703,10 +883,10 @@
                  (struct-set-equal-mode+hash! rtd
                                               #f
                                               struct-impersonator-hash-code))])
-      (add (record-type-descriptor struct-impersonator))
-      (add (record-type-descriptor struct-chaperone))
-      (add (record-type-descriptor procedure-struct-impersonator))
-      (add (record-type-descriptor procedure-struct-chaperone)))
+      (add rtd:struct-impersonator)
+      (add rtd:struct-chaperone)
+      (add rtd:procedure-struct-impersonator)
+      (add rtd:procedure-struct-chaperone))
     (let ([add (lambda (rtd)
                  (struct-set-equal-mode+hash! rtd
                                               #f
@@ -716,7 +896,7 @@
                                                    (struct-impersonator-hash-code c hash-code mode)]
                                                   [else
                                                    (hash-code (impersonator-next c))]))))])
-      (add (record-type-descriptor props-impersonator))
-      (add (record-type-descriptor props-chaperone))
-      (add (record-type-descriptor props-procedure-impersonator))
-      (add (record-type-descriptor props-procedure-chaperone)))))
+      (add rtd:props-impersonator)
+      (add rtd:props-chaperone)
+      (add rtd:props-procedure-impersonator)
+      (add rtd:props-procedure-chaperone))))

@@ -1,6 +1,7 @@
 #lang racket/base
-
-(require racket/tcp net/base64)
+(require racket/tcp
+         net/base64
+         "private/xoauth2.rkt")
 
 (provide smtp-sending-server
          smtp-send-message
@@ -11,8 +12,7 @@
 
 (define debug-via-stdio? #f)
 
-;; (define log printf)
-(define log void)
+(define-logger smtp)
 
 (define (starts-with? l n)
   (and (>= (string-length l) (string-length n))
@@ -21,7 +21,7 @@
 (define (check-reply/accum r v w a)
   (flush-output w)
   (let ([l (read-line r (if debug-via-stdio? 'linefeed 'return-linefeed))])
-    (log "server: ~a\n" l)
+    (log-smtp-debug "server: ~a" l)
     (if (eof-object? l)
         (error 'check-reply "got EOF")
         (let ([n (number->string v)])
@@ -69,17 +69,18 @@
                     f)))
 
 (define (smtp-send-message* r w sender recipients header message-lines
-                            auth-user auth-passwd tls-encode)
+                            auth-user auth-passwd tls-encode
+                            #:xoauth2? [xoauth2? #f])
   (with-handlers ([void (lambda (x)
                           (close-input-port r)
                           (close-output-port w)
                           (raise x))])
     (check-reply r 220 w)
-    (log "hello\n")
+    (log-smtp-debug "hello")
     (fprintf w "EHLO ~a\r\n" (smtp-sending-server))
     (when tls-encode
       (check-reply/commands r 250 w "STARTTLS")
-      (log "starttls\n")
+      (log-smtp-debug "starttls")
       (fprintf w "STARTTLS\r\n")
       (check-reply r 220 w)
       (let-values ([(ssl-r ssl-w)
@@ -90,44 +91,48 @@
         (set! r ssl-r)
         (set! w ssl-w))
       ;; According to RFC 3207 Sec 4.2, we must start anew with the EHLO.
-      (log "tls hello\n")
+      (log-smtp-debug "tls hello")
       (fprintf w "EHLO ~a\r\n" (smtp-sending-server)))
     (check-reply r 250 w)
 
     (when auth-user
-      (log "auth\n")
-      (fprintf w "AUTH PLAIN ~a\r\n"
-               (base64-encode
-                (string->bytes/latin-1
-                 (format "~a\0~a\0~a" auth-user auth-user auth-passwd))
-                #""))
+      (log-smtp-debug "auth")
+      (cond
+        [xoauth2?
+         (fprintf w "AUTH XOAUTH2 ~a\r\n" (xoauth2-encode auth-user auth-passwd))]
+        [else
+         (fprintf w "AUTH PLAIN ~a\r\n"
+                  (base64-encode
+                   (string->bytes/latin-1
+                    (format "~a\0~a\0~a" auth-user auth-user auth-passwd))
+                   #""))])
       (check-reply r 235 w))
 
-    (log "from\n")
+    (log-smtp-debug "from")
     (fprintf w "MAIL FROM:<~a>\r\n" sender)
     (check-reply r 250 w)
 
-    (log "to\n")
+    (log-smtp-debug "to")
     (for-each
      (lambda (dest)
        (fprintf w "RCPT TO:<~a>\r\n" dest)
        (check-reply r 250 w))
      recipients)
 
-    (log "header\n")
+    (log-smtp-debug "header")
     (fprintf w "DATA\r\n")
     (check-reply r 354 w)
     (fprintf w "~a" header)
     (for-each
      (lambda (l)
-       (log "body: ~a\n" l)
+       (log-smtp-debug "body: ~a" l)
        (fprintf w "~a\r\n" (protect-line l)))
      message-lines)
 
     ;; After we send the ".", then only break in an emergency
     ((smtp-sending-end-of-message))
 
-    (log "dot\n")
+    (log-smtp-debug "dot")
     (fprintf w ".\r\n")
     (flush-output w)
     (check-reply r 250 w)
@@ -141,8 +146,8 @@
     ;; on a QUIT, so instead of causing any QUIT errors to look like the
     ;; email failed, we'll just log them.
     (with-handlers ([void (lambda (x)
-                            (log "error after send: ~a\n" (exn-message x)))])
-      (log "quit\n")
+                            (log-smtp-debug "error after send: ~a" (exn-message x)))])
+      (log-smtp-debug "quit")
       (fprintf w "QUIT\r\n")
       (check-reply r 221 w))
 
@@ -156,6 +161,7 @@
                   #:auth-passwd [auth-passwd #f]
                   #:tcp-connect [tcp-connect tcp-connect]
                   #:tls-encode [tls-encode #f]
+                  #:xoauth2? [xoauth2? #f]
                   [opt-port-no port-no])
     (when (null? recipients)
       (error 'send-smtp-message "no receivers"))
@@ -163,4 +169,5 @@
                             (values (current-input-port) (current-output-port))
                             (tcp-connect server opt-port-no))])
       (smtp-send-message* r w sender recipients header message-lines
-                          auth-user auth-passwd tls-encode))))
+                          auth-user auth-passwd tls-encode
+                          #:xoauth2? xoauth2?))))

@@ -172,11 +172,11 @@ consumes an output out and writes the decoded message to the port. If
 the encoded body is pulled from a stream).}
 
 @defstruct[disposition ([type symbol?]
-                        [filename (or/c string? false/c)]
-                        [creation (or/c string? false/c)]
-                        [modification (or/c string? false/c)]
-                        [read (or/c string? false/c)]
-                        [size (or/c exact-nonnegative-integer? false/c)]
+                        [filename (or/c string? #f)]
+                        [creation (or/c string? #f)]
+                        [modification (or/c string? #f)]
+                        [read (or/c string? #f)]
+                        [size (or/c exact-nonnegative-integer? #f)]
                         [params (listof (cons/c symbol? string?))])]{
 
 Represents a @racket["Content-Disposition"] header as defined in RFC

@@ -40,14 +40,28 @@ typedef signed long ffi_sarg;
 typedef enum ffi_abi
 {
   FFI_FIRST_ABI = 0,
+#if __SIZEOF_POINTER__ == 8
+  FFI_ARC64,
+#else
   FFI_ARCOMPACT,
+#endif
   FFI_LAST_ABI,
+#if __SIZEOF_POINTER__ == 8
+  FFI_DEFAULT_ABI = FFI_ARC64
+#else
   FFI_DEFAULT_ABI = FFI_ARCOMPACT
+#endif
 } ffi_abi;
 #endif
 
 #define FFI_CLOSURES 		1
+#define FFI_GO_CLOSURES 1
+#if __SIZEOF_POINTER__ == 8
+#define FFI_TRAMPOLINE_SIZE	24
+#else
 #define FFI_TRAMPOLINE_SIZE	12
+#endif
+
 #define FFI_NATIVE_RAW_API 	0
 
 #endif

@@ -2,7 +2,7 @@
 ;;; See the accompanying file Copyright for details
 
 (library (tests helpers)
-  (export compose disjoin any every choose reverse-filter fold reduce
+  (export compose disjoin choose reverse-filter fold reduce
           constant? keyword? list-of-user-primitives list-of-system-primitives
           user-primitive? system-primitive? primitive? predicate-primitive?
           value-primitive? effect-primitive? effect-free-primitive? gen-label
@@ -57,22 +57,6 @@
       [(p? . q?*) (lambda (x) 
                     (or (p? x) ((apply disjoin q?*) x)))])) 
   
-  (define any
-    (lambda (pred? ls)
-      (let loop ([ls ls])
-        (cond
-          [(null? ls) #f]
-          [(pred? (car ls)) #t]
-          [else (loop (cdr ls))])))) 
-  
-  (define every
-    (lambda (pred? ls)
-      (let loop ([ls ls])
-        (cond
-          [(null? ls) #t]
-          [(pred? (car ls)) (loop (cdr ls))]
-          [else #f])))) 
-  
   (define choose
     (lambda (pred? ls)
       (fold (lambda (elt tail)
@@ -123,7 +107,7 @@
           (null? x)
           (if (pair? x)
             (and (datum? (car x)) (datum? (cdr x)))
-            (and (vector? x) (for-all datum? (vector->list x))))))) 
+            (and (vector? x) (for-all datum? (vector->list x)))))))
   
   (define variable? symbol?)
   
@@ -297,10 +281,10 @@
     (lambda (set1 . sets)
       (cond
         [(null? sets) set1]
-        [(any empty? sets) (empty-set)]
+        [(exists empty? sets) (empty-set)]
         [else (choose
                 (lambda (elt)
-                  (every (lambda (set) (member? elt set)) sets)) set1)]))) 
+                  (for-all (lambda (set) (member? elt set)) sets)) set1)])))
   
   (define list-index
     (lambda (a ls)
@@ -319,7 +303,7 @@
         (cond
           [(null? sets) set1]
           [else (reverse-filter (lambda (elt)
-                                  (any (lambda (set) 
-                                         (member? elt set)) 
-                                       sets))
+                                  (exists (lambda (set)
+                                            (member? elt set))
+                                          sets))
                                 set1)])))))

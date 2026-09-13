@@ -41,7 +41,7 @@
 
 (struct* expand-context root-expand-context
          (to-parsed? ; #t => "expand" to a parsed form; #f => normal expand
-          * context    ; 'expression, 'module, or 'top-level
+          * context    ; 'expression, 'module, 'top-level, or 'module-begin
           phase      ; current expansion phase; must match phase of `namespace`
           namespace  ; namespace for modules and evaluation
           * env        ; environment for local bindings

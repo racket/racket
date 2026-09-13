@@ -21,7 +21,7 @@ other symbol, although they may print the same as other symbols.
 
 The procedure @racket[string->unreadable-symbol] returns an
 @deftech{unreadable symbol} that is partially interned.  The default
-reader (see @secref["parse-symbol"]) never produces a unreadable
+reader (see @secref["parse-symbol"]) never produces an unreadable
 symbol, but two calls to @racket[string->unreadable-symbol] with
 @racket[equal?] strings produce @racket[eq?] results. An unreadable
 symbol can print the same as an interned or uninterned

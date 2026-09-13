@@ -3,7 +3,7 @@
 (provide (struct-out pkg-desc)
          pkg-desc=?)
 
-(struct pkg-desc (source type name checksum auto? extra-path))
+(struct pkg-desc (source type name checksum auto? extra-path adjacent-deps?))
 
 (define (pkg-desc=? a b)
   (define (->list a)
@@ -12,5 +12,6 @@
           (pkg-desc-name a)
           (pkg-desc-checksum a)
           (pkg-desc-auto? a)
-          (pkg-desc-extra-path a)))
+          (pkg-desc-extra-path a)
+          (pkg-desc-adjacent-deps? a)))
   (equal? (->list a) (->list b)))

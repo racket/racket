@@ -34,11 +34,12 @@
 (define linklet-expander-primitives
   (reflect-hash linklet-directory?
                 linklet-directory->hash
-                hash->linklet-directory
                 linklet-bundle?
                 linklet-bundle->hash
+                hash->linklet-directory
                 hash->linklet-bundle
                 linklet-body-reserved-symbol?
+                decompile-linklet
 
                 ;; These replace host primitives:
                 linklet?

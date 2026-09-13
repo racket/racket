@@ -25,9 +25,12 @@
 # define WAS_EBADADDRESS(e) (e == EINVAL)
 # define WAS_WSAEMSGSIZE(e) 0
 # define RKTIO_AFNOSUPPORT EAFNOSUPPORT
+# define RKTIO_EADDRINUSE EADDRINUSE
 
 #define RKTIO_SHUT_RD SHUT_RD
 #define RKTIO_SHUT_WR SHUT_WR
+
+#define MAX_LISTEN_RETRY_ADDRINUSE_COUNT 4
 
 #define RKTIO_SOCKS(s) s
 
@@ -79,6 +82,7 @@ struct SOCKADDR_IN {
 # define WAS_ECONNREFUSED(e) (e == WSAECONNREFUSED)
 # define WAS_EBADADDRESS(e) 0
 # define RKTIO_AFNOSUPPORT WSAEAFNOSUPPORT
+# define RKTIO_EADDRINUSE WSAEADDRINUSE
 
 #define RKTIO_SHUT_RD SD_RECEIVE
 #define RKTIO_SHUT_WR SD_SEND
@@ -100,31 +104,31 @@ typedef struct SOCKADDR_IN rktio_unspec_address;
 
 #endif
 
-static void do_get_socket_error(rktio_t *rktio) {
-  rktio->errid = SOCK_ERRNO();
+static void do_get_socket_error(rktio_err_t *err) {
+  err->errid = SOCK_ERRNO();
 #ifdef RKTIO_SYSTEM_WINDOWS
-  rktio->errkind = RKTIO_ERROR_KIND_WINDOWS;
+  err->errkind = RKTIO_ERROR_KIND_WINDOWS;
 #else
-  rktio->errkind = RKTIO_ERROR_KIND_POSIX;
+  err->errkind = RKTIO_ERROR_KIND_POSIX;
 #endif
 }
-#define get_socket_error() do_get_socket_error(rktio)
+#define get_socket_error() do_get_socket_error(&rktio->err)
 
-static void do_set_socket_error(rktio_t *rktio, int errid) {
-  rktio->errid = errid;
+static void do_set_socket_error(rktio_err_t *err, int errid) {
+  err->errid = errid;
 #ifdef RKTIO_SYSTEM_WINDOWS
-  rktio->errkind = RKTIO_ERROR_KIND_WINDOWS;
+  err->errkind = RKTIO_ERROR_KIND_WINDOWS;
 #else
-  rktio->errkind = RKTIO_ERROR_KIND_POSIX;
+  err->errkind = RKTIO_ERROR_KIND_POSIX;
 #endif
 }
-#define set_socket_error(errid) do_set_socket_error(rktio, errid)
+#define set_socket_error(errid) do_set_socket_error(&rktio->err, errid)
 
-static void do_set_gai_error(rktio_t *rktio, int errid) {
-  rktio->errid = errid;
-  rktio->errkind = RKTIO_ERROR_KIND_GAI;
+static void do_set_gai_error(rktio_err_t *err, int errid) {
+  err->errid = errid;
+  err->errkind = RKTIO_ERROR_KIND_GAI;
 }
-#define set_gai_error(err) do_set_gai_error(rktio, err)
+#define set_gai_error(errv) do_set_gai_error(&rktio->err, errv)
 
 #define TCP_BUFFER_SIZE 4096
 
@@ -157,6 +161,8 @@ struct rktio_udp_t {
 # define RKTIO_SOCK_FD_ISSET(n, p) RKTIO_FD_ISSET(n, p)
 # define RKTIO_SOCK_FDS(p) RKTIO_FDS(p)
 #endif
+
+#define MAX_LISTEN_RETRY_ADDRINUSE_COUNT 4
 
 /*========================================================================*/
 /* Host address lookup, including asynchronous-lookup support             */
@@ -291,7 +297,7 @@ struct rktio_addrinfo_lookup_t {
 # ifdef RKTIO_SYSTEM_WINDOWS
   HANDLE done_sema;
 # else
-  int done_fd[2];
+  intptr_t done_fd[2];
 # endif
 
   /* For chaining active requests: */
@@ -534,7 +540,7 @@ static rktio_addrinfo_lookup_t *start_lookup(rktio_t *rktio, rktio_addrinfo_look
     }
   }
 # else
-  if (pipe(lookup->done_fd)) {
+  if (rktio_make_os_pipe(rktio, lookup->done_fd, RKTIO_NO_INHERIT_INPUT | RKTIO_NO_INHERIT_OUTPUT)) {
     get_posix_error();
     free_lookup(lookup);
     return NULL;
@@ -724,6 +730,15 @@ rktio_addrinfo_lookup_t *rktio_start_addrinfo_lookup(rktio_t *rktio,
   if (passive) {
     RKTIO_AS_ADDRINFO(hints)->ai_flags |= rktio_AI_PASSIVE;
   }
+  /* On modern systems, `AI_ADDRCONFIG` and `AI_V4MAPPED` tend to be
+     the defaults when `hints` is NULL, so add them if they seem
+     available. */
+#if defined(AI_ADDRCONFIG)
+  RKTIO_AS_ADDRINFO(hints)->ai_flags |= AI_ADDRCONFIG;
+#endif
+#if defined(AI_V4MAPPED) && !defined(__ANDROID__)
+  RKTIO_AS_ADDRINFO(hints)->ai_flags |= AI_V4MAPPED;
+#endif
   if (tcp) {
     RKTIO_AS_ADDRINFO(hints)->ai_socktype = SOCK_STREAM;
 # ifndef PROTOENT_IS_INT
@@ -911,7 +926,7 @@ void rktio_socket_init(rktio_t *rktio, rktio_fd_t *rfd)
 # ifdef SO_BROADCAST
     {
       int bc = 1;
-      setsockopt(s, SOL_SOCKET, SO_BROADCAST, &bc, sizeof(bc));
+      setsockopt(s, SOL_SOCKET, SO_BROADCAST, (char *)&bc, sizeof(bc));
     }
 # endif
 #endif
@@ -974,7 +989,7 @@ int rktio_tcp_nodelay(rktio_t *rktio, rktio_fd_t *rfd, rktio_bool_t enable)
 {
   rktio_socket_t s = rktio_fd_socket(rktio, rfd);
   int nd = (enable ? 1 : 0), r;
-  r = setsockopt(s, IPPROTO_TCP, TCP_NODELAY, &nd, sizeof(nd));
+  r = setsockopt(s, IPPROTO_TCP, TCP_NODELAY, (char *)&nd, sizeof(nd));
   if (r) {
     get_socket_error();
     return 0;
@@ -982,7 +997,21 @@ int rktio_tcp_nodelay(rktio_t *rktio, rktio_fd_t *rfd, rktio_bool_t enable)
   return 1;
 }
 
-int rktio_socket_poll_write_ready(rktio_t *rktio, rktio_fd_t *rfd)
+int rktio_tcp_keepalive(rktio_t *rktio, rktio_fd_t *rfd, rktio_bool_t enable)
+{
+#ifdef SO_KEEPALIVE
+  rktio_socket_t s = rktio_fd_socket(rktio, rfd);
+  int nd = (enable ? 1 : 0), r;
+  r = setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, (char *)&nd, sizeof(nd));
+  if (r) {
+    get_socket_error();
+    return 0;
+  }
+#endif
+  return 1;
+}
+
+int rktio_socket_poll_write_ready(rktio_t *rktio, rktio_fd_t *rfd, rktio_err_t *err)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   return rktio_poll_write_ready(rktio, rfd);
@@ -1006,7 +1035,7 @@ int rktio_socket_poll_write_ready(rktio_t *rktio, rktio_fd_t *rfd)
     sr = select(RKTIO_SOCKS(s + 1), NULL, writefds, exnfds, &time);
 
     if (sr == -1) {
-      get_socket_error();
+      do_get_socket_error(err);
       return RKTIO_POLL_ERROR;
     } else if (sr)
       return RKTIO_POLL_READY;
@@ -1016,7 +1045,7 @@ int rktio_socket_poll_write_ready(rktio_t *rktio, rktio_fd_t *rfd)
 #endif
 }
 
-int rktio_socket_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd)
+int rktio_socket_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd, rktio_err_t *err)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   return rktio_poll_read_ready(rktio, rfd);
@@ -1040,7 +1069,7 @@ int rktio_socket_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd)
     sr = select(RKTIO_SOCKS(s + 1), readfds, NULL, exnfds, &time);
     
     if (sr == -1) {
-      get_socket_error();
+      do_get_socket_error(err);
       return RKTIO_POLL_ERROR;
     } else if (sr)
       return RKTIO_POLL_READY;
@@ -1074,7 +1103,7 @@ rktio_fd_t *rktio_socket_dup(rktio_t *rktio, rktio_fd_t *rfd)
 #endif
 }
 
-intptr_t rktio_socket_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len)
+intptr_t rktio_socket_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len, rktio_err_t *err)
 {
   rktio_socket_t s = rktio_fd_socket(rktio, rfd);
   int rn;
@@ -1090,19 +1119,22 @@ intptr_t rktio_socket_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr
   else if (rn == 0)
     return RKTIO_READ_EOF;
   else {
-    int err = SOCK_ERRNO();
-    if (WAS_EAGAIN(err))
+    int errv = SOCK_ERRNO();
+    if (WAS_EAGAIN(errv))
       return 0;
     else {
-      get_socket_error();
+      do_get_socket_error(err);
       return RKTIO_READ_ERROR;
     }
   }
 }
 
 static intptr_t do_socket_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr_t len,
+                                rktio_err_t *err,
                                 /* for UDP sendto: */
-                                rktio_addrinfo_t *addr)
+                                rktio_addrinfo_t *addr,
+                                /* alternative address mode for UDP sendto: */
+                                const char *addr_bytes, intptr_t addr_bytes_len)
 {
   rktio_socket_t s = rktio_fd_socket(rktio, rfd);
   intptr_t sent;
@@ -1132,6 +1164,12 @@ static intptr_t do_socket_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buf
         if (!WAS_EBADADDRESS(errid))
           break;
       }
+    } else if (addr_bytes) {
+      do {
+        sent = sendto(s, buffer, len, 0, (const struct sockaddr *)addr_bytes, addr_bytes_len);
+      } while ((sent == -1) && NOT_WINSOCK(errno == EINTR));
+      if (sent < 0)
+        errid = SOCK_ERRNO();
     } else {
       do {
         sent = send(s, buffer, len, 0);
@@ -1150,15 +1188,15 @@ static intptr_t do_socket_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buf
       /* split the message and try again: */
       len >>= 1;
     } else {
-      get_socket_error();
+      do_get_socket_error(err);
       return RKTIO_WRITE_ERROR;
     }
   }
 }
 
-intptr_t rktio_socket_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr_t len)
+intptr_t rktio_socket_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr_t len, rktio_err_t *err)
 {
-  return do_socket_write(rktio, rfd, buffer, LIMIT_REQUEST_SIZE(len), NULL);
+  return do_socket_write(rktio, rfd, buffer, LIMIT_REQUEST_SIZE(len), err, NULL, NULL, 0);
 }
 
 /*========================================================================*/
@@ -1195,11 +1233,21 @@ static rktio_connect_t *try_connect(rktio_t *rktio, rktio_connect_t *conn)
 {
   struct rktio_addrinfo_t *addr;
   rktio_socket_t s;
-  
+
+  rktio_cloexec_lock();
+
   addr = conn->addr;
   s = socket(RKTIO_AS_ADDRINFO(addr)->ai_family,
              RKTIO_AS_ADDRINFO(addr)->ai_socktype,
              RKTIO_AS_ADDRINFO(addr)->ai_protocol);
+
+  if (s != INVALID_SOCKET)
+    rktio_fd_cloexec(s);
+  else
+    get_socket_error();
+
+  rktio_cloexec_unlock();
+
   if (s != INVALID_SOCKET) {
     int status, inprogress;
     if (!conn->src
@@ -1240,14 +1288,13 @@ static rktio_connect_t *try_connect(rktio_t *rktio, rktio_connect_t *conn)
     }
   }
   
-  get_socket_error();
   return NULL;
 }
 
 int rktio_poll_connect_ready(rktio_t *rktio, rktio_connect_t *conn)
 {
   if (conn->inprogress)
-    return rktio_socket_poll_write_ready(rktio, conn->trying_fd);
+    return rktio_socket_poll_write_ready(rktio, conn->trying_fd, &rktio->err);
   else
     return RKTIO_POLL_READY;
 }
@@ -1345,123 +1392,138 @@ struct rktio_listener_t {
 
 static int get_no_portno(rktio_t *rktio, rktio_socket_t socket);
 
-rktio_listener_t *rktio_listen(rktio_t *rktio, rktio_addrinfo_t *src, int backlog, int reuse)
+rktio_listener_t *rktio_listen_opt(rktio_t *rktio, rktio_addrinfo_t *src, int backlog, int flags)
 {
   {
     rktio_addrinfo_t *addr;
-    int count = 0, pos = 0;
+    int count = 0;
     rktio_listener_t *l = NULL;
 #ifdef RKTIO_TCP_LISTEN_IPV6_ONLY_SOCKOPT
     int any_v4 = 0, any_v6 = 0;
 #endif
+    int retry_socket = 0, retry_count = 0;
 
     for (addr = src; addr; addr = (rktio_addrinfo_t *)RKTIO_AS_ADDRINFO(addr)->ai_next) {
 #ifdef RKTIO_TCP_LISTEN_IPV6_ONLY_SOCKOPT
       if (RKTIO_AS_ADDRINFO(addr)->ai_family == RKTIO_PF_INET)
-	any_v4 = 1;
+        any_v4 = 1;
       else if (RKTIO_AS_ADDRINFO(addr)->ai_family == PF_INET6)
-	any_v6 = 1;
+        any_v6 = 1;
 #endif
       count++;
     }
 
-    {
+    do {
       rktio_socket_t s;
 #ifdef RKTIO_TCP_LISTEN_IPV6_ONLY_SOCKOPT
       /* Try IPv6 listeners first, so we can retry and use just IPv4 if
-	 IPv6 doesn't work right. */
+         IPv6 doesn't work right. */
       int v6_loop = (any_v6 && any_v4), skip_v6 = 0;
 #endif
+      int pos = 0;
       int first_time = 1;
       int first_was_zero = 0;
       unsigned short no_port = 0;
 
+      retry_socket = 0;
+
       for (addr = src; addr; ) {
 #ifdef RKTIO_TCP_LISTEN_IPV6_ONLY_SOCKOPT
-	if ((v6_loop && (RKTIO_AS_ADDRINFO(addr)->ai_family != PF_INET6))
-	    || (skip_v6 && (RKTIO_AS_ADDRINFO(addr)->ai_family == PF_INET6))) {
-	  addr = (rktio_addrinfo_t *)RKTIO_AS_ADDRINFO(addr)->ai_next;
-	  if (v6_loop && !addr) {
-	    v6_loop = 0;
-	    skip_v6 = 1;
-	    addr = src;
-	  }
-	  continue;
-	}
+        if ((v6_loop && (RKTIO_AS_ADDRINFO(addr)->ai_family != PF_INET6))
+            || (skip_v6 && (RKTIO_AS_ADDRINFO(addr)->ai_family == PF_INET6))) {
+          addr = (rktio_addrinfo_t *)RKTIO_AS_ADDRINFO(addr)->ai_next;
+          if (v6_loop && !addr) {
+            v6_loop = 0;
+            skip_v6 = 1;
+            addr = src;
+          }
+          continue;
+        }
 #endif
 
-	s = socket(RKTIO_AS_ADDRINFO(addr)->ai_family,
+        rktio_cloexec_lock();
+
+        s = socket(RKTIO_AS_ADDRINFO(addr)->ai_family,
                    RKTIO_AS_ADDRINFO(addr)->ai_socktype,
                    RKTIO_AS_ADDRINFO(addr)->ai_protocol);
+
         if (s != INVALID_SOCKET)
+          rktio_fd_cloexec(s);
+        else
           get_socket_error();
 
+        rktio_cloexec_unlock();
+
 #ifdef RKTIO_TCP_LISTEN_IPV6_ONLY_SOCKOPT
-	if (s == INVALID_SOCKET) {
-	  /* Maybe it failed because IPv6 is not available: */
-	  if ((RKTIO_AS_ADDRINFO(addr)->ai_family == PF_INET6) && (errno == EAFNOSUPPORT)) {
-	    if (any_v4 && !pos) {
-	      /* Let client known that maybe we can make it work with just IPv4. */
-	      set_racket_error(RKTIO_ERROR_TRY_AGAIN_WITH_IPV4);
-	    }
-	  }
-	}
-	if (s != INVALID_SOCKET) {
-	  if (any_v4 && (RKTIO_AS_ADDRINFO(addr)->ai_family == PF_INET6)) {
-	    int ok;
+        if (s == INVALID_SOCKET) {
+          /* Maybe it failed because IPv6 is not available: */
+          if ((RKTIO_AS_ADDRINFO(addr)->ai_family == PF_INET6) && (errno == EAFNOSUPPORT)) {
+            if (any_v4 && !pos) {
+              /* Let client known that maybe we can make it work with just IPv4. */
+              set_racket_error(RKTIO_ERROR_TRY_AGAIN_WITH_IPV4);
+            }
+          }
+        }
+        if (s != INVALID_SOCKET) {
+          if (any_v4 && (RKTIO_AS_ADDRINFO(addr)->ai_family == PF_INET6)) {
+            int ok;
 # ifdef IPV6_V6ONLY
-	    int on = 1;
-	    ok = setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, &on, sizeof(on));
+            int on = 1;
+            ok = setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&on, sizeof(on));
 # else
-	    ok = -1;
+            ok = -1;
 # endif
-	    if (ok) {
-	      if (!pos) {
-		/* IPV6_V6ONLY doesn't work */
+            if (ok) {
+              if (!pos) {
+                /* IPV6_V6ONLY doesn't work */
                 set_racket_error(RKTIO_ERROR_TRY_AGAIN_WITH_IPV4);
                 s = INVALID_SOCKET;
-	      } else {
+              } else {
                 get_socket_error();
-		closesocket(s);
-		s = INVALID_SOCKET;
-	      }
-	    }
-	  }
-	}
+                closesocket(s);
+                s = INVALID_SOCKET;
+              }
+            }
+          }
+        }
 #endif
 
-	if (s != INVALID_SOCKET) {
+        if (s != INVALID_SOCKET) {
 #ifdef RKTIO_SYSTEM_WINDOWS
-	  unsigned long ioarg = 1;
-	  ioctlsocket(s, FIONBIO, &ioarg);
+          unsigned long ioarg = 1;
+          ioctlsocket(s, FIONBIO, &ioarg);
 #else
-	  fcntl(s, F_SETFL, RKTIO_NONBLOCKING);
+          fcntl(s, F_SETFL, RKTIO_NONBLOCKING);
 #endif
 
-	  if (reuse) {
-	    setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *)(&reuse), sizeof(int));
-	  }
+          if (flags & RKTIO_LISTEN_REUSE) {
+            int reuse = 1;
+            setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *)(&reuse), sizeof(int));
+          }
       
           if (first_was_zero) {
+            /* as we bind multiple addresses, use the same port number in place of port 0 */
             ((struct sockaddr_in *)RKTIO_AS_ADDRINFO(addr)->ai_addr)->sin_port = no_port;
           }
-	  if (!bind(s, RKTIO_AS_ADDRINFO(addr)->ai_addr, RKTIO_AS_ADDRINFO(addr)->ai_addrlen)) {
+          if (!bind(s, RKTIO_AS_ADDRINFO(addr)->ai_addr, RKTIO_AS_ADDRINFO(addr)->ai_addrlen)) {
             if (first_time) {
               if (((struct sockaddr_in *)RKTIO_AS_ADDRINFO(addr)->ai_addr)->sin_port == 0) {
-                no_port = get_no_portno(rktio, s);
+                int no_port_r;
+                no_port_r = get_no_portno(rktio, s);
                 first_was_zero = 1;
-		if (no_port < 0) {
-		  closesocket(s);
-		  break;
-		}
+                if (no_port_r < 0) {
+                  closesocket(s);
+                  break;
+                }
+                no_port = (unsigned short)no_port_r;
               }
               first_time = 0;
             }
 
-	    if (!listen(s, backlog)) {
-	      if (!pos) {
-		l = malloc(sizeof(rktio_listener_t) + (count * sizeof(rktio_socket_t)));
-		l->count = count;
+            if (!listen(s, backlog)) {
+              if (!pos) {
+                l = malloc(sizeof(rktio_listener_t) + (count * sizeof(rktio_socket_t)));
+                l->count = count;
 # ifdef HAVE_POLL_SYSCALL
                 {
                   struct pollfd *pfd;
@@ -1469,51 +1531,77 @@ rktio_listener_t *rktio_listen(rktio_t *rktio, rktio_addrinfo_t *src, int backlo
                   l->pfd = pfd;
                 }
 # endif
-	      }
+              }
 # ifdef HAVE_POLL_SYSCALL
               l->pfd[pos].fd = s;
               l->pfd[pos].events = POLLIN;
 # endif
-	      l->s[pos++] = s;
+              l->s[pos++] = s;
 	    
-	      REGISTER_SOCKET(s);
+              REGISTER_SOCKET(s);
 
-	      if (pos == count) {
-		return l;
-	      }
-	    } else {
+              if (pos == count) {
+                return l;
+              }
+            } else {
+              if ((flags & RKTIO_LISTEN_RETRY_ADDRINUSE)
+                  && (retry_count < MAX_LISTEN_RETRY_ADDRINUSE_COUNT)
+                  && (SOCK_ERRNO() == RKTIO_EADDRINUSE)) {
+                closesocket(s);
+                retry_socket = 1;
+                retry_count++;
+              } else {
+                get_socket_error();
+                closesocket(s);
+                break;
+              }
+            }
+          } else {
+            if ((flags & RKTIO_LISTEN_RETRY_ADDRINUSE)
+                && (retry_count < MAX_LISTEN_RETRY_ADDRINUSE_COUNT)
+                && (SOCK_ERRNO() == RKTIO_EADDRINUSE)) {
+              closesocket(s);
+              retry_socket = 1;
+              retry_count++;
+            } else {
               get_socket_error();
-	      closesocket(s);
-	      break;
-	    }
-	  } else {
-            get_socket_error();
-	    closesocket(s);
-	    break;
-	  }
-	} else {
+              closesocket(s);
+            }
+            break;
+          }
+        } else {
           break;
         }
 
-	addr = (rktio_addrinfo_t *)RKTIO_AS_ADDRINFO(addr)->ai_next;
+        if (retry_socket)
+          break; /* break out of `addr` loop */
+
+        addr = (rktio_addrinfo_t *)RKTIO_AS_ADDRINFO(addr)->ai_next;
 
 #ifdef RKTIO_TCP_LISTEN_IPV6_ONLY_SOCKOPT
-	if (!addr && v6_loop) {
-	  v6_loop = 0;
-	  skip_v6 = 1;
-	  addr = src;
-	}
+        if (!addr && v6_loop) {
+          v6_loop = 0;
+          skip_v6 = 1;
+          addr = src;
+        }
 #endif
       }
 
       if (l) {
         l->count = pos;
         rktio_listen_stop(rktio, l);
+        l = NULL;
+        pos = 0;
       }
+    } while (retry_socket);
 
-      return NULL;
-    }
+    return NULL;
   }
+}
+
+rktio_listener_t *rktio_listen(rktio_t *rktio, rktio_addrinfo_t *src, int backlog, int reuse)
+{
+  return rktio_listen_opt(rktio, src, backlog, reuse ? RKTIO_LISTEN_REUSE : 0);
 }
 
 static int get_no_portno(rktio_t *rktio, rktio_socket_t socket)
@@ -1643,8 +1731,7 @@ void rktio_poll_add_accept(rktio_t *rktio, rktio_listener_t *listener, rktio_pol
 
 rktio_fd_t *rktio_accept(rktio_t *rktio, rktio_listener_t *listener)
 {
-  int
-    ready_pos;
+  int ready_pos;
   rktio_socket_t s, ls;
   rktio_sockopt_len_t l;
   char tcp_accept_addr[RKTIO_SOCK_NAME_MAX_LEN];
@@ -1659,11 +1746,20 @@ rktio_fd_t *rktio_accept(rktio_t *rktio, rktio_listener_t *listener)
 
   l = sizeof(tcp_accept_addr);
 
+  rktio_cloexec_lock();
+
   do {
     s = accept(ls, (struct sockaddr *)tcp_accept_addr, &l);
   } while ((s == -1) && NOT_WINSOCK(errno == EINTR));
 
-  if (s != INVALID_SOCKET) {    
+  if (s != INVALID_SOCKET)
+    rktio_fd_cloexec(s);
+  else
+    get_socket_error();
+
+  rktio_cloexec_unlock();
+
+  if (s != INVALID_SOCKET) {
 # ifdef RKTIO_SYSTEM_UNIX
     RKTIO_WHEN_SET_SOCKBUF_SIZE(int size = TCP_SOCKSENDBUF_SIZE);
     RKTIO_WHEN_SET_SOCKBUF_SIZE(setsockopt(s, SOL_SOCKET, SO_SNDBUF, (char *)&size, sizeof(int)));
@@ -1672,7 +1768,6 @@ rktio_fd_t *rktio_accept(rktio_t *rktio, rktio_listener_t *listener)
     return rktio_system_fd(rktio, s, (RKTIO_OPEN_SOCKET | RKTIO_OPEN_INIT | RKTIO_OPEN_OWN
 				      | RKTIO_OPEN_READ | RKTIO_OPEN_WRITE)); 
   } else {
-    get_socket_error();
     return NULL;
   }
 }
@@ -1761,6 +1856,8 @@ char **rktio_listener_address(rktio_t *rktio, rktio_listener_t *lnr)
 rktio_fd_t *rktio_udp_open(rktio_t *rktio, rktio_addrinfo_t *addr, int family)
 {
   rktio_socket_t s;
+
+  rktio_cloexec_lock();
   
   if (addr)
     s = socket(RKTIO_AS_ADDRINFO(addr)->ai_family,
@@ -1769,10 +1866,15 @@ rktio_fd_t *rktio_udp_open(rktio_t *rktio, rktio_addrinfo_t *addr, int family)
   else
     s = socket(family, SOCK_DGRAM, 0);
 
-  if (s == INVALID_SOCKET) {
+  if (s != INVALID_SOCKET)
+    rktio_fd_cloexec(s);
+  else
     get_socket_error();
+
+  rktio_cloexec_unlock();
+
+  if (s == INVALID_SOCKET)
     return NULL;
-  }
 
   return rktio_system_fd(rktio, s, RKTIO_OPEN_SOCKET | RKTIO_OPEN_UDP | RKTIO_OPEN_INIT);
 }
@@ -1857,7 +1959,7 @@ int rktio_udp_connect(rktio_t *rktio, rktio_fd_t *rfd, rktio_addrinfo_t *addr)
 
 intptr_t rktio_udp_sendto(rktio_t *rktio, rktio_fd_t *rfd, rktio_addrinfo_t *addr, const char *buffer, intptr_t len)
 {
-  return do_socket_write(rktio, rfd, buffer, len, addr);
+  return do_socket_write(rktio, rfd, buffer, len, &rktio->err, addr, NULL, 0);
 }
 
 intptr_t rktio_udp_sendto_in(rktio_t *rktio, rktio_fd_t *rfd, rktio_addrinfo_t *addr, const char *buffer,
@@ -1866,10 +1968,15 @@ intptr_t rktio_udp_sendto_in(rktio_t *rktio, rktio_fd_t *rfd, rktio_addrinfo_t *
   return rktio_udp_sendto(rktio, rfd, addr, buffer + start, end - start);
 }
 
-rktio_length_and_addrinfo_t *rktio_udp_recvfrom(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len)
+intptr_t rktio_udp_sendto_addr_bytes(rktio_t *rktio, rktio_fd_t *rfd, const char *addr, intptr_t addr_len,
+                                     const char *buffer, intptr_t start, intptr_t end)
+{
+  return do_socket_write(rktio, rfd, buffer + start, end - start, &rktio->err, NULL, addr, addr_len);
+}
+
+static void *do_rktio_udp_recvfrom(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len, int decode_address)
 {
   rktio_socket_t s = rktio_fd_socket(rktio, rfd);
-  rktio_length_and_addrinfo_t *r;
   int rn, errid;
   char src_addr[RKTIO_SOCK_NAME_MAX_LEN];
   rktio_sockopt_len_t asize = sizeof(src_addr);
@@ -1910,17 +2017,49 @@ rktio_length_and_addrinfo_t *rktio_udp_recvfrom(rktio_t *rktio, rktio_fd_t *rfd,
       break;
   }
 
-  r = malloc(sizeof(rktio_length_and_addrinfo_t));
-  r->len = rn;
-  r->address = get_numeric_strings(rktio, src_addr, asize);
+  if (decode_address) {
+    rktio_length_and_addrinfo_t *r;
 
-  return r;
+    r = malloc(sizeof(rktio_length_and_addrinfo_t));
+    r->len = rn;
+    r->address = get_numeric_strings(rktio, src_addr, asize);
+
+    return r;
+  } else {
+    rktio_length_and_addr_bytes_t *r;
+    char *addr_bytes;
+
+    addr_bytes = malloc(asize);
+    memcpy(addr_bytes, src_addr, asize);
+
+    r = malloc(sizeof(rktio_length_and_addr_bytes_t));
+    r->len = rn;
+    r->addr_len = asize;
+    r->addr_bytes = addr_bytes;
+
+    return r;
+  }
+}
+
+rktio_length_and_addrinfo_t *rktio_udp_recvfrom(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len)
+{
+  return do_rktio_udp_recvfrom(rktio, rfd, buffer, len, 1);
 }
 
 rktio_length_and_addrinfo_t *rktio_udp_recvfrom_in(rktio_t *rktio, rktio_fd_t *rfd,
                                                    char *buffer, intptr_t start, intptr_t end)
 {
   return rktio_udp_recvfrom(rktio, rfd, buffer + start, end - start);
+}
+
+rktio_length_and_addr_bytes_t *rktio_udp_recvfrom_addr_bytes(rktio_t *rktio, rktio_fd_t *rfd,
+                                                             char *buffer, intptr_t start, intptr_t end)
+{
+  return do_rktio_udp_recvfrom(rktio, rfd, buffer + start, end - start, 0);
+}
+
+char **rktio_addr_bytes_address(rktio_t *rktio, const char *addr, intptr_t len) {
+  return get_numeric_strings(rktio, (void *)addr, len);
 }
 
 int rktio_udp_set_receive_buffer_size(rktio_t *rktio, rktio_fd_t *rfd, int size)
@@ -1940,7 +2079,7 @@ int rktio_udp_set_receive_buffer_size(rktio_t *rktio, rktio_fd_t *rfd, int size)
 int rktio_udp_get_multicast_loopback(rktio_t *rktio, rktio_fd_t *rfd)
 {
   rktio_socket_t s = rktio_fd_socket(rktio, rfd);
-  u_char loop;
+  unsigned char loop;
   rktio_sockopt_len_t loop_len = sizeof(loop);
   int status;
   
@@ -1956,7 +2095,7 @@ int rktio_udp_get_multicast_loopback(rktio_t *rktio, rktio_fd_t *rfd)
 int rktio_udp_set_multicast_loopback(rktio_t *rktio, rktio_fd_t *rfd, int on)
 {
   rktio_socket_t s = rktio_fd_socket(rktio, rfd);
-  u_char loop = (on ? 1 : 0);
+  unsigned char loop = (on ? 1 : 0);
   rktio_sockopt_len_t loop_len = sizeof(loop);
   int status;
   
@@ -2004,7 +2143,7 @@ int rktio_udp_set_ttl(rktio_t *rktio, rktio_fd_t *rfd, int ttl_val)
 int rktio_udp_get_multicast_ttl(rktio_t *rktio, rktio_fd_t *rfd)
 {
   rktio_socket_t s = rktio_fd_socket(rktio, rfd);
-  u_char ttl;
+  unsigned char ttl;
   rktio_sockopt_len_t ttl_len = sizeof(ttl);
   int status;
   
@@ -2020,7 +2159,7 @@ int rktio_udp_get_multicast_ttl(rktio_t *rktio, rktio_fd_t *rfd)
 int rktio_udp_set_multicast_ttl(rktio_t *rktio, rktio_fd_t *rfd, int ttl_val)
 {
   rktio_socket_t s = rktio_fd_socket(rktio, rfd);
-  u_char ttl = ttl_val;
+  unsigned char ttl = ttl_val;
   rktio_sockopt_len_t ttl_len = sizeof(ttl);
   int status;
   

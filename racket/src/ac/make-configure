@@ -28,29 +28,50 @@ exit 0
 ;; In addition, we want none of the feature-selection flags
 ;;  (such as --enable-mac64) to be passed to sub-configures,
 ;;  so we adjust the script to strip them away.
+;; Finally, we want to support `CFLAGS+=...` to add to `CFLAGS`
+;;  instead of replacing the default arguments.
 
 (define skip-rxs
   (map (lambda (s)
 	 (regexp (format "^  --~a=DIR" s)))
-       '(sbindir 
-	 libexecdir 
+       '(sbindir
+         libexecdir
 	 sharedstatedir
 	 localstatedir
-	 oldincludedir
 	 runstatedir
 	 infodir
          htmldir
          ;; Note: any arguments converted this way need to be excluded in "rktio_keep.m4"
          ;;  dvidir - converted to "collectsdir"
          ;;  pdfdir - converted to "pkgsdir"
+	 ;;  oldincludedir - converted to "guibindir"
          psdir
          ;;  localedir - converted to "appsdir"
         )))
+
+;; Keep "#!" line first:
+(displayln (read-line))
+
+(define (insert-filter_add)
+ (newline)
+ (call-with-input-file
+  "filter_add.sh"
+  (lambda (i)
+   (let loop ()
+    (let ([l (read-line i)])
+     (unless (eof-object? l)
+      (displayln l)
+      (loop))))))
+ (newline))
 
 (let loop ()
   (let ([l (read-line)])
     (unless (eof-object? l)
       (cond
+       [(regexp-match #rx"for ac_option" l)
+        (insert-filter_add)
+        (displayln l)
+        (loop)]
        [(ormap (lambda (rx)
                  (regexp-match rx l))
                skip-rxs)
@@ -64,17 +85,31 @@ exit 0
          [(equal? l "  --dvidir=DIR            dvi documentation [DOCDIR]")
           (displayln "  --collectsdir=DIR       base collections [EPREFIX/share/PACKAGE/collects]")]
          [else
-          (displayln (regexp-replace* "pdf" (regexp-replace* #rx"dvi" l "collects") "apps"))])
+          (displayln (regexp-replace* #rx"oldinclude"
+                                      (regexp-replace* "pdf"
+                                                       (regexp-replace* #rx"dvi" l "collects")
+                                                       "apps")
+                                      "guibin"))])
         (loop)]
        [(regexp-match #rx"pdfdir" l)
         ;; Hack: take over "pdfdir" for "pkgsdir":
         (cond
          [(equal? l "pdfdir='${docdir}'")
-          (displayln "pkgsdir='${datarootdir}/${PACKAGE}/pkgs'")]
+          (displayln "pkgsdir='${datadir}/${PACKAGE}/pkgs'")]
          [(equal? l "  --pdfdir=DIR            pdf documentation [DOCDIR]")
           (displayln "  --pkgsdir=DIR           installed pkgs [EPREFIX/share/PACKAGE/pkgs]")]
          [else
           (displayln (regexp-replace* #rx"pdf" l "pkgs"))])
+        (loop)]
+       [(regexp-match #rx"oldincludedir" l)
+        ;; Hack: take over "oldincludedir" for "guibindir":
+        (cond
+         [(equal? l "oldincludedir='/usr/include'")
+          (displayln "guibindir='${bindir}'")]
+         [(equal? l "  --oldincludedir=DIR     C header files for non-gcc [/usr/include]")
+          (displayln "  --guibindir=DIR         GUI programs [BINDIR]")]
+         [else
+          (displayln (regexp-replace* #rx"oldinclude" l "guibin"))])
         (loop)]
        [(regexp-match #rx"localedir" l)
         ;; Hack: take over "localedir" for "appsdir":
@@ -85,6 +120,13 @@ exit 0
           (displayln "  --appsdir=DIR           .desktop files [EPREFIX/share/applications]")]
          [else
           (displayln (regexp-replace* #rx"locale" l "apps"))])
+        (loop)]
+       [(regexp-match #rx"Usage: .*[[]VAR=VALUE[]][.][.][.]" l)
+        (displayln (string-append l " [VAR+=VALUE]..."))
+        (loop)]
+       [(regexp-match #rx"See below for descriptions of some of the useful variables" l)
+        (displayln l)
+        (displayln "Use += with CFLAGS, CPPFLAGS, LDFLAGS, or LIBS to add to the variable.")
         (loop)]
        [else
         ;; Copy

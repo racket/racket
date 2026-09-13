@@ -145,7 +145,9 @@
  [else
   (define path-build
     (lambda (a b)
-      (let ([sep (if (eqv? (string-ref a (sub1 (string-length a))) #\/) "" "/")])
+      (let ([sep (if (or (string=? a "")
+                         (eqv? (string-ref a (sub1 (string-length a))) #\/))
+                     "" "/")])
         (string-append a sep b))))])
 
 (let ([machine.def (path-build xc-dir "machine.def")])
@@ -308,9 +310,16 @@
 (define-primitive $integer-32? #%$integer-32?)
 (define-primitive $integer-64? #%$integer-64?)
 (define-primitive $fxu< #%$fxu<)
+(define-primitive $fxx+ (lambda args (if (andmap fixnum? args)
+                                         (apply + args)
+                                         (error '$fxx+ "not a fixnum in ~s" args))))
+(define-primitive $fxx- (lambda args (if (andmap fixnum? args)
+                                         (apply - args)
+                                         (error '$fxx- "not a fixnum in ~s" args))))
 (define-primitive $stencil-vector? (lambda (v) #f))
 (define-primitive $system-stencil-vector? (lambda (v) #f))
 (define-primitive $symbol-name #%$symbol-name)
+(define-primitive immutable-vector (lambda args (vector->immutable-vector (apply vector args))))
 
 (define-primitive ($char-grapheme-other-state) 1) ; probably correct, shouldn't matter for compiler
 
@@ -372,8 +381,8 @@
  [else
   ;; If records in the host Scheme have the same representation as the target, we can
   ;; use the host Scheme's implementation of records, and things are about twice as fast:
-  (define-primitive ($make-record-type base-rtd parent name fields sealed? opaque? . extras)
-    (apply #%$make-record-type base-rtd parent name fields sealed? opaque? extras))
+  (define-primitive ($make-record-type base-rtd parent name fields sealed? opaque? alt-pm . extras)
+    (apply #%$make-record-type base-rtd parent name fields sealed? opaque? alt-pm extras))
   (define-primitive ($make-record-type-descriptor base-rtd parent name uid sealed? opaque? fields . extras)
     (apply #%$make-record-type-descriptor base-rtd parent name uid sealed? opaque? fields extras))
   (define-primitive ($make-record-constructor-descriptor rts parent protocol name)
@@ -403,8 +412,10 @@
 (define-primitive $expand-fp-ftype (lambda (who what r ftype)
                                      (#%$expand-fp-ftype who what r (syntax->datum ftype))))
 (define-primitive $ftd? #%$ftd?)
-(define-primitive $ftd-as-box? #%$ftd-as-box?)
+(define-primitive $ftd-pair? (lambda (x) (and (pair? x) (#%$ftd? (car x)))))
+(define-primitive $fptd? #%$ftd?)
 (define-primitive $filter-foreign-type #%$filter-foreign-type)
+(define-primitive $ftype-pointer? #%$ftype-pointer?)
 
 (define-primitive $make-fmt->expr #%$make-fmt->expr)
 (define-primitive $parse-format-string (lambda args #f))
@@ -523,13 +534,15 @@
   (syntax-case stx ()
     [(_ _ name . _)
      #'(lambda args (error 'reboot "expander not expected to call foreign procedure ~s" name))]))
+(define-primitive ($foreign-entry name)
+  (list 'foreign name))
 
 (define-primitive ($oops . args)
   (apply error args))
 
 (define-primitive ($make-source-oops who . args)
   (($top-level-value 'datum->syntax) (or who ($make-interaction-syntax 'unknown))
-                                     '(error "oops")))
+                                     `(error 'source "oops ~s" '(,who . ,(($top-level-value 'syntax->datum) args)))))
 
 (define-primitive ($source-warning . args)
   (printf "~s\n" args))

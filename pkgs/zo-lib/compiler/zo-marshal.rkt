@@ -150,22 +150,22 @@
     (write-bytes (bundle-bytes-code-bstr mb) outp)))
 
 (define (zo-marshal-bundle-to top outp)
-  (case (hash-ref top 'vm #f)
+  (define machine-type (hash-ref top 'vm #f))
+  (case machine-type
     [(#"racket" #f)
      (zo-marshal-racket-bundle-to (hash-remove top 'vm) outp)]
     [(#"linklet")
      (write-bundle-header #"linklet" outp)
      (s-exp->fasl (hash-remove top 'vm) outp)]
-    [(#"chez-scheme")
-     (write-bundle-header #"chez-scheme" outp)
+    [else
+     ;; assume CS otherwise
+     (write-bundle-header machine-type outp)
      (define opaque (hash-ref top 'opaque
                               (lambda ()
                                 (error 'zo-marshal "missing 'opaque for chez-scheme virtual-machine format"))))
      (define bstr (opaque-bstr opaque))
      (write-bytes (integer->integer-bytes (bytes-length bstr) 4 #f #f) outp)
-     (write-bytes bstr outp)]
-    [else
-     (error 'zo-marshal "unknown virtual machine: ~a" (hash-ref top 'vm #f))]))
+     (write-bytes bstr outp)]))
 
 (define (zo-marshal-racket-bundle-to top outp) 
   ; (obj -> (or pos #f)) output-port -> number

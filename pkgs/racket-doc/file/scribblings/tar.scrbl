@@ -68,7 +68,7 @@ date to record in the archive for each file or directory.
                                    effectively changed its default from @racket['ustar]
                                    to @racket['pax].}
          #:changed "7.3.0.3" @elem{Added the @racket[#:timestamp] argument.}
-         #:changed "8.1.0.5" @elem{Added support for @racket[tar-entry] arguments.}]}
+         #:changed "9.2.0.3" @elem{Added support for @racket[tar-entry] arguments.}]}
 
 
 @defproc[(tar->output [paths-and-entries (listof (or/c path? tar-entry?))]
@@ -124,7 +124,7 @@ Like @racket[tar], but compresses the resulting file with @racket[gzip].
                                    effectively changed its default from @racket['ustar]
                                    to @racket['pax].}
          #:changed "7.3.0.3" @elem{Added the @racket[#:timestamp] argument.}
-         #:changed "8.1.0.5" @elem{Added support for @racket[tar-entry] arguments.}]}
+         #:changed "9.2.0.3" @elem{Added support for @racket[tar-entry] arguments.}]}
 
 
 @defstruct[tar-entry ([kind (or/c 'file 'directory 'link)]

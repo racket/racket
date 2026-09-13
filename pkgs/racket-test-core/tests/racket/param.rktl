@@ -72,6 +72,7 @@
 				     x
 				     (add1 'x)))))
 (define test-param3 (make-parameter 'three list))
+(define test-param3a (make-derived-parameter test-param3 values values))
 (define test-param4 (make-derived-parameter test-param3 box list))
 (define test-param5 (make-parameter
 		     'five
@@ -90,6 +91,7 @@
 (test 'one test-param1)
 (test 'two test-param2) 
 (test 'three test-param3) 
+(test 'three test-param3a)
 
 (test-param2 'other-two)
 (test 'other-two test-param2) 
@@ -108,8 +110,11 @@
   (test 'more-two? test-param2))
 (test 'two test-param2) 
 
+(test-param3a 'x-other-three)
+(test '(x-other-three) test-param3)
 (test-param3 'other-three)
-(test '(other-three) test-param3) 
+(test '(other-three) test-param3)
+(test '(other-three) test-param3a)
 (test '((other-three)) test-param4)
 (test-param3 'three)
 (test '(three) test-param3) 
@@ -148,24 +153,26 @@
 (test (void) test-param6 6)
 (test 6 test-param6)
 
-(let ([cd (make-derived-parameter current-directory values values)])
-  (test (current-directory) cd)
-  (let* ([v (current-directory)]
-         [sub (path->directory-path (build-path v "sub"))])
-    (cd "sub")
-    (test sub cd)
-    (test sub current-directory)
-    (cd v)
-    (test v cd)
-    (test v current-directory)
-    (parameterize ([cd "sub"])
+(for* ([guard (in-list (list values (lambda (x) x)))]
+       [wrap (in-list (list values (lambda (x) x)))])
+  (let ([cd (make-derived-parameter current-directory guard wrap)])
+    (test (current-directory) cd)
+    (let* ([v (current-directory)]
+           [sub (path->directory-path (build-path v "sub"))])
+      (cd "sub")
       (test sub cd)
-      (test sub current-directory))
-    (test v cd)
-    (test v current-directory)
-    (parameterize ([current-directory "sub"])
-      (test sub cd)
-      (test sub current-directory))))
+      (test sub current-directory)
+      (cd v)
+      (test v cd)
+      (test v current-directory)
+      (parameterize ([cd "sub"])
+        (test sub cd)
+        (test sub current-directory))
+      (test v cd)
+      (test v current-directory)
+      (parameterize ([current-directory "sub"])
+        (test sub cd)
+        (test sub current-directory)))))
 (let ([l null])
   (let ([cd (make-derived-parameter current-directory
                                     (lambda (x)
@@ -188,6 +195,15 @@
       (test '("goo" "foo") values l)
       (test v cd)
       (test v current-directory))))
+
+(test (object-name test-param3) object-name test-param3a)
+(test (procedure-realm test-param3) procedure-realm test-param3a)
+(test 'new-one object-name (make-derived-parameter test-param3 values values 'new-one))
+(test 'new-one object-name (make-derived-parameter test-param3 list box 'new-one))
+(test (procedure-realm test-param3) procedure-realm (make-derived-parameter test-param3 values values 'new-one))
+(test (procedure-realm test-param3) procedure-realm (make-derived-parameter test-param3 list box 'new-one))
+(test 'new-realm procedure-realm (make-derived-parameter test-param3 values values 'new-one 'new-realm))
+(test 'new-realm procedure-realm (make-derived-parameter test-param3 list box 'new-one 'new-realm))
 
 (test 'this-one object-name (make-parameter 7 #f 'this-one))
 
@@ -345,6 +361,12 @@
 		      (list (error-syntax->string-handler) (lambda (x w) (error 'converter)))
 		      '(with-handlers ([exn:fail:syntax? void])
                          (raise-syntax-error #f "ok" #'oops))
+		      (lambda (x) (and (exn:fail? x) (regexp-match? #rx"converter" (exn-message x))))
+		      (list "bad setting" zero-arg-proc one-arg-proc three-arg-proc))
+		(list error-module-path->string-handler
+		      (list (error-module-path->string-handler) (lambda (x w) (error 'converter)))
+		      '(with-handlers ([exn:fail:filesystem:missing-module? void])
+                         (dynamic-require 'racket/base/no-such-module #f))
 		      (lambda (x) (and (exn:fail? x) (regexp-match? #rx"converter" (exn-message x))))
 		      (list "bad setting" zero-arg-proc one-arg-proc three-arg-proc))
 		(list print-syntax-width
@@ -609,6 +631,42 @@
       (get-repctx-error-message 2))
 (test #f regexp-match? #rx"[.][.][.]\n"
       (get-repctx-error-message 16))
+
+;; ----------------------------------------
+;; tests for `error-value->string-handler` and the way
+;; it's called by functions like `error`
+
+;; parameterization
+(test "test: got it\n  value: #<unreadable>"
+      (lambda ()
+        (struct unreadable ())
+        (parameterize ([error-value->string-handler
+                        (lambda (v _)
+                          ((error-value->string-handler) v 100))]
+                       [print-unreadable #f])
+          (with-handlers ([exn:fail:contract? exn-message])
+            (raise-arguments-error 'test "got it"
+                                   "value" (unreadable))))))
+
+;; truncate over-long result
+(test "test: got it\n  value: xxxxxxxxxx"
+      (lambda ()
+        (parameterize ([error-value->string-handler
+                        (lambda (v n)
+                          (make-string (* 2 n) #\x))]
+                       [error-print-width 10])
+          (with-handlers ([exn:fail:contract? exn-message])
+            (raise-arguments-error 'test "got it"
+                                   "value" 'any)))))
+
+(test "test: got it\n  value: oops"
+      (lambda ()
+        (parameterize ([error-value->string-handler
+                        (lambda (v n)
+                          #"oops")])
+          (with-handlers ([exn:fail:contract? exn-message])
+            (raise-arguments-error 'test "got it"
+                                   "value" 'any)))))
 
 ;; ----------------------------------------
 

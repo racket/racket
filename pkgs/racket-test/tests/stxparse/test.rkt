@@ -1168,3 +1168,32 @@
      (syntax-parse #'(hello)
        [(_ (~describe "thing" e) ...+)
         'ok]))))
+
+;; issue #5293 (7/2025)
+(test-case "fixup wf"
+  (convert-compile-time-error
+   (let ()
+     (define-syntax-class bad
+       (pattern ((~or* (~and (~seq))
+                       (~var _ id)))))
+     (void))))
+
+;; issue #5376 (11/2025)
+(test-case "filter out no-fail failures"
+  (define-syntax-class nofail
+    (pattern (1 2))
+    (pattern x))
+  ;; Previously, this caused an internal error.
+  (check-exn
+   #rx"m: expected the literal 0"
+   (lambda ()
+     (syntax-parse '(m (1 3) 4)
+       [(_ a:nofail 0) 'ok]))))
+
+;; issue #5405 (12/2025)
+(test-case "order of compile vs wrap-exprs (interp)"
+  (syntax-parse #'0
+    [(~parse (~and a
+                   (~do (define c #f)))
+             (syntax b))
+     "ok"]))

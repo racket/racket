@@ -35,78 +35,76 @@
 (define/who (will-register executor v proc)
   (check who will-executor? executor)
   (check who (procedure-arity-includes/c 1) proc)
-  (disable-interrupts)
-  (let ([l (hashtable-ref (will-executor-will-stacks executor) v '())]
-        ;; By using an ephemeron pair, if the executor becomes
-        ;; unreachable, then we can drop the finalizer procedure. That
-        ;; pattern prevents unbreakable cycles by an untrusted process
-        ;; that has no access to a will executor that outlives the
-        ;; process. But late will executors persist as long as
-        ;; a will is registered.
-        [e+proc (if (will-executor-keep? executor)
-                    (cons executor proc)
-                    (ephemeron-cons executor proc))])
-    (hashtable-set! (will-executor-will-stacks executor) v (cons e+proc l))
-    (when (null? l)
-      ((will-executor-guardian executor) v)))
-  (enable-interrupts)
+  (with-global-lock
+   (let ([l (hashtable-ref (will-executor-will-stacks executor) v '())]
+         ;; By using an ephemeron pair, if the executor becomes
+         ;; unreachable, then we can drop the finalizer procedure. That
+         ;; pattern prevents unbreakable cycles by an untrusted process
+         ;; that has no access to a will executor that outlives the
+         ;; process. But late will executors persist as long as
+         ;; a will is registered.
+         [e+proc (if (will-executor-keep? executor)
+                     (cons executor proc)
+                     (ephemeron-cons executor proc))])
+     (hashtable-set! (will-executor-will-stacks executor) v (cons e+proc l))
+     (when (null? l)
+       ((will-executor-guardian executor) v))))
   (void))
 
 ;; Returns #f or a pair: procedure and value
 (define/who (will-try-execute executor)
   (check who will-executor? executor)
-  (disable-interrupts)
-  (poll-guardian (will-executor-guardian executor)
-                 (will-executor-will-stacks executor))
-  (let ([l (will-executor-ready executor)])
-    (cond
-     [(pair? l)
-      (will-executor-ready-set! executor (cdr l))
-      (when (and (will-executor-keep? executor)
-                 (null? (cdr l)))
-        (hashtable-delete! late-will-executors-with-pending executor))
-      (enable-interrupts)
-      (car l)]
-     [else
-      (enable-interrupts)
-      #f])))
+  (with-global-lock
+   (poll-guardian (will-executor-guardian executor)
+                  (will-executor-will-stacks executor))
+   (let ([l (will-executor-ready executor)])
+     (cond
+       [(pair? l)
+        (will-executor-ready-set! executor (cdr l))
+        (when (and (will-executor-keep? executor)
+                   (null? (cdr l)))
+          (hashtable-delete! late-will-executors-with-pending executor))
+        (car l)]
+       [else
+        #f]))))
 
 ;; Call with interrupts disabled or from the thread scheduler
 (define (poll-guardian guardian will-stacks)
   ;; Poll the guardian (which is shared among will executors)
   ;; for ready values, and add any ready value to the receiving will
   ;; executor
-  (let loop ()
-    (let ([v (guardian)])
-      (when v
-        (let we-loop ([l (hashtable-ref will-stacks v '())])
-          (cond
-           [(pair? l)
-            (let* ([e+proc (car l)]
-                   [e (car e+proc)]
-                   [proc (cdr e+proc)]
-                   [l (cdr l)])
-              (cond
-               [(eq? #!bwp e)
-                ;; The will executor became inaccesible, so continue looking
-                (we-loop l)]
-               [else
+  (with-global-lock
+   (let loop ()
+     (let ([v (guardian)])
+       (when v
+         (let we-loop ([l (hashtable-ref will-stacks v '())])
+           (cond
+             [(pair? l)
+              (let* ([e+proc (car l)]
+                     [e (car e+proc)]
+                     [proc (cdr e+proc)]
+                     [l (cdr l)])
                 (cond
-                 [(null? l)
-                  (hashtable-delete! will-stacks v)]
-                 [else
-                  ;; Re-finalize for the next will registration
-                  (hashtable-set! will-stacks v l)
-                  (guardian v)])
-                ((will-executor-notify e))
-                (will-executor-ready-set! e (cons (cons proc v) (will-executor-ready e)))
-                (when (will-executor-keep? e)
-                  ;; Ensure that a late will executor stays live
-                  ;; in this place as long as there are wills to execute
-                  (hashtable-set! late-will-executors-with-pending e #t))]))]
-           [else
-            (hashtable-delete! will-stacks v)]))
-        (loop)))))
+                  [(eq? #!bwp e)
+                   ;; The will executor became inaccesible, so continue looking
+                   (we-loop l)]
+                  [else
+                   (cond
+                     [(null? l)
+                      (hashtable-delete! will-stacks v)]
+                     [else
+                      ;; Re-finalize for the next will registration
+                      (hashtable-set! will-stacks v l)
+                      (guardian v)])
+                   ((will-executor-notify e))
+                   (will-executor-ready-set! e (cons (cons proc v) (will-executor-ready e)))
+                   (when (will-executor-keep? e)
+                     ;; Ensure that a late will executor stays live
+                     ;; in this place as long as there are wills to execute
+                     (hashtable-set! late-will-executors-with-pending e #t))]))]
+             [else
+              (hashtable-delete! will-stacks v)]))
+         (loop))))))
 
 (define (poll-will-executors)
   (poll-guardian the-will-guardian the-will-stacks)

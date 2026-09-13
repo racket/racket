@@ -275,6 +275,7 @@
   (test-name '(between/c 1 10) (between/c 1 10))
   (test-name '(string-len/c 3) (string-len/c 3))
   (test-name 'natural-number/c natural-number/c)
+  (test-name '(complex/c even? odd?) (complex/c even? odd?))
   (test-name #f false/c)
   (test-name #t #t)
   (test-name #\a #\a)
@@ -321,6 +322,8 @@
   (test-name '(list*of any/c char?) (list*of any/c char?))
   (test-name '(list*of (-> boolean? boolean?) char?) (list*of (-> boolean? boolean?) char?))
 
+  (test-name '(treelist/c integer?) (treelist/c integer?))
+  (test-name '(mutable-treelist/c boolean?) (mutable-treelist/c boolean?))
 
   (test-name '(vectorof boolean?) (vectorof boolean?))
   (test-name '(vectorof any/c) (vectorof any/c))
@@ -364,6 +367,10 @@
   (test-name 'the-name (flat-rec-contract the-name))
   (test-name 'the-name (flat-murec-contract ([the-name none/c]) the-name))
 
+  (test-name '(prompt-tag/c integer?) (prompt-tag/c integer?))
+  (test-name '(prompt-tag/c integer? #:call/cc string?) (prompt-tag/c integer? #:call/cc string?))
+  (test-name '(prompt-tag/c integer? #:call/cc (values boolean? char?)) (prompt-tag/c integer? #:call/cc (values boolean? char?)))
+
   (test-name '(object-contract) (object-contract))
   (test-name '(object-contract (field x integer?)) (object-contract (field x integer?)))
   (test-name '(object-contract (m (-> integer? integer?)))
@@ -397,6 +404,11 @@
                                        #:rest [rest-x any/c] [result number?])))
              (object-contract (m (->i ((x number?) (y boolean?) (z pair?)) () 
                                       #:rest [rest-x any/c] [result number?]))))
+
+  (test-name '(object-contract [a (-> integer? integer?)] [z (-> string? integer?)])
+             (object-contract [a (-> integer? integer?)] [z (-> string? integer?)]))
+  (test-name '(object-contract [z (-> string? integer?)] [a (-> integer? integer?)])
+             (object-contract [z (-> string? integer?)] [a (-> integer? integer?)]))
 
   (test-name '(promise/c any/c) (promise/c any/c))
   (test-name '(syntax/c any/c) (syntax/c any/c))
@@ -452,6 +464,45 @@
   (test-name 'β (let ([α (new-∀/c 'β)]) α))
   (test-name '∀∃-unknown ((values new-∀/c)))
   (test-name '∀∃-unknown ((values new-∀/c) #f))
+
+  (test-name '(object/c [m1 (-> any/c integer? integer?)] m2 (field [f1 integer?] f2))
+             (object/c [m1 (-> any/c integer? integer?)] m2 (field [f1 integer?] f2)))
+  (test-name '(object/c [m1 (-> any/c integer? integer?)] #:opaque #t)
+             (object/c [m1 (-> any/c integer? integer?)] #:opaque #t))
+  (test-name '(object/c [m1 (-> any/c integer? integer?)] #:opaque #t)
+             (object/c [m1 (-> any/c integer? integer?)] #:opaque #t))
+  (test-name '(object/c [m1 (-> any/c integer? integer?)])
+             (object/c [m1 (-> any/c integer? integer?)]  #:opaque #f))
+  (test-name '(object/c [m1 (-> any/c integer? integer?)] #:opaque prop?)
+             (let ()
+               (define-values (prop prop? prop-get) (make-impersonator-property 'prop))
+               (object/c [m1 (-> any/c integer? integer?)] #:opaque prop?)))
+  (test-name '(object/c [m1 (-> any/c integer? integer?)] #:opaque-except prop?)
+             (let ()
+               (define-values (prop prop? prop-get) (make-impersonator-property 'prop))
+               (object/c [m1 (-> any/c integer? integer?)] #:opaque-except prop?)))
+  (test-name '(object/c [m1 (-> any/c integer? integer?)] #:opaque #t #:opaque-fields #f)
+             (object/c [m1 (-> any/c integer? integer?)] #:opaque #t #:opaque-fields #f))
+  (test-name '(object/c [m1 (-> any/c integer? integer?)] #:opaque-fields #t)
+             (object/c [m1 (-> any/c integer? integer?)] #:opaque-fields #t))
+  (test-name '(object/c [m1 (-> any/c integer? integer?)] #:do-not-check-class-field-accessor-or-mutator-access)
+             (object/c [m1 (-> any/c integer? integer?)] #:do-not-check-class-field-accessor-or-mutator-access))
+  (test-name '(object/c [a (-> any/c integer? integer?)] [z (-> any/c string? integer?)])
+             (object/c [a (-> any/c integer? integer?)] [z (-> any/c string? integer?)]))
+  (test-name '(object/c [z (-> any/c string? integer?)] [a (-> any/c integer? integer?)])
+             (object/c [z (-> any/c string? integer?)] [a (-> any/c integer? integer?)]))
+  (test-name '(dynamic-object/c '(a z) (list (-> any/c integer? integer?) (-> any/c string? integer?))
+                                '(b y) (list integer? string?))
+             (dynamic-object/c '(a z) (list (-> any/c integer? integer?) (-> any/c string? integer?))
+                               '(b y) (list integer? string?)))
+  (test-name '(dynamic-object/c '(z a) (list (-> any/c string? integer?) (-> any/c string? integer?))
+                                '(y b) (list string? integer?))
+             (dynamic-object/c '(z a) (list (-> any/c string? integer?) (-> any/c string? integer?))
+                               '(y b) (list string? integer?)))
+  (test-name '(instanceof/c (class/c [a (-> any/c integer? integer?)] [z (-> any/c string? integer?)]))
+             (instanceof/c (class/c [a (-> any/c integer? integer?)] [z (-> any/c string? integer?)])))
+  (test-name '(instanceof/c (class/c [z (-> any/c string? integer?)] [a (-> any/c integer? integer?)]))
+             (instanceof/c (class/c [z (-> any/c string? integer?)] [a (-> any/c integer? integer?)])))
   
   (test-name '(class/c [m (->m integer? integer?)]) (class/c [m (->m integer? integer?)]))
   (test-name '(class/c [m (->*m (integer?) (integer?) integer?)])
@@ -525,6 +576,9 @@
                           [c (a) boolean?]
                           [d (a c) integer?]
                           #:inv (a c) (if c (even? a) (odd? a)))))
+
+  (contract-eval #:test-case-name "object-name.or/c"
+                 `(,test '|(or/c 'ogg 'mp3)| object-name (or/c 'ogg 'mp3)))
 
   ;; NOT YET RELEASED
   #;

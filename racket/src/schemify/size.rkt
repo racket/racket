@@ -40,6 +40,7 @@
          [`(quote ,v) (sub1 size)]
          [`(set! ,id ,rhs) (leftover-size rhs (sub1 size))]
          [`(#%variable-reference . ,_) (sub1 size)]
+         [`(#%foreign-inline . ,_) (sub1 size)]
          [`(,_ . ,_) (body-leftover-size e size)]
          [`,_ (sub1 size)])]))
 

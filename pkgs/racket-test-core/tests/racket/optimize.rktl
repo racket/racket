@@ -32,7 +32,7 @@
 (define compile/optimize
   (let ()
     ;; General strategy for checking optimization: compile to machine-independent
-    ;; linklets, then use `expand/optimize-linklet` (provided as a priitive just
+    ;; linklets, then use `expand/optimize-linklet` (provided as a primitive just
     ;; for this test suite) to run schemify and cp0
     (define expand/optimize-linklet (vm-primitive 'expand/optimize-linklet))
 
@@ -78,13 +78,13 @@
         (error 'compile/optimize "compiled content does not have expected shape: ~s"
                s-exp))
 
-      (define-values (mpi-vector requires recur-requires provides phase-to-link-modules)
-          (deserialize-requires-and-provides bundle))
+      (define-values (mpi-vector requires recur-requires flattened-requires provides phase-to-link-modules)
+        (deserialize-requires-and-provides bundle))
       (define link-modules (hash-ref phase-to-link-modules 0 '()))
 
       ;; Support cross-module inlining
       (define (bundle->keys+uses bundle)
-        (define-values (mpi-vector requires recur-requires provides phase-to-link-modules)
+        (define-values (mpi-vector requires recur-requires flattened-requires provides phase-to-link-modules)
           (deserialize-requires-and-provides bundle))
         (define link-modules (hash-ref phase-to-link-modules 0 '()))
         (define keys (for/list ([r (in-list link-modules)])
@@ -369,6 +369,8 @@
                    `(lambda (x) (eq? x ,val)))
         (test-comp `(lambda (x) (equal? ,val x))
                    `(lambda (x) (eq? ,val x)))
+        (test-comp `(lambda (x) (equal-always? x ,val))
+                   `(lambda (x) (eq? x ,val)))
         (test-comp #:except 'chez-scheme ; `eqv?` conversion happens in cpnanopass
                    `(lambda (x) (eqv? x ,val))
                    `(lambda (x) (eq? x ,val)))
@@ -378,6 +380,8 @@
        [test-equal-reduction/only-eqv
         (lambda (val)
          (test-comp `(lambda (x) (equal? x ,val))
+                    `(lambda (x) (eqv? x ,val)))
+         (test-comp `(lambda (x) (equal-always? x ,val))
                     `(lambda (x) (eqv? x ,val)))
          (test-comp `(lambda (x) (equal? ,val x))
                     `(lambda (x) (eqv? ,val x)))
@@ -399,7 +403,9 @@
   (if (eq? 'chez-scheme (system-type 'vm))
       (test-equal-reduction/only-eqv #\a)
       (test-equal-reduction #\a))
-  (test-equal-reduction/only-eqv #\u100)
+  (if (eq? 'chez-scheme (system-type 'vm))
+      (test-equal-reduction/only-eqv #\u100)
+      (test-equal-reduction #\u100))
   (test-equal-reduction ''a)
   (test-equal-reduction ''#:a)
   (unless (eq? 'chez-scheme (system-type 'vm))
@@ -2726,7 +2732,7 @@
   (test-implies 'k:list-pair? 'pair?)
   (test-implies 'k:list-pair? 'list?)
   (test-implies 'list? 'pair? '?)
-  (test-implies 'k:interned-char? 'char? (if (eq? 'chez-scheme (system-type 'vm)) '= '=>))
+  (test-implies 'k:interned-char? 'char? '=)
   (test-implies 'not 'boolean?)
   (test-implies 'k:true-object? 'boolean?)
 )
@@ -3801,6 +3807,44 @@
                (a? (a-x (a 1 2)))
                5)))
 
+;; check for inlined accessor, including when contract and realm info is present
+(for-each
+ (lambda (more)
+   (test-comp #:except 'racket
+              `(module m racket/base
+                 (require racket/unsafe/ops)
+                 (#%declare #:unsafe)
+                 (define-values (struct:a a a? a-x a-y)
+                   (let-values ([(struct:a a a? a-ref a-set!)
+                                 (make-struct-type 'a #f 2 0 #f
+                                                   (list (cons prop:authentic #t)))])
+                     (values struct:a a a?
+                             (make-struct-field-accessor a-ref 0 'a-x ,@more)
+                             (make-struct-field-accessor a-ref 1 'a-y ,@more))))
+                 (lambda (v)
+                   (+ (and (a? v) (a-x v))
+                      (and (a? v) (a-y v)))))
+              `(module m racket/base
+                 (require racket/unsafe/ops)
+                 (#%declare #:unsafe)
+                 (define-values (struct:a a a? a-x a-y)
+                   (let-values ([(struct:a a a? a-ref a-set!)
+                                 (make-struct-type 'a #f 2 0 #f
+                                                   (list (cons prop:authentic #t)))])
+                     (values struct:a a a?
+                             (make-struct-field-accessor a-ref 0 'a-x ,@more)
+                             (make-struct-field-accessor a-ref 1 'a-y ,@more))))
+                 (lambda (v)
+                   (+ (and (a? v) (unsafe-struct*-ref v 0))
+                      (and (a? v) (unsafe-struct*-ref v 1)))))))
+ (list '()
+       '('a?)
+       '("a?")
+       '(#f)
+       '('a? 'dreamland)
+       '("a?" 'dreamland)
+       '(#f 'dreamland)))
+
 (test-comp '(module m racket/base
               (struct a (x y) #:omit-define-syntaxes)
               (begin0
@@ -4155,6 +4199,50 @@
 
               #t
               (lambda (x) (set-a-x! x 5))))
+
+;; check that property guards do not contaminate anaylsis of value expressions for other properties
+(test-comp #:except 'racket
+           '(module m racket/base
+              (define-values (p:a a? a-ref) (make-struct-type-property 'a))
+              (define-values (p:b b? b-ref) (make-struct-type-property 'b (lambda (v i) (v))))
+              (struct s (x y) #:omit-define-syntaxes
+                #:property p:a (lambda () s-x)
+                #:property p:b (lambda () 'ok))
+              (s? (s 1 2)))
+           '(module m racket/base
+              (define-values (p:a a? a-ref) (make-struct-type-property 'a))
+              (define-values (p:b b? b-ref) (make-struct-type-property 'b (lambda (v i) (v))))
+              (struct s (x y) #:omit-define-syntaxes
+                #:property p:a (lambda () s-x)
+                #:property p:b (lambda () 'ok))
+              #t))
+
+(module uses-constructor-too-early-via-property-guard racket/base
+  (define-values (p:a a? a-ref) (make-struct-type-property 'a))
+  (define-values (p:b b? b-ref) (make-struct-type-property 'b (lambda (v i) (v))))
+  (struct s (x y) #:omit-define-syntaxes
+    #:property p:b (lambda () (s? (s 1 2)))
+    #:property p:a (lambda () 'ok))
+  (s? (s 1 2)))
+(err/rt-test/once (dynamic-require ''uses-constructor-too-early-via-property-guard #f))
+(module uses-constructor-too-early-via-property-guard2 racket/base
+  (define-values (p:a a? a-ref) (make-struct-type-property 'a))
+  (define-values (p:b b? b-ref) (make-struct-type-property 'b (lambda (v i) (v))))
+  (struct s (x y) #:omit-define-syntaxes
+    #:property p:a (lambda () 'ok)
+    #:property p:b (lambda () (s? (s 1 2))))
+  (s? (s 1 2)))
+(err/rt-test/once (dynamic-require ''uses-constructor-too-early-via-property-guard2 #f))
+
+(test-comp '(module m racket/base
+              (define-values (p:b b? b-ref) (make-struct-type-property 'b (lambda (v i) (v))))
+              (struct s (x y) #:omit-define-syntaxes
+                #:property p:b (lambda () (s? (s 1 2)))))
+           '(module m racket/base
+              (define-values (p:b b? b-ref) (make-struct-type-property 'b (lambda (v i) (v))))
+              (struct s (x y) #:omit-define-syntaxes
+                #:property p:b (lambda () #t)))
+           #f)
 
 (test-comp #:except 'chez-scheme ; not able to remove pure `make-struct-type`
            '(lambda ()
@@ -6109,6 +6197,30 @@
 (unless (eq? 'cgc (system-type 'gc))
   (void (dynamic-require ''uses-too-much-memory-for-shift #f)))
 
+(module uses-too-much-memory-for-expt racket/base
+  (define c (make-custodian))
+  (custodian-limit-memory c (* 1024 1024 10))
+  (parameterize ([current-custodian c])
+    (sync
+     (thread
+      (lambda ()
+        (with-handlers ([exn:fail:out-of-memory? void])
+          (expt 2 (expt -19 11))))))))
+(unless (eq? 'cgc (system-type 'gc))
+  (void (dynamic-require ''uses-too-much-memory-for-expt #f)))
+
+(module uses-too-much-memory-for-fraction-expt racket/base
+  (define c (make-custodian))
+  (custodian-limit-memory c (* 1024 1024 10))
+  (parameterize ([current-custodian c])
+    (sync
+     (thread
+      (lambda ()
+        (with-handlers ([exn:fail:out-of-memory? void])
+          (expt 1/2 (expt -19 11))))))))
+(unless (eq? 'cgc (system-type 'gc))
+  (void (dynamic-require ''uses-too-much-memory-for-fraction-expt #f)))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Make sure that closure fields are correctly type-tagged
 ;; when a function has an unused rest arg:
@@ -6635,6 +6747,239 @@
            '(lambda (x)
               (list (eq? x 7) (box 5))))
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check for cross-module inlining in the presence of vacuous `let`
+;; This is specifically for schemify
+
+(register-top-level-module
+ (module add1/with-vacuous-let racket/base
+   (provide add1)
+   (define add1
+     (let ()
+       (letrec ()
+         (begin
+           (begin0
+             (values (lambda (x) (+ x 1))))))))))
+
+(register-top-level-module
+ (module add1/with-vacuous-let/not-broken racket/base
+   (provide add1)
+   (define add1
+     (let ()
+       (letrec ()
+         (begin
+           (begin0
+             (values (values (lambda (x) (+ x 1)))))))))))
+
+(register-top-level-module
+ (module add1/without-vacuous-let racket/base
+   (provide add1)
+   (define (add1 x)
+     (+ x 1))))
+
+(register-top-level-module
+ (module add1/with-copy-propagating-lets racket/base
+   (provide add1)
+   (define add1
+     (lambda (x)
+       (let ([x1 x])
+         (begin0
+           (letrec ([x2 x1]
+                    [x3 x1])
+             (begin
+               (quote-syntax ignore-me)
+               (+ x2 1)))))))))
+
+(when (eq? (system-type 'vm) 'chez-scheme)
+  (test-comp `(module m racket/base
+                (require 'add1/with-vacuous-let)
+                (add1 2))
+             `(module m racket/base
+                (require 'add1/without-vacuous-let)
+                (add1 2)))
+  (test-comp `(module m racket/base
+                (require 'add1/with-vacuous-let/not-broken)
+                (add1 2))
+             `(module m racket/base
+                (require 'add1/without-vacuous-let)
+                (add1 2)))
+  (test-comp `(module m racket/base
+                (require 'add1/with-copy-propagating-lets)
+                (add1 2))
+             `(module m racket/base
+                (require 'add1/without-vacuous-let)
+                (add1 2))))
+
+(register-top-level-module
+ (module add3/with-vacuous-let racket/base
+   (provide add3)
+   (define-values (add1 add2 add3)
+     (let ()
+       (letrec ()
+         (begin
+           (begin0
+             (values (lambda (x) (+ x 1))
+                     (lambda (x) (add1 (add1 x)))
+                     (lambda (x) (add1 (add2 x)))))))))))
+
+(register-top-level-module
+ (module add3/with-vacuous-let/broken racket/base
+   (provide add3)
+   (define-values (add1 add2 add3)
+     (let ()
+       (letrec ()
+         (begin
+           (begin0
+             (values (values (lambda (x) (+ x 1))
+                             (lambda (x) (add1 (add1 x)))
+                             (lambda (x) (add1 (add2 x))))))))))))
+
+(register-top-level-module
+ (module add3/without-vacuous-let racket/base
+   (provide add3)
+   (define (add1 x)
+     (+ x 1))
+   (define (add2 x)
+     (add1 (add1 x)))
+   (define (add3 x)
+     (add1 (add2 x)))))
+
+(when (eq? (system-type 'vm) 'chez-scheme)
+  (test-comp `(module m racket/base
+                (require 'add3/with-vacuous-let)
+                (add3 2))
+             `(module m racket/base
+                (require 'add3/without-vacuous-let)
+                (add3 2)))
+  (test-comp `(module m racket/base
+                (require 'add3/with-vacuous-let/broken)
+                (add3 2))
+             `(module m racket/base
+                (require 'add3/without-vacuous-let)
+                (add3 2))
+             #f))
+
+(register-top-level-module
+ (module add5/with-vacuous-let racket/base
+   (provide add5)
+   (define-values (add1 add2 add3 add4 add5)
+     (let ()
+       (letrec ()
+         (begin
+           (begin0
+             (values (lambda (x) (+ x 1))
+                     (lambda (x) (add1 (add1 x)))
+                     (lambda (x) (add1 (add2 x)))
+                     (lambda (x) (add1 (add3 x)))
+                     (lambda (x) (add1 (add4 x)))))))))))
+
+(register-top-level-module
+ (module add5/with-vacuous-let/broken racket/base
+   (provide add5)
+   (define-values (add1 add2 add3 add4 add5)
+     (let ()
+       (letrec ()
+         (begin
+           (begin0
+             (values (values (lambda (x) (+ x 1))
+                             (lambda (x) (add1 (add1 x)))
+                             (lambda (x) (add1 (add2 x)))
+                             (lambda (x) (add1 (add3 x)))
+                             (lambda (x) (add1 (add4 x))))))))))))
+
+(register-top-level-module
+ (module add5/without-vacuous-let racket/base
+   (provide add5)
+   (define (add1 x)
+     (+ x 1))
+   (define (add2 x)
+     (add1 (add1 x)))
+   (define (add3 x)
+     (add1 (add2 x)))
+   (define (add4 x)
+     (add1 (add3 x)))
+   (define (add5 x)
+     (add1 (add4 x)))))
+
+(when (eq? (system-type 'vm) 'chez-scheme)
+  (test-comp `(module m racket/base
+                (require 'add5/with-vacuous-let)
+                (add5 2))
+             `(module m racket/base
+                (require 'add5/without-vacuous-let)
+                (add5 2)))
+  (test-comp `(module m racket/base
+                (require 'add5/with-vacuous-let/broken)
+                (add5 2))
+             `(module m racket/base
+                (require 'add5/without-vacuous-let)
+                (add5 2))
+             #f))
+
+(register-top-level-module
+ (module add7/with-vacuous-let racket/base
+   (provide add7)
+   (define-values (add1 add2 add3 add4 add5 add6 add7)
+     (let ()
+       (letrec ()
+         (begin
+           (begin0
+             (values (lambda (x) (+ x 1))
+                     (lambda (x) (add1 (add1 x)))
+                     (lambda (x) (add1 (add2 x)))
+                     (lambda (x) (add1 (add3 x)))
+                     (lambda (x) (add1 (add4 x)))
+                     (lambda (x) (add1 (add5 x)))
+                     (lambda (x) (add1 (add6 x)))))))))))
+
+(register-top-level-module
+ (module add7/with-vacuous-let/broken racket/base
+   (provide add7)
+   (define-values (add1 add2 add3 add4 add5 add6 add7)
+     (let ()
+       (letrec ()
+         (begin
+           (begin0
+             (values (values (lambda (x) (+ x 1))
+                             (lambda (x) (add1 (add1 x)))
+                             (lambda (x) (add1 (add2 x)))
+                             (lambda (x) (add1 (add3 x)))
+                             (lambda (x) (add1 (add4 x)))
+                             (lambda (x) (add1 (add5 x)))
+                             (lambda (x) (add1 (add6 x))))))))))))
+
+(register-top-level-module
+ (module add7/without-vacuous-let racket/base
+   (provide add7)
+   (define (add1 x)
+     (+ x 1))
+   (define (add2 x)
+     (add1 (add1 x)))
+   (define (add3 x)
+     (add1 (add2 x)))
+   (define (add4 x)
+     (add1 (add3 x)))
+   (define (add5 x)
+     (add1 (add4 x)))
+   (define (add6 x)
+     (add1 (add5 x)))
+   (define (add7 x)
+     (add1 (add6 x)))))
+
+(when (eq? (system-type 'vm) 'chez-scheme)
+  (test-comp `(module m racket/base
+                (require 'add7/with-vacuous-let)
+                (add7 2))
+             `(module m racket/base
+                (require 'add7/without-vacuous-let)
+                (add7 2)))
+  (test-comp `(module m racket/base
+                (require 'add7/with-vacuous-let/broken)
+                (add7 2))
+             `(module m racket/base
+                (require 'add7/without-vacuous-let)
+                (add7 2))
+             #f))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Try to check that struct optimizations are ok
@@ -6655,7 +7000,16 @@
                   [(define (equal-proc x y recursive-equal?) pie-type #t)
                    (define (hash-code x hc) 1)
                    (define hash-proc  hash-code)
-                   (define hash2-proc hash-code)]))])
+                   (define hash2-proc hash-code)])
+               '(begin
+                  (require racket/unsafe/struct-type-property)
+                  (define-values (prop:p p? p-ref)
+                    (unsafe-make-struct-type-property/guard-calls-no-arguments
+                     'p
+                     (lambda (v si)
+                       (hash-set (hash) 'ok v))))
+                  (struct pie (type)
+                    #:property prop:p (lambda () pie-type))))])
     (test #t
           list?
           (let loop ([tries 3])
@@ -6795,6 +7149,96 @@
 (test #t 'not-not-utf-8 (not (bytes-utf-8-length (bytes 255))))
 (test #f 'not-utf-8 (bytes-utf-8-index (bytes 255) 1))
 (test #t 'not-not-utf-8 (not (bytes-utf-8-index (bytes 255) 1)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that unsafe functions cooperate with cross-module inlining
+
+(register-top-level-module
+ (module module-that-provides-unsafe-curried-function racket/base
+   (require (for-syntax racket/base))
+   (provide do-add)
+   (define-syntax (define-unsafe stx)
+     (syntax-case stx ()
+       [(_ (id arg ...) body)
+        #`(define id #,(syntax-property #`(lambda (arg ...) body) 'body-as-unsafe #t))]))
+   (define-unsafe (do-add x i1 i2 i3 i4) (lambda (y) (+ x y)))))
+
+(test-comp `(module m racket/base
+              (require 'module-that-provides-unsafe-curried-function)
+              do-add
+              ((do-add 1 0 0 0 0) 2))
+           `(module m racket/base
+              (require 'module-that-provides-unsafe-curried-function)
+              do-add
+              3))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; #%foreign-inline should not get in the way of backend optimizations
+
+(test-comp 5 '(if (#%foreign-inline #f #:pure) (cons 1 2) 5))
+(test-comp 5 '(if ((#%foreign-inline (lambda () #f) #:pure*)) (cons 1 2) 5))
+(test-comp '(list 7 7) '(let ([x (#%foreign-inline 7 #:copy)])
+                          (list x x)))
+(test-comp '(list 7 7) '(let ([x (#%foreign-inline (lambda () 7) #:copy*)])
+                          (list (x) (x))))
+
+(register-top-level-module
+ (module module-that-provides-foreign-inline racket/base
+   (provide seven)
+   (define seven (#%foreign-inline 7 #:copy))))
+
+(test-comp `(module m racket/base
+              (require 'module-that-provides-foreign-inline)
+              (list seven seven seven))
+           `(module m racket/base
+              (require 'module-that-provides-foreign-inline)
+              (list 7 7 seven)))
+
+(register-top-level-module
+ (module module-that-provides-foreign-inline-pure racket/base
+   (provide seven)
+   (define seven (#%foreign-inline 7 #:pure))))
+
+(test-comp `(module m racket/base
+              (require 'module-that-provides-foreign-inline-pure)
+              (list seven seven seven))
+           `(module m racket/base
+              (require 'module-that-provides-foreign-inline-pure)
+              (list 7 7 seven))
+           ;; BC effectively ignores `#:pure` for the purpose of
+           ;; exporting constant
+           (eq? 'racket (system-type 'vm)))
+
+(register-top-level-module
+ (module module-that-provides-foreign-inline-effect racket/base
+   (provide seven)
+   (define seven (#%foreign-inline 7 #:effect))))
+
+(test-comp `(module m racket/base
+              (require 'module-that-provides-foreign-inline-effect)
+              (list seven seven seven))
+           `(module m racket/base
+              (require 'module-that-provides-foreign-inline-effect)
+              (list 7 7 seven))
+           ;; BC effectively ignores `#:effect` for the purpose of
+           ;; exporting constants
+           (eq? 'racket (system-type 'vm)))
+
+(register-top-level-module
+ (module module-that-provides-foreign-inline racket/base
+   (provide seven)
+   (define seven (#%foreign-inline (/ 7 0) #:copy))))
+
+(test-comp `(module m racket/base
+              (require 'module-that-provides-foreign-inline)
+              (list seven seven))
+           `(module m racket/base
+              (require 'module-that-provides-foreign-inline)
+              (list (/ 7 0) seven))
+           ;; CS (really, schemify) believes the `#:copy` annotation,
+           ;; while BC ignores it and makes its own inference that
+           ;; `(/ 7 0)` should not be copied
+           (eq? 'chez-scheme (system-type 'vm)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Try a program that triggers lots of inlining, which at one point
@@ -7303,6 +7747,121 @@
   (define f (quad add1))
 
   (f 0))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test 5 black-box 5)
+
+(module does-not-do-the-work-at-run-time racket/base
+  (#%declare #:unsafe)
+  (provide f)
+  (define (f N)
+    (lambda ()
+      (let ([to-power (black-box 100)])
+        (let loop ([i 1000])
+          (unless (zero? i)
+            (expt 2 to-power)
+            (loop (sub1 i))))))))
+
+(when (run-unreliable-tests? 'timing)
+  (define (plain-loop N)
+    (let loop ([i N])
+      (unless (zero? i)
+        (loop (sub1 i)))))
+  
+  (define N (let loop ([N 1000])
+              (define-values (plain-r plain-cpu plain-real plain-gc) (time-apply plain-loop (list N)))
+              (if (zero? plain-cpu)
+                  (loop (* N 2))
+                  (* N 2))))
+  
+  (define (does-the-work-at-run-time? thunk)
+    (let loop ([tries 5] [fast-n 0] [slow-n 0])
+      (cond
+        [(zero? tries)
+         (slow-n . > . fast-n)]
+        [else
+         (define-values (plain-r plain-cpu plain-real plain-gc) (time-apply plain-loop (list N)))
+         (define-values (r cpu real gc) (time-apply thunk null))
+         (if (cpu . <= . (* 2 plain-cpu))
+             (loop (sub1 tries) (add1 fast-n) slow-n)
+             (loop (sub1 tries) fast-n (add1 slow-n)))])))
+         
+  (test #f does-the-work-at-run-time?
+        (lambda ()
+          (let ([to-power 100])
+            (let loop ([i N])
+              (unless (zero? i)
+                ;; call to `expt` is optimized away entirely, since there's
+                ;; no effect and the result is unused:
+                (expt 2 to-power)
+                (loop (sub1 i)))))))
+
+  (test #f does-the-work-at-run-time?
+        (lambda ()
+          (let ([to-power 100])
+            (let loop ([i N])
+              (unless (zero? i)
+                ;; optimize to just returning a folded constant, instead of
+                ;; calling `expt` each iteration:
+                (black-box (expt 2 to-power))
+                (loop (sub1 i)))))))
+
+  (test #t does-the-work-at-run-time?
+        (lambda ()
+          (let ([to-power (black-box 100)])
+            (let loop ([i N])
+              (unless (zero? i)
+                ;; in safe mode, calls `expt`, because `to-power` is not known
+                ;; to be a number, but likely optimized away in unsafe mode:
+                (expt 2 to-power)
+                (loop (sub1 i)))))))
+
+  (test #f does-the-work-at-run-time?
+        ((dynamic-require ''does-not-do-the-work-at-run-time 'f) N))
+
+  (test #t does-the-work-at-run-time?
+        (lambda ()
+          (let ([to-power (black-box 100)])
+            (let loop ([i N])
+              (unless (zero? i)
+                ;; arithmetic really performed every iteration, since `to-power` value
+                ;; is assumed unknown, and `expt` result is assumed to be used
+                (black-box (expt 2 to-power))
+                (loop (sub1 i))))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(module variable-x-is-used-too-early racket/base
+  (define (f)
+    x)
+  (define x
+    (begin0
+      f
+      (f))))
+
+(err/rt-test/once (dynamic-require ''variable-x-is-used-too-early #f)
+                  exn:fail:contract:variable?)
+
+(err/rt-test/once (let ()
+                    (define (f)
+                      x)
+                    (define x
+                      (begin0
+                        f
+                        (f)))
+                    'ok)
+                  exn:fail:contract:variable?)
+
+(err/rt-test/once (let ()
+                    (define (guard v st-info)
+                      (prop? 0))
+                    (define-values (prop prop? prop-ref)
+                      (begin0
+                        (make-struct-type-property 'name guard)
+                        (guard 1 2)))
+                    (values prop prop? prop-ref))
+                  exn:fail:contract:variable?)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

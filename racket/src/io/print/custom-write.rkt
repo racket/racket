@@ -15,7 +15,7 @@
                                             (procedure-arity-includes? v 3))
                                  (raise-argument-error
                                   'guard-for-prop:custom-write
-                                  "(procedure-arity-includes?/c 3)"
+                                  "(procedure-arity-includes/c 3)"
                                   v))
                                v)))
 

@@ -41,7 +41,7 @@
 #define _MIPS_SIM_ABI32		1
 #define _MIPS_SIM_NABI32	2
 #define _MIPS_SIM_ABI64		3
-#elif !defined(__OpenBSD__)
+#elif !defined(__OpenBSD__) && !defined(__FreeBSD__)
 # include <sgidefs.h>
 #endif
 
@@ -80,6 +80,7 @@
 #  endif
 #endif
 
+#define FFI_TARGET_HAS_COMPLEX_TYPE 1
 #define FFI_FLAG_BITS 2
 
 /* SGI's strange assembler requires that we multiply by 4 rather 
@@ -110,6 +111,12 @@
 #define FFI_TYPE_STRUCT_DF     189
 #define FFI_TYPE_STRUCT_SMALL  93
 #define FFI_TYPE_STRUCT_SMALL2 109
+
+#define FFI_TYPE_COMPLEX_SMALL    95
+#define FFI_TYPE_COMPLEX_SMALL2   111
+#define FFI_TYPE_COMPLEX_FF       47
+#define FFI_TYPE_COMPLEX_DD       63
+#define FFI_TYPE_COMPLEX_LDLD     79
 
 /* and for n32 soft float, add 16 * 2^4 */
 #define FFI_TYPE_STRUCT_D_SOFT      317

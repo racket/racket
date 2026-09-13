@@ -118,6 +118,19 @@
 (test #t equal? 2 2)
 (test #t equal? (make-vector 5 'a) (make-vector 5 'a))
 (test #t equal? (box "a") (box "a"))
+(test #t equal? (make-flvector 5 0.0) (make-flvector 5 0.0))
+(test #t equal? (make-fxvector 5 0) (make-fxvector 5 0))
+(test #t equal? (stencil-vector #b10010 'a 'b) (stencil-vector #b10010 'a 'b))
+(test #t eq?
+      (equal-hash-code (make-flvector 5 0.0))
+      (equal-hash-code (make-flvector 5 0.0)))
+(test #t eq?
+      (equal-hash-code (make-fxvector 5 0))
+      (equal-hash-code (make-fxvector 5 0)))
+(test #t eq?
+      (equal-hash-code (stencil-vector #b10010 'a 'b))
+      (equal-hash-code (stencil-vector #b10010 'a 'b)))
+
 (test #f equal? "" (string #\null))
 
 (test #f equal? 'a "a")
@@ -158,6 +171,24 @@
 (test #f equal-always? (make-hash '((a . 1))) (make-hash '((a . 1))))
 (test #f equal-always? (mcons 'a '()) (mcons 'a '()))
 (test #f equal-always? (string #\a) (string #\a))
+(test #f equal-always? (make-flvector 5 0.0) (make-flvector 5 0.0))
+(test #f equal-always? (make-fxvector 5 0) (make-fxvector 5 0))
+(test #f equal-always? (stencil-vector #b10010 'a 'b) (stencil-vector #b10010 'a 'b))
+(test #f eq?
+      (equal-always-hash-code (make-flvector 5 0.0))
+      (equal-always-hash-code (make-flvector 5 0.0)))
+(test #f eq?
+      (equal-always-hash-code (make-fxvector 5 0))
+      (equal-always-hash-code (make-fxvector 5 0)))
+(test #f eq?
+      (equal-always-hash-code (stencil-vector #b10010 'a 'b))
+      (equal-always-hash-code (stencil-vector #b10010 'a 'b)))
+
+(let ()
+  (struct s (x) #:property prop:procedure 0)
+  (test #t equal-always?/recur '(1 . 2) '(1 . 2) (s (lambda (x y) #t)))
+  (test #t equal-always?/recur '#(0) '#(0) (s (lambda (x y) #t)))
+  (test #t equal-always?/recur '#&0 '#&0 (s (lambda (x y) #t))))
 
 (arity-test eq? 2 2)
 (arity-test eqv? 2 2)
@@ -299,7 +330,6 @@
 (test 'a append '() 'a)
 (test 1 append 1)
 (test '(1 . 2) append '(1) 2)
-(test '(1 . 2) append '(1) 2)
 (err/rt-test (append '(1 2 . 3) 1))
 (err/rt-test (append '(1 2 3) 1 '(4 5 6)))
 
@@ -317,13 +347,13 @@
 (test 'c list-ref '(a b c d) 2)
 (test 'c list-ref '(a b c . d) 2)
 (arity-test list-ref 2 2)
-(err/rt-test (list-ref 1 1) exn:application:mismatch?)
+(err/rt-test (list-ref 1 1) exn:application:mismatch? #rx"contract violation.*pair[?]")
 (err/rt-test (list-ref '(a b . c) 2) exn:application:mismatch? #rx"index reaches a non-pair")
-(err/rt-test (list-ref '(1 2 3) 2.0))
-(err/rt-test (list-ref '(1) '(1)))
+(err/rt-test (list-ref '(1 2 3) 2.0) exn:fail:contract? #rx"contract violation.*exact-nonnegative-integer[?]")
+(err/rt-test (list-ref '(1) '(1)) exn:fail:contract? #rx"contract violation.*exact-nonnegative-integer[?]")
 (err/rt-test (list-ref '(1) 1) exn:application:mismatch? #rx"index too large for list")
-(err/rt-test (list-ref '() 0) exn:application:mismatch?)
-(err/rt-test (list-ref '(1) -1))
+(err/rt-test (list-ref '() 0) exn:application:mismatch? #rx"contract violation.*pair[?]")
+(err/rt-test (list-ref '(1) -1) exn:fail:contract? #rx"contract violation.*exact-nonnegative-integer[?]")
 (err/rt-test (list-ref '(1) 2000000000000) exn:application:mismatch?)
 
 (test '(c d) list-tail '(a b c d) 2)
@@ -331,10 +361,11 @@
 (test '(b c . d) list-tail '(a b c . d) 1)
 (test 1 list-tail 1 0)
 (arity-test list-tail 2 2)
-(err/rt-test (list-tail 1 1) exn:application:mismatch?)
-(err/rt-test (list-tail '(1 2 3) 2.0))
-(err/rt-test (list-tail '(1) '(1)))
-(err/rt-test (list-tail '(1) -1))
+(err/rt-test (list-tail 1 1) exn:application:mismatch? #rx"index reaches a non-pair")
+(err/rt-test (list-tail null 1) exn:application:mismatch? #rx"index too large for list")
+(err/rt-test (list-tail '(1 2 3) 2.0) exn:fail:contract? #rx"contract violation.*exact-nonnegative-integer[?]")
+(err/rt-test (list-tail '(1) '(1)) exn:fail:contract? #rx"contract violation.*exact-nonnegative-integer[?]")
+(err/rt-test (list-tail '(1) -1)exn:fail:contract? #rx"contract violation.*exact-nonnegative-integer[?]")
 (err/rt-test (list-tail '(1) 2) exn:application:mismatch? #rx"index too large for list")
 (err/rt-test (list-tail '(1 2 . 3) 3) exn:application:mismatch? #rx"index reaches a non-pair")
 
@@ -639,7 +670,7 @@
   (test #t k:interned-char? #\()
   (test #t k:interned-char? #\ )
   (test #t k:interned-char? '#\newline)
-  (test (eq? 'chez-scheme (system-type 'vm)) k:interned-char? #\u100)
+  (test #t k:interned-char? #\u100)
   (test #f k:interned-char? 7)
   (test #f k:interned-char? #t)
   (test #f k:interned-char? #t)
@@ -862,14 +893,25 @@
 (test #\a integer->char (char->integer #\a))
 (test #\371 integer->char (char->integer #\371))
 (test #\U12345 integer->char (char->integer #\U12345))
+(test #\0 integer->char (char->integer #\0))
+(test #\U10FFFF integer->char (char->integer #\U10FFFF))
 (arity-test integer->char 1 1)
 (arity-test char->integer 1 1)
-(err/rt-test (integer->char 5.0))
-(err/rt-test (integer->char 'a))
-(err/rt-test (integer->char -1))
-(err/rt-test (integer->char (expt 2 32)))
-(err/rt-test (integer->char 10000000000000000))
-(err/rt-test (char->integer 5))
+(let ([rx #rx"[(]and/c [(]integer-in 0 #x10FFFF[)] [(]not/c [(]integer-in #xD800 #xDFFF[)][)][)]"])
+  (err/rt-test (integer->char 5.0) exn:fail:contract? rx)
+  (err/rt-test (integer->char 'a) exn:fail:contract? rx)
+  (err/rt-test (integer->char -1) exn:fail:contract? rx)
+  (err/rt-test (integer->char (expt 2 32) exn:fail:contract? rx))
+  (err/rt-test (integer->char 10000000000000000) exn:fail:contract? rx)
+  (err/rt-test (integer->char #xD800) exn:fail:contract? rx)
+  (err/rt-test (integer->char #xDFFF) exn:fail:contract? rx))
+(err/rt-test (char->integer 5) exn:fail:contract? #rx"char[?]")
+
+(test #t
+      (for/and ([i (in-range 1000)])
+        (define c (random #x110000))
+        (or (<= #xD800 c #xDFFF)
+            (eq? (integer->char c) (integer->char c)))))
 
 (define (test-up/down case case-name members memassoc)
   (let loop ([n 0])
@@ -885,26 +927,37 @@
 (test-up/down char-upcase 'char-upcase lowers (map cons lowers uppers))
 (test-up/down char-downcase 'char-downcase uppers (map cons uppers lowers))
 
+(define 64-bit-machine? (eq? (expt 2 40) (eq-hash-code (expt 2 40))))
+
 (test #t string? "The word \"recursion\\\" has many meanings.")
 (test #t string? "")
 (arity-test string? 1 1)
 (test 3 'make-string (string-length (make-string 3)))
 (test "" make-string 0)
 (arity-test make-string 1 2)
-(err/rt-test (make-string "hello"))
-(err/rt-test (make-string 5 "hello"))
-(err/rt-test (make-string 5.0 #\b))
-(err/rt-test (make-string 5.2 #\a))
-(err/rt-test (make-string -5 #\f))
-(define 64-bit-machine? (eq? (expt 2 40) (eq-hash-code (expt 2 40))))
+(err/rt-test (make-string "hello") exn:fail:contract? "exact-nonnegative-integer[?]")
+(err/rt-test (make-string 5 "hello") exn:fail:contract? "char[?]")
+(err/rt-test (make-string 5.0 #\b) exn:fail:contract? "exact-nonnegative-integer[?]")
+(err/rt-test (make-string 5.2 #\a) exn:fail:contract? "exact-nonnegative-integer[?]")
+(err/rt-test (make-string -5 #\f) exn:fail:contract? "exact-nonnegative-integer[?]")
 (unless 64-bit-machine?
   (err/rt-test (make-string 500000000000000 #\f) exn:fail:out-of-memory?)) ;; bignum on 32-bit machines
 (err/rt-test (make-string 50000000000000000000 #\f) exn:fail:out-of-memory?)  ;; bignum on 64-bit machines
 
+(test #t vector? (make-vector 0))
+(test #(0 0 0 0 0) make-vector 5)
+(test #(0 0 0 0 0) make-vector 5 0)
+(err/rt-test (make-vector "oops") exn:fail:contract? "exact-nonnegative-integer[?]")
+(err/rt-test (make-vector 5.0 0) exn:fail:contract? "exact-nonnegative-integer[?]")
+(err/rt-test (make-vector 5.2 0) exn:fail:contract? "exact-nonnegative-integer[?]")
+(err/rt-test (make-vector -5 0) exn:fail:contract? "exact-nonnegative-integer[?]")
 (unless 64-bit-machine?
   (err/rt-test (make-vector 1234567890 #\f) exn:fail:out-of-memory?)
+  (err/rt-test (make-vector 500000000000000 0) exn:fail:out-of-memory?))
+(err/rt-test (make-vector 50000000000000000000 0) exn:fail:out-of-memory?)
+
+(unless 64-bit-machine?
   (err/rt-test (read (open-input-string "#1234567890(0)")) exn:fail:out-of-memory?))
-(test #t vector? (make-vector 0))
 
 (let ([b (vector 1 2 3)])
   (vector-copy! b 0 b 1)
@@ -1004,6 +1057,34 @@
 (err/rt-test (string-fill! 'sym #\1))
 (err/rt-test (string-fill! "static" #\1))
 (err/rt-test (string-fill! (string-copy "oops") 5))
+
+(let ([f (lambda (l) (apply string-append l))])
+  (test "abcdef" f '("a" "bc" "def"))
+  (test #f immutable? (f '("a" "bc" "def")))
+  (test "" f null)
+  (test #f immutable? (f '()))
+  (err/rt-test (f 1) exn:fail:contract? #rx"^apply:")
+  (err/rt-test (f '(1)) exn:fail:contract? #rx"^string-append:"))
+
+(let ([f (lambda (a b l) (apply string-append a b l))])
+  (test "012abcdef" f "0" "12" '("a" "bc" "def"))
+  (test #f immutable? (f "0" "12" '("a" "bc" "def")))
+  (err/rt-test (f 1 "2" '()) exn:fail:contract? #rx"^string-append:")
+  (err/rt-test (f "1" "2" 1) exn:fail:contract? #rx"^apply:"))
+
+(let ([f (lambda (l) (apply string-append-immutable l))])
+  (test "abcdef" f '("a" "bc" "def"))
+  (test #t immutable? (f '("a" "bc" "def")))
+  (test "" f null)
+  (test #t immutable? (f '()))
+  (err/rt-test (f 1) exn:fail:contract? #rx"^apply:")
+  (err/rt-test (f '(1)) exn:fail:contract? #rx"^string-append-immutable:"))
+
+(let ([f (lambda (a b l) (apply string-append-immutable a b l))])
+  (test "012abcdef" f "0" "12" '("a" "bc" "def"))
+  (test #t immutable? (f "0" "12" '("a" "bc" "def")))
+  (err/rt-test (f 1 "2" '()) exn:fail:contract? #rx"^string-append-immutable:")
+  (err/rt-test (f "1" "2" 1) exn:fail:contract? #rx"^apply:"))
 
 (let ([s (make-string 10 #\x)])
   (test (void) string-copy! s 0 "hello")
@@ -1231,12 +1312,12 @@
 (test 3 'make-bytes (bytes-length (make-bytes 3)))
 (test #"" make-bytes 0)
 (arity-test make-bytes 1 2)
-(err/rt-test (make-bytes #"hello"))
-(err/rt-test (make-bytes 5 #"hello"))
-(err/rt-test (make-bytes 5.0 98))
-(err/rt-test (make-bytes 5.2 97))
-(err/rt-test (make-bytes -5 98))
-(err/rt-test (make-bytes 50000000000000000000 #\f))
+(err/rt-test (make-bytes #"hello") exn:fail:contract? "exact-nonnegative-integer[?]")
+(err/rt-test (make-bytes 5 #"hello") exn:fail:contract? "byte[?]")
+(err/rt-test (make-bytes 5.0 98) exn:fail:contract? "exact-nonnegative-integer[?]")
+(err/rt-test (make-bytes 5.2 97) exn:fail:contract? "exact-nonnegative-integer[?]")
+(err/rt-test (make-bytes -5 98) exn:fail:contract? "exact-nonnegative-integer[?]")
+(err/rt-test (make-bytes 50000000000000000000 #\f) exn:fail:contract? "byte?")
 (unless 64-bit-machine?
   (err/rt-test (make-bytes 500000000000000 45) exn:fail:out-of-memory?)) ;; bignum on 32-bit machines
 (err/rt-test (make-bytes 50000000000000000000 45) exn:fail:out-of-memory?)  ;; bignum on 64-bit machines
@@ -1245,15 +1326,15 @@
 (define f (make-bytes 3 (char->integer #\*)))
 (test #"?**" 'bytes-set! (begin (bytes-set! f 0 (char->integer #\?)) f))
 (arity-test bytes-set! 3 3)
-(err/rt-test (bytes-set! #"hello" 0 #\a)) ; immutable bytes constant
+(err/rt-test (bytes-set! #"hello" 0 #\a) exn:fail:contract? #rx"[(]and/c bytes[?] [(]not/c immutable[?][)][)]") ; immutable bytes constant
 (define hello-bytes (bytes-copy #"hello"))
-(err/rt-test (bytes-set! hello-bytes 'a 97))
-(err/rt-test (bytes-set! 'hello 4 97))
-(err/rt-test (bytes-set! hello-bytes 4 'a))
-(err/rt-test (bytes-set! hello-bytes 4.0 'a))
-(err/rt-test (bytes-set! hello-bytes 5 97) exn:application:mismatch?)
-(err/rt-test (bytes-set! hello-bytes -1 97))
-(err/rt-test (bytes-set! hello-bytes (expt 2 100) 97) exn:application:mismatch?)
+(err/rt-test (bytes-set! hello-bytes 'a 97) exn:fail:contract? #rx"exact-nonnegative-integer[?]")
+(err/rt-test (bytes-set! 'hello 4 97) exn:fail:contract? #rx"[(]and/c bytes[?] [(]not/c immutable[?][)][)]")
+(err/rt-test (bytes-set! hello-bytes 4 'a) exn:fail:contract? #rx"byte[?]")
+(err/rt-test (bytes-set! hello-bytes 4.0 'a) exn:fail:contract? #rx"exact-nonnegative-integer[?]")
+(err/rt-test (bytes-set! hello-bytes 5 97) exn:fail:contract? #rx"[[]0, 4[]]")
+(err/rt-test (bytes-set! hello-bytes -1 97) exn:fail:contract? #rx"exact-nonnegative-integer[?]")
+(err/rt-test (bytes-set! hello-bytes (expt 2 100) 97) exn:fail:contract? #rx"[[]0, 4[]]")
 (err/rt-test (bytes-set! (bytes 4 5 6) 4 0) exn:fail:contract? #rx"[[]0, 2[]]")
 (test #"abc" bytes 97 98 99)
 (test #"" bytes)
@@ -1351,6 +1432,20 @@
 (err/rt-test (bytes=? #"a" #"a" 1))
 (err/rt-test (bytes=? #"a" #"b" 1))
 
+(let ([f (lambda (l) (apply bytes-append l))])
+  (test #"abcdef" f '(#"a" #"bc" #"def"))
+  (test #f immutable? (f '(#"a" #"bc" #"def")))
+  (test #"" f null)
+  (test #f immutable? (f '()))
+  (err/rt-test (f 1) exn:fail:contract? #rx"^apply:")
+  (err/rt-test (f '(1)) exn:fail:contract? #rx"^bytes-append:"))
+
+(let ([f (lambda (a b l) (apply bytes-append a b l))])
+  (test #"012abcdef" f #"0" #"12" '(#"a" #"bc" #"def"))
+  (test #f immutable? (f #"0" #"12" '(#"a" #"bc" #"def")))
+  (err/rt-test (f 1 #"2" '()) exn:fail:contract? #rx"^bytes-append:")
+  (err/rt-test (f #"1" #"2" 1) exn:fail:contract? #rx"^apply:"))
+
 (test #f bytes<? #"a" #"a" #"a")
 (test #f bytes<? #"a" #"a")
 (test #t bytes<? #"a")
@@ -1415,6 +1510,18 @@
 
 (test "ap0p0le" regexp-replace* #rx"p" "apple" "\\0\\$0")
 
+(test "allle" regexp-replace* #rx"p" "apple" "l" 1)
+(test "allle" regexp-replace* #rx"p" "apple" "l" 1 3)
+(test "allle" regexp-replace* #rx"p" "apple" "l" 1 3 #"a")
+
+(test #"allle" regexp-replace* #rx#"p" "apple" #"l" 1)
+(test #"allle" regexp-replace* #rx#"p" "apple" #"l" 1 3)
+(test #"allle" regexp-replace* #rx#"p" "apple" #"l" 1 3 #"a")
+
+(test #"allle" regexp-replace* #rx#"p" #"apple" #"l" 1)
+(test #"allle" regexp-replace* #rx#"p" #"apple" #"l" 1 3)
+(test #"allle" regexp-replace* #rx#"p" #"apple" #"l" 1 3 #"a")
+
 ;; Test sub-matches with procedure replace (second example by synx)
 (test "myCERVEZA myMI Mi"
       regexp-replace* "([Mm])i ([a-zA-Z]*)" "mi cerveza Mi Mi Mi"
@@ -1437,6 +1544,16 @@
 (test "HELLO world" regexp-replace* #px"\\w" "hello world" string-upcase 0 5)
 (test "hello world" regexp-replace* #px"o" "ohello world" "" 0 3)
 (test "hell world" regexp-replace* #px"o" "ohello world" "" 0 6)
+
+(let ([rx #rx"regexp-replace: contract violation.+expected:.+or/c regexp\\? byte-regexp\\? string\\? bytes\\?"])
+  (err/rt-test (regexp-replace 'not-regexp "string" "rep") exn:fail:contract? rx)
+  (err/rt-test (regexp-replace 'not-regexp "string" "rep" #"ipre") exn:fail:contract? rx))
+
+(let ([rx #rx"regexp-replace\\*: contract violation.+expected:.+or/c regexp\\? byte-regexp\\? string\\? bytes\\?"])
+  (err/rt-test (regexp-replace* 'not-regexp "string" "rep") exn:fail:contract? rx)
+  (err/rt-test (regexp-replace* 'not-regexp "string" "rep" 1) exn:fail:contract? rx)
+  (err/rt-test (regexp-replace* 'not-regexp "string" "rep" 1 2) exn:fail:contract? rx)
+  (err/rt-test (regexp-replace* 'not-regexp "string" "rep" 1 2 #"ipre") exn:fail:contract? rx))
 
 ;; Test weird port offsets:
 (define (test-weird-offset regexp-match regexp-match-positions)
@@ -1659,6 +1776,59 @@
 (arity-test regexp-replace 3 4)
 (arity-test regexp-replace* 3 6)
 
+(err/rt-test (regexp-match 'oops "input")
+             exn:fail:contract?
+             #rx"regexp-match: contract violation.*expected:.+or/c.+regexp[?].+byte-regexp[?].+string[?].+bytes[?]")
+(err/rt-test (regexp-match #rx"pattern" 'oops)
+             exn:fail:contract?
+             #rx"regexp-match: contract violation.*expected:.+or/c.+string[?].+bytes[?].+path[?].+input-port[?]")
+(err/rt-test (regexp-match #rx"pattern" "input" "oops")
+             exn:fail:contract?
+             #rx"regexp-match: contract violation.*expected: exact-nonnegative-integer[?]")
+(err/rt-test (regexp-match #rx"pattern" "input" 0 "oops")
+             exn:fail:contract?
+             #rx"regexp-match: contract violation.*expected:.+or/c.+exact-nonnegative-integer[?].+#f")
+(err/rt-test (regexp-match #rx"pattern" "input" 0 #f "oops")
+             exn:fail:contract?
+             #rx"regexp-match: contract violation.*expected:.+or/c.+output-port[?].+#f")
+(err/rt-test (regexp-match #rx"pattern" "input" 0 #f #f "oops")
+             exn:fail:contract?
+             #rx"regexp-match: contract violation.*expected: bytes[?]")
+
+(err/rt-test (regexp-match-peek 'oops (open-input-string "input"))
+             exn:fail:contract?
+             #rx"regexp-match-peek: contract violation.*expected:.+or/c.+regexp[?].+byte-regexp[?].+string[?].+bytes[?]")
+(err/rt-test (regexp-match-peek #rx"pattern" 'oops)
+             exn:fail:contract?
+             #rx"regexp-match-peek: contract violation.*expected: input-port[?]")
+(err/rt-test (regexp-match-peek #rx"pattern" "oops")
+             exn:fail:contract?
+             #rx"regexp-match-peek: contract violation.*expected: input-port[?]")
+(err/rt-test (regexp-match-peek #rx"pattern" (open-input-string "input") "oops")
+             exn:fail:contract?
+             #rx"regexp-match-peek: contract violation.*expected: exact-nonnegative-integer[?]")
+(err/rt-test (regexp-match-peek #rx"pattern" (open-input-string "input") 0 "oops")
+             exn:fail:contract?
+             #rx"regexp-match-peek: contract violation.*expected:.+or/c.+exact-nonnegative-integer[?].+#f")
+(err/rt-test (regexp-match-peek #rx"pattern" (open-input-string "input") 0 #f "oops")
+             exn:fail:contract?
+             #rx"regexp-match-peek: contract violation.*expected:.+or/c.+progress-evt[?].+#f")
+(err/rt-test (regexp-match-peek #rx"pattern" (open-input-string "input") 0 #f #f "oops")
+             exn:fail:contract?
+             #rx"regexp-match-peek: contract violation.*expected: bytes[?]")
+
+(test 3 regexp-max-lookbehind #rx#"(?<=abc)d")
+(test 2 regexp-max-lookbehind #rx#"e(?<=a..)d")
+(test 2 regexp-max-lookbehind #rx#"(?:a|ab)(?<!a..)d")
+(test 1 regexp-max-lookbehind #rx"^")
+(test 1 regexp-max-lookbehind #px"\\b")
+(test 0 regexp-max-lookbehind #rx"$")
+(test 0 regexp-max-lookbehind #rx".")
+(let ([rx #rx"regexp-max-lookbehind: contract violation.*expected:.+or/c.+regexp[?].+byte-regexp[?]"])
+  (err/rt-test (regexp-max-lookbehind "string") exn:fail:contract? rx)
+  (err/rt-test (regexp-max-lookbehind #"bytes") exn:fail:contract? rx)
+  (err/rt-test (regexp-max-lookbehind 'obviously-not-regexp) exn:fail:contract? rx))
+
 (test #t procedure? car)
 (test #f procedure? 'car)
 (test #t procedure? (lambda (x) (* x x)))
@@ -1672,6 +1842,37 @@
 (test 7 apply (lambda (a b) (+ a b)) (list 3 4))
 (test 17 apply + 10 (list 3 4))
 (test '() apply list '())
+;; Ensure `(apply apply ...)` routes the second `apply` to kernel `apply`.
+(test '(0 1 2 3)
+      (lambda ()
+        (apply apply append '((0 1) ((2) (3))))))
+(test "abcd"
+      (lambda ()
+        (apply apply string-append '("ab" ("cd")))))
+;; Ensure `(apply apply ...)` expands with kernel `apply` in argument position.
+(test #t
+      (lambda ()
+        (let* ([expanded (expand #'(apply apply append '((0 1) ((2) (3)))))]
+               [parts (syntax->list expanded)])
+          (and parts
+               (identifier? (list-ref parts 2))
+               (let-values ([(b) (identifier-binding (list-ref parts 2))])
+                 (and b
+                      (eq? (cadr b) 'apply)
+                      (eq? (cadddr b) 'apply)
+                      (eq? (resolved-module-path-name
+                            (module-path-index-resolve (caddr b)))
+                           '#%kernel)))))))
+;; But preserve lexical shadowing when `apply` is locally bound.
+(let ([kernel-apply apply])
+  (test '(shadow a)
+        (lambda ()
+          (let ([apply (lambda (x) (list 'shadow x))])
+            (kernel-apply apply '(a)))))
+  (test "shadow:abc"
+        (lambda ()
+          (let ([apply (lambda (s) (string-append "shadow:" s))])
+            (kernel-apply apply '("abc"))))))
 (define compose (lambda (f g) (lambda args (f (apply g args)))))
 (test 30 (compose sqrt *) 12 75)
 (err/rt-test (apply) exn:application:arity?)
@@ -2443,6 +2644,109 @@
 (err/rt-test (raise-arguments-error 'f "invalid" "x") exn:fail:contract? #rx"raise-arguments-error:")
 (err/rt-test (raise-arguments-error 'f "invalid" 'x 5) exn:fail:contract? #rx"raise-arguments-error:")
 (err/rt-test (raise-arguments-error 'f "invalid" "x" 5 "y") exn:fail:contract? #rx"raise-arguments-error:")
+
+(err/rt-test (raise-arguments-error* "f" 'mars "invalid") exn:fail:contract? #rx"raise-arguments-error\\*:")
+(err/rt-test (raise-arguments-error* 'f 'mars 'invalid) exn:fail:contract? #rx"raise-arguments-error\\*:")
+(err/rt-test (raise-arguments-error* 'f 'mars "invalid" "x") exn:fail:contract? #rx"raise-arguments-error\\*:")
+(err/rt-test (raise-arguments-error* 'f 'mars "invalid" 'x 5) exn:fail:contract? #rx"raise-arguments-error\\*:")
+(err/rt-test (raise-arguments-error* 'f 'mars "invalid" "x" 5 "y") exn:fail:contract? #rx"raise-arguments-error\\*:")
+
+
+(let ([vals (build-list 125 (lambda (_) #f))])
+  (err/rt-test (apply raise-argument-error 'f "something/c" 0 vals)
+               exn:fail:contract? #rx"argument position: 1st")
+  (err/rt-test (apply raise-argument-error 'f "something/c" 1 vals)
+               exn:fail:contract? #rx"argument position: 2nd")
+  (err/rt-test (apply raise-argument-error 'f "something/c" 2 vals)
+               exn:fail:contract? #rx"argument position: 3rd")
+  (err/rt-test (apply raise-argument-error 'f "something/c" 4 vals)
+               exn:fail:contract? #rx"argument position: 5th")
+  (err/rt-test (apply raise-argument-error 'f "something/c" 10 vals)
+               exn:fail:contract? #rx"argument position: 11th")
+  (err/rt-test (apply raise-argument-error 'f "something/c" 11 vals)
+               exn:fail:contract? #rx"argument position: 12th")
+  (err/rt-test (apply raise-argument-error 'f "something/c" 12 vals)
+               exn:fail:contract? #rx"argument position: 13th")
+  (err/rt-test (apply raise-argument-error 'f "something/c" 14 vals)
+               exn:fail:contract? #rx"argument position: 15th")
+  (err/rt-test (apply raise-argument-error 'f "something/c" 20 vals)
+               exn:fail:contract? #rx"argument position: 21st")
+  (err/rt-test (apply raise-argument-error 'f "something/c" 21 vals)
+               exn:fail:contract? #rx"argument position: 22nd")
+  (err/rt-test (apply raise-argument-error 'f "something/c" 22 vals)
+               exn:fail:contract? #rx"argument position: 23rd")
+  (err/rt-test (apply raise-argument-error 'f "something/c" 24 vals)
+               exn:fail:contract? #rx"argument position: 25th")
+  (err/rt-test (apply raise-argument-error 'f "something/c" 100 vals)
+               exn:fail:contract? #rx"argument position: 101st")
+  (err/rt-test (apply raise-argument-error 'f "something/c" 101 vals)
+               exn:fail:contract? #rx"argument position: 102nd")
+  (err/rt-test (apply raise-argument-error 'f "something/c" 102 vals)
+               exn:fail:contract? #rx"argument position: 103rd")
+  (err/rt-test (apply raise-argument-error 'f "something/c" 104 vals)
+               exn:fail:contract? #rx"argument position: 105th")
+  (err/rt-test (apply raise-argument-error 'f "something/c" 110 vals)
+               exn:fail:contract? #rx"argument position: 111th")
+  (err/rt-test (apply raise-argument-error 'f "something/c" 111 vals)
+               exn:fail:contract? #rx"argument position: 112th")
+  (err/rt-test (apply raise-argument-error 'f "something/c" 112 vals)
+               exn:fail:contract? #rx"argument position: 113th")
+  (err/rt-test (apply raise-argument-error 'f "something/c" 114 vals)
+               exn:fail:contract? #rx"argument position: 115th")
+  (err/rt-test (apply raise-argument-error 'f "something/c" 120 vals)
+               exn:fail:contract? #rx"argument position: 121st")
+  (err/rt-test (apply raise-argument-error 'f "something/c" 121 vals)
+               exn:fail:contract? #rx"argument position: 122nd")
+  (err/rt-test (apply raise-argument-error 'f "something/c" 122 vals)
+               exn:fail:contract? #rx"argument position: 123rd")
+  (err/rt-test (apply raise-argument-error 'f "something/c" 124 vals)
+               exn:fail:contract? #rx"argument position: 125th")
+  )
+
+(parameterize ([error-value->string-handler
+                (lambda (v len)
+                  (if (string? v)
+                      v
+                      (format "~s" v)))])
+  (err/rt-test/once (raise-argument-error 'f "something" "one line")
+                    exn:fail:contract?
+                    #rx"given: one line")
+  (err/rt-test/once (raise-argument-error 'f "something" "two\n lines")
+                    exn:fail:contract?
+                    #rx"given: \n   two\n    lines")
+  (err/rt-test/once (raise-argument-error 'f "something" "\ntwo\n lines")
+                    exn:fail:contract?
+                    #rx"given: \ntwo\n lines")
+  (err/rt-test/once (raise-arguments-error
+                     'f
+                     "fail"
+                     "something" "two\n lines"
+                     "more" "three\nmore\nlines")
+                    exn:fail:contract?
+                    #rx"something: \n   two\n    lines.*more: \n   three\n   more\n   lines")
+  (err/rt-test/once (raise-arguments-error
+                     'f
+                     "fail"
+                     "something" "two\n lines"
+                     "more" (unquoted-printing-string "three\nmore\nlines"))
+                    exn:fail:contract?
+                    #rx"something: \n   two\n    lines.*more: \n   three\n   more\n   lines")
+  (err/rt-test/once (raise-argument-error
+                     'f
+                     "something"
+                     0
+                     "whatever"
+                     "two\n lines"
+                     "three\nmore\nlines")
+                    exn:fail:contract?
+                    #rx"other arguments[.][.][.]:\n   two\n    lines\n   three\n   more\n   lines")
+  (err/rt-test/once (+ 1 "two\n lines")
+                    exn:fail:contract?
+                    #rx"given: \n   two\n    lines")
+  (err/rt-test/once ("two\n lines" 1)
+                    exn:fail:contract?
+                    #rx"given: \n   two\n    lines")
+)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; continuations
@@ -3375,8 +3679,12 @@
 (test #t symbol? (system-type 'link))
 (test #t symbol? (system-type 'os*))
 (test #t symbol? (system-type 'arch))
+(test #t symbol? (system-type 'so-find))
+(test #t string? (system-type 'platform))
 (test #t relative-path? (system-library-subpath))
 (test #t relative-path? (system-library-subpath #f))
+(test (system-type 'platform) (path->string (system-library-subpath #f)))
+(test #t (lambda (v) (and (bytes? v) (immutable? v))) (system-type 'so-suffix))
 
 (test #t pair? (memv (system-type 'word) '(32 64)))
 (test (fixnum? (expt 2 32)) = (system-type 'word) 64)
@@ -3518,6 +3826,13 @@
   (struct a (x) #:transparent)
   (test #t equal?/recur (a 1) (a 2) (lambda (a b) 'yes))
   (test #f equal?/recur (a 1) (a 1) (lambda (a b) (not (eq? a 1)))))
+
+(let ()
+  (struct s (x) #:property prop:procedure 0)
+  (test #t equal?/recur (cons 1 2) (cons 1 2) (s (lambda (x y) #t)))
+  (test #t equal?/recur (vector 1) (vector 1) (s (lambda (x y) #t)))
+  (test #t equal?/recur (box 0) (box 0) (s (lambda (x y) #t)))
+  (test #t equal?/recur (mcons 3 4) (mcons 3 4) (s (lambda (x y) #t))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

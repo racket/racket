@@ -121,24 +121,39 @@
           [else c])))
     (define (condition-message c)
       (define prefix?
-        (lambda (x y)
+        (lambda (x y y-start)
           (let ([n (string-length x)])
-            (and (fx<= n (string-length y))
+            (and (fx<= n (- (string-length y) y-start))
               (let prefix? ([i 0])
                 (or (fx= i n)
-                    (and (char=? (string-ref x i) (string-ref y i))
+                    (and (char=? (string-ref x i) (string-ref y (+ i y-start)))
                          (prefix? (fx+ i 1)))))))))
       (define prune-prefix
         (lambda (x y)
-          (and (prefix? x y)
+          (and (prefix? x y 0)
                (substring y (string-length x) (string-length y)))))
-      (let ([s (call-with-string-output-port
-                 (lambda (p) (display-condition c p)))])
-        (or (prune-prefix "Exception: " s)
-            (prune-prefix "Exception in " s)
-            (prune-prefix "Warning: " s)
-            (prune-prefix "Warning in " s)
-            s)))
+      (define rewrite-message
+        (lambda (s from to)
+          (let rewrite ([i 0])
+            (cond
+              [(= i (string-length s))
+               s]
+              [(prefix? from s i)
+               (string-append (substring s 0 i)
+                              to
+                              (substring s (+ i (string-length from)) (string-length s)))]
+              [else (rewrite (add1 i))]))))
+      (let* ([s (call-with-string-output-port
+                 (lambda (p) (display-condition c p)))]
+             [s (or (prune-prefix "Exception: " s)
+                    (prune-prefix "Exception in " s)
+                    (prune-prefix "Warning: " s)
+                    (prune-prefix "Warning in " s)
+                    s)]
+             [s (rewrite-message s
+                                 "file or directory already exists"
+                                 "file exists")])
+        s))
     (define (condition-type c)
       (case (fxior (if (warning? c) 1 0) (if (error? c) 2 0) (if (violation? c) 4 0))
         [(1) 'warning]
@@ -258,7 +273,8 @@
                     (if universe-ct
                         (let-values ([(ct . ignore) (with-profile-tracker go)])
                           (store-coverage universe-ct ct (format "~a.covout" mat)))
-                        (go))))
+                        (go))
+                    (printf "\npeak memory use: ~s\n" (maximum-memory-bytes))))
                 (lambda () (close-output-port (mat-output))))))))))
 
 (set! record-run-coverage
@@ -415,15 +431,17 @@
                      (inexact (imag-part y)))))))
 
 (define fl~=
-   (lambda (x y)
-      (cond
-         [(and (fl>= (flabs x) 2.0) (fl>= (flabs y) 2.0))
-          (fl~= (fl/ x 2.0) (fl/ y 2.0))]
-         [(and (fl< 0.0 (flabs x) 1.0) (fl< 0.0 (flabs y) 1.0))
-          (fl~= (fl* x 2.0) (fl* y 2.0))]
-         [else (let ([d (flabs (fl- x y))])
-                  (or (fl<= d *fuzz*)
-                      (begin (printf "fl~~=: ~s~%" d) #f)))])))
+  (case-lambda
+   [(x y fuzz)
+    (cond
+      [(and (fl>= (flabs x) 2.0) (fl>= (flabs y) 2.0))
+       (fl~= (fl/ x 2.0) (fl/ y 2.0) fuzz)]
+      [(and (fl< 0.0 (flabs x) 1.0) (fl< 0.0 (flabs y) 1.0))
+       (fl~= (fl* x 2.0) (fl* y 2.0) fuzz)]
+      [else (let ([d (flabs (fl- x y))])
+              (or (fl<= d fuzz)
+                  (begin (printf "fl~~=: ~s~%" d) #f)))])]
+   [(x y) (fl~= x y *fuzz*)]))
 
 (define cfl~=
    (lambda (x y)
@@ -512,6 +530,11 @@
 
 (define windows?
   (if (memq (machine-type) '(i3nt ti3nt a6nt ta6nt arm64nt tarm64nt))
+      (lambda () #t)
+      (lambda () #f)))
+
+(define haiku?
+  (if (memq (machine-type) '(a6hk ta6hk))
       (lambda () #t)
       (lambda () #f)))
 
@@ -615,3 +638,21 @@
                                 (set! counter n)
                                 (fx= n 0))))])
         (collect)))))
+
+(define-syntax retry-for-spurious
+  (let ([mt (symbol->string (machine-type))])
+    (if (or (memq (substring mt 0 2) '("a6" "i3"))
+            (and (> (string-length mt) 2)
+                 (memq (substring mt 0 3) '("ta6" "ti3"))))
+        ;; no retry loop needed on x86
+        (lambda (stx)
+          (syntax-case stx ()
+            [(_ e) #'e]))
+        ;; add retry loop
+        (lambda (stx)
+          (syntax-case stx ()
+            [(_ e) #'(let loop ([n 10])
+                       ;; 10 spurious failures in a row is vanishingly unlikely?
+                       (or e
+                           (and (> n 0)
+                                (loop (- n 1)))))])))))

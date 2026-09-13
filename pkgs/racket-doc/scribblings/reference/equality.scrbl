@@ -37,6 +37,10 @@ preferred for most uses.
    (equal? #t #t))}
 
 
+For equality on user-defined structure types, see
+@secref["trans-struct" #:doc '(lib "scribblings/guide/guide.scrbl")].
+
+
 @defproc[(equal-always? [v1 any/c] [v2 any/c]) boolean?]{
 
  Indicates whether @racket[v1] and @racket[v2] are equal and will always stay
@@ -83,14 +87,13 @@ preferred for most uses.
  Two values are @racket[eqv?] if and only if they are @racket[eq?],
  unless otherwise specified for a particular datatype.
 
- The @tech{number} and @tech{character} datatypes are the only ones for which
+ The @tech{number} datatypes are the only ones for which
  @racket[eqv?] differs from @racket[eq?]. Two numbers are @racket[eqv?] when
  they have the same exactness, precision, and are both equal and non-zero, both
  @racketvalfont{+0.0}, both @racketvalfont{+0.0f0}, both @racketvalfont{-0.0},
  both @racketvalfont{-0.0f0}, both @racketvalfont{+nan.0}, or both
  @racketvalfont{+nan.f}---considering real and imaginary components separately
- in the case of @tech{complex numbers}. Two characters are @racket[eqv?] when
- their @racket[char->integer] results are equal.
+ in the case of @tech{complex numbers}.
 
  Generally, @racket[eqv?] is identical to @racket[equal?] except that the former
  cannot recursively compare the contents of compound data types (such as lists
@@ -107,7 +110,11 @@ preferred for most uses.
    (eqv? (mcons 1 2) (mcons 1 2))
    (eqv? (integer->char 955) (integer->char 955))
    (eqv? (make-string 3 #\z) (make-string 3 #\z))
-   (eqv? #t #t))}
+   (eqv? #t #t))
+
+@history[#:changed "9.0.0.10" @elem{For characters,
+                                    @racket[equal?] implies @racket[eq?],
+                                    not just @racket[eqv?].}]}
 
 
 @defproc[(eq? [v1 any/c] [v2 any/c]) boolean?]{
@@ -131,7 +138,7 @@ preferred for most uses.
 
 
 @defproc[
- (equal?/recur [v1 any/c] [v2 any/c] [recur-proc (any/c any/c -> any/c)])
+ (equal?/recur [v1 any/c] [v2 any/c] [recur-proc (any/c any/c . -> . any/c)])
  boolean?]{
 
  Like @racket[equal?], but using @racket[recur-proc] for recursive
@@ -148,7 +155,7 @@ preferred for most uses.
 
 
 @defproc[
- (equal-always?/recur [v1 any/c] [v2 any/c] [recur-proc (any/c any/c -> any/c)])
+ (equal-always?/recur [v1 any/c] [v2 any/c] [recur-proc (any/c any/c . -> . any/c)])
  boolean?]{
 
  Like @racket[equal-always?], but using @racket[recur-proc] for recursive
@@ -500,7 +507,7 @@ indexing and comparison operations, especially in the implementation of
  @itemlist[
 
   @item{The three-procedure case corresponds to the procedures of
-        @racket[gen:equal-hash]:
+        @racket[gen:equal+hash]:
 
          @itemlist[
            @item{@racket[_equal-proc : (any/c any/c (any/c any/c . -> . boolean?)  . -> . any/c)]}
@@ -511,7 +518,7 @@ indexing and comparison operations, especially in the implementation of
         ]}
 
   @item{The two-procedure case corresponds to the procedures of
-  @racket[gen:equal-mode-hash]:
+  @racket[gen:equal-mode+hash]:
 
        @itemlist[
          @item{@racket[_equal-mode-proc : (any/c any/c (any/c any/c . -> . boolean?) boolean? . -> . any/c)]}

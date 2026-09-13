@@ -1,7 +1,7 @@
 
 (module norm-define '#%kernel
-  (#%require "define-et-al.rkt" "qq-and-or.rkt" "stxcase-scheme.rkt"
-             "member.rkt" "stx.rkt" "qqstx.rkt")
+  (#%require "core-syntax.rkt" "core-syntax.rkt" "stxcase-scheme.rkt"
+             "stx.rkt" "qqstx.rkt")
 
   (#%provide normalize-definition normalize-definition/mk-rhs)
 
@@ -120,13 +120,7 @@
                                                       stx
                                                       a)))
                                                  all-args)
-                                       (let ([dup (check-duplicate-identifier all-args)])
-                                         (when dup
-                                           (raise-syntax-error
-                                            #f
-                                            "duplicate argument identifier"
-                                            stx
-                                            dup)))
+                                       (raise-if-duplicate-identifiers "duplicate argument identifier" stx all-args)
                                        mk-rhs)))]
 				[general-proto
 				 ;; proto is guaranteed to be a stx-pair

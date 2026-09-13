@@ -16,9 +16,10 @@ parenthesis) triggers a different parsing.
 A named @racket[let] form is equivalent to
 
 @racketblock[
-(letrec ([_proc-id (lambda (_arg-id ...)
-                     _body ...+)])
-  (_proc-id _init-expr ...))
+((letrec ([_proc-id (lambda (_arg-id ...)
+                      _body ...+)])
+   _proc-id)
+ _init-expr ...)
 ]
 
 That is, a named @racket[let] binds a function identifier that is

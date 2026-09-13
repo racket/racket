@@ -1,10 +1,11 @@
 #lang racket/base
-(require racket/string
-         racket/contract/base
+
+(require racket/contract/base
          racket/list
-         "url-structs.rkt"
+         racket/string
+         "uri-codec.rkt"
          "url-exception.rkt"
-         "uri-codec.rkt")
+         "url-structs.rkt")
 
 ;; To do:
 ;;   Handle HTTP/file errors.

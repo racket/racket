@@ -357,7 +357,7 @@
 ;; ---------------------------------------------------------------------
 ;; Version and machine types:
 
-(define-constant scheme-version #x09090912)
+(define-constant scheme-version #x0a050001)
 
 (define-syntax define-machine-types
   (lambda (x)
@@ -389,8 +389,10 @@
   i3s2      ti3s2
   i3qnx     ti3qnx
   i3gnu     ti3gnu
+  a6gnu     ta6gnu
   a6nt      ta6nt
   a6osx     ta6osx
+  a6ios     ta6ios
   a6le      ta6le
   a6fb      ta6fb
   a6ob      ta6ob
@@ -407,6 +409,7 @@
   arm32nb   tarm32nb
   arm64nt   tarm64nt
   arm64osx  tarm64osx
+  arm64ios  tarm64ios
   arm64le   tarm64le
   arm64fb   tarm64fb
   arm64ob   tarm64ob
@@ -415,6 +418,9 @@
   rv64fb    trv64fb
   rv64ob    trv64ob
   rv64nb    trv64nb
+  la64le    tla64le
+  a6hk      ta6hk
+  armv7le    tarmv7le
 )
 
 (include "machine.def")
@@ -597,6 +603,7 @@
   (arm64 reloc-arm64-abs reloc-arm64-call reloc-arm64-jump)
   (ppc32 reloc-ppc32-abs reloc-ppc32-call reloc-ppc32-jump)
   (riscv64 reloc-riscv64-abs reloc-riscv64-call reloc-riscv64-jump)
+  (loongarch64 reloc-loongarch64-abs reloc-loongarch64-call reloc-loongarch64-jump)
   (pb reloc-pb-abs reloc-pb-proc))
 
 (constant-case ptr-bits
@@ -899,14 +906,15 @@
 
 ;; Flags that matter to the GC must apply only to static-generation
 ;; objects, and they must not overlap with `forward-marker`
-(define-constant code-flag-system           #b00000001)
-(define-constant code-flag-continuation     #b00000010)
-(define-constant code-flag-template         #b00000100)
-(define-constant code-flag-guardian         #b00001000)
-(define-constant code-flag-mutable-closure  #b00010000)
-(define-constant code-flag-arity-in-closure #b00100000)
-(define-constant code-flag-single-valued    #b01000000)
-(define-constant code-flag-lift-barrier     #b10000000)
+(define-constant code-flag-system            #b000000001)
+(define-constant code-flag-continuation      #b000000010)
+(define-constant code-flag-template          #b000000100)
+(define-constant code-flag-guardian          #b000001000)
+(define-constant code-flag-mutable-closure   #b000010000)
+(define-constant code-flag-arity-in-closure  #b000100000)
+(define-constant code-flag-single-valued     #b001000000)
+(define-constant code-flag-lift-barrier      #b010000000)
+(define-constant code-flag-no-interrupt-trap #b100000000)
 
 (define-constant fixnum-bits
   (case (constant ptr-bits)
@@ -1205,7 +1213,8 @@
       (fixnum (constant ptr-bytes) fixnum?)
       (char 1 $foreign-char?)
       (wchar (fxsrl (constant wchar-bits) 3) $foreign-wchar?)
-      (boolean (fxsrl (constant int-bits) 3) (lambda (x) #t)))))
+      (boolean (fxsrl (constant int-bits) 3) (lambda (x) #t))
+      (stdbool (fxsrl (constant stdbool-bits) 3) (lambda (x) #t)))))
 )
 
 (define-syntax record-datatype
@@ -1497,6 +1506,7 @@
   ([double data]))
 
 (define-constant flonum-bytes 8)
+(define-constant flonum-bits (* 8 (constant flonum-bytes)))
 
 ; on 32-bit systems, the iptr pad will have no effect above and
 ; beyond the normal padding.  on 64-bit systems, the pad
@@ -1606,6 +1616,7 @@
    [iptr scheme-stack-size]
    [ptr winders]
    [ptr attachments]
+   [ptr handler-stack]
    [ptr cached-frame]
    [ptr U]
    [ptr V]
@@ -1622,6 +1633,7 @@
    [ptr current-input]
    [ptr current-output]
    [ptr current-error]
+   [ptr current-errno-source]
    [ptr block-counter]
    [ptr sfd]
    [ptr current-mso]
@@ -2109,6 +2121,8 @@
   (expt 2 (+ 20 (constant log2-ptr-bytes))))
 (define-constant default-heap-reserve-ratio 1.0)
 (define-constant default-max-nonstatic-generation 4)
+
+(define-constant fuel-word-count-shift 2)
 
 (constant-case address-bits
   [(32)
@@ -2816,6 +2830,7 @@
      (fl> #f 2 #t #t)
      (fl<= #f 2 #t #t)
      (fl>= #f 2 #t #t)
+     (flbit-field #f 3 #t #t)
      (flmin #f 2 #t #t)
      (flmax #f 2 #t #t)
      (callcc #f 1 #f #f)
@@ -2882,6 +2897,8 @@
      (eqv? #f 2 #f #t)
      (set-car! #f 2 #t #t)
      (set-cdr! #f 2 #t #t)
+     (car-cas! #f 3 #t #t)
+     (cdr-cas! #f 3 #t #t)
      (caar #f 1 #t #t)
      (cadr #f 1 #t #t)
      (cdar #f 1 #t #t)
@@ -2974,7 +2991,9 @@
      (bytevector=? #f 2 #f #f)
      (bytevector-ieee-double-native-ref #f 2 #t #t)
      (bytevector-ieee-double-native-set! #f 2 #t #t)
-     (real->flonum #f 2 #f #t)
+     ($real->flonum #f 2 #f #t)
+     (exact? #f 1 #t #t)
+     (inexact? #f 1 #t #t)
      (unsafe-port-eof? #f 1 #f #t)
      (unsafe-lookahead-u8 #f 1 #f #t)
      (unsafe-unget-u8 #f 2 #f #t)
@@ -3120,6 +3139,8 @@
      activate-thread
      deactivate-thread
      unactivate-thread
+     save-errno
+     save-last-error
      handle-values-error
      handle-mvlet-error
      handle-arg-error

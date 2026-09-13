@@ -62,7 +62,7 @@ the same as for @racket[security-guard-check-file].
          void?]{
 
 Checks whether @racket[(current-security-guard)] permits network
-accesst at @racket[host] and @racket[port] in server or client
+access at @racket[host] and @racket[port] in server or client
 mode as specified by @racket[mode]. The symbol @racket[who] is the
 same as for @racket[security-guard-check-file].
 

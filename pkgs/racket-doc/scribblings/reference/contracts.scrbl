@@ -2,12 +2,13 @@
 @(require "mz.rkt")
 @(require (for-label syntax/modcollapse
                      racket/stxparam
-                     racket/serialize))
+                     racket/serialize
+                     racket/treelist))
 
 @(define contract-eval
    (lambda ()
      (let ([the-eval (make-base-eval)])
-       (the-eval '(require racket/contract racket/contract/parametric racket/list racket/math))
+       (the-eval '(require racket/contract racket/treelist racket/contract/parametric racket/list racket/math racket/mutable-treelist))
        the-eval)))
 
 @(define blame-object @tech{blame object})
@@ -19,8 +20,8 @@
 
 The contract system guards one part of a program from
 another. Programmers specify the behavior of a module's exports via
-@racket[(provide (contract-out ....))], and the contract system enforces those
-constraints.
+@racket[(provide (contract-out ....))] or @racket[(require (contract-in ...))],
+and the contract system enforces those constraints.
 
 @(define-syntax-rule
    (add-use-sources (x y ...))
@@ -394,6 +395,25 @@ is @racket[#f], then the range is unbounded on that end.
 
 }
 
+@defproc[(complex/c [real flat-contract?] [imag flat-contract?]) flat-contract?]{
+
+Returns a @tech{flat contract} that accepts complex numbers whose real parts match @racket[real]
+and whose imaginary parts match @racket[imag].
+
+@examples[#:eval (contract-eval) #:once
+          (eval:error
+           (define/contract can-be-converted-to-exact
+             (complex/c rational? rational?)
+             +inf.0))
+
+          (define/contract complex-integer
+            (complex/c integer? integer?)
+           1+2i)]
+
+@history[#:added "8.11.1.10"]
+
+}
+
 @defproc[(char-in [a char?] [b char?]) flat-contract?]{
 
 Returns a @tech{flat contract} that requires the input to be a character whose
@@ -683,6 +703,72 @@ necessarily @racket[eq?] to the input.
 
 }
 
+@defproc[(treelist/c [ctc contract?]
+                     [#:flat? flat? any/c (flat-contract? ctc)]
+                     [#:lazy? lazy? any/c #f])
+         contract?]{
+
+ Produces a contract for @tech{treelists} whose elements
+ match @racket[ctc].
+
+ If @racket[flat?] is a true value then @racket[ctc] must be
+ a @tech{flat contract}. In that situation, the result of
+ @racket[treelist/c] will also be a flat contract.
+
+ If @racket[lazy?] is a true value, then @racket[ctc] must
+ be a @tech{chaperone contract} and the resulting contract
+ will be a chaperone contract. In that situation, the
+ contracts on the elements of the treelist are not checked
+ until the values are accessed.
+
+ If both @racket[flat?] and @racket[lazy?] are @racket[#f],
+ then the contract will copy the treelist as part of the
+ process of checking the contract and the result will be
+ a @tech{chaperone contract} if @racket[ctc] is a
+ chaperone contract.
+
+ At least one of @racket[flat?] and @racket[lazy?] must be
+ @racket[#f].
+
+ @examples[#:eval (contract-eval) #:once
+           (define/contract natural-treelist
+             (treelist/c natural?)
+             (treelist 1 2 3))
+
+           (eval:error
+            (define/contract unnatural-treelist
+              (treelist/c natural?)
+              (treelist -1 -2 -3)))]
+
+@history[#:added "8.12.0.7"
+         #:changed "8.15.0.2" @elem{Changed the default value of @racket[lazy?]
+           from @racket[(and (chaperone-contract? ctc) (not (flat-contract? ctc)))]
+           to @racket[#f].}]
+}
+
+@defproc[(mutable-treelist/c [ctc contract?])
+         contract?]{
+
+ Produces a contract for @tech{mutable treelists} whose elements
+ match @racket[ctc].
+
+ @examples[#:eval (contract-eval) #:once
+           (define/contract natural-treelist
+             (mutable-treelist/c natural?)
+             (mutable-treelist 0 1 2 3))
+           (mutable-treelist-ref natural-treelist 1)
+
+           (define/contract unnatural-treelist
+             (mutable-treelist/c natural?)
+             (mutable-treelist -1 2 3))
+
+           (eval:error
+            (mutable-treelist-ref unnatural-treelist 0))
+           (eval:error
+            (mutable-treelist-set! unnatural-treelist 2 -3))]
+
+@history[#:added "8.12.0.11"]
+}
 
 @defproc[(syntax/c [c flat-contract?]) flat-contract?]{
 
@@ -1444,7 +1530,7 @@ Following the pre-condition is the optional @racket[param-value] non-terminal
 that specifies parameters to be assigned to during the dynamic extent of the
 function. Each assignment is introduced with the @racket[#:param] keyword followed
 by the list of names on which it depends, a @racket[param-expr] that determines
-the parameter to set, and a @racket[value-expr] that will be associated with
+the parameter to set, and a @racket[val-expr] that will be associated with
 the parameter.
 
 The @racket[dependent-range] non-terminal specifies the possible result
@@ -1687,8 +1773,8 @@ be blamed using the above contract:
 @declare-exporting-ctc[racket/contract/parametric]
 
 The most convenient way to use parametric contract is to use
-@racket[contract-out]'s @racket[#:exists] keyword.
-The @racketmodname[racket/contract/parametric] provides a few more,
+@racket[contract-out]'s @racket[#:∃], @racket[#:exists], @racket[#:∀], and @racket[#:forall] keywords.
+The @racketmodname[racket/contract/parametric] library provides a few more,
 general-purpose parametric contracts.
 
 @defform[(parametric->/c (x ...) c)]{
@@ -1785,7 +1871,7 @@ if they do not, a contract violation is signaled.
   Then, when the function returns, it is checked to see if the result is wrapped, since
   the second @racket[a] appears in a negative position.
 
-  The @racket[new-∃/c] construct constructor is dual to @racket[new-∀/c].
+  The @racket[new-∃/c] contract constructor is dual to @racket[new-∀/c].
 }
 
 
@@ -1856,64 +1942,79 @@ earlier fields.}}
 @section[#:tag "attaching-contracts-to-values"]{Attaching Contracts to Values}
 @declare-exporting-ctc[racket/contract/base]
 
-@defform/subs[
-#:literals (struct rename)
-(contract-out unprotected-submodule contract-out-item ...)
-([unprotected-submodule
-  (code:line)
-  (code:line #:unprotected-submodule submodule-name)]
- [contract-out-item
-  (struct id/ignored ((id contract-expr) ...)
-    struct-option)
-  (rename orig-id id contract-expr)
-  (id contract-expr)
-  (code:line #:∃ poly-variables)
-  (code:line #:exists poly-variables)
-  (code:line #:∀ poly-variables)
-  (code:line #:forall poly-variables)]
- [poly-variables id (id ...)]
- [id/ignored id
-             (id ignored-id)]
- [struct-option (code:line)
-                #:omit-constructor])]{
+@deftogether[(@defform[
+ #:literals (struct rename)
+ (contract-in module-path in-out-item ...)]
+              @defform[
+ #:literals (struct rename)
+ (contract-out unprotected-submodule in-out-item ...)
+ #:grammar
+ ([in-out-item
+   [id contract-expr]
+   (rename internal-id external-id contract-expr)
+   (struct id/ignored ([id contract-expr] ...)
+     struct-option)
+   (code:line #:∃ poly-variables)
+   (code:line #:exists poly-variables)
+   (code:line #:∀ poly-variables)
+   (code:line #:forall poly-variables)]
+  [unprotected-submodule
+   (code:line)
+   (code:line #:unprotected-submodule submodule-name)]
+  [poly-variables id (id ...)]
+  [id/ignored id
+   (id ignored-id)]
+  [struct-option (code:line)
+   #:omit-constructor])])]{
 
-A @racket[_provide-spec] for use in @racket[provide] (currently only for
-the same @tech{phase level} as the @racket[provide] form; for example,
-@racket[contract-out] cannot be nested within @racket[for-syntax]). Each @racket[id]
-is provided from the module. In
-addition, clients of the module must live up to the contract specified
-by @racket[contract-expr] for each export.
+ Use @racket[contract-in] in @racket[require] and
+ @racket[contract-out] in @racket[provide] (currently only
+ for the same @tech{phase level} as the @racket[provide]
+ form; for example, @racket[contract-out] cannot be nested
+ within @racket[for-syntax]). Each identifier in
+ @racket[contract-out] is provided from the enclosing module
+ and each one in @racket[contract-in] is required from the
+ named module. In addition, uses of the identifies must live
+ up to the contract specified by @racket[contract-expr] for
+ each export.
 
-The @racket[contract-out] form treats modules as units of
-blame. The module that defines the provided variable is expected to
-meet the positive (co-variant) positions of the contract. Each module
-that imports the provided variable must obey the negative
-(contra-variant) positions of the contract. Each @racket[contract-expr]
-in a @racket[contract-out] form is effectively moved to the end of the
-enclosing module, so a @racket[contract-expr] can refer to variables
-that are defined later in the same module.
+ The @racket[contract-out] and @racket[contract-in] forms
+ treat modules as units of blame. The module that provides
+ each identifier is expected to meet the positive
+ (co-variant) positions of the contract. Each module that
+ imports the provided variable must obey the negative
+ (contra-variant) positions of the contract. Only uses of the
+ contracted variable outside the module that provides them
+ are checked. Inside the providing module, no contract
+ checking occurs.
 
-Only uses of the contracted variable outside the module are
-checked. Inside the module, no contract checking occurs.
+ In a @racket[contract-out] form, each
+ @racket[contract-expr] in a @racket[contract-out] form is
+ effectively moved to the end of the enclosing module, so a
+ @racket[contract-expr] can refer to variables that are
+ defined later in the same module.
 
-The @racket[rename] form of @racket[contract-out] exports the
-first variable (the internal name) with the name specified by the
-second variable (the external name).
+ The @racket[rename] form exports the first variable (the
+ internal name) with the name specified by the second
+ variable (the external name).
 
-The @racket[struct] form of @racket[contract-out]
-provides a structure-type definition @racket[id], and each field has a contract
-that dictates the contents of the fields. Unlike a @racket[struct]
-definition, however, all of the fields (and their contracts) must be
-listed. The contract on the fields that the sub-struct shares with its
-parent are only used in the contract for the sub-struct's constructor, and
-the selector or mutators for the super-struct are not provided. The
-exported structure-type name always doubles as a constructor, even if
-the original structure-type name does not act as a constructor.
-If the @racket[#:omit-constructor] option is present, the constructor
-is not provided. The second form of @racket[id/ignored], which has both
-@racket[id] and @racket[ignored-id], is deprecated and allowed
-in the grammar only for backward compatability, where @racket[ignored-id] is ignored.
-The first form should be used instead.
+ The @racket[struct] form gives contracts to a structure-type
+ definition @racket[id], and each field has a contract that
+ dictates the contents of the fields. Unlike a
+ @racket[struct] definition, however, all of the fields (and
+ their contracts) must be listed. The contract on the fields
+ that the sub-struct shares with its parent are only used in
+ the contract for the sub-struct's constructor, and the
+ selector or mutators for the super-struct are not provided.
+ The exported structure-type name always doubles as a
+ constructor, even if the original structure-type name does
+ not act as a constructor. If the @racket[#:omit-constructor]
+ option is present, the constructor is not provided. The
+ second form of @racket[id/ignored], which has both
+ @racket[id] and @racket[ignored-id], is deprecated and
+ allowed in the grammar only for backward compatibility,
+ where @racket[ignored-id] is ignored. The first form should
+ be used instead.
 
 Note that if the struct is created with @racket[serializable-struct]
 or @racket[define-serializable-struct], @racket[contract-out] does not
@@ -1931,7 +2032,9 @@ If @racket[#:unprotected-submodule] appears, the identifier
 that follows it is used as the name of a submodule that
 @racket[contract-out] generates. The submodule exports all
 of the names in the @racket[contract-out], but without
-contracts.
+contracts. In particular, the original structure-type name is exported
+for each @racket[struct] form, which means @racket[#:omit-constructor]
+only omits the extra constructor, if any.
 
 The implementation of @racket[contract-out] uses
 @racket[syntax-property] to attach properties to the code it generates
@@ -1955,7 +2058,9 @@ the export.
           (eval:error (recip 1+2i))]
 
 @history[#:changed "7.3.0.3" @list{Added @racket[#:unprotected-submodule].}
-         #:changed "7.7.0.9" @list{Started ignoring @racket[ignored-id].}]
+         #:changed "7.7.0.9" @list{Started ignoring @racket[ignored-id].}
+         #:changed "8.12.0.13" @list{Added @racket[contract-in]}
+         #:changed "8.13.0.1" @list{Added @racket[rename] and @racket[struct] to @racket[contract-in]}]
 }
 
 @defform[(recontract-out id ...)]{
@@ -1992,9 +2097,9 @@ the export.
    the private module.
 }
 
-@defform[(provide/contract unprotected-submodule contract-out-item ...)]{
+@defform[(provide/contract unprotected-submodule in-out-item ...)]{
 
-A legacy shorthand for @racket[(provide (contract-out unprotected-submodule contract-out-item ...))],
+A legacy shorthand for @racket[(provide (contract-out unprotected-submodule in-out-item ...))],
 except that a @racket[_contract-expr] within @racket[provide/contract]
 is evaluated at the position of the @racket[provide/contract] form
 instead of at the end of the enclosing module.}
@@ -2207,19 +2312,15 @@ The @racket[define-struct/contract] form only allows a subset of the
 @defform[(define-module-boundary-contract id
            orig-id
            contract-expr
-           pos-blame-party
-           source-loc
-           name-for-blame
-           context-limit)
-         #:grammar ([pos-blame-party (code:line)
-                                     (code:line #:pos-source pos-source-expr)]
-                    [source-loc (code:line)
-                                (code:line #:srcloc srcloc-expr)]
-                    [name-for-blame
-                     (code:line)
-                     (code:line #:name-for-blame blame-id)]
-                    [context-limit (code:line)
-                     (code:line #:context-limit limit-expr)])]{
+           d-m-b-c-kwd-arg ...)
+         #:grammar ([d-m-b-c-kwd-arg
+                     (code:line #:name-for-contract name-for-contract-id)
+                     (code:line #:name-for-blame blame-id)
+                     (code:line #:srcloc srcloc-expr)
+                     (code:line #:pos-source pos-source-expr)
+                     (code:line #:context-limit limit-expr)
+                     (code:line #:lift-to-end? boolean)
+                     (code:line #:start-swapped? boolean)])]{
   Defines @racket[id] to be @racket[orig-id], but with the contract
   @racket[contract-expr].
 
@@ -2228,9 +2329,16 @@ The @racket[define-struct/contract] form only allows a subset of the
   blame assignment (using the entire module where a reference appears
   as the negative party).
 
-  The positive party defaults to the module containing the use of
-  @racket[define-module-boundary-contract], but can be specified explicitly
-  via the @racket[#:pos-source] keyword.
+  The name used in the error messages will be @racket[orig-id], unless
+  @racket[#:name-for-blame] is supplied, in which case the identifier
+  following it is used as the name in the error messages.
+
+  The contract expression is wrapped in a @racket[let] to
+  give it a name which will be passed on to the name of the
+  wrapped value in certain situations (e.g., if the contract
+  is a function contract). If @racket[name-for-contract-id] is supplied,
+  the identifier that follows it is used to name the contract; otherwise
+  @racket[orig-id] is used.
 
   The source location used in the blame error messages for the location
   of the place where the contract was put on the value defaults to the
@@ -2239,12 +2347,24 @@ The @racket[define-struct/contract] form only allows a subset of the
   it can be any of the things that the third argument to @racket[datum->syntax]
   can be.
 
-  The name used in the error messages will be @racket[orig-id], unless
-  @racket[#:name-for-blame] is supplied, in which case the identifier
-  following it is used as the name in the error messages.
+  The positive party defaults to the module containing the use of
+  @racket[define-module-boundary-contract], but can be specified explicitly
+  via the @racket[#:pos-source] keyword.
 
   If @racket[#:context-limit] is supplied, it behaves the same as
   it does when supplied to @racket[contract].
+
+  If @racket[lift-to-end?] is @racket[#t] or is not supplied, then
+  the contract expression is placed at the end of the enclosing module
+  (using @racket[syntax-local-lift-module-end-declaration]). If it is
+  supplied and @racket[#f], the contract expression is placed where
+  @racket[define-module-boundary-contract] is placed.
+
+  If @racket[start-swapped?] is @racket[#t], then the initial blame object
+  is created in the ``swapped?'' state, and the @racket[pos-source] is used
+  as a negative source. This is helpful to get the ``contract from:'' line
+  in contract violations correct in certain situations. If @racket[#:start-swapped?]
+  is not supplied, it is treated as if it was supplied as @racket[#f].
 
   @examples[#:eval (contract-eval) #:once
             (module server racket/base
@@ -2262,7 +2382,8 @@ The @racket[define-struct/contract] form only allows a subset of the
             (eval:error (servers-fault))]
 
   @history[#:changed "6.7.0.4" @elem{Added the @racket[#:name-for-blame] argument.}
-           #:changed "6.90.0.29" @elem{Added the @racket[#:context-limit] argument.}]
+           #:changed "6.90.0.29" @elem{Added the @racket[#:context-limit] argument.}
+           #:changed "8.13.0.1" @elem{Added the @racket[#:name-for-contract] and @racket[#:start-swapped] arguments.}]
 
 }
 
@@ -2936,7 +3057,7 @@ returns @racket[#f] but @racket[value-blame] returns @racket[#f].
 @defproc[(build-flat-contract-property
           [#:name
            get-name
-           (-> contract? any/c)
+           (or/c #f (-> contract? any/c))
            (λ (c) 'anonymous-flat-contract)]
           [#:first-order
            get-first-order
@@ -2986,7 +3107,7 @@ returns @racket[#f] but @racket[value-blame] returns @racket[#f].
 @defproc[(build-chaperone-contract-property
           [#:name
            get-name
-           (-> contract? any/c)
+           (or/c #f (-> contract? any/c))
            (λ (c) 'anonymous-chaperone-contract)]
           [#:first-order
            get-first-order
@@ -3046,7 +3167,7 @@ returns @racket[#f] but @racket[value-blame] returns @racket[#f].
 @defproc[(build-contract-property
           [#:name
            get-name
-           (-> contract? any/c)
+           (or/c #f (-> contract? any/c))
            (λ (c) 'anonymous-contract)]
           [#:first-order
            get-first-order
@@ -3111,7 +3232,9 @@ A @deftech{contract property} specifies the behavior of a structure when used as
 a contract.  It is specified in terms of seven properties:
 @itemlist[
   @item{@racket[get-name] which produces a description to @racket[write] as part
-   of a contract violation;}
+   of a contract violation and defaults to a function that always produces
+   @racket['anonymous-contract], @racket['anonymous-chaperone-contract],
+   or @racket['anonymous-flat-contract];}
   @item{@racket[get-first-order], which produces a first-order predicate to be
    used by @racket[contract-first-order-passes?];}
   @item{@racket[late-neg-proj], which produces a blame-tracking projection
@@ -4061,11 +4184,20 @@ ended up returning @racket[contract-random-generate-fail].
 }
 
 @defproc[(contract-random-generate-get-current-environment) contract-random-generate-env?]{
-  Returns the environment currently being for generation. This function
+  Returns the environment currently being used for generation. This function
   can be called only during the dynamic extent of contract generation.
   It is intended to be grabbed during the construction of a contract
   generator and then used with @racket[contract-random-generate-stash]
   while generation is happening.
 
 @history[#:added "6.1.1.5"]
+}
+
+@defparam[current-contract-pseudo-random-generator
+          rand-gen
+          pseudo-random-generator?]{
+ A @tech{parameter} that determines the the pseudo-random number generator
+ used by @racket[contract-random-generate] and @racket[contract-exercise].
+
+ @history[#:added "9.3.0.2"]
 }

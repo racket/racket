@@ -109,52 +109,104 @@ L$CFI13
 
 	/* Prepare to store the result; we need to recover flags and rvalue.  */
 	ldw	-48(%r3), %r21		; r21 <- flags
+
+	/* Adjust flags range from [-8, 15] to  [0, 23].  */
+	addi	8, %r21, %r21
+
+	blr	%r21, %r0
 	ldw	-52(%r3), %r20		; r20 <- rvalue
+
+	/* Giant jump table */
+	/* 8-byte small struct */
+	b,n	L$smst8
+	nop
+	/* 7-byte small struct */
+	b,n	L$smst7
+	nop
+	/* 6-byte small struct */
+	b,n	L$smst6
+	nop
+	/* 5-byte small struct */
+	b,n	L$smst5
+	nop
+	/* 4-byte small struct */
+	b,n	L$smst4
+	nop
+	/* 3-byte small struct */
+	b,n	L$smst3
+	nop
+	/* 2-byte small struct */
+	b,n	L$smst2
+	nop
+	/* 1-byte small struct */
+	b	L$done
+	stb	%ret0, 0(%r20)
+	/* void */
+	b,n	L$done
+	nop
+	/* int */
+	b	L$done
+	stw	%ret0, 0(%r20)
+	/* float */
+	b	L$done
+	fstw	%fr4L,0(%r20)
+	/* double */
+	b	L$done
+	fstd	%fr4,0(%r20)
+	/* long double */
+	b,n	L$done
+	nop
+	/* unsigned int8 */
+	b	L$done
+	stw	%ret0, 0(%r20)
+	/* signed int8 */
+	b	L$done
+	stw	%ret0, 0(%r20)
+	/* unsigned int16 */
+	b	L$done
+	stw	%ret0, 0(%r20)
+	/* signed int16 */
+	b	L$done
+	stw	%ret0, 0(%r20)
+	/* unsigned int32 */
+	b	L$done
+	stw	%ret0, 0(%r20)
+	/* signed int32 */
+	b	L$done
+	stw	%ret0, 0(%r20)
+	/* unsigned int64 */
+	b,n	L$uint64
+	nop
+	/* signed int64 */
+	b,n	L$sint64
+	nop
+	/* large struct */
+	b,n	L$done
+	nop
+	/* pointer */
+	b	L$done
+	stw	%ret0, 0(%r20)
+	/* complex */
+	b,n	L$done
+	nop
 
 	/* Store the result according to the return type.  The most
 	   likely types should come first.  */
 
-L$checkint
-	comib,<>,n FFI_TYPE_INT, %r21, L$checkint8
-	b	L$done
-	stw	%ret0, 0(%r20)
-
-L$checkint8
-	comib,<>,n FFI_TYPE_UINT8, %r21, L$checkint16
-	b	L$done
-	stb	%ret0, 0(%r20)
-
-L$checkint16
-	comib,<>,n FFI_TYPE_UINT16, %r21, L$checkdbl
-	b	L$done
-	sth	%ret0, 0(%r20)
-
-L$checkdbl
-	comib,<>,n FFI_TYPE_DOUBLE, %r21, L$checkfloat
-	b	L$done
-	fstd	%fr4,0(%r20)
-
-L$checkfloat
-	comib,<>,n FFI_TYPE_FLOAT, %r21, L$checkll
-	b	L$done
-	fstw	%fr4L,0(%r20)
-
-L$checkll
-	comib,<>,n FFI_TYPE_UINT64, %r21, L$checksmst2
+L$uint64
+L$sint64
 	stw	%ret0, 0(%r20)
 	b	L$done
 	stw	%ret1, 4(%r20)
 
-L$checksmst2
-	comib,<>,n FFI_TYPE_SMALL_STRUCT2, %r21, L$checksmst3
+L$smst2
 	/* 2-byte structs are returned in ret0 as ????xxyy.  */
 	extru	%ret0, 23, 8, %r22
 	stbs,ma	%r22, 1(%r20)
 	b	L$done
 	stb	%ret0, 0(%r20)
 
-L$checksmst3
-	comib,<>,n FFI_TYPE_SMALL_STRUCT3, %r21, L$checksmst4
+L$smst3
 	/* 3-byte structs are returned in ret0 as ??xxyyzz.  */
 	extru	%ret0, 15, 8, %r22
 	stbs,ma	%r22, 1(%r20)
@@ -163,8 +215,7 @@ L$checksmst3
 	b	L$done
 	stb	%ret0, 0(%r20)
 
-L$checksmst4
-	comib,<>,n FFI_TYPE_SMALL_STRUCT4, %r21, L$checksmst5
+L$smst4
 	/* 4-byte structs are returned in ret0 as wwxxyyzz.  */
 	extru	%ret0, 7, 8, %r22
 	stbs,ma	%r22, 1(%r20)
@@ -175,8 +226,7 @@ L$checksmst4
 	b	L$done
 	stb	%ret0, 0(%r20)
 
-L$checksmst5
-	comib,<>,n FFI_TYPE_SMALL_STRUCT5, %r21, L$checksmst6
+L$smst5
 	/* 5 byte values are returned right justified:
 	      ret0     ret1
 	   5: ??????aa bbccddee */
@@ -190,8 +240,7 @@ L$checksmst5
 	b	L$done
 	stb	%ret1, 0(%r20)
 
-L$checksmst6
-	comib,<>,n FFI_TYPE_SMALL_STRUCT6, %r21, L$checksmst7
+L$smst6
 	/* 6 byte values are returned right justified:
 	      ret0     ret1
 	   6: ????aabb ccddeeff */
@@ -207,8 +256,7 @@ L$checksmst6
 	b	L$done
 	stb	%ret1, 0(%r20)
 
-L$checksmst7
-	comib,<>,n FFI_TYPE_SMALL_STRUCT7, %r21, L$checksmst8
+L$smst7
 	/* 7 byte values are returned right justified:
 	      ret0     ret1
 	   7: ??aabbcc ddeeffgg */
@@ -226,8 +274,7 @@ L$checksmst7
 	b	L$done
 	stb	%ret1, 0(%r20)
 
-L$checksmst8
-	comib,<>,n FFI_TYPE_SMALL_STRUCT8, %r21, L$done
+L$smst8
 	/* 8 byte values are returned right justified:
 	      ret0     ret1
 	   8: aabbccdd eeffgghh */
@@ -259,7 +306,7 @@ L$done
 L$FE1
 
 	/* void ffi_closure_pa32(void);
-	   Called with closure argument in %r21 */
+	   Called with closure argument in %r19 */
 
 	.SPACE $TEXT$
 	.SUBSPA $CODE$
@@ -285,7 +332,9 @@ L$CFI22
 	stw	%arg2, -44(%r3)
 	stw	%arg3, -48(%r3)
 
-	copy	%r21, %arg0
+	/* Retrieve closure pointer and real gp.  */
+	copy	%r19, %arg0
+	ldw	8(%r19), %r19
 	bl	ffi_closure_inner_pa32, %r2
 	copy    %r3, %arg1
 	ldwm	-64(%sp), %r3

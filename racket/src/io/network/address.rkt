@@ -9,9 +9,10 @@
 
 (provide call-with-resolved-address
          register-address-finalizer
+         poll-address-finalizations
          address-init!)
 
-;; in atomic mode
+;; in uninterruptible mode and *not* rktio mode
 (define (call-with-resolved-address hostname port-no proc
                                     #:who [who #f] ; not #f => report errors
                                     #:which [which ""] ; for error reporting, including trailing space
@@ -21,52 +22,52 @@
                                     #:passive? [passive? #f]
                                     #:tcp? [tcp? #t]
                                     #:retain-address? [retain-address? #f])
-  (poll-address-finalizations)
   (cond
     [(and (not hostname)
           (not port-no))
      (proc #f)]
     [else
      (call-with-resource
-      (box (rktio_start_addrinfo_lookup rktio
-                                        (and hostname (string->bytes/utf-8 hostname))
-                                        (or port-no 0)
-                                        family passive? tcp?))
-      ;; in atomic mode
+      (box (rktioly (rktio_start_addrinfo_lookup rktio
+                                                 (and hostname (string->bytes/utf-8 hostname))
+                                                 (or port-no 0)
+                                                 family passive? tcp?)))
+      ;; in uninterruptible mode (possibly atomic), *not* in rktio mode
       (lambda (lookup-box)
         (define lookup (unbox lookup-box))
         (when lookup
-          (rktio_addrinfo_lookup_stop rktio lookup)))
-      ;; in atomic mode
+          (rktioly (rktio_addrinfo_lookup_stop rktio lookup))))
+      ;; in uninterruptible mode, *not* rktio mode
       (lambda (lookup-box)
         (define lookup (unbox lookup-box))
         (let loop ()
           (cond
             [(and (not (rktio-error? lookup))
-                  (eqv? (rktio_poll_addrinfo_lookup_ready rktio lookup)
+                  (eqv? (rktioly (rktio_poll_addrinfo_lookup_ready rktio lookup))
                         RKTIO_POLL_NOT_READY))
-             (end-atomic)
+             (end-uninterruptible)
              ((if enable-break? sync/enable-break sync)
               (rktio-evt (lambda ()
-                           (not (eqv? (rktio_poll_addrinfo_lookup_ready rktio lookup)
+                           (not (eqv? (rktioly (rktio_poll_addrinfo_lookup_ready rktio lookup))
                                       RKTIO_POLL_NOT_READY)))
+                         ;; in atomic and in rktio-sleep-relevant, must not start nested rktio
                          (lambda (ps)
                            (rktio_poll_add_addrinfo_lookup rktio lookup ps))))
-             (start-atomic)
+             (start-uninterruptible)
              (loop)]
             [else
              (set-box! lookup-box #f) ; receiving result implies `lookup` is destroyed
              (call-with-resource
               (if (rktio-error? lookup)
                   lookup
-                  (rktio_addrinfo_lookup_get rktio lookup))
-              ;; in atomic mode
-              (lambda (addr) (rktio_addrinfo_free rktio addr))
-              ;; in atomic mode
+                  (rktioly (rktio_addrinfo_lookup_get rktio lookup)))
+              ;; in uninterruptible mode (possibly atomic), *not* in rktio mode
+              (lambda (addr) (rktioly (rktio_addrinfo_free rktio addr)))
+              ;; in uninterruptible mode, *not* rktio mode
               (lambda (addr)
                 (cond
                   [(and who (rktio-error? addr))
-                   (end-atomic)
+                   (end-uninterruptible)
                    (raise-network-error who addr (string-append
                                                   "can't resolve " which "address"
                                                   "\n  address: " (or hostname "<unspec>")
@@ -78,7 +79,7 @@
                    (begin0
                      (proc addr)
                      (unless retain-address?
-                       (rktio_addrinfo_free rktio addr)))])))]))))]))
+                       (rktioly (rktio_addrinfo_free rktio addr))))])))]))))]))
 
 ;; ----------------------------------------
 
@@ -88,9 +89,10 @@
   (will-register address-will-executor
                  addr
                  (lambda (addr)
-                   (rktio_addrinfo_free rktio addr)
+                   (rktioly (rktio_addrinfo_free rktio addr))
                    #t)))
 
+;; *not* in uninterruptible mode
 (define (poll-address-finalizations)
   (when (will-try-execute address-will-executor)
     (poll-address-finalizations)))

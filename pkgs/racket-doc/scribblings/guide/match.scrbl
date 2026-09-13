@@ -8,6 +8,8 @@
 
 @title[#:tag "match"]{Pattern Matching}
 
+@hash-lang-note[racket/match #:lang racket/base]
+
 The @racket[match] form supports pattern matching on arbitrary Racket
 values, as opposed to functions like @racket[regexp-match] that
 compare regular expressions to byte and character sequences (see

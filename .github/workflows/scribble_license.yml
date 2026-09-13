@@ -2,6 +2,8 @@ name: Scribble License Files
 
 on:
   push:
+    branches:
+      - master
     paths:
       - "LICENSE.txt"
       - "racket/src/LICENSE.txt"
@@ -19,8 +21,8 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-    - uses: actions/checkout@v3
-    - uses: Bogdanp/setup-racket@v1.9.1
+    - uses: actions/checkout@v7
+    - uses: Bogdanp/setup-racket@v1.15
       with:
         architecture: 'x64'
         distribution: 'full'
@@ -33,8 +35,8 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-    - uses: actions/checkout@v3
-    - uses: Bogdanp/setup-racket@v1.9.1
+    - uses: actions/checkout@v7
+    - uses: Bogdanp/setup-racket@v1.15
       with:
         architecture: 'x64'
         distribution: 'full'

@@ -257,7 +257,7 @@
     (syntax-e id)))
 
 (define (same-scopes? a b)
-  ;; chocie of phase 0 is arbitrary:
+  ;; choice of phase 0 is arbitrary:
   (equal? (syntax-scope-set a 0)
           (syntax-scope-set b 0)))
 

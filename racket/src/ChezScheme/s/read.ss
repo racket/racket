@@ -1,12 +1,12 @@
 ;;; read.ss
 ;;; Copyright 1984-2017 Cisco Systems, Inc.
-;;; 
+;;;
 ;;; Licensed under the Apache License, Version 2.0 (the "License");
 ;;; you may not use this file except in compliance with the License.
 ;;; You may obtain a copy of the License at
-;;; 
+;;;
 ;;; http://www.apache.org/licenses/LICENSE-2.0
-;;; 
+;;;
 ;;; Unless required by applicable law or agreed to in writing, software
 ;;; distributed under the License is distributed on an "AS IS" BASIS,
 ;;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -932,13 +932,19 @@
     (state-case c
       [eof (with-unread-char c
              (state-return atomic (xcall rd-make-number-or-symbol i)))]
-      [((#\0 - #\9) (#\a - #\z) #\- #\+ #\. #\/ #\@ #\# #\|)
+      [((#\0 - #\9) (#\a - #\z) #\- #\+ #\. #\/ #\@ #\|)
        (with-stretch-buffer i c
          (*state rd-token-number-or-symbol (fx+ i 1)))]
       [((#\A - #\Z))
        (with-stretch-buffer i c
          (*state rd-token-number-or-symbol (fx+ i 1)))]
-      [(#\space #\( #\) #\[ #\] #\" #\; #\#)
+      [(#\#)
+       (if ($port-flags-set? (rcb-ip rcb) (constant port-flag-r6rs))
+           (with-unread-char c
+             (state-return atomic (xcall rd-make-number-or-symbol i)))
+           (with-stretch-buffer i c
+             (*state rd-token-number-or-symbol (fx+ i 1))))]
+      [(#\space #\( #\) #\[ #\] #\" #\;)
        (with-unread-char c
          (state-return atomic (xcall rd-make-number-or-symbol i)))]
       [char-whitespace?
@@ -1501,7 +1507,7 @@
       [(eof) (let ([bfp expr-bfp]) (xcall rd-eof-error "flvector"))]
       [else
        (unless (and (eq? type 'atomic) (flonum? value))
-         (xcall rd-error #f #t "non-fixnum found in flvector"))
+         (xcall rd-error #f #t "non-flonum found in flvector"))
        (xmvlet ((v) (xcall rd-flvector expr-bfp (fx+ i 1)))
          (flvector-set! v i value)
          (xvalues v))])))
@@ -1525,7 +1531,7 @@
       [(eof) (let ([bfp expr-bfp]) (xcall rd-eof-error "flvector"))]
       [else
        (unless (and (eq? type 'atomic) (flonum? value))
-         (xcall rd-error #f #t "non-fixnum found in flvector"))
+         (xcall rd-error #f #t "non-flonum found in flvector"))
        (unless (fx< i n)
          (let ([bfp expr-bfp])
            (xcall rd-error #f #t "too many flvector elements supplied")))
@@ -1714,18 +1720,19 @@
               (set! paths-tried (cons path paths-tried))
               (guard (c [#t #f])
                 (let ([ip ($open-file-input-port '$open-source-file path)])
-                  (if (let ([new-sfd ($source-file-descriptor path ip)])
-                         (and (fx= (source-file-descriptor-crc new-sfd)
-                                   (source-file-descriptor-crc sfd))
-                              (= (source-file-descriptor-length new-sfd)
-                                 (source-file-descriptor-length sfd))))
-                       (transcoded-port ip (current-transcoder))
-                       (begin (close-input-port ip) #f)))))))))
+                  (guard (c [#t (close-input-port ip) #f])
+                    (if (let ([new-sfd ($source-file-descriptor path ip)])
+                          (and (fx= (source-file-descriptor-crc new-sfd)
+                                    (source-file-descriptor-crc sfd))
+                               (= (source-file-descriptor-length new-sfd)
+                                  (source-file-descriptor-length sfd))))
+                        (transcoded-port ip (current-transcoder))
+                        (begin (close-input-port ip) #f))))))))))
     (define (search name dir*)
       (and (not (null? dir*))
            (or (source-port
                  (let ([dir (car dir*)])
-                   (if (or (string=? dir "") (string=? dir "."))
+                   (if (string=? dir ".")
                        name
                        (path-build dir name))))
                (search name (cdr dir*)))))

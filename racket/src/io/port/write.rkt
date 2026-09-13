@@ -5,6 +5,7 @@
          "../host/thread.rkt"
          "port.rkt"
          "output-port.rkt"
+         "lock.rkt"
          "count.rkt"
          "check.rkt")
 
@@ -16,11 +17,11 @@
                           #:zero-ok? [zero-ok? #f]
                           #:enable-break? [enable-break? #f])
   (let try-again ([out out] [extra-count-outs null])
-    (start-atomic)
+    (port-lock out)
     (cond
       [(fx= start end)
        (check-not-closed who out)
-       (end-atomic)
+       (port-unlock out)
        0]
       [else
        (define buffer (core-port-buffer out))
@@ -34,38 +35,38 @@
           (set-direct-pos! buffer (fx+ buf-pos v))
           (when (or (pair? extra-count-outs) (core-port-count out))
             (port-count-all! out extra-count-outs v bstr start))
-          (end-atomic)
+          (port-unlock out)
           v]
          [else
           (check-not-closed who out)
           (define write-out (method core-output-port out write-out))
           (cond
             [(procedure? write-out)
-             (define v (write-out out bstr start end (not buffer-ok?) enable-break? copy-bstr?))
+             (define v (write-out out bstr start end (not buffer-ok?) enable-break? copy-bstr? #f))
              (let result-loop ([v v])
                (cond
                  [(not v)
-                  (end-atomic)
+                  (port-unlock out)
                   (if zero-ok?
                       0
                       (try-again out extra-count-outs))]
                  [(exact-positive-integer? v)
                   (port-count-all! out extra-count-outs v bstr start)
-                  (end-atomic)
+                  (port-unlock out)
                   v]
                  [(evt? v)
-                  (end-atomic)
+                  (port-unlock out)
                   (cond
                     [zero-ok? 0]
                     [else
                      (define new-v (if enable-break?
                                        (sync/enable-break v)
                                        (sync v)))
-                     (start-atomic)
+                     (port-lock out)
                      (result-loop new-v)])]
                  [else
-                  (end-atomic)
+                  (port-unlock out)
                   (internal-error (format "write-some-bytes: weird result ~s for ~s ~s ~s at ~s" v bstr start end out))]))]
             [else
-             (end-atomic)
+             (port-unlock out)
              (try-again (->core-output-port write-out) (cons out extra-count-outs))])])])))

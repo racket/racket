@@ -1,3 +1,5 @@
+;;; Copyright (c) 2000-2018 Dipanwita Sarkar, Andrew W. Keep, R. Kent Dybvig, Oscar Waddell
+;;; See the accompanying file Copyright for details
 (library (nanopass implementation-helpers)
   (export
     ;; formatting
@@ -26,7 +28,7 @@
     indirect-export
 
     ;; compile-time environment helpers
-    #;define-property (rename (make-expand-time-value make-compile-time-value))
+    define-property (rename (make-expand-time-value make-compile-time-value))
 
     ;; code organization helpers
     module
@@ -46,9 +48,6 @@
     ;; the base record, so that we can use gensym syntax
     define-nanopass-record
 
-    ;; failure token so that we can know when parsing fails with a gensym
-    np-parse-fail-token
-
     ;; handy syntactic stuff
     with-implicit
 
@@ -63,6 +62,8 @@
     )
   (import
     (vicare)
+    (vicare language-extensions)
+    (vicare language-extensions tracing-syntaxes)
     (only (vicare expander) stx? stx-expr)
     (only (vicare compiler) optimize-level))
 
@@ -80,9 +81,6 @@
                    (nongenerative #{nanopass-record d47f8omgluol6otrw1yvu5-0})
                    (fields (immutable tag nanopass-record-tag))))])))
  
-  ;; another gensym listed into this library
-  (define np-parse-fail-token '#{np-parse-fail-token dlkcd4b37swscag1dvmuiz-13})
-
   (define-syntax eq-hashtable-set! (identifier-syntax hashtable-set!))
   (define-syntax eq-hashtable-ref (identifier-syntax hashtable-ref))
 
@@ -120,7 +118,7 @@
          (with-input-from-string (format "#{~a~a ~a~a}" pretty-name extra0 unique-name extra1) read))]))
 
   (define provide-full-source-information
-    (make-parameter #f (lambda (x) (and x #t))))
+    (make-parameter #t (lambda (x) (and x #t))))
 
   (define-record-type source-information
     (nongenerative)
@@ -130,7 +128,7 @@
     (protocol
       (lambda (new)
         (lambda (a type)
-          (let ([sp (annotation-textual-position a)])
+          (let ([sp (reader-annotation-textual-position a)])
             (new
               (source-position-port-id sp) (source-position-byte sp)
               (source-position-character sp) #f #f (source-position-line sp)
@@ -142,7 +140,7 @@
         (cond
           [(stx? stx)
            (let ([e (stx-expr stx)])
-             (and (annotation? e) (make-source-information e type)))]
+             (and (reader-annotation? e) (make-source-information e type)))]
           [(pair? stx) (or (loop (car stx) 'near) (loop (cdr stx) 'near))]
           [else #f]))))
   
@@ -158,7 +156,19 @@
     (syntax-rules ()
       [(_ id indirect-id ...) (define t (if #f #f))]))
 
+  (define-syntax define-property
+    (lambda (x)
+      (syntax-case x ()
+        [(_ id key value)
+         (with-syntax ([t (datum->syntax #'id (gensym (syntax->datum #'id)))])
+           (syntactic-binding-putprop #'id (syntax->datum #'key) (syntax->datum #'t))
+           #'(define-syntax waste (let () (set-symbol-value! 't value) (lambda (x) (syntax-violation #f "invalid syntax" x)))))])))
+
   (define-syntax with-compile-time-environment
     (syntax-rules ()
      [(_ (arg) body* ... body)
-      (let ([arg retrieve-expand-time-value]) body* ... body)])))
+      (let ([arg (case-lambda
+                   [(x) (retrieve-expand-time-value x)]
+                   [(x y) (let ([sym (syntactic-binding-getprop x (syntax->datum y))])
+                            (and sym (symbol-value sym)))])])
+        body* ... body)])))

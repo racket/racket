@@ -144,3 +144,13 @@ The new file size can be either larger or smaller than its current
 size, but ``truncate'' in this function's name reflects that it is
 normally used to decrease the size of a file, since writing to a file
 or using @racket[file-position] can extend a file's size.}
+
+@defproc[(terminal-file-position) exact-nonnegative-integer?]{
+
+Reports the number of bytes that have been written to ports that are
+connected to a terminal, such as the original output and error ports.
+This count will @emph{not} include bytes written by other processes to
+the same terminal, even if they are subprocesses started by the Racket
+process.
+
+@history[#:added "9.1.0.5"]}

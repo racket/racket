@@ -12,8 +12,8 @@
 
 @defproc[(flatten-begin [stx syntax?]) (listof syntax?)]{
 
-Extracts the sub-expressions from a @racket[begin]-like form,
-reporting an error if @racket[stx] does not have the right shape
+Extracts the sub-expressions from @racket[stx], assuming that it is a @racket[begin] form.
+Reports an error if @racket[stx] does not have the right shape
 (i.e., a syntax list). The resulting syntax objects have annotations
 transferred from @racket[stx] using @racket[syntax-track-origin].
 

@@ -27,12 +27,13 @@
   (define xpatch (lookup 'xpatch))
   (define wpo? (not (equal? (lookup 'DISABLE_WPO) "t")))
   (define schemify? (not (equal? (lookup 'schemify) "f")))
+  (define slsp-suffix (lookup 'PLT_CS_SLSP_SUFFIX))
 
   (define cso (or (lookup 'cso) ".so"))
   
   (define compile-file-deps
     (append
-     (list (input-data-target 'compile-config (list unsafe? debug? compress?)))
+     (list (input-data-target 'compile-config (list unsafe? debug? compress? slsp-suffix)))
      extra-compile-file-deps
      (map at-source '("compile-file.ss" "include.ss" "place-register.ss"))))
 
@@ -99,6 +100,7 @@
             "name.ss"
             "constant.ss"
             "hash-code.ss"
+            "racket-struct.ss"
             "struct.ss"
             "prefab.ss"
             "procedure.ss"
@@ -292,7 +294,8 @@
                      (cat (append main-deps (list main.so)) path)))]
 
      ,(library-target main.so (at-source "main.sps") main-deps
-                      (list (at-source "main/help.ss")))
+                      (list (at-source "main/help.ss")
+                            (at-source "main/eval-all.ss")))
 
      ,(library-target expander.so (at-source "expander.sls") expander-deps
                       (list* expander.scm (at-source "expander/env.ss")

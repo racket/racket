@@ -1,11 +1,13 @@
 #lang racket/base
-(require "../syntax/syntax.rkt"
+(require (only-in racket/extflonum extflonum?)
+         "../syntax/syntax.rkt"
          "../syntax/scope.rkt"
          "../syntax/match.rkt"
          "../syntax/binding.rkt"
          "../syntax/error.rkt"
          "../namespace/core.rkt"
          "../common/module-path.rkt"
+         "../common/prefab.rkt"
          "../boot/runtime-primitive.rkt"
          "parsed.rkt"
          "expanded+parsed.rkt")
@@ -48,12 +50,14 @@
        (for ([rand (in-list rands)])
          (check-expr rand 1 e))
        (case (cross-phase-primitive-name (parsed-app-rator e))
-         [(cons list)
+         [(cons list hasheq)
           (check-count 1 num-results enclosing)]
          [(make-struct-type)
           (check-count 5 num-results enclosing)]
          [(make-struct-type-property)
           (check-count 3 num-results enclosing)]
+         [(make-parameter)
+          (check-count 1 num-results enclosing)]
          [(gensym)
           (unless (or (= 0 (length rands))
                       (and (= 1 (length rands))
@@ -123,11 +127,53 @@
   (unless (= is-num expected-num)
     (disallow enclosing)))
 
+; (walk-for-quotable d recur) -> (or/c (not/c #f) #f)
+;   d : any/c
+;   recur : (any/c . -> . (or/c (not/c #f) #f))
+; If `d`'s outermost structure is quotable, then returns `(and (recur u) ...)`
+; where `u ...` are the pieces of immediate substructure of d. (If `recur`
+; encounters an unquotable expression, it can either return #f or throw; the
+; walk-for-quotable invocation will do the same.)
+; If `d`'s outermost structure is not quotable, returns #f.
+(define (walk-for-quotable d recur)
+  (or (number? d)
+      (boolean? d)
+      (symbol? d)
+      (and (string? d) (immutable? d))
+      (and (bytes? d) (immutable? d))
+      (char? d)
+      (keyword? d)
+      (null? d)
+      (regexp? d)
+      (extflonum? d)
+      (and (pair? d)
+           (recur (car d))
+           (recur (cdr d)))
+      (and (vector? d)
+           (immutable? d)
+           (for/and ([v (in-vector d)]) (recur v)))
+      (and (hash? d)
+           (hash-eq? d)
+           (immutable? d)
+           (for/and ([(k v) (in-hash d)])
+             (and (recur k) (recur v))))
+      (and (box? d)
+           (immutable? d)
+           (recur (unbox d)))
+      (and (immutable-prefab-struct-key d)
+           (for/and ([v (in-vector (struct->vector d) 1)])
+             (recur v)))))
+
+; (check-datum datum expr) -> (or/c (not/c #f) #f)
+;   datum : any/c
+;   expr : (or/c parsed? syntax?)
+; If datum is quotable, returns an unspecified not-#f value. Else, raises an
+; error with `e` as the context.
 (define (check-datum d e)
-  (cond
-    [(or (number? d) (boolean? d) (symbol? d) (string? d) (bytes? d) (null? d))
-     (void)]
-    [else (disallow e)]))
+  (or (walk-for-quotable d
+                         (lambda (d2)
+                           (check-datum d2 e)))
+      (disallow e)))
 
 (define (quoted-string? e)
   (and (parsed-quote? e)

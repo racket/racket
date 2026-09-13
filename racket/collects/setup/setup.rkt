@@ -21,6 +21,7 @@
                #:force-user-docs? [force-user-docs? #f]
                #:jobs [parallel #f]
                #:recompile-only? [recompile-only? #f]
+               #:recompile-cache [recompile-cache #f]
                #:fail-fast? [fail-fast? #f]
                #:check-pkg-deps? [always-check-dependencies? #f]
                #:fix-pkg-deps? [fix-dependencies? #f]
@@ -73,6 +74,7 @@
 
     [recompile-only recompile-only?]
     [managed-recompile-only recompile-only?]
+    [managed-recompile-cache-dir (and recompile-cache (path->complete-path recompile-cache))]
     [parallel-workers (if parallel parallel (parallel-workers))])
 
    (let/ec esc

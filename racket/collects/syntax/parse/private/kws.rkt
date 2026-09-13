@@ -73,7 +73,7 @@
     (cond [(pair? optkws)
            (format " plus optional keyword argument~a ~a"
                    (s-if-plural optkws)
-                   (join-sep (map kw->string minkws) "," "and"))]
+                   (join-sep (map kw->string optkws) "," "and"))]
           [else ""]))
   (string-append pos-part kws-part optkws-part))
 
@@ -101,7 +101,8 @@
 
 ;; ----
 
-(define (kw->string kw) (format "~a" kw))
+(define (kw->string kw)
+  ((error-syntax->string-handler) kw #f))
 
 (define (diff/sorted/eq xs ys)
   (if (pair? xs)

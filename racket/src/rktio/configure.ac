@@ -357,6 +357,8 @@ if test "${LFS_CFLAGS}" != "" && test "${LFS_CFLAGS}" != "undefined"; then
   CFLAGS="${CFLAGS} ${LFS_CFLAGS}"  
 fi
 
+AC_CHECK_DECL([O_CLOEXEC],AC_DEFINE([RKTIO_HAS_CLOEXEC],1, [Have O_CLOEXEC]), [], [#include <fcntl.h>])
+
 ############### pthread ###################
 
 if test "${enable_pthread}" = "" ; then
@@ -472,5 +474,7 @@ AC_SUBST(HAVE_DIRENT_NAMLEN)
 AC_SUBST(HAVE_DIRENT_NAMELEN)
 
 makefiles="Makefile"
+
+cp ${srcdir}/buildmain.zuo main.zuo
 
 AC_OUTPUT($makefiles)

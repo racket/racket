@@ -28,6 +28,8 @@ The test form has these two shapes:
 
   (test <expected> <symbolic-name> <expression>)
 
+  (test <expected> <expression>)
+
 In the first case, it applies the result of <procedure>
 to the results of <argument1> etc and compares that (with equal?)
 to the result of the <expected>
@@ -87,6 +89,8 @@ In both cases, it works like `test` but uses `compare` instead of `equal?`.
 (define accum-number-of-error-tests 0)
 (define accum-number-of-exn-tests 0)
 
+(define errs-reported? #f)
+
 (define (load-in-sandbox file #:testing [testing "testing.rktl"])
   (define-syntax-rule (S id) (dynamic-require 'racket/sandbox 'id))
   (let ([e ((S call-with-trusted-sandbox-configuration)
@@ -101,6 +105,7 @@ In both cases, it works like `test` but uses `compare` instead of `equal?`.
     (e `(define real-error-port  (quote ,real-error-port)))
     (e `(define Section-prefix ,Section-prefix))
     (e `(load-relative (quote ,file)))
+    (e `(maybe-report-errs)) ; in case test file doens't call `(report-errs)`
     (let ([l (e '(list accum-number-of-tests
                        accum-number-of-error-tests
                        accum-number-of-exn-tests
@@ -129,7 +134,9 @@ In both cases, it works like `test` but uses `compare` instead of `equal?`.
                          (printf "  BUT EXPECTED ~s\n" expect))])
         (let ([res (if (procedure? fun)
                        (if kws (keyword-apply fun kws kvs args) (apply fun args))
-                       (car args))])
+                       (if (null? args)
+                           fun
+                           (car args)))])
           (printf "~s\n" res)
           (let ([ok? ((or cmp equal?) expect res)])
             (cond
@@ -398,7 +405,12 @@ In both cases, it works like `test` but uses `compare` instead of `equal?`.
       (set! errs null)
       (set! number-of-tests 0)
       (set! number-of-error-tests 0)
-      (set! number-of-exn-tests 0))))
+      (set! number-of-exn-tests 0)
+      (set! errs-reported? #t))))
+
+(define (maybe-report-errs)
+  (unless errs-reported?
+    (report-errs)))
 
 (define type? exn:application:type?)
 (define arity? exn:application:arity?)

@@ -222,7 +222,7 @@ Example:
 @defproc[(parse-command-line [name (or/c string? path?)]
                              [argv (or/c (listof string?) (vectorof string?))]
                              [table (listof (cons/c symbol? list?))]
-                             [finish-proc ((list?) () #:rest list? . ->* . any)]
+                             [finish-proc (list? any/c ... . -> . any)]
                              [arg-help-strs (listof string?)]
                              [help-proc (string? . -> . any) (lambda (str) ....)]
                              [unknown-proc (string? . -> . any) (lambda (str) ...)])

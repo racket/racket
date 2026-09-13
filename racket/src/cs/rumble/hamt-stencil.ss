@@ -1135,6 +1135,8 @@
 
     (define (bnode-hash-code n hash hc)
       (let* ([mask (#%$stencil-vector-mask n)]
+             ;; including the mask in the hash to relevant to match up keys
+             ;; with values when `#t` values are omitted
              [hc (hash-code-combine hc mask)]
              [child-count (hamt-mask->child-count mask)]
              [key-count (hamt-mask->key-count mask)]
@@ -1148,19 +1150,28 @@
                      [(bnode? c)
                       (bnode-hash-code c hash hc)]
                      [else
-                      ;; Hash code needs to be order-independent, so
-                      ;; collision nodes are a problem; simplify by just
-                      ;; using the hash code and hope that collisions are
-                      ;; rare.
+                      ;; Hash code needs to be order-independent with
+                      ;; respect to collisions; simplify by just using
+                      ;; the hash code and hope that collisions are rare.
                       (hash-code-combine hc (cnode-hash c))])))]
            [else
-            (let ([offset (fx+ HAMT-STATIC-FIELD-COUNT child-count key-count)])
-              (let loop ([i 0] [hc hc])
-                (cond
-                  [(fx< i val-count)
-                   (loop (fx1+ i)
-                         (hash-code-combine hc (hash (#%$stencil-vector-ref n (fx+ offset i)))))]
-                  [else hc])))]))))
+            (let ([hc
+                   (let ([offset (fx+ HAMT-STATIC-FIELD-COUNT child-count)])
+                     (let loop ([i 0] [hc hc])
+                       (cond
+                         [(fx< i key-count)
+                          (loop (fx1+ i)
+                                (hash-code-combine hc (hamt-wrapped-key-hash-code
+                                                       n
+                                                       (#%$stencil-vector-ref n (fx+ offset i)))))]
+                         [else hc])))])
+              (let ([offset (fx+ HAMT-STATIC-FIELD-COUNT child-count key-count)])
+                (let loop ([i 0] [hc hc])
+                  (cond
+                    [(fx< i val-count)
+                     (loop (fx1+ i)
+                           (hash-code-combine hc (hash (#%$stencil-vector-ref n (fx+ offset i)))))]
+                    [else hc]))))]))))
 
     (define (bnode-fold n f nil)
       (let* ([mask (#%$stencil-vector-mask n)]

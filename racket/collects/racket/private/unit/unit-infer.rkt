@@ -5,6 +5,7 @@
 (require (for-syntax racket/base
                      racket/list
                      racket/syntax
+                     racket/private/stx
                      syntax/parse/pre
                      syntax/context
                      syntax/private/id-table
@@ -295,9 +296,9 @@
        (define lnk-table (make-bound-id-table))
        (define sig-table (make-hasheq))
        
-       (let ([dup (check-duplicate-identifier (map link-record-linkid link-defs))])
+       (let-values ([(dup origs) (stx-find-duplicate-identifiers (map link-record-linkid link-defs))])
          (when dup
-           (raise-stx-err "duplicate identifier" dup)))
+           (raise-stx-err "duplicate identifier" dup origs)))
        
        (for-each
         (lambda (b)

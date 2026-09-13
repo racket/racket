@@ -82,6 +82,8 @@
       (add-flags '((trust-existing-zos #t)))]
      [("--recompile-only") "Fail if compilation must start from source"
       (add-flags '((recompile-only #t)))]
+     [("--recompile-cache") dir "Cache recompiled code in <dir>"
+      (add-flags `((recompile-cache ,dir)))]
      [("--sync-docs-only") "Sync/move documentation, but do not run or render"
       (add-flags '((sync-docs-only #t)))]
      [("-x" "--no-launcher") "Do not produce launcher programs"
@@ -100,8 +102,16 @@
       (add-flags '((make-info-domain #f)))]
      [("-D" "--no-docs") "Do not compile .scrbl files and do not build documentation"
       (add-flags '((make-docs #f)))]
-     [("--doc-pdf") dir "Build documentation PDFs, write to <dir>"
+     [("--only-extra-docs") "Only build requested PDF/Markdown docs"
+      (add-flags disable-action-flags)]
+     [("--doc-pdf") dir "Build documentation PDFs via LaTeX, write to <dir>"
       (add-flags `((doc-pdf-dest ,dir)))]
+     [("--doc-xelatex") dir "Build documentation PDFs via XeLaTeX, write to <dir>"
+      (add-flags `((doc-xelatex-dest ,dir)))]
+     [("--doc-typst-pdf") dir "Build documentation PDFs via Typst, write to <dir>"
+      (add-flags `((doc-typst-pdf-dest ,dir)))]
+     [("--doc-markdown") dir "Build documentation Markdown, write to <dir>"
+      (add-flags `((doc-markdown-dest ,dir)))]
      [("-K" "--no-pkg-deps") "Do not check package dependencies"
       (add-flags '((check-dependencies #f)))]
      [("--check-pkg-deps") "Check package dependencies when collections specified"

@@ -28,7 +28,8 @@
          "../expand/parsed.rkt"
          "../expand/top-portal-syntax.rkt"
          "../common/performance.rkt"
-         "../compile/correlated-linklet.rkt")
+         "../compile/correlated-linklet.rkt"
+         "../compile/recompile.rkt")
 
 (provide eval
          compile
@@ -107,6 +108,9 @@
   (define exp-s (expand s ns #f #t serializable? to-correlated-linklet?))
   (let loop ([exp-s exp-s])
     (cond
+      [(parsed-bundle? exp-s)
+       ;; direct expansion to a compiled module; recompile it
+       (compiled-expression-recompile (parsed-bundle-bundle exp-s))]
       [(parsed-module? exp-s)
        (compile-module exp-s (make-compile-context #:namespace ns)
                        #:serializable? serializable?

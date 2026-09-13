@@ -71,7 +71,7 @@ accumulated value.
 
 @defzuomodule[zuo/glob]
 
-@defproc[(glob->matcher [glob string?]) procedure?]{
+@defproc[(glob->matcher [glob string?]) (string? . -> . boolean?)]{
 
 Creates a procedure that takes a string and reports @racket[#t] if the
 string matches the pattern @racket[glob], @racket[#f] otherwise.
@@ -124,7 +124,7 @@ on a process handle as from @racket[process]. Only one thread runs at
 a time, where a thread switch happens only when a thread terminates or
 uses a (potentially) blocking operation.
 
-@defproc[(call-in-main-thread [thunk procedure]) any/c]{
+@defproc[(call-in-main-thread [thunk (-> any/c)]) any/c]{
 
 Creates a new @tech{threading context}, calling @racket[thunk] in the
 main thread of the context, and returning the value of @racket[thunk]
@@ -133,7 +133,7 @@ on a channel. An error is reported if no thread can run and the main
 thread is blocked on a channel.}
 
 @deftogether[(
-@defproc[(thread [thunk procedure?]) thread?]
+@defproc[(thread [thunk (-> any/c)]) thread?]
 @defproc[(thread? [v any/c]) boolean?]
 @defproc[(channel) channel?]
 @defproc[(channel? [v any/c]) boolean?]
@@ -350,7 +350,7 @@ ones read from @racket[file].}
 
 @history[#:added "1.1"]
 
-@defproc[(maybe-jobserver-client) (or/c procedure? #f)]{
+@defproc[(maybe-jobserver-client) (or/c ((or/c 'get 'put) . -> . void?) #f)]{
 
 Returns a procedure if a jobserver configuration is found via the
 @envvar{MAKEFLAGS} environment variable, @racket[#f] otherwise. That
@@ -387,3 +387,32 @@ number.
 
 Unlike @racket[maybe-jobserver-client], @racket[maybe-jobserver-jobs]
 does not need to be called in a @tech{threading context}.}
+
+@; ------------------------------------------------------------
+
+@section[#:tag "zuo-dry-run"]{Dry-Run Mode Detection}
+
+@defzuomodule[zuo/dry-run]
+
+@history[#:added "1.8"]
+
+@defproc[(maybe-dry-run-mode) (or/c #f 'dry-run 'question)]{
+
+Returns a non-@racket[#f] value when a dry-run configuration is found via the
+@envvar{MAKEFLAGS} environment variable, @racket[#f] otherwise. That
+environment variable is normally set by @exec{make} when it runs a target
+command and when @Flag{n}, @Flag{q}, or @Flag{t} was provided.
+
+Since ``touch'' mode is not supported by @racket[build], detection of
+a @Flag{t} flag triggers an error instead of a non-@racket[#f] value.
+Conflicting options also trigger an error.
+
+The @envvar{MAKEFLAGS} environment variable is parsed into arguments
+using @racket[shell->strings]. If the first argument has only ASCII
+letters (lowercase or uppercase), then it is treated as a set of
+single-character flags. Otherwise, the argument list is scanned for
+@racket["-n"], @racket["--just-print"], @racket["--dry-run"],
+@racket["--recon"], @racket["-q"], @racket["--question"], @racket["-t"],
+or @racket["--touch"] stopping at any @racket["--"].
+
+}

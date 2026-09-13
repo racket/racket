@@ -13,6 +13,13 @@
 
 (require setup/main-collects
          racket/struct-info
+         (rename-in syntax/private/boundmap
+                    ;; the private version of the library
+                    ;; (the one without contracts)
+                    ;; has these old, wrong names in it.
+                    [make-module-identifier-mapping make-free-identifier-mapping]
+                    [module-identifier-mapping-get free-identifier-mapping-get]
+                    [module-identifier-mapping-put! free-identifier-mapping-put!])
          (for-template racket/base
                        (only-in racket/private/list-predicates
                                 empty? cons?)))
@@ -21,10 +28,14 @@
   (datum->syntax stx (syntax-e stx) loc))
 
 ;; lookup-struct-info : syntax -> struct-info?
-(define (lookup-struct-info stx provide-stx)
-  (define id (syntax-case stx ()
-               [(a b) (syntax a)]
-               [_ stx]))
+(define (lookup-struct-info stx struct-name-remappings provide-stx)
+  (define id-in-syntax
+    (syntax-case stx ()
+      [(a b) (syntax a)]
+      [_ stx]))
+  (define id (free-identifier-mapping-get struct-name-remappings
+                                          id-in-syntax
+                                          (λ () id-in-syntax)))
   (define v (syntax-local-value id (λ () #f)))
   (define error-name
     (syntax-case provide-stx ()

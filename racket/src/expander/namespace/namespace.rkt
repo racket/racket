@@ -55,12 +55,14 @@
                    phase-to-namespace  ; phase -> namespace for same module  [shared for the same module instance]
                    phase-level-to-definitions ; phase-level -> definitions [shared for the same module instance]
                    module-registry     ; module-registry of (resolved-module-path -> module) [shared among modules]
+                   module-instance-shifted-requires ; (resolved-module-path -> (list (box (list resolved-module-path ...)))) [shared among modules]
                    bulk-binding-registry ; (resolved-module-path -> bulk-provide) for resolving bulk bindings on unmarshal
                    submodule-declarations ; resolved-module-path -> module [shared during a module compilation]
                    root-namespace      ; #f or namespace for #lang, #reader, and persistent instances [shared among modules]
                    declaration-inspector ; declaration-time inspector
                    [inspector #:mutable] ; instantiation-time inspector
                    available-module-instances  ; phase -> list of module-instance [shared among modules]
+                   available-cross-phase-module-instances ; box of list of module-instance [shared among modules]
                    module-instances)   ; union resolved-module-path -> module-instance        [shared among modules]
   ;;                                   ;       0-phase -> resolved-module-path -> module-instance
   ;;                                   ; where the first option is for cross phase persistent modules
@@ -106,6 +108,9 @@
                    (namespace-module-registry share-from-ns)
                    (make-module-registry))
                (if share-from-ns
+                   (namespace-module-instance-shifted-requires share-from-ns)
+                   (make-hasheq))
+               (if share-from-ns
                    (namespace-bulk-binding-registry share-from-ns)
                    (make-bulk-binding-registry))
                (make-small-hasheq)     ; submodule-declarations
@@ -117,6 +122,9 @@
                (if share-from-ns
                    (namespace-available-module-instances share-from-ns)
                    (make-hasheqv))
+               (if share-from-ns
+                   (namespace-available-cross-phase-module-instances share-from-ns)
+                   (box null))
                (if share-from-ns
                    (namespace-module-instances share-from-ns)
                    (make-hasheqv))))
@@ -196,7 +204,8 @@
   (instance-unset-variable! (definitions-variables d) name))
 
 (define (namespace-set-transformer! ns phase-level name val)
-  (define d (namespace->definitions ns (add1 phase-level)))
+  ;; `phase-level` can be #f for portal syntax
+  (define d (namespace->definitions ns (and phase-level (add1 phase-level))))
   (hash-set! (definitions-transformers d) name val))
 
 (define (namespace-unset-transformer! ns phase-level name)
@@ -208,16 +217,16 @@
   (instance-variable-value (definitions-variables d) name fail-k))
   
 (define (namespace-get-transformer ns phase-level name fail-k)
-  (define d (namespace->definitions ns (add1 phase-level)))
+  (define d (namespace->definitions ns (and phase-level (add1 phase-level))))
   (hash-ref (definitions-transformers d) name fail-k))
 
 (define (namespace->instance ns phase-shift)
   (definitions-variables (namespace->definitions ns phase-shift)))
 
-(define (namespace-same-instance? a-ns b-ns)
+(define (namespace-same-instance? a-ns b-ns phase-level)
   (eq? (small-hash-ref (namespace-phase-level-to-definitions a-ns)
-                       0
+                       phase-level
                        'no-a)
        (small-hash-ref (namespace-phase-level-to-definitions b-ns)
-                       0
+                       phase-level
                        'no-b)))

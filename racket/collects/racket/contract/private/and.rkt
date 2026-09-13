@@ -14,7 +14,9 @@
          "misc.rkt"
          "list.rkt")
 
-(provide (rename-out [_and/c and/c]) integer-in)
+(provide (rename-out [_and/c and/c]) integer-in
+         base-and/c?
+         base-and/c-ctcs)
 
 (define (and-name ctc)
   (apply build-compound-type-name 'and/c (base-and/c-ctcs ctc)))
@@ -208,14 +210,7 @@
                [(eq? second-pred positive?)
                 (renamed->-ctc 0 `(and/c real? positive?))]
                [else
-                (define second-contract (cadr contracts))
-                (cond
-                  [(equal? (contract-name second-contract) '(not/c positive?))
-                   (renamed-between/c -inf.0 0 `(and/c real? (not/c positive?)))]
-                  [(equal? (contract-name second-contract) '(not/c negative?))
-                   (renamed-between/c 0 +inf.0 `(and/c real? (not/c negative?)))]
-                  [else
-                   (make-first-order-and/c contracts preds)])])]
+                (make-first-order-and/c contracts preds)])]
             [(or (eq? (car preds) exact-nonnegative-integer?)
                  (eq? (car preds) natural?)
                  (eq? (cadr preds) exact-nonnegative-integer?)
@@ -352,16 +347,16 @@
      (λ (fuel)
        (and (>= upper-bound 1)
             (λ ()
-              (+ _start (random upper-bound)))))]
+              (+ _start (rand upper-bound)))))]
     [else
      (λ (fuel)
        (λ ()
          (cond
-           [(zero? (random 20)) 0]
+           [(zero? (rand 20)) 0]
            [else
-            (* (if (zero? (random 2)) -1 1)
-               (+ (expt 2 (geo-dist 1/2))
-                  (geo-dist 1/2)))])))]))
+            (* (if (zero? (rand 2)) -1 1)
+               (+ (expt 2 (rand-nat 1/2))
+                  (rand-nat 1/2)))])))]))
 
 (struct integer-in-ctc (start end)
   #:property prop:custom-write custom-write-property-proc
@@ -384,12 +379,6 @@
    #:equivalent integer-in-equivalent
    #:generate integer-in-generate))
 
-(define (geo-dist p)
-  (let loop ([n 0])
-    (cond
-      [(< (random) p) (loop (+ n 1))]
-      [else n])))
-
 (define/final-prop (integer-in start end)
   (define (|(or/c #f exact-integer?)| x) (or (not x) (exact-integer? x)))
   (check-two-args 'integer-in start end |(or/c #f exact-integer?)| |(or/c #f exact-integer?)|)
@@ -399,7 +388,12 @@
     [else
      (integer-in-ctc start end)]))
 
+(define integer-in-ff (integer-in #f #f))
+(define integer-in-0f (integer-in 0 #f))
+(define integer-in-1f (integer-in 1 #f))
+
+;; passing only defined names here gives the demodularizer license to prune:
 (set-some-basic-integer-in-contracts! renamed-integer-in
-                                      (integer-in #f #f)
-                                      (integer-in 0 #f)
-                                      (integer-in 1 #f))
+                                      integer-in-ff
+                                      integer-in-0f
+                                      integer-in-1f)

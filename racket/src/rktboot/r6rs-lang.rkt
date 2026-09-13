@@ -605,7 +605,7 @@
      (rcd->constructor rcd lookup-protocol)]))
 
 (define (make-record-type-descriptor name parent uid s? o? fields)
-  (do-$make-record-type base-rtd parent name fields s? o? null #:uid uid))
+  (do-$make-record-type base-rtd parent name fields s? o? #f null #:uid uid))
 
 (define (make-record-constructor-descriptor rtd parent-rcd protocol)
   (rec-cons-desc rtd parent-rcd protocol))

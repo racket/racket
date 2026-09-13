@@ -50,6 +50,8 @@ struct rktio_fd_t {
   char leftover[6];
   int w_buf_count; /* number of console wide chars in `buffer` pending to encode */
 #endif
+
+  rktio_result_t res;
 };
 
 struct rktio_fd_transfer_t {
@@ -160,7 +162,8 @@ static intptr_t recount_output_text(const char *orig_buffer, const char *buffer,
 
 static wchar_t *convert_output_wtext(const char *buffer, intptr_t *_towrite,
 				     int *_can_leftover, int *_keep_leftover,
-				     int leftover_len, char *leftover);
+				     int leftover_len, char *leftover,
+				     int max_convert);
 static intptr_t recount_output_wtext(wchar_t *w_buffer, intptr_t winwrote);
 
 #define MIN_VIA_WIDE_BUFFER_SIZE 6
@@ -170,10 +173,28 @@ static int read_console_via_wide(HANDLE fd,
 
 #endif
 
+static void wrote_to_terminal(intptr_t amt);
+
+/*========================================================================*/
+/* returning a result                                                     */
+/*========================================================================*/
+
+static rktio_result_t *maybe_success(intptr_t r, rktio_result_t *res, int err_val)
+{
+  if (r != err_val) {
+    res->is_success = 1;
+    res->success.i = r;
+  } else
+    res->is_success = 0;
+
+  return res;
+}
+
 /*========================================================================*/
 /* creating an fd                                                         */
 /*========================================================================*/
 
+/* Internally, we use this function as no-error atomic  */
 rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes)
 {
   rktio_fd_t *rfd;
@@ -194,6 +215,10 @@ rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes)
    if (!(modes & (RKTIO_OPEN_DIR | RKTIO_OPEN_NOT_DIR)))
      if (S_ISDIR(buf.st_mode))
        rfd->modes |= RKTIO_OPEN_DIR;
+   if (!(rfd->modes & RKTIO_OPEN_REGFILE)) {
+     if (rktio_system_fd_is_terminal(rktio, system_fd))
+       rfd->modes |= RKTIO_OPEN_TRACK_TERMINAL_OUTPUT;
+   }
   }
 #endif
 
@@ -214,6 +239,10 @@ rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes)
         }
       }
     }
+    if (!(rfd->modes & RKTIO_OPEN_REGFILE)) {
+      if (rktio_system_fd_is_terminal(rktio, system_fd))
+        rfd->modes |= RKTIO_OPEN_TRACK_TERMINAL_OUTPUT;
+    }
   }
 #endif
   
@@ -222,7 +251,7 @@ rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes)
   
   if ((modes & RKTIO_OPEN_SOCKET) && (modes & RKTIO_OPEN_OWN))
     rktio_socket_own(rktio, rfd);
-  
+
   return rfd;
 }
 
@@ -230,7 +259,7 @@ int rktio_fd_is_pending_open(rktio_t *rktio, rktio_fd_t *rfd)
 {
 #ifdef RKTIO_USE_PENDING_OPEN
   if (rfd->pending)
-    rktio_pending_open_poll(rktio, rfd, rfd->pending);
+    rktio_pending_open_poll(rktio, rfd, rfd->pending, &rktio->err);
   return !!rfd->pending;
 #else
   return 0;
@@ -371,6 +400,7 @@ int rktio_fd_is_terminal(rktio_t *rktio, rktio_fd_t *rfd)
 #ifdef RKTIO_USE_PENDING_OPEN
   if (rfd->pending) return 0;
 #endif
+  if (rfd->modes & RKTIO_OPEN_TRACK_TERMINAL_OUTPUT) return 1;
   return rktio_system_fd_is_terminal(rktio, (intptr_t)rfd->fd);
 }
 
@@ -395,12 +425,20 @@ rktio_fd_t *rktio_dup(rktio_t *rktio, rktio_fd_t *rfd)
   }
 # endif
 
+  rktio_cloexec_lock();
+
   do {
     nfd = dup(rfd->fd);
   } while (nfd == -1 && errno == EINTR);
 
-  if (nfd == -1) {
+  if (nfd != -1)
+    rktio_fd_cloexec(nfd);
+  else
     get_posix_error();
+
+  rktio_cloexec_unlock();
+
+  if (nfd == -1) {
     return NULL;
   } else {
     /* Set the `RKTIO_OPEN_INIT` flag, because dup()ing a file
@@ -432,6 +470,17 @@ rktio_fd_t *rktio_dup(rktio_t *rktio, rktio_fd_t *rfd)
       return rktio_system_fd(rktio, (intptr_t)newhandle, rfd->modes);
     }
   }
+#endif
+}
+
+
+void rktio_fd_cloexec(intptr_t fd) {
+#ifdef RKTIO_SYSTEM_UNIX
+# ifdef RKTIO_HAS_CLOEXEC
+  int flags;
+  flags = fcntl(fd, F_GETFD, 0);
+  fcntl(fd, F_SETFD, flags | FD_CLOEXEC);
+# endif
 #endif
 }
 
@@ -589,7 +638,7 @@ static int try_get_fd_char(int fd, int *ready)
 }
 #endif
 
-int rktio_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd)
+static int do_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd, rktio_err_t *err)
 {
   if (rktio_fd_is_regular_file(rktio, rfd))
     return RKTIO_POLL_READY;
@@ -649,7 +698,7 @@ int rktio_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd)
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
   if (rfd->modes & RKTIO_OPEN_SOCKET)
-    return rktio_socket_poll_read_ready(rktio, rfd);
+    return rktio_socket_poll_read_ready(rktio, rfd, err);
 
   init_read_fd(rktio, rfd);
 
@@ -684,7 +733,17 @@ int rktio_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd)
 #endif
 }
 
-int poll_write_ready_or_flushed(rktio_t *rktio, rktio_fd_t *rfd, int check_flushed)
+int rktio_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd)
+{
+  return do_poll_read_ready(rktio, rfd, &rktio->err);
+}
+
+rktio_result_t *rktio_poll_read_ready_r(rktio_t *rktio, rktio_fd_t *rfd)
+{
+  return maybe_success(do_poll_read_ready(rktio, rfd, &rfd->res.err), &rfd->res, RKTIO_POLL_ERROR);
+}
+
+static int poll_write_ready_or_flushed(rktio_t *rktio, rktio_fd_t *rfd, int check_flushed, rktio_err_t *err)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   if (check_flushed)
@@ -694,10 +753,10 @@ int poll_write_ready_or_flushed(rktio_t *rktio, rktio_fd_t *rfd, int check_flush
 
 # ifdef RKTIO_USE_PENDING_OPEN
     if (rfd->pending) {
-      int errval = rktio_pending_open_poll(rktio, rfd, rfd->pending);
+      int errval = rktio_pending_open_poll(rktio, rfd, rfd->pending, err);
       if (errval) {
         errno = errval;
-        get_posix_error();
+        rktio_get_posix_error(err);
         return RKTIO_POLL_ERROR;
       } else if (rfd->pending)
         return RKTIO_POLL_NOT_READY;
@@ -734,7 +793,7 @@ int poll_write_ready_or_flushed(rktio_t *rktio, rktio_fd_t *rfd, int check_flush
 # endif
 
     if (sr == -1) {
-      get_posix_error();
+      rktio_get_posix_error(err);
       return RKTIO_POLL_ERROR;
     } else
       return (sr != 0);
@@ -747,7 +806,7 @@ int poll_write_ready_or_flushed(rktio_t *rktio, rktio_fd_t *rfd, int check_flush
   if (rfd->modes & RKTIO_OPEN_SOCKET) {
     if (check_flushed)
       return RKTIO_POLL_READY;
-    return rktio_socket_poll_write_ready(rktio, rfd);
+    return rktio_socket_poll_write_ready(rktio, rfd, err);
   }
   
   if (rfd->oth) {
@@ -798,13 +857,28 @@ int poll_write_ready_or_flushed(rktio_t *rktio, rktio_fd_t *rfd, int check_flush
 
 int rktio_poll_write_ready(rktio_t *rktio, rktio_fd_t *rfd)
 {
-  return poll_write_ready_or_flushed(rktio, rfd, 0);
+  return poll_write_ready_or_flushed(rktio, rfd, 0, &rktio->err);
 }
 
 int rktio_poll_write_flushed(rktio_t *rktio, rktio_fd_t *rfd)
 {
-  return poll_write_ready_or_flushed(rktio, rfd, 1);
+  return poll_write_ready_or_flushed(rktio, rfd, 1, &rktio->err);
 }
+
+rktio_result_t *rktio_poll_write_ready_r(rktio_t *rktio, rktio_fd_t *rfd)
+{
+  return maybe_success(poll_write_ready_or_flushed(rktio, rfd, 0, &rfd->res.err), &rfd->res, RKTIO_POLL_ERROR);
+}
+
+rktio_result_t *rktio_poll_write_flushed_r(rktio_t *rktio, rktio_fd_t *rfd)
+{
+  return maybe_success(poll_write_ready_or_flushed(rktio, rfd, 1, &rfd->res.err), &rfd->res, RKTIO_POLL_ERROR);
+}
+
+rktio_result_t *rktio_poll_read_ready_r(rktio_t *rktio, rktio_fd_t *rfd);
+RKTIO_EXTERN_RESULT(rktio_result_integer)
+rktio_result_t *rktio_poll_write_ready_r(rktio_t *rktio, rktio_fd_t *rfd);
+
 
 void rktio_poll_add(rktio_t *rktio, rktio_fd_t *rfd, rktio_poll_set_t *fds, int modes)
 {
@@ -906,14 +980,14 @@ void rktio_poll_add(rktio_t *rktio, rktio_fd_t *rfd, rktio_poll_set_t *fds, int 
 /* reading                                                                */
 /*========================================================================*/
 
-intptr_t rktio_read_converted(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len,
-                              char *is_converted)
+static intptr_t do_read_converted(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len,
+                                  char *is_converted, rktio_err_t *err)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   intptr_t bc;
 
   if (rfd->modes & RKTIO_OPEN_SOCKET)
-    return rktio_socket_read(rktio, rfd, buffer, len);
+    return rktio_socket_read(rktio, rfd, buffer, len, err);
 
 # ifdef SOME_FDS_ARE_NOT_SELECTABLE
   if (rfd->bufcount && len) {
@@ -932,7 +1006,7 @@ intptr_t rktio_read_converted(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, int
     } while ((bc == -1) && (errno == EINTR));
 
     if (bc == -1) {
-      get_posix_error();
+      rktio_get_posix_error(err);
       return RKTIO_READ_ERROR;
     } else if (bc == 0)
       return RKTIO_READ_EOF;
@@ -959,7 +1033,7 @@ intptr_t rktio_read_converted(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, int
     } while ((bc == -1) && errno == EINTR);
 
     if ((bc == -1) && (errno != EAGAIN))
-      get_posix_error();
+      rktio_get_posix_error(err);
     
     if (!(old_flags & RKTIO_NONBLOCKING))
       fcntl(rfd->fd, F_SETFL, old_flags);
@@ -977,7 +1051,7 @@ intptr_t rktio_read_converted(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, int
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
   if (rfd->modes & RKTIO_OPEN_SOCKET)
-    return rktio_socket_read(rktio, rfd, buffer, len);
+    return rktio_socket_read(rktio, rfd, buffer, len, err);
 
   init_read_fd(rktio, rfd);
 
@@ -1064,7 +1138,7 @@ intptr_t rktio_read_converted(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, int
     }
 
     if (!ready) {
-      get_windows_error();
+      rktio_get_windows_error(err);
       return RKTIO_READ_ERROR;
     }
 
@@ -1095,7 +1169,7 @@ intptr_t rktio_read_converted(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, int
       return RKTIO_READ_EOF;
     } else if (rfd->th->err) {
       ReleaseSemaphore(rfd->th->lock_sema, 1, NULL);
-      set_windows_error(rfd->th->err);
+      rktio_set_windows_error(err, rfd->th->err);
       return RKTIO_READ_ERROR;
     } else {
       intptr_t bc = rfd->th->avail;
@@ -1111,10 +1185,25 @@ intptr_t rktio_read_converted(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, int
 #endif
 }
 
+intptr_t rktio_read_converted(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len,
+                              char *is_converted)
+{
+  return do_read_converted(rktio, rfd, buffer, len, is_converted, &rktio->err);
+}
+
 intptr_t rktio_read_converted_in(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t start, intptr_t end,
                                  char *is_converted, intptr_t converted_start)
 {
-  return rktio_read_converted(rktio, rfd, buffer+start, end-start, is_converted+converted_start);
+  return do_read_converted(rktio, rfd, buffer+start, end-start, is_converted+converted_start, &rktio->err);
+}
+
+rktio_result_t *rktio_read_converted_in_r(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t start, intptr_t end,
+                                          char *is_converted, intptr_t converted_start)
+{
+  return maybe_success(do_read_converted(rktio, rfd, buffer+start, end-start, is_converted+converted_start,
+                                         &rfd->res.err),
+                       &rfd->res,
+                       RKTIO_READ_ERROR);
 }
 
 intptr_t rktio_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len)
@@ -1127,9 +1216,11 @@ intptr_t rktio_read_in(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t s
   return rktio_read_converted(rktio, rfd, buffer+start, end-start, NULL);
 }
 
-intptr_t rktio_write_in(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr_t start, intptr_t end)
+rktio_result_t *rktio_read_in_r(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t start, intptr_t end)
 {
-  return rktio_write(rktio, rfd, buffer+start, end-start);
+  return maybe_success(do_read_converted(rktio, rfd, buffer+start, end-start, NULL, &rfd->res.err),
+                       &rfd->res,
+                       RKTIO_READ_ERROR);
 }
 
 RKTIO_EXTERN intptr_t rktio_buffered_byte_count(rktio_t *rktio, rktio_fd_t *fd)
@@ -1462,21 +1553,22 @@ int read_console_via_wide(HANDLE fd,
 /* writing                                                                */
 /*========================================================================*/
 
-intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr_t len)
+static intptr_t do_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr_t len,
+                         rktio_err_t *err)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   int flags, errsaved;
   intptr_t amt;
 
   if (rfd->modes & RKTIO_OPEN_SOCKET)
-    return rktio_socket_write(rktio, rfd, buffer, len);
+    return rktio_socket_write(rktio, rfd, buffer, len, err);
 
 # ifdef RKTIO_USE_PENDING_OPEN
   if (rfd->pending) {
-    int errval = rktio_pending_open_poll(rktio, rfd, rfd->pending);
+    int errval = rktio_pending_open_poll(rktio, rfd, rfd->pending, err);
     if (errval) {
       errno = errval;
-      get_posix_error();
+      rktio_get_posix_error(err);
       return RKTIO_WRITE_ERROR;
     } else if (rfd->pending)
       return 0;
@@ -1502,12 +1594,15 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
 
   if (len == -1) {
     errsaved = errno;
-    get_posix_error();
+    rktio_get_posix_error(err);
   } else
     errsaved = 0;
-  
+
   if (!(flags & RKTIO_NONBLOCKING))
     fcntl(rfd->fd, F_SETFL, flags);
+
+  if ((rfd->modes & RKTIO_OPEN_TRACK_TERMINAL_OUTPUT) && (len > 0))
+    wrote_to_terminal(len);
 
   if (len == -1) {
     if (errsaved == EAGAIN)
@@ -1521,7 +1616,7 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
   DWORD winwrote;
 
   if (rfd->modes & RKTIO_OPEN_SOCKET)
-    return rktio_socket_write(rktio, rfd, buffer, len);
+    return rktio_socket_write(rktio, rfd, buffer, len, err);
 
   force_console(rfd);
 
@@ -1537,7 +1632,7 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
     const char *orig_buffer = buffer;
     wchar_t *w_buffer = NULL;
     DWORD max_winwrote;
-    int err;
+    int errv;
 
     if (rfd->modes & RKTIO_OPEN_TEXT)
       buffer = adjust_output_text(buffer, &towrite);
@@ -1549,7 +1644,8 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
       /* Decode UTF-8 and write a chunk on a character boundary. */
       w_buffer = convert_output_wtext(buffer, &towrite,
 				      &can_leftover, &keep_leftover,
-				      rfd->leftover_len, rfd->leftover);
+				      rfd->leftover_len, rfd->leftover,
+				      1024);
     }
     
     while (1) {
@@ -1566,9 +1662,9 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
       }
 
       if (!ok)
-        err = GetLastError();
+        errv = GetLastError();
 
-      if (!ok && (err == ERROR_NOT_ENOUGH_MEMORY)) {
+      if (!ok && (errv == ERROR_NOT_ENOUGH_MEMORY)) {
         towrite = towrite >> 1;
         if (towrite && (buffer != orig_buffer)) {
           /* don't write half of a CRLF: */
@@ -1582,7 +1678,7 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
     }
 
     if (!ok) {
-      get_windows_error();
+      rktio_get_windows_error(err);
       if (buffer != orig_buffer)
 	free((char *)buffer);
       return RKTIO_WRITE_ERROR;
@@ -1592,7 +1688,7 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
       /* Convert wchar count to byte count, taking into account leftovers */
       int wrote_all = (winwrote == towrite);
       if (winwrote) {
-	/* Recounting only works right if the outptu was well-formed
+	/* Recounting only works right if the output was well-formed
 	   UTF-8. Weird things happen otherwise... but we guard against
 	   external inconsistency with the `max_winwrote` check below. */
 	winwrote = recount_output_wtext(w_buffer, winwrote);
@@ -1617,6 +1713,9 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
       winwrote = recount_output_text(orig_buffer, buffer, winwrote);
       free((char *)buffer);
     }
+
+    if ((rfd->modes & RKTIO_OPEN_TRACK_TERMINAL_OUTPUT) && (winwrote > 0))
+      wrote_to_terminal(winwrote);
 
     return winwrote;
   } else {
@@ -1841,8 +1940,143 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
     if (ok)
       return out_len;
 
-    set_windows_error(errsaved);
+    rktio_set_windows_error(err, errsaved);
     return RKTIO_WRITE_ERROR;
+  }
+#endif
+}
+
+intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr_t len)
+{
+  return do_write(rktio, rfd, buffer, len, &rktio->err);
+}
+
+intptr_t rktio_write_in(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr_t start, intptr_t end)
+{
+  return rktio_write(rktio, rfd, buffer+start, end-start);
+}
+
+rktio_result_t *rktio_write_in_r(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr_t start, intptr_t end)
+{
+  return maybe_success(do_write(rktio, rfd, buffer+start, end-start, &rfd->res.err), &rfd->res, RKTIO_WRITE_ERROR);
+}
+
+void rktio_std_write_in_best_effort(rktio_t *rktio, int which, char *buffer, intptr_t start, intptr_t end) {
+#ifdef RKTIO_SYSTEM_UNIX
+  intptr_t amt, len;
+
+  while (start < end) {
+    do {
+      amt = end - start;
+      amt = LIMIT_REQUEST_SIZE(amt);
+
+      do {
+        len = write(which, buffer + start, amt);
+      } while ((len == -1) && (errno == EINTR));
+    
+      amt = amt >> 1;
+    } while ((len == -1) && (errno == EAGAIN) && (amt > 0));
+
+    if (len == -1)
+      return;
+
+    if (len > 0)
+      wrote_to_terminal(len);
+
+    start += len;
+  }
+#endif
+#ifdef RKTIO_SYSTEM_WINDOWS
+  HANDLE h;
+  int ok, to_console, can_leftover = 0, keep_leftover = 0;
+  intptr_t towrite = end - start, amt;
+  wchar_t *w_buffer;
+  DWORD winwrote;
+  DWORD mode;
+  int err;
+
+  switch (which) {
+  case RKTIO_STDOUT:
+    which = STD_OUTPUT_HANDLE;
+    break;
+  case RKTIO_STDERR:
+    which = STD_ERROR_HANDLE;
+    break;
+  }
+
+  h = get_std_handle(which);  
+  if ((h == INVALID_HANDLE_VALUE) || (h == NULL)) {
+    rktio_create_console();
+    h = get_std_handle(which);
+    if ((h == INVALID_HANDLE_VALUE) || (h == NULL))
+      return;
+  }
+
+  if ((GetFileType(h) == FILE_TYPE_CHAR) && GetConsoleMode(h, &mode)) {
+    /* Decode UTF-8 */
+    w_buffer = convert_output_wtext(buffer + start, &towrite,
+                                    &can_leftover, &keep_leftover,
+                                    0, NULL,
+                                    0);
+    
+    start = 0;
+    amt = towrite;
+    while (towrite > 0) {
+      ok = WriteConsoleW(h, w_buffer + start, amt, &winwrote, NULL);
+      
+      if (!ok) {
+        err = GetLastError();
+
+        if (err == ERROR_NOT_ENOUGH_MEMORY) {
+          amt = amt >> 1;
+          if (!amt) {
+            towrite = 0;
+            can_leftover = 0;
+          }
+        } else {
+          towrite = 0;
+          can_leftover = 0;
+        }
+      } else {
+        start += winwrote;
+        towrite -= winwrote;
+        amt = towrite;
+        if (winwrote > 0)
+          wrote_to_terminal(winwrote);
+      }
+    }
+
+    free(w_buffer);
+  } else {
+    can_leftover = towrite;
+  }
+
+  amt = can_leftover;
+  while (can_leftover > 0) {
+    ok = WriteFile(h, buffer + end - can_leftover, amt, &winwrote, NULL);
+    
+    if (!ok) {
+      err = GetLastError();
+
+      if ((err == ERROR_NOT_ENOUGH_MEMORY)
+          || (err == ERROR_PIPE_BUSY)) {
+        amt = amt >> 1;
+        if (!amt) {
+          can_leftover = 0;
+        }
+      } else {
+        can_leftover = 0;
+      }
+    } if (!winwrote) {
+      amt = amt >> 1;
+      if (!amt) {
+        can_leftover = 0;
+      }
+    } else {
+      can_leftover -= winwrote;
+      amt = can_leftover;
+      wrote_to_terminal(winwrote);
+    }
   }
 #endif
 }
@@ -1899,7 +2133,8 @@ static intptr_t recount_output_text(const char *orig_buffer, const char *buffer,
 
 static wchar_t *convert_output_wtext(const char *buffer, intptr_t *_towrite,
 				     int *_can_leftover, int *_keep_leftover,
-				     int leftover_len, char *leftover)
+				     int leftover_len, char *leftover,
+				     int max_convert)
 {
   /* Figure out how many bytes we can convert to complete wide
      characters. To avoid quadratic behavior overall, we'll limit the
@@ -1926,7 +2161,7 @@ static wchar_t *convert_output_wtext(const char *buffer, intptr_t *_towrite,
     span = 0;
   want = span - leftover_len;
 
-  for (i = 0, count = 0; (i < len) && (count < 1024); i++) {
+  for (i = 0, count = 0; (i < len) && (!max_convert || (count < max_convert)); i++) {
     int v = ((unsigned char *)buffer)[i];
     if (want) {
       if ((v & 0xC0) == 0x80) {
@@ -2120,6 +2355,54 @@ static void WindowsFDOCleanup(Win_FD_Output_Thread *oth, int close_mode)
 }
 
 #endif
+
+#if defined(RKTIO_SYSTEM_WINDOWS)
+static long terminal_writes;
+#else
+static uintptr_t terminal_writes;
+#endif
+
+#if defined(RKTIO_SYSTEM_UNIX) && defined(RKTIO_USE_PTHREADS)
+static int terminal_write_initialzed = 0;
+static pthread_mutex_t terminal_writes_lock;
+#endif
+
+void rktio_init_terminal_tracking(void) {
+#if defined(RKTIO_SYSTEM_UNIX) && defined(RKTIO_USE_PTHREADS)
+  if (!terminal_write_initialzed) {
+    pthread_mutex_init(&terminal_writes_lock, NULL);
+    terminal_write_initialzed = 1;
+  }
+#endif
+}
+
+static void wrote_to_terminal(intptr_t amt)
+{
+#if defined(RKTIO_SYSTEM_UNIX) && defined(RKTIO_USE_PTHREADS)
+  pthread_mutex_lock(&terminal_writes_lock);
+  terminal_writes += (uintptr_t)amt;
+  pthread_mutex_unlock(&terminal_writes_lock);
+#elif defined(RKTIO_SYSTEM_WINDOWS)
+  InterlockedExchangeAdd(&terminal_writes, (long)amt);
+#else
+  terminal_writes += amt;
+#endif
+}
+
+uintptr_t rktio_current_terminal_position(void)
+{
+  uintptr_t c;
+#if defined(RKTIO_SYSTEM_UNIX) && defined(RKTIO_USE_PTHREADS)
+  pthread_mutex_lock(&terminal_writes_lock);
+  c = terminal_writes;
+  pthread_mutex_unlock(&terminal_writes_lock);
+#elif defined(RKTIO_SYSTEM_WINDOWS)
+  c = (uintptr_t)InterlockedExchangeAdd(&terminal_writes, 0);
+#else
+  c = terminal_writes;
+#endif
+  return c;
+}
 
 /*========================================================================*/
 /* console                                                                */

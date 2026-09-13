@@ -2,32 +2,6 @@ This directory contains scripts, resources, and other Windows-specific
 content for a Racket build.
 
 ========================================================================
- Building from a Source Distribution
-========================================================================
-
-If you are building from a source distribution (as opposed to a Git
-repository checkout), then beware that a regular/full Racket
-distribution will not build correctly. A regular source distribution
-is intended for Unix platforms, and it does not include native
-libraries that are needed on Windows. You should start with a source
-distribution that is labelled "Minimal Racket", instead.
-
-When building from a minimal Racket source distribution, then most
-likely "racket-lib" is already included and installed as part of the
-the distribution, but without Windows-specific dependencies of
-"racket-lib". After following steps below to build and install,
-complete the build (in the "src" parent directory of "worksp") with
-
-   ..\raco pkg update --auto racket-lib
-
-If your goal is to arrive at the same content as a regular Racket
-distribution, then after building and installing minimal Racket,
-finish with
-
-   ..\raco pkg install -i main-distribution
-
-
-========================================================================
  Building from the Command Line via Visual Studio
 ========================================================================
 
@@ -106,17 +80,21 @@ will be needed to build and install BC.
 Completing the Build
 --------------------
 
-The build scripts for Racket do not install support DLLs for encoding
-conversion, extflonums (in BC), and OpenSLL. To install those
-libraries, finish with
-
-   ..\raco pkg install racket-lib
-
 If you are building from a source distribution (as opposed to a Git
-repository checkout), see "Building from a Source Distribution" above.
+repository checkout), then beware that the distribution does not
+include native libraries that are needed on Windows, but the install
+step will fetch and install missing Racket packages that supply those
+libraries.
 
-Only if you are starting completely from scratch, see also
-"..\..\native-lib\README.txt".
+With a Git repository checkout (as opposed to a source distribution),
+the build scripts for Racket do not install native libraries that
+support encoding conversion, extflonums (in BC), and OpenSSL. To
+install those libraries, finish with
+
+   ..\raco pkg install -i racket-lib
+
+If you are interested in more information about these native
+libraries, see "..\native-lib\README.txt".
 
 
 ========================================================================
@@ -204,3 +182,39 @@ libraries to embed Racket in an application.
 If you need Racket to link to a DLL-based C library (instead of
 statically linking to the C library within the Racket DLL), then
 compile Racket with the /MD flag.
+
+========================================================================
+ Winfig flags
+========================================================================
+
+The "..\winfig.bat" script recognizes flags to select and configure CS
+versus BC:
+
+ * /both --- build both Racket CS and Racket BC
+
+ * /csonly --- build only Racket CS (the default)
+
+ * /bconly --- build only Racket BC
+
+ * /suffix <suffix> --- use <suffix> at the end of the executable name,
+                        instead of the default "bc" for Racket BC or
+                        "" for Racket CS
+
+The "..\winfig.bat", "..\cs\c\winfix.bat", and "..\bc\winfig.bat"
+scripts all recognize the following flags to configure the build:
+
+ * /sofind <conv> --- report <conv> from `(system 'so-find)`, which
+                      affects how external dynamic libraries are
+                      found, and add "-<conv>" to the result of
+                      `(system 'platform)`, which affects
+                      platform-specific package selection (so Racket
+                      packages that supply native libraries will not
+                      be installed)
+
+ * /cify --- BC only, enables Cify on a platform with no JIT (64-bit Arm)
+
+ * /nocify --- BC only, disables Cify on a platform with no JIT
+
+ * /cflags <flags> --- Add <flags> to pass to the C compiler
+
+ * /ldflags <flags> --- Add <flags> to pass to the C linker

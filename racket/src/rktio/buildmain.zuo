@@ -1,0 +1,3 @@
+#lang zuo
+;; installed as the "main.zuo" in a build directory
+(bounce-to-targets "Makefile" 'srcdir "build.zuo")

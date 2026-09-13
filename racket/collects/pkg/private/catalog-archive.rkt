@@ -25,6 +25,7 @@
                              #:from-config? [from-config? #f]
                              #:state-catalog [state-catalog #f]
                              #:relative-sources? [relative-sources? #f]
+                             #:mode [mode 'as-is]
                              #:quiet? [quiet? #f]
                              #:fast-file-copy? [fast-file-copy? #f]
                              #:package-exn-handler [package-exn-handler (lambda (name exn) (raise exn))])
@@ -107,7 +108,7 @@
              ;; Download/unpack existing package:
              (define-values (staged-name staged-dir staged-checksum clean? staged-mods)
                (pkg-stage
-                (pkg-desc (db:pkg-source pkg) #f (db:pkg-name pkg) (db:pkg-checksum pkg) #f #f)
+                (pkg-desc (db:pkg-source pkg) #f (db:pkg-name pkg) (db:pkg-checksum pkg) #f #f #f)
                 #:in-place? #t
                 #:use-cache? #t
                 #:quiet? quiet?))
@@ -117,6 +118,7 @@
                          staged-dir
                          #:pkg-name name
                          #:dest (build-path dest-dir "pkgs")
+                         #:mode mode
                          #:quiet? quiet?)
              (when clean? (delete-directory/files staged-dir))
              (values staged-checksum)]))

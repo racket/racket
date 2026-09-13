@@ -16,6 +16,7 @@
              [unsafe #f]
              [static #f]
              [use-prompt #f]
+             [unlimited-compile #f]
              [uninterned-literal #f])
     (cond
      [(null? options)
@@ -26,19 +27,21 @@
      [(pair? options)
       (case (car options)
         [(serializable)
-         (loop (cdr options) (or redundant serializable) 'serializable unsafe static use-prompt uninterned-literal)]
+         (loop (cdr options) (or redundant serializable) 'serializable unsafe static use-prompt unlimited-compile uninterned-literal)]
         [(unsafe)
-         (loop (cdr options) (or redundant unsafe) serializable 'unsafe static use-prompt uninterned-literal)]
+         (loop (cdr options) (or redundant unsafe) serializable 'unsafe static use-prompt unlimited-compile uninterned-literal)]
         [(static)
-         (loop (cdr options) (or redundant static) serializable unsafe 'static use-prompt uninterned-literal)]
+         (loop (cdr options) (or redundant static) serializable unsafe 'static use-prompt unlimited-compile uninterned-literal)]
         [(use-prompt)
-         (loop (cdr options) (or redundant use-prompt) serializable unsafe static 'use-prompt uninterned-literal)]
+         (loop (cdr options) (or redundant use-prompt) serializable unsafe static 'use-prompt unlimited-compile uninterned-literal)]
+        [(unlimited-compile)
+         (loop (cdr options) (or redundant unlimited-compile) serializable unsafe static use-prompt 'unlimited-compile uninterned-literal)]
         [(uninterned-literal)
-         (loop (cdr options) (or redundant uninterned-literal) serializable unsafe static use-prompt 'uninterned-literal)]
+         (loop (cdr options) (or redundant uninterned-literal) serializable unsafe static use-prompt unlimited-compile 'uninterned-literal)]
         [(quick)
-         (loop (cdr options) redundant serializable unsafe static use-prompt uninterned-literal)]
+         (loop (cdr options) redundant serializable unsafe static use-prompt unlimited-compile uninterned-literal)]
         [else
-         (loop #f redundant serializable unsafe static use-prompt uninterned-literal)])]
+         (loop #f redundant serializable unsafe static use-prompt unlimited-compile uninterned-literal)])]
      [else
-      (raise-argument-error who "(listof/c 'serializable 'unsafe 'static 'quick 'use-prompt 'uninterned-literal)"
+      (raise-argument-error who "(listof/c 'serializable 'unsafe 'static 'quick 'use-prompt 'unlimited-compile 'uninterned-literal)"
                             orig-options)])))

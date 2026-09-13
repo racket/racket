@@ -2258,8 +2258,6 @@ Scheme_Object *scheme_read_intern(Scheme_Object *o)
     o = scheme_intern_literal_string(o);
   } else if (SAME_TYPE(SCHEME_TYPE(o), scheme_regexp_type))
     o = scheme_intern_literal_string(o);
-  else if (SCHEME_CHARP(o) && (SCHEME_CHAR_VAL(o) >= 256))
-    o = scheme_intern_literal_number(o);
 
   return o;
 }
@@ -3286,6 +3284,10 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
             if (!v) scheme_ill_formed_code(port);
 
             return v;
+          }
+        case scheme_cache_wrap_type:
+          {
+            return scheme_make_cache_wrap(read_compact(port, 1));
           }
         default:
           scheme_ill_formed_code(port);

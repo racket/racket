@@ -117,6 +117,8 @@
          (values `(cte-optimization-loc ,box ,e ,exts) size)]
         [(immutable-list (,[e* size*] ...) ,[e size])
          (values `(immutable-list (,e* ...) ,e) (apply fx+ size size*))]
+        [(immutable-vector (,[e* size*] ...) ,[e size])
+         (values `(immutable-vector (,e* ...) ,e) (apply fx+ size size*))]
         [(quote ,d) (values `(quote ,d) 1)]
         [(ref ,maybe-src ,x) (values `(ref ,maybe-src ,x) 1)]
         [,pr (values pr 1)]
@@ -201,6 +203,11 @@
               [(fp-ftd ,ftd1)
                (nanopass-case (Ltype Type) ty2
                  [(fp-ftd ,ftd2) (eq? ftd1 ftd2)]
+                 [else #f])]
+              [(fp-ftd& ,ftd1 ,fptd1)
+               (nanopass-case (Ltype Type) ty2
+                 [(fp-ftd& ,ftd2 ,fptd2) (and (eq? ftd1 ftd2)
+                                              (eq? fptd1 fptd2))]
                  [else #f])]
               [else (sorry! who "unhandled foreign type ~s" ty1)])))
         (define okay-to-subst?

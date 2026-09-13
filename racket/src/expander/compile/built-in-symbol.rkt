@@ -34,7 +34,8 @@
                 let-values letrec-values
                 set! quote
                 with-continuation-mark
-                #%variable-reference))
+                #%variable-reference
+                #%foreign-inline))
 
    ;; Source-mode linklet glue
    (for-each register-built-in-symbol!
@@ -75,11 +76,24 @@
                #%call-with-values
                #%app/no-return
                #%app/value
+               apply-string-append
+               apply-string-append-immutable
+               apply-bytes-append
                call-with-module-prompt
                make-pthread-parameter
                engine-block
+               make-mutex
+               make-condition
+               mutex-acquire
+               mutex-release
+               condition-wait
+               condition-signal
+               assert-push-lock-level!
+               assert-pop-lock-level!
+               get-thread-id
+               threaded?
                make-record-type-descriptor
-               make-record-type-descriptor*
+               #%make-record-type-descriptor
                make-record-constructor-descriptor
                record-constructor
                record-accessor
@@ -93,6 +107,8 @@
                #%nongenerative-uid
                #%struct-ref-error
                #%struct-set!-error
+               #%make-struct-type-type
+               #%base-rtd
                unsafe-struct?
                unsafe-sealed-struct?
                unsafe-struct
@@ -112,4 +128,15 @@
                ptr-ref/int64 ptr-set!/int64
                ptr-ref/uint64 ptr-set!/uint64
                ptr-ref/double ptr-set!/double
-               ptr-ref/float ptr-set!/float))))
+               ptr-ref/float ptr-set!/float
+               ffi-static-call-and-callback-core
+               ffi2-ptr?-maker
+               ffi2-procedure-maker
+               ffi2-callback-maker
+               ffi2-ptr-ref-maker
+               ffi2-ptr-set!-maker
+               ffi2-malloc-maker
+               ffi2-ptr-cast-maker
+               ffi2-sizeof
+               ffi2-offsetof
+               ffi2-system-type-select))))

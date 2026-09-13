@@ -592,6 +592,11 @@ DEFAULT_MMAP_THRESHOLD       default: 256K
   malloc does support the following options.
 */
 
+/* The system's malloc.h may have conflicting defines. */
+#undef M_TRIM_THRESHOLD
+#undef M_GRANULARITY
+#undef M_MMAP_THRESHOLD
+
 #define M_TRIM_THRESHOLD     (-1)
 #define M_GRANULARITY        (-2)
 #define M_MMAP_THRESHOLD     (-3)
@@ -2371,7 +2376,7 @@ static size_t traverse_and_check(mstate m);
 
 #else /* GNUC */
 #if  USE_BUILTIN_FFS
-#define compute_bit2idx(X, I) I = ffs(X)-1
+#define compute_bit2idx(X, I) I = __builtin_ffs(X)-1
 
 #else /* USE_BUILTIN_FFS */
 #define compute_bit2idx(X, I)\
@@ -4447,7 +4452,7 @@ struct mallinfo dlmallinfo(void) {
 }
 #endif /* NO_MALLINFO */
 
-void dlmalloc_stats() {
+void dlmalloc_stats(void) {
   internal_malloc_stats(gm);
 }
 

@@ -188,9 +188,10 @@ THREAD_LOCAL_DECL(struct Scheme_GC_Pre_Post_Callback_Desc *gc_prepost_callback_d
 ROSYM static Scheme_Object *read_symbol, *write_symbol, *execute_symbol, *delete_symbol, *exists_symbol;
 ROSYM static Scheme_Object *client_symbol, *server_symbol;
 ROSYM static Scheme_Object *major_symbol, *minor_symbol, *incremental_symbol;
-ROSYM static Scheme_Object *cumulative_symbol;
+ROSYM static Scheme_Object *cumulative_symbol, *peak_symbol;
 ROSYM static Scheme_Object *gc_symbol, *gc_major_symbol;
 ROSYM static Scheme_Object *racket_symbol;
+ROSYM static Scheme_Object *results_symbol, *own_symbol;
 
 THREAD_LOCAL_DECL(static int do_atomic = 0);
 THREAD_LOCAL_DECL(static int missed_context_switch = 0);
@@ -404,6 +405,7 @@ static Scheme_Object *unsafe_end_atomic(int argc, Scheme_Object **argv);
 static Scheme_Object *unsafe_start_breakable_atomic(int argc, Scheme_Object **argv);
 static Scheme_Object *unsafe_end_breakable_atomic(int argc, Scheme_Object **argv);
 static Scheme_Object *unsafe_in_atomic_p(int argc, Scheme_Object **argv);
+static Scheme_Object *unsafe_make_unint_lock(int argc, Scheme_Object **argv);
 
 static Scheme_Object *unsafe_poll_fd(int argc, Scheme_Object **argv);
 static Scheme_Object *unsafe_poll_ctx_fd_wakeup(int argc, Scheme_Object **argv);
@@ -510,7 +512,9 @@ void scheme_init_thread(Scheme_Startup_Env *env)
   incremental_symbol  = scheme_intern_symbol("incremental");
 
   REGISTER_SO(cumulative_symbol);
+  REGISTER_SO(peak_symbol);
   cumulative_symbol = scheme_intern_symbol("cumulative");
+  peak_symbol = scheme_intern_symbol("peak");
 
   REGISTER_SO(gc_symbol);
   REGISTER_SO(gc_major_symbol);
@@ -520,16 +524,21 @@ void scheme_init_thread(Scheme_Startup_Env *env)
   REGISTER_SO(racket_symbol);
   racket_symbol = scheme_intern_symbol("racket");
 
+  REGISTER_SO(results_symbol);
+  REGISTER_SO(own_symbol);
+  results_symbol = scheme_intern_symbol("results");
+  own_symbol = scheme_intern_symbol("own");
+
   ADD_PRIM_W_ARITY("dump-memory-stats"            , scheme_dump_gc_stats, 0, -1, env);
   ADD_PRIM_W_ARITY("vector-set-performance-stats!", current_stats       , 1, 2, env);
 
-  ADD_PRIM_W_ARITY("thread"                , sch_thread         , 1, 1, env);
+  ADD_PRIM_W_ARITY("thread"                , sch_thread         , 1, 2, env);
   ADD_PRIM_W_ARITY("thread/suspend-to-kill", sch_thread_nokill  , 1, 1, env);
   ADD_PRIM_W_ARITY("sleep"                 , sch_sleep          , 0, 1, env);
   ADD_FOLDING_PRIM("thread?"               , thread_p           , 1, 1, 1, env);
   ADD_PRIM_W_ARITY("thread-running?"       , thread_running_p   , 1, 1, env);
   ADD_PRIM_W_ARITY("thread-dead?"          , thread_dead_p      , 1, 1, env);
-  ADD_PRIM_W_ARITY("thread-wait"           , thread_wait        , 1, 1, env);
+  ADD_PRIM_W_ARITY("thread-wait"           , thread_wait        , 1, 2, env);
   ADD_PRIM_W_ARITY("current-thread"        , sch_current        , 0, 0, env);
   ADD_PRIM_W_ARITY("kill-thread"           , kill_thread        , 1, 1, env);
   ADD_PRIM_W_ARITY("break-thread"          , break_thread       , 1, 2, env);
@@ -576,7 +585,7 @@ void scheme_init_thread(Scheme_Startup_Env *env)
 
   ADD_PRIM_W_ARITY("parameter?"            , parameter_p           , 1, 1, env);
   ADD_PRIM_W_ARITY("make-parameter"        , make_parameter        , 1, 4, env);
-  ADD_PRIM_W_ARITY("make-derived-parameter", make_derived_parameter, 3, 3, env);
+  ADD_PRIM_W_ARITY("make-derived-parameter", make_derived_parameter, 3, 5, env);
   ADD_PRIM_W_ARITY("parameter-procedure=?" , parameter_procedure_eq, 2, 2, env);
   ADD_PRIM_W_ARITY("parameterization?"     , parameterization_p    , 1, 1, env);
 
@@ -653,6 +662,28 @@ scheme_init_unsafe_thread (Scheme_Startup_Env *env)
 						      "unsafe-in-atomic?",
 						      0, 0),
 			     env);
+  scheme_addto_prim_instance("unsafe-start-uninterruptible",
+                             /* Since `unsafe_start_atomic blocks`, trying uninterruptible mode
+                                blocks and defers to a Racket thread, which is supposed to
+                                continue in atomic mode --- so, all consistent, though useless. */
+			     scheme_make_prim_w_arity(unsafe_start_atomic,
+						      "unsafe-start-uninterruptible",
+						      0, 0),
+			     env);
+  scheme_addto_prim_instance("unsafe-end-uninterruptible",
+                             scheme_make_prim_w_arity(unsafe_end_atomic,
+                                                      "unsafe-end-uninterruptible",
+                                                      0, 0),
+                             env);
+
+  /* Trying to acquire an uninterruptible lock similarly blocks: it's the same as
+     starting and ending atomic mode --- so consistent, though useless. */
+  ADD_PRIM_W_ARITY("unsafe-make-uninterruptible-lock", unsafe_make_unint_lock, 0, 0, env);
+  ADD_PRIM_W_ARITY("unsafe-uninterruptible-lock-acquire", unsafe_start_atomic, 1, 1, env);
+  ADD_PRIM_W_ARITY("unsafe-uninterruptible-lock-release", unsafe_end_atomic, 1, 1, env);
+
+  ADD_PRIM_W_ARITY("unsafe-uninterruptible-custodian-lock-acquire", unsafe_start_atomic, 0, 0, env);
+  ADD_PRIM_W_ARITY("unsafe-uninterruptible-custodian-lock-release", unsafe_end_atomic, 0, 0, env);
 
   ADD_PRIM_W_ARITY("unsafe-thread-at-root", unsafe_thread_at_root, 1, 1, env);
  
@@ -800,7 +831,7 @@ static Scheme_Object *collect_garbage(int argc, Scheme_Object *argv[])
 static Scheme_Object *current_memory_use(int argc, Scheme_Object *args[])
 {
   Scheme_Object *arg = NULL;
-  int cumulative = 0;
+  int cumulative = 0, peak = 0;
   uintptr_t retval = 0;
 
   if (argc) {
@@ -811,9 +842,12 @@ static Scheme_Object *current_memory_use(int argc, Scheme_Object *args[])
     } else if (SAME_OBJ(args[0], cumulative_symbol)) {
       cumulative = 1;
       arg = NULL;
+    } else if (SAME_OBJ(args[0], peak_symbol)) {
+      peak = 1;
+      arg = NULL;
     } else {
       scheme_wrong_contract("current-memory-use", 
-                            "(or/c custodian? 'cumulative #f)", 
+                            "(or/c custodian? 'cumulative 'peak #f)", 
                             0, argc, args);
     }
   }
@@ -824,6 +858,8 @@ static Scheme_Object *current_memory_use(int argc, Scheme_Object *args[])
 #else
     retval = GC_get_total_bytes();
 #endif
+  } else if (peak) {
+    retval = max_gc_pre_used_bytes;
   } else {
 #ifdef MZ_PRECISE_GC
     retval = GC_get_memory_use(arg);
@@ -2530,11 +2566,26 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
 #endif
     process->stack_start = stack_base;
 
+#ifdef MZ_USE_PSEUDORANDOM_FUEL
+    {
+      /* Seed the fuel generator from PLT_FUEL_SEED, if set, so that
+         different runs can explore different thread schedules while
+         still allowing a run to be reproduced from its seed */
+      char *seed = getenv("PLT_FUEL_SEED");
+      if (seed)
+        srandom((unsigned int)strtoul(seed, NULL, 10));
+    }
+#endif
+
   } else {
     prefix = 1;
   }
 
+#ifdef MZ_USE_PSEUDORANDOM_FUEL
+  process->engine_weight = MZ_USE_PSEUDORANDOM_FUEL;
+#else
   process->engine_weight = 10000;
+#endif
 
   process->cont_mark_pos = (MZ_MARK_POS_TYPE)1;
   process->cont_mark_stack = 0;
@@ -3374,6 +3425,8 @@ static void start_child(Scheme_Thread * volatile child,
 	/* Run the main thunk: */
 	/* (checks for break before doing anything else) */
 	result = scheme_apply_thread_thunk(child_eval);
+      } else {
+        scheme_current_thread->results = scheme_false;
       }
     }
 
@@ -3402,6 +3455,19 @@ static void start_child(Scheme_Thread * volatile child,
           scheme_longjmpup(&oflow->jmp->cont);
         }
       }
+    }
+
+    if (SAME_OBJ(scheme_current_thread->results, scheme_true)) {
+      Scheme_Object *results;
+      if (SAME_OBJ(result, SCHEME_MULTIPLE_VALUES)) {
+        intptr_t rc = scheme_multiple_count;
+        Scheme_Object **mv = scheme_multiple_array;
+        scheme_detach_multple_array(mv);
+        results = scheme_build_list(rc, mv);
+      } else {
+        results = scheme_make_pair(result, scheme_null);
+      }
+      scheme_current_thread->results = results;
     }
 
     scheme_end_current_thread();
@@ -3490,12 +3556,33 @@ Scheme_Object *scheme_thread(Scheme_Object *thunk)
   return scheme_thread_w_details(thunk, NULL, NULL, NULL, NULL, 0);
 }
 
+static int extract_keep_results(const char *who, int i, int argc, Scheme_Object *args[])
+{
+  if (i >= argc)
+    return 0;
+  if (SCHEME_FALSEP(args[i]))
+    return 0;
+  if (!SAME_OBJ(args[i], results_symbol))
+    scheme_wrong_contract(who, "(or/c #f 'results)", i, argc, args);
+  return 1;
+}
+
 static Scheme_Object *sch_thread(int argc, Scheme_Object *args[])
 {
-  scheme_check_proc_arity("thread", 0, 0, argc, args);
-  scheme_custodian_check_available(NULL, "thread", "thread");
+  const char *who = "thread";
+  Scheme_Object *p;
+  int keep_results;
+  
+  scheme_check_proc_arity(who, 0, 0, argc, args);
+  scheme_custodian_check_available(NULL, who, "thread");
+  keep_results = extract_keep_results(who, 1, argc, args);
 
-  return scheme_thread(args[0]);
+  p = scheme_thread(args[0]);
+
+  if (keep_results)
+    ((Scheme_Thread *)p)->results = scheme_true;
+
+  return p;
 }
 
 static Scheme_Object *unsafe_thread_at_root(int argc, Scheme_Object *args[])
@@ -3516,6 +3603,36 @@ static Scheme_Object *sch_thread_nokill(int argc, Scheme_Object *args[])
   scheme_custodian_check_available(NULL, "thread/suspend-to-kill", "thread");
 
   return scheme_thread_w_details(args[0], NULL, NULL, NULL, NULL, 1);
+}
+
+Scheme_Object *scheme_thread_parallel(int argc, Scheme_Object *args[])
+{
+  const char *who = "thread";
+  Scheme_Object *p;
+  int keep_results;
+
+  scheme_check_proc_arity(who, 0, 0, argc, args);
+  scheme_custodian_check_available(NULL, who, "thread");
+
+  if (argc > 1) {
+    if (!SAME_TYPE(SCHEME_TYPE(args[1]), scheme_parallel_pool_type)) {
+      if (!SCHEME_FALSEP(args[1]) && !SAME_OBJ(args[1], own_symbol))
+        scheme_wrong_contract(who, "(or/c #f 'own parallel-thread-pool?)", 1, argc, args);
+    } else {
+      if (SCHEME_INT1_VAL(args[1]) == 0)
+        scheme_contract_error(who, "parallel thread pool is closed",
+                              "parallel thread pool", 1, args[1],
+                              NULL);
+    }
+  }
+  keep_results = extract_keep_results(who, 2, argc, args);
+
+  p = scheme_thread(args[0]);
+
+  if (keep_results)
+    ((Scheme_Thread *)p)->results = scheme_true;
+
+  return p;
 }
 
 static Scheme_Object *sch_current(int argc, Scheme_Object *args[])
@@ -3577,16 +3694,35 @@ static int thread_wait_done(Scheme_Object *p, Scheme_Schedule_Info *sinfo)
 
 static Scheme_Object *thread_wait(int argc, Scheme_Object *args[])
 {
+  const char *who = "thread-wait";
   Scheme_Thread *p;
+  Scheme_Object *fail_k;
 
   if (!SCHEME_THREADP(args[0]))
-    scheme_wrong_contract("thread-wait", "thread?", 0, argc, args);
+    scheme_wrong_contract(who, "thread?", 0, argc, args);
+  if (argc > 1) {
+    fail_k = args[1];
+    scheme_check_proc_arity(who, 0, 1, argc, args);
+  } else
+    fail_k = NULL;
 
   p = (Scheme_Thread *)args[0];
 
   if (MZTHREAD_STILL_RUNNING(p->running)) {
     sch_sync(1, args);
   }
+
+  if (p->results) {
+    if (SAME_OBJ(p->results, scheme_false)) {
+      if (fail_k)
+        return _scheme_apply_multi(fail_k, 0, NULL);
+    } else {
+      Scheme_Object *a[2];
+      a[0] = scheme_values_proc;
+      a[1] = p->results;
+      return _scheme_apply_multi(scheme_apply_proc, 2, a);
+    }
+  } 
 
   return scheme_void;
 }
@@ -5015,7 +5151,11 @@ void scheme_thread_block(float sleep_time)
         || (do_atomic <= atomic_timeout_atomic_level)) {
       if (atomic_timeout_auto_suspend) {
         atomic_timeout_auto_suspend++;
+# ifdef MZ_USE_PSEUDORANDOM_FUEL
+        scheme_fuel_counter = (p->engine_weight >> 1) + (random() % p->engine_weight);
+# else
         scheme_fuel_counter = p->engine_weight;
+#endif
         scheme_jit_stack_boundary = scheme_stack_boundary;
       }
       call_on_atomic_timeout(0);
@@ -5110,7 +5250,11 @@ void scheme_thread_block(float sleep_time)
   if (do_atomic)
     missed_context_switch = 1;
 
+#ifdef MZ_USE_PSEUDORANDOM_FUEL
+  scheme_fuel_counter = (p->engine_weight >> 1) + (random() % p->engine_weight);
+#else
   scheme_fuel_counter = p->engine_weight;
+#endif
   scheme_jit_stack_boundary = scheme_stack_boundary;
 
   scheme_kickoff_green_thread_time_slice_timer(MZ_THREAD_QUANTUM_USEC);
@@ -5407,6 +5551,10 @@ static Scheme_Object *unsafe_in_atomic_p(int argc, Scheme_Object **argv)
   return (scheme_is_atomic() ? scheme_true : scheme_false);
 }
 
+static Scheme_Object *unsafe_make_unint_lock(int argc, Scheme_Object **argv)
+{
+  return scheme_intern_symbol("dummy-lock");
+}
 
 void scheme_weak_suspend_thread(Scheme_Thread *r)
 {
@@ -5704,6 +5852,8 @@ static int do_kill_thread(Scheme_Thread *p)
   if (p == scheme_current_thread)
     kill_self = 1;
 
+  p->results = scheme_false;
+
   return kill_self;
 }
 
@@ -5833,11 +5983,17 @@ static void suspend_thread(Scheme_Thread *p)
       scheme_thread_block(0.0);
       p->ran_some = 1;
     }
-  } else if ((running & (MZTHREAD_NEED_KILL_CLEANUP
-			 | MZTHREAD_NEED_SUSPEND_CLEANUP))
-	     && (running & MZTHREAD_SUSPENDED)) {
-    /* p probably needs to get out of semaphore-wait lines, etc. */
-    scheme_weak_resume_thread(p);
+  } else if (((running & (MZTHREAD_NEED_KILL_CLEANUP
+                          | MZTHREAD_NEED_SUSPEND_CLEANUP))
+              && (running & MZTHREAD_SUSPENDED))
+             || (running & MZTHREAD_NEED_SUSPEND_CLEANUP)) {
+    /* p probably needs to get out of semaphore-wait lines, etc.
+       In the MZTHREAD_NEED_SUSPEND_CLEANUP case, p may be runnable
+       (e.g., just woken up and not yet swapped in), and it still
+       needs to run to clean up before suspending, so leave it
+       runnable; it will suspend itself after cleaning up. */
+    if (running & MZTHREAD_SUSPENDED)
+      scheme_weak_resume_thread(p);
     p->running |= MZTHREAD_USER_SUSPENDED;
   } else {
     if (p == scheme_current_thread) {
@@ -8062,7 +8218,8 @@ static Scheme_Object *make_parameter(int argc, Scheme_Object **argv)
 
 static Scheme_Object *make_derived_parameter(int argc, Scheme_Object **argv)
 {
-  Scheme_Object *p, *a[2], *realm = scheme_default_realm;
+  Scheme_Object *p, *a[2], *realm;
+  const char *name;
   ParamData *data;
 
   if (!SCHEME_PARAMETERP(argv[0]))
@@ -8070,6 +8227,19 @@ static Scheme_Object *make_derived_parameter(int argc, Scheme_Object **argv)
 
   scheme_check_proc_arity("make-derived-parameter", 1, 1, argc, argv);
   scheme_check_proc_arity("make-derived-parameter", 1, 2, argc, argv);
+  if (argc > 3) {
+    if (!SCHEME_SYMBOLP(argv[3]))
+      scheme_wrong_contract("make-derived-parameter?", "symbol?", 3, argc, argv);
+    name = scheme_symbol_name(argv[3]);
+  } else {
+    name = scheme_get_proc_name(argv[0], NULL, -1);
+  }
+  if (argc > 4) {
+    if (!SCHEME_SYMBOLP(argv[4]))
+      scheme_wrong_contract("make-derived-parameter?", "symbol?", 4, argc, argv);
+    realm = argv[4];
+  } else
+    realm = scheme_get_proc_realm(argv[0]);
 
   data = MALLOC_ONE_RT(ParamData);
 #ifdef MZTAG_REQUIRED
@@ -8083,7 +8253,7 @@ static Scheme_Object *make_derived_parameter(int argc, Scheme_Object **argv)
   a[0] = (Scheme_Object *)data;
   a[1] = realm;
   p = scheme_make_prim_closure_w_arity(do_param, 2, a, 
-                                       "parameter-procedure", 0, 1);
+                                       name, 0, 1);
   ((Scheme_Primitive_Proc *)p)->pp.flags |= SCHEME_PRIM_TYPE_PARAMETER;
 
   return p;

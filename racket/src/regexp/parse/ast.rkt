@@ -12,25 +12,26 @@
 (define rx:line-end 'line-end)
 (define rx:word-boundary 'word-boundary)
 (define rx:not-word-boundary 'not-word-boundary)
+(define rx:unicode-grapheme 'unicode-grapheme)
 
 ;; exact integer : match single byte or char
 ;; byte string : match content sequence
 ;; string : match content sequence
 
-(struct rx:alts (rx1 rx2) #:transparent)
-(struct rx:sequence (rxs needs-backtrack?) #:transparent)
-(struct rx:group (rx number) #:transparent)
-(struct rx:repeat (rx min max non-greedy?) #:transparent)
-(struct rx:maybe (rx non-greedy?) #:transparent) ; special case in size validation
-(struct rx:conditional (tst rx1 rx2 n-start num-n needs-backtrack?) #:transparent)
-(struct rx:lookahead (rx match? n-start num-n) #:transparent)
+(struct rx:alts (rx1 rx2) #:transparent #:authentic)
+(struct rx:sequence (rxs needs-backtrack?) #:transparent #:authentic)
+(struct rx:group (rx number) #:transparent #:authentic)
+(struct rx:repeat (rx min max non-greedy?) #:transparent #:authentic)
+(struct rx:maybe (rx non-greedy?) #:transparent #:authentic) ; special case in size validation
+(struct rx:conditional (tst rx1 rx2 n-start num-n needs-backtrack?) #:transparent #:authentic)
+(struct rx:lookahead (rx match? n-start num-n) #:transparent #:authentic)
 (struct rx:lookbehind (rx match? [lb-min #:mutable] [lb-max #:mutable] ; min & max set by `validate`
                           n-start num-n)
-        #:transparent)
-(struct rx:cut (rx n-start num-n needs-backtrack?) #:transparent)
-(struct rx:reference (n case-sensitive?) #:transparent)
-(struct rx:range (range) #:transparent)
-(struct rx:unicode-categories (symlist match?) #:transparent)
+        #:transparent #:authentic)
+(struct rx:cut (rx n-start num-n needs-backtrack?) #:transparent #:authentic)
+(struct rx:reference (n case-sensitive?) #:transparent #:authentic)
+(struct rx:range (range) #:transparent #:authentic)
+(struct rx:unicode-categories (symlist match?) #:transparent #:authentic)
 
 ;; We need to backtrack for `rx` if it has alternatives;
 ;; we also count as backtracking anything complex enough
@@ -46,6 +47,7 @@
    [(rx:conditional? rx) (rx:conditional-needs-backtrack? rx)]
    [(rx:cut? rx) (rx:cut-needs-backtrack? rx)] ; doesn't actually backtrack, but count may vary
    [(rx:unicode-categories? rx) #t]
+   [(eq? rx rx:unicode-grapheme) #t]
    [else #f]))
 
 (define (rx-range range limit-c)

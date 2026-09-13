@@ -233,7 +233,7 @@ date)] if @racket[date] is a @racket[date*] instance.}
                        [hour (integer-in 0 23)]
                        [day (integer-in 1 31)]
                        [month (integer-in 1 12)]
-                       [year exact-nonnegative-integer?]
+                       [year exact-integer?]
                        [local-time? any/c #t])
          exact-integer?]{
 
@@ -241,7 +241,9 @@ Finds the representation of a date in platform-specific seconds. The
 arguments correspond to the fields of the @racket[date] structure---in
 local time by default or UTC if @racket[local-time?] is
 @racket[#f]. If the platform cannot represent the specified date, an
-error is signaled, otherwise an integer is returned.}
+error is signaled, otherwise an integer is returned.
+
+@history[#:changed "9.0.0.4" @elem{Allow negative numbers for @racket[year].}]}
 
 
 @defproc[(date->julian/scaliger [date date?]) exact-integer?]{

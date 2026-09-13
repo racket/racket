@@ -318,6 +318,9 @@ If @racket[z] is exact @racket[0] and no @racket[w] is exact
 
 Returns @racket[(truncate (/ n m))].
 
+If @racket[m] is exact @racket[0], @racket[0.0], or @racket[-0.0], the
+ @exnraise[exn:fail:contract:divide-by-zero].
+
 @mz-examples[(quotient 10 3) (quotient -10.0 3) (eval:error (quotient +inf.0 3))]}
 
 
@@ -333,7 +336,7 @@ Returns @racket[_q] with the same sign as @racket[n] such that
 
 ]
 
-If @racket[m] is exact @racket[0], the
+If @racket[m] is exact @racket[0], @racket[0.0], or @racket[-0.0], the
  @exnraise[exn:fail:contract:divide-by-zero].
 
 @mz-examples[(remainder 10 3) (remainder -10.0 3) (remainder 10.0 -3) (remainder -10 -3) (eval:error (remainder +inf.0 3))]}
@@ -344,6 +347,9 @@ If @racket[m] is exact @racket[0], the
 Returns @racket[(values (quotient n m) (remainder n m))], but the
  combination may be computed more efficiently than separate calls to
  @racket[quotient] and @racket[remainder].
+
+If @racket[m] is exact @racket[0], @racket[0.0], or @racket[-0.0], the
+ @exnraise[exn:fail:contract:divide-by-zero].
 
 @mz-examples[
 (quotient/remainder 10 3)
@@ -362,7 +368,7 @@ Returns @racket[_q] with the same sign as @racket[m] where
 
 ]
 
-If @racket[m] is exact @racket[0], the
+If @racket[m] is exact @racket[0], @racket[0.0], or @racket[-0.0], the
  @exnraise[exn:fail:contract:divide-by-zero].
 
 @mz-examples[(modulo 10 3) (modulo -10.0 3)  (modulo 10.0 -3) (modulo -10 -3) (eval:error (modulo +inf.0 3))]}
@@ -407,10 +413,10 @@ Returns the @as-index{greatest common divisor} (a non-negative
 @mz-examples[(gcd 10) (gcd 12 81.0) (gcd 1/2 1/3)]}
 
 
-@defproc[(lcm [n rational?] ...) rational?]{
+@defproc[(lcm [n rational?] ...) (or/c rational? +inf.0)]{
 
 Returns the @as-index{least common multiple} (a non-negative number)
- of the @racket[n]s; non-integer @racket[n]s, the result is
+ of the @racket[n]s. For two non-integer @racket[n]s, the result is
  the absolute value of the product divided by the
  @racket[gcd]. If no arguments are provided, the result is
  @racket[1]. If any argument is zero, the result is zero; furthermore,
@@ -815,6 +821,9 @@ Returns the imaginary part of the complex number @racket[z] in
  @racket[pi], possibly equal to @racket[pi] (but never equal
  to @racket[(- pi)]).
 
+ If @racket[z] is exact @racket[0], the
+ @exnraise[exn:fail:contract:divide-by-zero].
+
 @mz-examples[(angle -3) (angle 3.0) (angle 3+4i) (angle +inf.0+inf.0i) (angle -1)]}
 
 @; ------------------------------------------------------------------------
@@ -864,6 +873,18 @@ This operation is equivalent to
 but it is faster and runs in constant time when @racket[n] is positive.
 
 @mz-examples[(bitwise-bit-set? 5 0) (bitwise-bit-set? 5 2) (bitwise-bit-set? -5 (expt 2 700))]}
+
+
+@defproc[(bitwise-first-bit-set [n exact-integer?])
+         exact-integer?]{
+
+Returns @racket[-1] if @racket[n] is @racket[0], otherwise returns the
+smallest @racket[_m] for which @racket[(bitwise-bit-set? n _m)]
+produces @racket[#t].
+
+@mz-examples[(bitwise-first-bit-set 128)]
+
+@history[#:added "8.16.0.4"]}
 
 
 @defproc[(bitwise-bit-field [n exact-integer?]
@@ -950,7 +971,7 @@ state space of practically 192 bits.
 When security is a concern, use @racket[crypto-random-bytes]
 instead of @racket[random].
 
-The @racketmodname[racket/math #:indirect] library provides @seclink[
+The @racketmodname[math/base #:indirect] library provides @seclink[
  #:indirect? #t #:doc '(lib "math/scribblings/math.scrbl") "Random_Number_Generation"]{
   additional functions for random number generation}
 without the limit of @racket[4294967087].

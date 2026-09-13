@@ -1,5 +1,6 @@
 #lang racket/base
 (require ffi/unsafe
+         ffi/vcruntime
          racket/runtime-path
          setup/cross-system
          (for-syntax racket/base
@@ -16,16 +17,33 @@
 (define-runtime-path libssl-so
   #:runtime?-id runtime?
   (case (if runtime? (system-type) (cross-system-type))
-    [(windows) '(so "ssleay32")]
+    [(windows)
+     (case (if runtime? (system-type 'arch) (cross-system-type 'arch))
+       [(aarch64)
+	'(so "libssl-3-arm64")]
+       [(x86_64)
+	'(so "libssl-3-x64")]
+       [else
+	'(so "ssleay32")])]
     [(macosx)
-     ;; Version "1.1" is bundled with Racket
-     '(so "libssl" ("1.1" #f))]
+     (case (if runtime? (system-type 'arch) (cross-system-type 'arch))
+       [(i386 ppc)
+        ;; Version "1.1" is bundled with Racket
+        '(so "libssl" ("1.1" #f))]
+       [else
+        ;; Version "3" is bundled with Racket
+        '(so "libssl" ("3" #f))])]
     [else '(so "libssl")]))
 
 (define libssl
   (and libcrypto
-       (with-handlers ([exn:fail?
-                        (lambda (x)
-                          (set! libssl-load-fail-reason (exn-message x))
-                          #f)])
-         (ffi-lib libssl-so openssl-lib-versions))))
+       (if (eq? (system-type 'os*) 'ios)
+           ;; If libcrypto has been loaded and we're on iOS, assume
+           ;; that libssl has also been loaded. See the comment in
+           ;; libcrypto.rkt for details.
+           (ffi-lib #f)
+           (with-handlers ([exn:fail?
+                            (lambda (x)
+                              (set! libssl-load-fail-reason (exn-message x))
+                              #f)])
+             (ffi-lib libssl-so openssl-lib-versions)))))

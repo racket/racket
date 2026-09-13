@@ -24,12 +24,6 @@
 ;;        |  Cdata
 ;; Attribute-srep ::= (list Symbol String)
 
-;; sorting is no longer necessary, since xt3d uses xml->zxexpr, which sorts.
-
-(define xexpr-datum/c
-  (or/c string? symbol? valid-char?
-        comment? p-i? cdata? pcdata?))
-
 (define (xexpr? x)
   (not (incorrect-xexpr? x)))
 
@@ -86,7 +80,6 @@
     [(comment? x) #f]
     [(p-i? x) #f]
     [(cdata? x) #f]
-    [(pcdata? x) #f]
     [(list? x)     
      (cond [(null? x) 
             (make-exn:invalid-xexpr

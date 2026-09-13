@@ -77,7 +77,7 @@
      #'(let ([x x-expr]
              [n n-expr])
          (if (and (fixnum? n)
-                  (#3%fx< n 10000))
+                  (#3%fx< (fxabs n) 10000))
              (#2%expt x n)
              (general-expt x n)))]
     [(_ expr ...) #'(general-expt expr ...)]
@@ -91,16 +91,18 @@
       [(not (number? x))
        (#2%expt x n)]
       [(and (fixnum? n)
-            (fxpositive? n)
             (exact? x))
        (unless (or (#3%fx< (fxabs n) 10000)
                    (eqv? x 0)
                    (eqv? x 1)
                    (eqv? x -1))
-         (guard-large-allocation 'expt 'number n 1))
+         (guard-large-allocation 'expt 'number (fxabs n)
+                                 (fxmax (integer-length (numerator (real-part x)))
+                                        (integer-length (denominator (real-part x)))
+                                        (integer-length (numerator (imag-part x)))
+                                        (integer-length (denominator (imag-part x))))))
        (#2%expt x n)]
       [(and (bignum? n)
-            (positive? n)
             (exact? x)
             (not (or (eqv? x 0)
                      (eqv? x 1)
@@ -417,11 +419,16 @@
              radix))
     (when (and (not (eq? radix 10)) (inexact? n))
       (raise
-       (exn:fail:contract (string-append
-                           "number->string: inexact numbers can only be printed in base 10\n"
-                           "  number: " (number->string n) "\n"
-                           "  requested base: " (number->string radix))
-                          (current-continuation-marks))))
+       (|#%app|
+        exn:fail:contract
+        (error-message->adjusted-string
+         'number->string primitive-realm
+         (string-append
+          "inexact numbers can only be printed in base 10\n"
+          "  number: " (number->string n) "\n"
+          "  requested base: " (number->string radix))
+         primitive-realm)
+        (current-continuation-marks))))
     (do-number->string n radix)]
    [(n)
     (do-number->string n 10)]))
@@ -474,10 +481,24 @@
 (define/who (quotient/remainder n m)
   (check who integer? n)
   (check who integer? m)
-  (if (and (exact? n) (exact? m))
+  (let ([raise-undefined (lambda (what)
+                           (raise (|#%app|
+                                   exn:fail:contract:divide-by-zero
+                                   (error-message->adjusted-string
+                                    'quotient/remainder primitive-realm
+                                    (format "undefined for ~s" what)
+                                    primitive-realm)
+                                   (current-continuation-marks))))])
+    (cond
+     [(and (exact? n) (exact? m))
       (let ([q+r (#%$quotient-remainder n m)])
-        (values (car q+r) (cdr q+r)))
-      (values (quotient n m) (remainder n m))))
+        (values (car q+r) (cdr q+r)))]
+     [(eqv? m 0.0)
+      (raise-undefined 0.0)]
+     [(eqv? m -0.0)
+      (raise-undefined -0.0)]
+     [else
+      (values (quotient n m) (remainder n m))])))
 
 (define/who gcd
   (case-lambda
@@ -521,7 +542,7 @@
       (chez:lcm n m)]
      [else
       (let ([d (gcd n m)])
-        (* n (/ m d)))])]
+        (abs (* n (/ m d))))])]
    [(n . ms)
     (check who rational? n)
     (let loop ([n n] [ms ms])

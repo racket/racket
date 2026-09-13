@@ -3,7 +3,7 @@
   (lambda ()
     (namespace-set-variable-value! 'quiet-load
       (let ([argv (current-command-line-arguments)])
-        (if (= 1 (vector-length argv)) (vector-ref argv 0) "all.rktl")))))
+        (if (positive? (vector-length argv)) (vector->list argv) "all.rktl")))))
 
 (define timeout-thread #f)
 
@@ -43,7 +43,10 @@
   (call-with-continuation-prompt
    (lambda ()
      (parameterize ([current-output-port p] [current-error-port p])
-       (load-relative quiet-load))
+       (for ([quiet-load (in-list (if (list? quiet-load)
+                                      quiet-load
+                                      (list quiet-load)))])
+         (load-relative quiet-load)))
      (kill-thread timeout-thread))
    (default-continuation-prompt-tag)
    (lambda (thunk)

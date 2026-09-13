@@ -37,10 +37,12 @@ input; when extflonum operations are not supported, printing an
 extflonum from the reader uses its source notation (as opposed to
 normalizing the format).
 
-Two extflonums are @racket[equal?] if @racket[extfl=]
-produces @racket[#t] for the extflonums. If extflonums
-are not supported in a platform, extflonums are @racket[equal?]
-only if they are @racket[eq?].
+Two extflonums are @racket[equal?] along the same lines as
+@tech{flonums}: when they are @racket[extfl=] and have the same sign
+(which matters for @racket[-0.0t0] and @racket[+0.0t0]), or when they
+are both @racket[+nan.t]. If extflonums are not supported on a
+platform, extflonums are @racket[equal?] only if they are
+@racket[eq?].
 
 @defproc[(extflonum? [v any/c]) boolean?]{
 

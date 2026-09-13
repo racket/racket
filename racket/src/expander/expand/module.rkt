@@ -35,6 +35,7 @@
          "syntax-id-error.rkt"
          "portal-syntax.rkt"
          "../compile/main.rkt"
+         "../compile/linklet.rkt"
          "../eval/top.rkt"
          "../eval/module.rkt"
          "cross-phase.rkt"
@@ -428,9 +429,12 @@
      (define is-cross-phase-persistent? (hash-ref declared-keywords '#:cross-phase-persistent #f))
      (when is-cross-phase-persistent?
        (unless (requires+provides-can-cross-phase-persistent? requires+provides)
-         (raise-syntax-error #f "cannot be cross-phase persistent due to required modules"
+         (raise-syntax-error #f "cannot be cross-phase persistent because some required module isn't"
                              rebuild-s
-                             (hash-ref declared-keywords '#:cross-phase-persistent)))
+                             (hash-ref declared-keywords '#:cross-phase-persistent)
+                             null
+                             (format "~n  required module: ~a"
+                                     (requires+provides-why-not-cross-phase-persistent requires+provides))))
        (check-cross-phase-persistent-form fully-expanded-bodys-except-post-submodules self))
 
      (define realm (let ([realm-stx (hash-ref declared-keywords '#:realm #f)])
@@ -438,6 +442,8 @@
                          (syntax-e realm-stx)
                          (current-compile-realm))))
 
+     (define flatten-requires? (hash-ref declared-keywords '#:flatten-requires #f))
+     
      ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      ;; Pass 4: expand `module*` submodules
      
@@ -464,6 +470,7 @@
                                             #:root-ctx root-ctx
                                             #:ctx submod-ctx
                                             #:modules-being-compiled modules-being-compiled
+                                            #:flatten-requires? flatten-requires?
                                             #:realm realm
                                             #:portal-syntaxes portal-syntaxes
                                             #:fill compiled-module-box)))
@@ -492,7 +499,7 @@
      ;; Assemble the `#%module-begin` result:
      (cond
       [(expand-context-to-parsed? submod-ctx)
-       (parsed-#%module-begin rebuild-mb-s (parsed-only fully-expanded-bodys) realm)]
+       (parsed-#%module-begin rebuild-mb-s (parsed-only fully-expanded-bodys) realm flatten-requires?)]
       [else
        (define mb-result-s
          (rebuild
@@ -501,7 +508,7 @@
        (cond
         [(not (expand-context-in-local-expand? submod-ctx))
          (expanded+parsed mb-result-s
-                          (parsed-#%module-begin rebuild-mb-s (parsed-only fully-expanded-bodys) realm))]
+                          (parsed-#%module-begin rebuild-mb-s (parsed-only fully-expanded-bodys) realm flatten-requires?))]
         [else mb-result-s])]))
 
    ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -548,79 +555,95 @@
                           #:s s
                           #:paramz paramz
                           #:exit-paramz exit-paramz))
-   (log-expand ctx 'next)
+  (log-expand ctx 'next)
 
-   ;; Expand the body
-   (define expanded-mb (performance-region
-                        ['expand 'module-begin]
-                        (call-with-configure-parameterization
-                         paramz
-                         exit-paramz
-                         (lambda ()
-                           (expand mb (struct*-copy expand-context (accumulate-def-ctx-scopes mb-ctx mb-def-ctx-scopes)
-                                                    [def-ctx-scopes #f]))))))
+  (cond
+    [(compiled-module-expansion? (syntax-e mb))
+     ;; detour: fully compiled linklet bundle/directory returned
+     ;; send it on up the chain
+     (unless (and (expand-context-to-parsed? init-ctx)
+                  (not enclosing-self))
+       (raise-syntax-error #f "invalid context for a compiled module from module-begin expansion" bodys))
+     (unless (eq? (current-code-inspector) initial-code-inspector)
+       (raise-syntax-error #f "compiled-module generation disallowed by code inspector" bodys))
+     (parsed-bundle rebuild-s (syntax-e mb))]
+    [else
 
-   ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-   ;; Assemble the `module` result
+     ;; Expand the body
+     (define expanded-mb (performance-region
+                          ['expand 'module-begin]
+                          (call-with-configure-parameterization
+                           paramz
+                           exit-paramz
+                           (lambda ()
+                             (expand mb (struct*-copy expand-context (accumulate-def-ctx-scopes mb-ctx mb-def-ctx-scopes)
+                                                      [def-ctx-scopes #f]))))))
 
-   (define-values (requires recur-requires provides) (extract-requires-and-provides requires+provides self self))
+     ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+     ;; Assemble the `module` result
 
-   (define parsed-mb (if (expanded+parsed? expanded-mb)
-                         (expanded+parsed-parsed expanded-mb)
-                         expanded-mb))
+     (define parsed-mb (if (expanded+parsed? expanded-mb)
+                           (expanded+parsed-parsed expanded-mb)
+                           expanded-mb))
 
-   (define result-form
-     (and (or (expand-context-to-parsed? init-ctx)
-              always-produce-compiled?)
-          (parsed-module rebuild-s
-                         #f
-                         (m 'id:module-name)
-                         self
-                         requires
-                         recur-requires
-                         provides
-                         (requires+provides-all-bindings-simple? requires+provides)
-                         (root-expand-context-encode-for-module root-ctx self self)
-                         (parsed-#%module-begin-body parsed-mb)
-                         (parsed-#%module-begin-realm parsed-mb)
-                         portal-syntaxes
-                         (unbox compiled-module-box)
-                         compiled-submodules)))
-   
-   (define result-s
+     (define-values (requires recur-requires flattened-requires provides)
+       (extract-requires-and-provides requires+provides self self
+                                      #:flatten-requires? (parsed-#%module-begin-flatten-requires? parsed-mb)
+                                      #:namespace m-ns))
+
+     (define result-form
+       (and (or (expand-context-to-parsed? init-ctx)
+                always-produce-compiled?)
+            (parsed-module rebuild-s
+                           #f
+                           (m 'id:module-name)
+                           self
+                           requires
+                           recur-requires
+                           flattened-requires
+                           provides
+                           (requires+provides-all-bindings-simple? requires+provides)
+                           (root-expand-context-encode-for-module root-ctx self self)
+                           (parsed-#%module-begin-body parsed-mb)
+                           (parsed-#%module-begin-realm parsed-mb)
+                           portal-syntaxes
+                           (unbox compiled-module-box)
+                           compiled-submodules)))
+     
+     (define result-s
+       (cond
+         [(not (expand-context-to-parsed? init-ctx))
+          ;; Shift the "self" reference that we have been using for expansion
+          ;; to a generic and constant (for a particular submodule path)
+          ;; "self", so that we can reocognize it for compilation or to shift
+          ;; back on any future re-expansion:
+          (define generic-self (make-generic-self-module-path-index self))
+          
+          ;; Make `self` like `generic-self`; this hacky update plays the
+          ;; role of applying a shift to identifiers that are in syntax
+          ;; properties, such as the 'origin property
+          (imitate-generic-module-path-index! self)
+          (for ([mpi (in-list (unbox mpis-to-reset))])
+            (imitate-generic-module-path-index! mpi))
+
+          (let* ([result-s
+                  (rebuild
+                   rebuild-s
+                   `(,(m 'module) ,(m 'id:module-name) ,initial-require-s ,(expanded+parsed-s expanded-mb)))]
+                 [result-s 
+                  (syntax-module-path-index-shift result-s self generic-self)]
+                 [result-s (attach-root-expand-context-properties result-s root-ctx self generic-self)]
+                 [result-s (if (requires+provides-all-bindings-simple? requires+provides)
+                               (syntax-property result-s 'module-body-context-simple? #t)
+                               result-s)])
+            (log-expand init-ctx 'rename-one result-s)
+            result-s)]))
+     
      (cond
-      [(not (expand-context-to-parsed? init-ctx))
-       ;; Shift the "self" reference that we have been using for expansion
-       ;; to a generic and constant (for a particular submodule path)
-       ;; "self", so that we can reocognize it for compilation or to shift
-       ;; back on any future re-expansion:
-       (define generic-self (make-generic-self-module-path-index self))
-       
-       ;; Make `self` like `generic-self`; this hacky update plays the
-       ;; role of applying a shift to identifiers that are in syntax
-       ;; properties, such as the 'origin property
-       (imitate-generic-module-path-index! self)
-       (for ([mpi (in-list (unbox mpis-to-reset))])
-         (imitate-generic-module-path-index! mpi))
-
-       (let* ([result-s
-               (rebuild
-                rebuild-s
-                `(,(m 'module) ,(m 'id:module-name) ,initial-require-s ,(expanded+parsed-s expanded-mb)))]
-              [result-s 
-               (syntax-module-path-index-shift result-s self generic-self)]
-              [result-s (attach-root-expand-context-properties result-s root-ctx self generic-self)]
-              [result-s (if (requires+provides-all-bindings-simple? requires+provides)
-                            (syntax-property result-s 'module-body-context-simple? #t)
-                            result-s)])
-         (log-expand init-ctx 'rename-one result-s)
-         result-s)]))
-   
-   (cond
-    [(expand-context-to-parsed? init-ctx) result-form]
-    [always-produce-compiled?
-     (expanded+parsed result-s result-form)]
-    [else result-s]))
+       [(expand-context-to-parsed? init-ctx) result-form]
+       [always-produce-compiled?
+        (expanded+parsed result-s result-form)]
+       [else result-s])]))
 
 ;; ----------------------------------------
 
@@ -665,6 +688,9 @@
               (expand named-body-s
                       (make-mb-ctx))))))
         (cond
+         [(compiled-module-expansion? (syntax-e partly-expanded-body))
+          ;; Fully compiled linklet bundle/directory returned, so no wrapper needed
+          partly-expanded-body]
          [(eq? '#%module-begin (core-form-sym partly-expanded-body phase))
           ;; Yes, it expanded to `#%module-begin`
           partly-expanded-body]
@@ -703,6 +729,10 @@
 
 (define (add-enclosing-name-property stx module-name-sym)
   (syntax-property stx 'enclosing-module-name module-name-sym))
+
+(define (compiled-module-expansion? v)
+  (or (linklet-bundle? v)
+      (linklet-directory? v)))
 
 ;; ----------------------------------------
 
@@ -957,7 +987,9 @@
               (define kw (car kws))
               (unless (keyword? (syntax-e kw))
                 (raise-syntax-error #f "expected a keyword" exp-body kw))
-              (unless (memq (syntax-e kw) '(#:cross-phase-persistent #:empty-namespace #:unsafe #:realm #:require=define))
+              (unless (memq (syntax-e kw) '(#:cross-phase-persistent #:empty-namespace #:unsafe
+                                            #:unlimited-compile #:realm
+                                            #:require=define #:flatten-requires))
                 (raise-syntax-error #f "not an allowed declaration keyword" exp-body kw))
               (define has-arg? (eq? (syntax-e kw) '#:realm))
               (when (hash-ref declared-keywords (syntax-e kw) #f)
@@ -1233,10 +1265,14 @@
                                       #:ctx ctx
                                       #:modules-being-compiled modules-being-compiled
                                       #:realm realm
+                                      #:flatten-requires? flatten-requires?
                                       #:portal-syntaxes portal-syntaxes
                                       #:fill compiled-module-box)
 
-  (define-values (requires recur-requires provides) (extract-requires-and-provides requires+provides self self))
+  (define-values (requires recur-requires flattened-requires provides)
+    (extract-requires-and-provides requires+provides self self
+                                   #:flatten-requires? flatten-requires?
+                                   #:namespace m-ns))
 
   (define parsed-mod
     (parsed-module rebuild-s
@@ -1245,6 +1281,7 @@
                    self
                    requires
                    recur-requires
+                   flattened-requires
                    provides
                    (requires+provides-all-bindings-simple? requires+provides)
                    (root-expand-context-encode-for-module root-ctx self self)
@@ -1585,8 +1622,7 @@
                                                 #:as-transformer? #t))
     (add-defined-syms! requires+provides syms phase #:as-transformer? #t)
     (define sym (car syms))
-    (define t (portal-syntax portal-stx))
-    (when phase
-      (namespace-set-transformer! m-ns phase sym t))
+    (define t (portal-syntax portal-stx #f))
+    (namespace-set-transformer! m-ns phase sym t)
     (add-portal-stx! portal-syntaxes t sym phase)
     sym))

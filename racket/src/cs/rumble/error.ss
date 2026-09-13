@@ -8,12 +8,13 @@
         (#%$app/no-return do-raise v))]))
 
 (define (do-raise/barrier v)
-  (assert-not-in-uninterrupted 'raise)
+  (assert-not-in-engine-uninterrupted 'raise)
   (call-with-continuation-barrier
    (lambda ()
      (do-raise v))))
   
 (define (do-raise v)
+  #;(#%printf "~s\n" (exn->string v))
   (let ([get-next-h (continuation-mark-set->iterator (current-continuation-marks/no-trace)
                                                      (list exception-handler-key)
                                                      #f
@@ -71,6 +72,14 @@
                   'error-value->string-handler
                   primitive-realm))
 
+(define/who error-syntax->srcloc-handler
+  (make-parameter (lambda (v) #f)
+                  (lambda (v)
+                    (check who (procedure-arity-includes/c 1) v)
+                    v)
+                  'error-syntax->srcloc-handler
+                  primitive-realm))
+
 (define/who error-syntax->string-handler
   (make-parameter (lambda (v len)
                     (#%format "~s" v))
@@ -80,8 +89,30 @@
                   'error-syntax->string-handler
                   primitive-realm))
 
+(define/who error-syntax->name-handler
+  (make-parameter (lambda (stx) #f)
+                  (lambda (v)
+                    (check who (procedure-arity-includes/c 1) v)
+                    v)
+                  'error-syntax->name-handler
+                  primitive-realm))
+
+(define/who error-module-path->string-handler
+  (make-parameter (lambda (v len)
+                    (#%format "~s" v))
+                  (lambda (v)
+                    (check who (procedure-arity-includes/c 2) v)
+                    v)
+                  'error-module-path->string-handler
+                  primitive-realm))
+
 (define/who error-print-context-length
-  (make-parameter 16
+  (make-parameter (let ([s (getenv "PLT_ERROR_PRINT_CONTEXT_LENGTH")])
+                    (or (and s
+                             (let ([n (string->number s)])
+                               (and (exact-nonnegative-integer? n)
+                                    n)))
+                        16))
                   (lambda (v)
                     (check who exact-nonnegative-integer? v)
                     v)
@@ -134,11 +165,49 @@
 
 (define (set-exn-srcloc-properties!)
   (let ([add! (lambda (rtd)
-                (struct-property-set! prop:exn:srclocs rtd exn:fail:read-srclocs)
-                (hashtable-set! rtd-props rtd (list prop:exn:srclocs)))])
+                (struct-property-set! prop:exn:srclocs rtd exn:fail:read-srclocs))])
     (add! struct:exn:fail:read)
     (add! struct:exn:fail:read:non-char)
     (add! struct:exn:fail:read:eof)))
+
+;; ----------------------------------------
+
+(define (string-has-newline? str)
+  (let loop ([i 0])
+    (if (fx= i (string-length str))
+        #f
+        (or (eqv? #\newline (string-ref str i))
+            (loop (fx+ i 1))))))
+
+(define (string-starts-newline? str)
+  (eqv? #\newline (string-ref str 0)))
+
+(define (string-insert-indentation str i-str)
+  (apply
+   string-append
+   (let loop ([start 0] [i 0])
+     (cond
+       [(fx= i (string-length str))
+        (list (substring str start i))]
+       [(eqv? #\newline (string-ref str i))
+        (list* (substring str start i)
+               "\n"
+               i-str
+               (loop (fx+ i 1) (fx+ i 1)))]
+       [else
+        (loop start (fx+ i 1))]))))
+
+(define (reindent s amt)
+  (if (and (string-has-newline? s)
+           (not (string-starts-newline? s)))
+      (string-insert-indentation s (make-string amt #\space))
+      s))
+
+(define (reindent/newline str)
+  (if (and (string-has-newline? str)
+           (not (string-starts-newline? str)))
+      (string-append "\n   " (string-insert-indentation str "   "))
+      str))
 
 ;; ----------------------------------------
 
@@ -156,7 +225,7 @@
   (#%$app/no-return do-raise-arguments-error who who-in realm what exn:fail:contract more))
   
 (define (do-raise-arguments-error e-who who realm what exn:fail:contract more)
-  (assert-not-in-uninterrupted 'do-raise-arguments-error)
+  (assert-not-in-engine-uninterrupted 'do-raise-arguments-error)
   (check e-who symbol? who)
   (check e-who symbol? realm)
   (check e-who string? what)
@@ -174,7 +243,7 @@
           [(string? (car more))
            (cond
              [(null? (cdr more))
-              (raise-arguments-error 'raise-arguments-error
+              (raise-arguments-error e-who
                                      "missing value after field string"
                                      "string"
                                      (car more))]
@@ -182,12 +251,13 @@
               (cons (string-append "\n  "
                                    (car more) ": "
                                    (let ([val (cadr more)])
-                                     (if (unquoted-printing-string? val)
-                                         (unquoted-printing-string-value val)
-                                         (error-value->string val))))
+                                     (reindent/newline
+                                      (if (unquoted-printing-string? val)
+                                          (unquoted-printing-string-value val)
+                                          (error-value->string val)))))
                     (loop (cddr more)))])]
           [else
-           (raise-argument-error 'raise-arguments-error "string?" (car more))])))
+           (raise-argument-error e-who "string?" (car more))])))
      realm)
     (current-continuation-marks))))
 
@@ -230,7 +300,7 @@
      (#%$app/no-return do-raise-argument-error who "result" who-in realm what pos arg args)]))
 
 (define (do-raise-argument-error e-who tag who realm what pos arg args)
-  (assert-not-in-uninterrupted 'do-raise-argument-error)
+  (assert-not-in-engine-uninterrupted 'do-raise-argument-error)
   (check e-who symbol? who)
   (check e-who symbol? realm)
   (check e-who string? what)
@@ -248,8 +318,9 @@
                     (reindent (error-contract->adjusted-string what realm)
                               (string-length "  expected: "))
                     "\n  " tag ": "
-                    (error-value->string
-                     (if pos (list-ref (cons arg args) pos) arg))
+                    (reindent/newline
+                     (error-value->string
+                      (if pos (list-ref (cons arg args) pos) arg)))
                     (if (and pos (pair? args))
                         (apply
                          string-append
@@ -260,41 +331,27 @@
                            (cond
                              [(null? args) '()]
                              [(zero? pos) (loop (sub1 pos) (cdr args))]
-                             [else (cons (string-append "\n   " (error-value->string (car args)))
+                             [else (cons (string-append "\n   " (reindent (error-value->string (car args)) 3))
                                          (loop (sub1 pos) (cdr args)))])))
                         ""))
      realm)
     (current-continuation-marks))))
 
-(define (reindent s amt)
-  (let loop ([i (string-length s)] [s s] [end (string-length s)])
-    (cond
-     [(zero? i)
-      (if (= end (string-length s))
-          s
-          (substring s 0 end))]
-     [else
-      (let ([i (fx1- i)])
-        (cond
-         [(eqv? #\newline (string-ref s i))
-          (string-append
-           (loop i s (fx1+ i))
-           (#%make-string amt #\space)
-           (substring s (fx1+ i) end))]
-         [else
-          (loop i s end)]))])))
+(define error-value->string
+  (lambda (v)
+    (let ([s (|#%app|
+              (|#%app| error-value->string-handler)
+              v
+              (|#%app| error-print-width))])
+      (cond
+        [(string? s) s]
+        [(bytes? s)
+         ;; Racket BC allows byte strings, and we approximate that here
+         (utf8->string s)]
+        [else "..."]))))
 
-(define (error-value->string v)
-  (let ([s (|#%app|
-            (|#%app| error-value->string-handler)
-            v
-            (|#%app| error-print-width))])
-    (cond
-      [(string? s) s]
-      [(bytes? s)
-       ;; Racket BC allows byte strings, and we approximate that here
-       (utf8->string s)]
-      [else "..."])))
+(define (set-error-value->string! proc)
+  (set! error-value->string proc))
 
 (define raise-type-error
   (case-lambda
@@ -514,7 +571,7 @@
           "  valid range: ["
           (number->string (or alt-lower-bound lower-bound)) ", "
           (number->string upper-bound) "]" "\n"
-          "  " type-description ": " (error-value->string in-value))]))
+          "  " type-description ": " (reindent/newline (error-value->string in-value)))]))
      realm)
     (current-continuation-marks))))
 
@@ -527,7 +584,7 @@
            (let loop ([args args])
              (cond
               [(null? args) '()]
-              [else (cons (string-append "\n   " (error-value->string (car args)))
+              [else (cons (string-append "\n   " (reindent (error-value->string (car args)) 3))
                           (loop (cdr args)))])))]))
 
 (define/who (raise-arity-error name arity . args)
@@ -670,11 +727,13 @@
 (define (nth-str n)
   (string-append
    (number->string n)
-   (case (modulo n 10)
-     [(1) "st"]
-     [(2) "nd"]
-     [(3) "rd"]
-     [else "th"])))
+   (case (modulo n 100)
+     [(11 12 13) "th"]
+     [else (case (modulo n 10)
+             [(1) "st"]
+             [(2) "nd"]
+             [(3) "rd"]
+             [else "th"])])))
 
 ;; ----------------------------------------
 
@@ -728,7 +787,7 @@
 ;; Limit on length of a context extracted from a continuation. This is
 ;; not a hard limit on the total length, because it only applied to an
 ;; individual frame in a metacontinuation, and it only applies to an
-;; extension of a cached context. But it keeps from tunrning an
+;; extension of a cached context. But it keeps from turning an
 ;; out-of-memory situation due to a deep continuation into one that
 ;; uses even more memory.
 (define trace-length-limit 65535)
@@ -826,29 +885,65 @@
 (define (install-primitives-table! primitives)
   (set! primitive-names primitives))
 
+(define future-trace-extra-depth
+  (or (let ([s (getenv "PLT_FUTURE_TRACE_DEPTH")])
+        (and s (let ([n (string->number s)])
+                 (and (integer? n) (exact? n) (positive? n)
+                      (sub1 n)))))
+      0))
+
 ;; Simplified variant of `continuation->trace` that can be called to
-;; get a likely primitive to blame for a blocking future.
-(define (continuation-current-primitive k exclusions)
-  (let loop ([k (if (full-continuation? k) (full-continuation-k k) k)])
-    (cond
-     [(or (not (#%$continuation? k))
-          (eq? k #%$null-continuation))
-      #f]
-     [else
-      (let* ([name (or (let ([n #f])
-                         (and n
-                              (string->symbol (format "body of ~a" n))))
-                       (let* ([c (#%$continuation-return-code k)]
-                              [n (#%$code-name c)])
-                         (and n (string->symbol n))))])
-        (cond
-         [(and name
-               (hash-ref primitive-names name #f)
-               (not (#%memq name exclusions)))
-          name]
-         [else
-          (#%$split-continuation k 0)
-          (loop (#%$continuation-link k))]))])))
+;; get blame for a blocking future.
+(define (continuation-current-primitive k exclusions inclusions)
+  (let ([k (if (#%procedure? k)
+               ;; as a convenience for the futures scheduler, find a
+               (let loop ([len (#%$closure-length k)])
+                 (cond
+                   [(fx= len 0) #f]
+                   [else (let ([v (#%$closure-ref k (fx- len 1))])
+                           (or (and (full-continuation? v)
+                                    v)
+                               (loop (fx- len 1))))]))
+               k)])
+    (let loop ([k (if (full-continuation? k) (full-continuation-k k) k)]
+               [mc (if (full-continuation? k) (continuation-mc k) null)]
+               [fallback #f]
+               [more future-trace-extra-depth])
+      (cond
+        [(or (not (#%$continuation? k))
+             (eq? k #%$null-continuation))
+         (cond
+           [(null? mc)
+            fallback]
+           [else
+            (loop (metacontinuation-frame-resume-k (car mc))
+                  (cdr mc)
+                  fallback
+                  more)])]
+        [else
+         (let* ([c (#%$continuation-return-code k)]
+                [n (#%$code-name c)]
+                [name (let ([s (and n
+                                    (procedure-name-string->visible-name-string n))])
+                        (if (string? s)
+                            (string->symbol s)
+                            s))])
+           (cond
+             [(and name
+                   (not (#%memq name exclusions)))
+              (let ([next (and (positive? more)
+                               (begin
+                                 (#%$split-continuation k 0)
+                                 (loop (#%$continuation-link k) mc #f (sub1 more))))])
+                (if next
+                    (string->symbol (format "~a via ~a"  name next))
+                    name))]
+             [else
+              (#%$split-continuation k 0)
+              (loop (#%$continuation-link k)
+                    mc
+                    (or fallback (cons name (#%$continuation-link k)))
+                    more)]))]))))
 
 (define (traces->context ls realms?)
   (let loop ([l '()] [ls ls])
@@ -1134,7 +1229,7 @@
   (current-exception-state (create-exception-state))
   (base-exception-handler
    (lambda (v)
-     #;(#%printf "~s\n" (exn->string v))
+     #;(#%printf "~s\n" (parameterize () (exn->string v)))
      #;(#%printf "~s\n" (continuation-mark-set-traces (current-continuation-marks)))
      (cond
       [(and (warning? v)

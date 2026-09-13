@@ -50,13 +50,33 @@ intptr_t rktio_internal_fd_system_fd(rktio_fd_t *rfd);
 rktio_ok_t rktio_internal_close(rktio_t *rktio /* may be NULL */, rktio_fd_t *rfd, int set_error);
 
 /*========================================================================*/
+/* Errors as `rktio_err_t`                                                */
+/*========================================================================*/
+
+typedef struct rktio_err_t rktio_err_t;
+
+struct rktio_err_t {
+  int errid;
+  int errkind;
+  int errstep;
+};
+
+struct rktio_result_t {
+  int is_success;
+  rktio_err_t err;
+  union {
+    intptr_t i;
+    char *str;
+    rktio_directory_list_t *dir_list;
+  } success;
+};
+
+/*========================================================================*/
 /* Globals, as gathered into `rktio_t`                                    */
 /*========================================================================*/
 
 struct rktio_t {
-  int errid;
-  int errkind;
-  int errstep;
+  rktio_err_t err;
 #ifdef RKTIO_SYSTEM_WINDOWS
   char *last_err_str;
 #endif
@@ -243,11 +263,11 @@ void rktio_socket_own(rktio_t *rktio, rktio_fd_t *rfd);
 void rktio_socket_forget_owned(rktio_t *rktio, rktio_fd_t *rfd);
 rktio_fd_t *rktio_socket_dup(rktio_t *rktio, rktio_fd_t *rfd);
 
-int rktio_socket_poll_write_ready(rktio_t *rktio, rktio_fd_t *rfd);
-int rktio_socket_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd);
+int rktio_socket_poll_write_ready(rktio_t *rktio, rktio_fd_t *rfd, rktio_err_t *err);
+int rktio_socket_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd, rktio_err_t *err);
 
-intptr_t rktio_socket_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr_t len);
-intptr_t rktio_socket_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len);
+intptr_t rktio_socket_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr_t len, rktio_err_t *err);
+intptr_t rktio_socket_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len, rktio_err_t *err);
   
 void rktio_free_ghbn(rktio_t *rktio);
 
@@ -259,6 +279,15 @@ const char *rktio_gai_strerror(rktio_t *rktio, int errnum);
 
 int rktio_process_init(rktio_t *rktio);
 void rktio_process_deinit(rktio_t *rktio);
+
+void rktio_cloexec_lock();
+void rktio_cloexec_unlock();
+
+#ifdef RKTIO_HAS_CLOEXEC
+# define RKTIO_CLOEXEC O_CLOEXEC
+#else
+# define RKTIO_CLOEXEC 0
+#endif
   
 /*========================================================================*/
 /* Strings                                                                */
@@ -268,19 +297,27 @@ void rktio_process_deinit(rktio_t *rktio);
 # define MSC_IZE(n) _ ## n
 # define MSC_W_IZE(n) _w ## n
 # define MSC_WIDE_PATH_temp(n) WIDE_PATH_temp(n)
+# define MSC_WIDE_PATH_copy(n, err) WIDE_PATH_copy(n, err)
+# define MSC_WIDE_PATH_free(n) free(n)
+# define MSC_WIDE_PATH_decl(wp, err) wchar_t *wp; rktio_err_t err
+# define MSC_WIDE_PATH_decl_no_err(wp) wchar_t *wp
 #else
 # define MSC_IZE(n) n
 # define MSC_W_IZE(n) MSC_IZE(n)
 # define MSC_WIDE_PATH_temp(n) n
+# define MSC_WIDE_PATH_copy(n, err) n
+# define MSC_WIDE_PATH_free(n) do { } while (0)
+# define MSC_WIDE_PATH_decl(wp, err) const char *wp
+# define MSC_WIDE_PATH_decl_no_err(wp) const char *wp
 #endif
 
 #ifdef RKTIO_SYSTEM_WINDOWS
 
-wchar_t *rktio_convert_to_wchar(rktio_t *rktio, const char *s, int do_copy);
+wchar_t *rktio_convert_to_wchar(rktio_t *rktio, rktio_err_t *err, const char *s, int do_copy);
 char *rktio_convert_from_wchar(const wchar_t *ws, int free_given);
 
-# define WIDE_PATH_temp(s) rktio_convert_to_wchar(rktio, s, 0)
-# define WIDE_PATH_copy(s) rktio_convert_to_wchar(rktio, s, 1)
+# define WIDE_PATH_temp(s) rktio_convert_to_wchar(rktio, &rktio->err, s, 0)
+# define WIDE_PATH_copy(s, err) rktio_convert_to_wchar(rktio, err, s, 1)
 
 # define NARROW_PATH_copy(ws) rktio_convert_from_wchar(ws, 0)
 # define NARROW_PATH_copy_then_free(ws) rktio_convert_from_wchar(ws, 1)
@@ -326,20 +363,22 @@ intptr_t rktio_hash_string(const char *s);
 #define MAX_READ_WRITE_REQUEST_BYTES (32 * 1048576)
 #define LIMIT_REQUEST_SIZE(n) (((n) > MAX_READ_WRITE_REQUEST_BYTES) ? MAX_READ_WRITE_REQUEST_BYTES : (n))
 
-void rktio_get_posix_error(rktio_t *rktio);
-#define get_posix_error() rktio_get_posix_error(rktio)
+void rktio_get_posix_error(rktio_err_t *err);
+#define get_posix_error() rktio_get_posix_error(&rktio->err)
 
-void rktio_set_racket_error(rktio_t *rktio, int errid);
-#define set_racket_error(e) rktio_set_racket_error(rktio, e)
+void rktio_set_racket_error(rktio_err_t *err, int errid);
+#define set_racket_error(e) rktio_set_racket_error(&rktio->err, e)
 
 #ifdef RKTIO_SYSTEM_WINDOWS
-void rktio_get_windows_error(rktio_t *rktio);
-# define get_windows_error() rktio_get_windows_error(rktio)
-void rktio_set_windows_error(rktio_t *rktio, int errid);
-# define set_windows_error(errid) rktio_set_windows_error(rktio, errid)
+void rktio_get_windows_error(rktio_err_t *err);
+# define get_windows_error() rktio_get_windows_error(&rktio->err)
+void rktio_set_windows_error(rktio_err_t *err, int errid);
+# define set_windows_error(errid) rktio_set_windows_error(&rktio->err, errid)
 #endif
 
 void rktio_error_clean(rktio_t *rktio);
+rktio_result_t *rktio_make_error(rktio_err_t *err);
+rktio_result_t *rktio_make_success(void);
 
 void rktio_dll_clean(rktio_t *rktio);
 #ifdef RKTIO_SYSTEM_WINDOWS
@@ -364,6 +403,8 @@ int rktio_close_fds_len();
 void rktio_close_fds_after_fork(int len, int skip1, int skip2, int skip3);
 #endif
 
+void rktio_fd_cloexec(intptr_t fd);
+
 int rktio_system_fd_is_terminal(rktio_t *rktio, intptr_t fd);
 
 #if defined(RKTIO_USE_PTHREADS) && !defined(NO_PTHREAD_CANCEL)
@@ -375,7 +416,7 @@ struct open_in_thread_t;
 rktio_fd_t *rktio_pending_system_fd(rktio_t *rktio, struct open_in_thread_t *oit, int modes);
 void rktio_update_system_fd(rktio_t *rktio, rktio_fd_t *rfd, int fd, int modes);
 int rktio_fd_is_pending_open(rktio_t *rktio, rktio_fd_t *rfd);
-int rktio_pending_open_poll(rktio_t *rktio, rktio_fd_t *rfd, struct open_in_thread_t *oit);
+int rktio_pending_open_poll(rktio_t *rktio, rktio_fd_t *rfd, struct open_in_thread_t *oit, rktio_err_t *err);
 void rktio_poll_add_pending_open(rktio_t *rktio, rktio_fd_t *rfd, struct open_in_thread_t *oit, rktio_poll_set_t *fds);
 void rktio_pending_open_detach(rktio_t *rktio, struct open_in_thread_t *oit);
 void rktio_pending_open_attach(rktio_t *rktio, struct open_in_thread_t *oit);
@@ -415,6 +456,8 @@ void rktio_syslog_clean(rktio_t* rktio);
 
 void rktio_stop_background(rktio_t *rktio);
 
+void rktio_init_terminal_tracking(void);
+
 #ifdef USE_TRANSITIONAL_64_FILE_OPS
 # define BIG_OFF_T_IZE(n) n ## 64
 #else
@@ -437,4 +480,11 @@ int rktio_system_time_is_dst(SYSTEMTIME *st, TIME_ZONE_INFORMATION *_tz);
 #ifdef RKTIO_SYSTEM_WINDOWS
 void rktio_console_ctl_c(void);
 void rktio_set_console_handler(void);
+#endif
+
+#ifdef RKTIO_SYSTEM_WINDOWS
+/* A lazy solution to some lazy-initialization synchronization,
+   depends on the first call to rktio_init() not being concurrent
+   (as does some other initialization for Windows): */
+extern HANDLE rktio_global_lock;
 #endif

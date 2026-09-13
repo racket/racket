@@ -21,7 +21,7 @@ otherwise.}
 @deftogether[(
 @defproc[(ico-width [ico ico?]) exact-positive-integer?]
 @defproc[(ico-height [ico ico?]) exact-positive-integer?]
-@defproc[(ico-depth [ico ico?]) (one-of/c 1 2 4 8 16 24 32)]
+@defproc[(ico-depth [ico ico?]) (or/c 1 2 4 8 16 24 32)]
 )]{
 
 Returns the width or height of an icon in pixels, or the depth in bits per
@@ -109,7 +109,7 @@ Returns the bytes of a PNG encoding for an icon in PNG format (see
 @defproc[(argb->ico [width (integer-in 1 256)]
                     [height (integer-in 1 256)]
                     [bstr bytes?]
-                    [#:depth depth (one-of/c 1 2 4 8 24 32) 32])
+                    [#:depth depth (or/c 1 2 4 8 24 32) 32])
          ico?]{
 
 Converts an ARGB byte string (in the same format as from

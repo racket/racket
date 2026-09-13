@@ -536,7 +536,7 @@ note that a module's declaration inspector is always stronger than its
 instantiation inspector, so modules are declared with the same code
 inspector can access each other's exports.
 
-To distinguish between trusted an untrusted code, load trusted code
+To distinguish between trusted and untrusted code, load trusted code
 first, then set @racket[current-code-inspector] to the result of
 @racket[(make-inspector (current-code-inspector))] to install a weaker
 inspector, and finally load untrusted code with the weaker inspector

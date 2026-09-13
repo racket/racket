@@ -51,6 +51,7 @@
                   (hasheq 'name (syntax-e s)
                           'context (scope-set->context scs)
                           'match? (subset? scs s-scs)
+                          'via (scope-id sc)
                           (classify-binding b) (extract-binding b))
                   bindings)
                  (set-add covered-scope-sets scs))))

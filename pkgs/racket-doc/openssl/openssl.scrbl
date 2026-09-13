@@ -179,6 +179,7 @@ chain to it. If client credentials are required, use
           [protocol ssl-protocol-symbol/c 'auto]
           [#:private-key private-key
                          (or/c (list/c 'pem path-string?)
+                               (list/c 'pem-data bytes?)
                                (list/c 'der path-string?)
                                #f)
                          #f]
@@ -237,6 +238,7 @@ in other kind of servers.
 #:changed "6.3.0.12" @elem{Added @racket['secure].}
 #:changed "7.3.0.10" @elem{Added @racket[#:private-key] and @racket[#:certificate-chain]
 arguments.}
+#:changed "8.11.1.4" @elem{Added the @racket['pem-data] method for @racket[private-key].}
 ]}
 
 @defthing[ssl-protocol-symbol/c contract?
@@ -368,6 +370,7 @@ Returns @racket[#t] of @racket[v] is an SSL port produced by
           [protocol ssl-protocol-symbol/c 'auto]
           [#:private-key private-key
                          (or/c (list/c 'pem path-string?)
+                               (list/c 'pem-data bytes?)
                                (list/c 'der path-string?)
                                #f)
                          #f]
@@ -386,6 +389,7 @@ and @racket[ssl-load-certificate-chain!], respectively.
 #:changed "6.3.0.12" @elem{Added @racket['secure].}
 #:changed "7.3.0.10" @elem{Added @racket[#:private-key] and @racket[#:certificate-chain]
 arguments.}
+#:changed "8.11.1.4" @elem{Added the @racket['pem-data] method for @racket[private-key].}
 ]}
 
 
@@ -426,8 +430,8 @@ current platform for server connections.
                            ssl-make-client-context)
                        protocol)]
 	   [#:encrypt protocol ssl-protocol-symbol/c 'auto]
-	   [#:close-original? close-original? boolean? #f]
-	   [#:shutdown-on-close? shutdown-on-close? boolean? #f]
+	   [#:close-original? close-original? any/c #f]
+	   [#:shutdown-on-close? shutdown-on-close? any/c #f]
 	   [#:error/ssl error procedure? error]
            [#:hostname hostname (or/c string? #f) #f]
            [#:alpn alpn-protocols (listof bytes?) null])
@@ -548,7 +552,9 @@ collection for testing purposes. Since @filepath{test.pem} is public,
 such a test configuration obviously provides no security.
 
 @history[#:changed "8.4.0.5" @elem{Added @racket[(list 'macosx-keychain #f)]
-                             variant.}]}
+                             variant.}
+         #:changed "9.0.0.4" @elem{Exposed the @racket[#:try?] argument, which
+                             was documented but previously available only internally.}]}
 
 @defparam[ssl-default-verify-sources srcs
           (let ([source/c (or/c path-string?
@@ -605,7 +611,7 @@ loading certificate files in PEM format.
 Specifies the cipher suites that can be used in connections created
 with @racket[context]. The meaning of @racket[cipher-spec] is the same
 as for the
-@hyperlink["http://www.openssl.org/docs/apps/ciphers.html"]{@tt{openssl
+@hyperlink["https://docs.openssl.org/master/man1/openssl-ciphers/"]{@tt{openssl
 ciphers} command}.
 }
 
@@ -644,25 +650,36 @@ such a test configuration obviously provides no security.
 @defproc[(ssl-load-private-key!
 	  [context-or-listener (or/c ssl-client-context? ssl-server-context?
 				     ssl-listener?)]
-	  [pathname path-string?]
-	  [rsa? boolean? #t]
-	  [asn1? boolean? #f])
+	  [path-or-data (or/c path-string? (list/c 'data bytes?))]
+	  [rsa? any/c #t]
+	  [asn1? any/c #f])
          void?]{
 
-Loads the first private key from @racket[pathname] for the given
+Loads the first private key from @racket[path-or-data] for the given
 context or listener. The key goes with the certificate that identifies
 the client or server. Like @racket[ssl-load-certificate-chain!], this
 procedure is usually used with server contexts or listeners, seldom
 with client contexts.
 
+If @racket[path-or-data] is a @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{
+path or string}, the private key is loaded from a file at the given
+path. Otherwise, @racket[path-or-data] must be a list of the form
+@racket[(list 'data _data-bytes)], and the key is parsed from
+@racket[_data-bytes] directly.
+
 If @racket[rsa?] is @racket[#t] (the default), the first RSA key is
 read (i.e., non-RSA keys are skipped). If @racket[asn1?] is
-@racket[#t], the file is parsed as ASN1 format instead of PEM.
+@racket[#t], the file is parsed as ASN1 format instead of PEM. Currently
+@racket[asn1?] parsing is only supported with when @racket[path-or-data]
+is a @racket[path-string?].
 
 You can use the file @filepath{test.pem} of the @filepath{openssl}
 collection for testing purposes. Since @filepath{test.pem} is public,
 such a test configuration obviously provides no security.
-}
+
+@history[#:changed "8.11.1.4" @elem{Added support for specifying key
+           data directly by providing a list of the form
+           @racket[(list 'data _data-bytes)] for @racket[path-or-data].}]}
 
 @defproc[(ssl-load-suggested-certificate-authorities!
 	  [context-or-listener (or/c ssl-client-context? ssl-server-context?
@@ -690,38 +707,32 @@ collection for testing purposes where the peer identifies itself using
          void?]
 @defproc[(ssl-server-context-enable-ecdhe!
            [context ssl-server-context?]
-           [curve-name symbol? 'secp521r1])
+           [curve-name symbol? 'ignored])
          void?]
 ]]{
 
-Enables cipher suites that provide
-@hyperlink["http://en.wikipedia.org/wiki/Forward_secrecy"]{perfect
-forward secrecy} via ephemeral Diffie-Hellman (DHE) or ephemeral
-elliptic-curve Diffie-Hellman (ECDHE) key exchange, respectively.
+@bold{Deprecated.} Provided for backwards compatibility only. These procedures
+have no effect on @racket[context], but they log a warning if called.
 
-For DHE, the @racket[dh-param] must be a path to a @filepath{.pem}
-file containing DH parameters or the content of such a file as a byte
-string.
-
-For ECDHE, the @racket[curve-name] must be one of the following
-symbols naming a standard elliptic curve:
-@(add-between
-  (map (lambda (s) (racket '@#,(racketvalfont (symbol->string s))))
-       '(sect163k1 sect163r1 sect163r2 sect193r1 sect193r2 sect233k1 sect233r1
-         sect239k1 sect283k1 sect283r1 sect409k1 sect409r1 sect571k1 sect571r1
-         secp160k1 secp160r1 secp160r2 secp192k1 secp224k1 secp224r1 secp256k1
-         secp384r1 secp521r1 prime192v prime256v))
-  ", ").
+Ciphers supporting
+@hyperlink["http://en.wikipedia.org/wiki/Forward_secrecy"]{perfect forward
+secrecy} via ephemeral Diffie-Hellman (DHE) or ephemeral elliptic-curve
+Diffie-Hellman (ECDHE) key exchange are enabled by default, with automatic
+selection of key-exchange groups. Customization of the groups (DH parameters
+and EC curves) is no longer supported.
 
 @history[#:changed "7.7.0.4" @elem{Allow a byte string as the @racket[dh-param]
-                                   argument to @racket[ssl-server-context-enable-dhe!].}]}
+                                   argument to @racket[ssl-server-context-enable-dhe!].}
+         #:changed "8.14.0.2" @elem{Deprecated, changed to have no effect.}]}
 
 @defthing[ssl-dh4096-param-bytes bytes?]{
 
-Byte string describing 4096-bit Diffie-Hellman parameters in @filepath{.pem} format.
+@bold{Deprecated.} Provided for backwards compatibility only. Defined as
+@racket[#""]. See @racket[ssl-server-context-enable-dhe!].
 
 @history[#:changed "7.7.0.4" @elem{Added as a replacement for
-                                   @racketidfont{ssl-dh4096-param-path}.}]}
+                                   @racketidfont{ssl-dh4096-param-path}.}
+         #:changed "8.14.0.2" @elem{Deprecated, redefined to empty byte string.}]}
 
 @defproc[(ssl-set-server-name-identification-callback!
            [context ssl-server-context?]
@@ -1104,3 +1115,16 @@ Either @racket[#f] when @racket[libssl] is non-@racket[#f], or a
 string when @racket[libssl] is @racket[#f]. In the latter case, the
 string provides an error message for the attempt to load
 @filepath{libssl}.}
+
+@; ----------------------------------------------------------------------
+
+@section[#:tag "legacy"]{Legacy Providers}
+
+@defmodule[openssl/legacy]{The @racketmodname[openssl/legacy] library
+does not provide any definitions, but when the module is instantiated,
+it attempts to load OpenSSL legacy algorithms. It also creates a
+dependency on a legacy-provider shared library, if one is installed
+as part of the Racket installation, to be included with a stand-alone
+executable distribution.}
+
+@history[#:added "9.0.0.4"]

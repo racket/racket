@@ -145,4 +145,68 @@
            [c%/c (class/c [m (->m number? number?)])]
            [d%/c (class/c [n (->m number? number?)])]
            [o (contract (instanceof/c (first-or/c c%/c d%/c)) (new c%) 'pos 'neg)])
-      (send o m #t))))
+      (send o m #t)))
+
+
+  (test/spec-passed
+   'instanceof/c-first-order-local-method-2
+   '(let ()
+      (define-local-member-name m)
+      (contract (instanceof/c (class/c [m (-> any/c number? number?)]))
+                (new (class object% (super-new) (define/public (m x) (add1 x))))
+                'pos
+                'neg)))
+
+  (test/neg-blame
+   'instanceof-first-order-local-method-3
+   '(let ()
+      (define-local-member-name m)
+      (send (contract (instanceof/c (class/c [m (-> any/c number? number?)]))
+                      (new (class object% (define/public (m x) x) (super-new)))
+                      'pos
+                      'neg)
+            m "one")))
+
+  (test/pos-blame
+   'instanceof-first-order-local-method-4
+   '(let ()
+      (define-local-member-name m)
+      (send (contract (instanceof/c (class/c [m (-> any/c number? number?)]))
+                      (new (class object% (define/public (m x) "wrong") (super-new)))
+                      'pos
+                      'neg)
+            m 1)))
+
+  (test/spec-passed
+   'instanceof-flat
+   '(let ()
+      (define i<%> (interface ()))
+      (define c% (class* object% (i<%>) (super-new)))
+      (contract (instanceof/c (implementation?/c i<%>))
+                (new c%)
+                'pos 'neg)))
+
+  (test/pos-blame
+   'instanceof-flat
+   '(let ()
+      (define i<%> (interface ()))
+      (contract (instanceof/c (implementation?/c i<%>))
+                (new object%)
+                'pos 'neg)))
+
+  (test/pos-blame
+   'instanceof-flat
+   '(let ()
+      (define i<%> (interface ()))
+      (define c% (class* object% () (super-new)))
+      (contract (instanceof/c (implementation?/c i<%>))
+                (new c%)
+                'pos 'neg)))
+
+  (test/pos-blame
+   'instanceof-init-field
+   '(get-field f
+               (contract (instanceof/c (class/c (init-field [f integer?])))
+                         (new (class object% (init-field [f "wrong"]) (super-new)))
+                         'pos 'neg)))
+  )

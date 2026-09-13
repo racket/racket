@@ -31,7 +31,7 @@
 (define core-stx (add-scope empty-syntax core-scope))
 
 (define core-module-name (make-resolved-module-path '#%core))
-(define core-mpi (module-path-index-join ''#%core #f))
+(define core-mpi (module-path-index-join* ''#%core #f))
 
 ;; The expander needs to synthesize some core references
 
@@ -114,7 +114,7 @@
                               (module-linklet-info (namespace->instance ns 0)
                                                    #f
                                                    core-mpi
-                                                   #f
+                                                   insp
                                                    #f
                                                    #f)))))
                 #:instantiate-phase-callback

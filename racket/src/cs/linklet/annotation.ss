@@ -41,14 +41,36 @@
    ;; correlated will be nested only in pairs with current expander
    [else (values v v)]))
 
-(define (extract-inferred-name expr default-name)
+;; potentially boxes the name to indicate methodness
+(define (extract-inferred-name expr default-name method?)
   (let ([name (and (correlated? expr)
                    (correlated-property expr 'inferred-name))])
-    (cond
-     [(void? name) #f]
-     [(correlated? name) (correlated-e name)]
-     [(symbol? name) name]
-     [else default-name])))
+    (let ([name (cond
+                  [(void? name) #f]
+                  [(correlated? name) (correlated-e name)]
+                  [(symbol? name) (decode-procedure-name name)]
+                  [else default-name])])
+      (if (or method?
+              (and (correlated? expr)
+                   (correlated-property expr 'method-arity-error)))
+          (box name)
+          name))))
+
+(define (decode-procedure-name encoded-name)
+  (cond
+    [(eq? encoded-name '|[|) #f]
+    [(symbol? encoded-name)
+     (let ([s (symbol->immutable-string encoded-name)])
+       (cond
+         [(fx= 0 (string-length s)) encoded-name]
+         [else
+          (let ([ch (string-ref s 0)])
+            (cond
+              [(or (char=? #\[ ch)
+                   (char=? #\] ch))
+               (string->symbol (substring s 1 (string-length s)))]
+              [else encoded-name]))]))]
+    [else encoded-name]))
 
 (define (transfer-srcloc v e stripped-e serializable? sfd-cache)
   (let ([src (correlated-source v)]

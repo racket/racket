@@ -2,10 +2,14 @@
 ;; syntax-case and syntax
 
 (module stxcase '#%kernel
-  (#%require "stx.rkt" "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt" '#%paramz '#%unsafe
+  (#%require "stx.rkt" "core-syntax.rkt" '#%paramz '#%unsafe
              "ellipses.rkt"
-             (for-syntax "stx.rkt" "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt"
-                          "gen-temp.rkt" "sc.rkt" '#%kernel))
+             (rename "core-syntax.rkt" -define define)
+             (rename "core-syntax.rkt" -define-syntax define-syntax)
+             (for-syntax "stx.rkt" "core-syntax.rkt"
+                          "stx.rkt" "sc.rkt" '#%kernel
+                          (rename "core-syntax.rkt" -define define)
+                          (rename "core-syntax.rkt" -define-syntax define-syntax)))
 
   (-define interp-match
      (lambda (pat e literals immediate=?)
@@ -146,6 +150,7 @@
 
   (-define-syntax syntax-case**
     (lambda (x)
+      (-define gen-temp-id (make-stx-id-counter 'sc))
       (-define l (and (stx-list? x) (cdr (stx->list x))))
       (unless (and (stx-list? x)
 		   (> (length l) 3))
@@ -202,8 +207,13 @@
 		 [lit-comp-is-mod? (and (identifier? lit-comp)
 					(free-identifier=? 
 					 lit-comp
-					 (quote-syntax free-identifier=?)))])
-            (syntax-arm
+					 (quote-syntax free-identifier=?)))]
+                 [track-use (lambda (stx)
+                              (if s-exp?
+                                  stx
+                                  (let ([kws (map syntax-local-introduce (stx->list kws))])
+                                    (syntax-property stx 'disappeared-use kws))))])
+            (track-use
              (datum->syntax
               (quote-syntax here)
               (list (quote-syntax let) (list (list arg (if (or s-exp? (syntax-e arg-is-stx?))
@@ -242,7 +252,7 @@
                                           unflat-pattern-vars))
                             (-define temp-vars
                                      (map
-                                      (lambda (p) (gen-temp-id 'sc))
+                                      (lambda (p) (gen-temp-id))
                                       pattern-vars))
                             (-define tail-pattern-var (sub1 (length pattern-vars)))
                             ;; Here's the result expression for one match:
@@ -297,10 +307,15 @@
                                            (list rslt
                                                  (if cant-fail?
                                                      arg
-                                                     (list* (datum->syntax
-                                                             (quote-syntax here)
-                                                             mtch
-                                                             pattern)
+                                                     (list* (let ([mtch (datum->syntax
+                                                                         (quote-syntax here)
+                                                                         mtch
+                                                                         pattern)])
+                                                              (if (and (not interp?) lit-comp-is-mod?)
+                                                                  (syntax-property mtch
+                                                                                   'disappeared-use
+                                                                                   (syntax-local-introduce lit-comp))
+                                                                  mtch))
                                                             arg
                                                             (if (or interp? lit-comp-is-mod?)
                                                                 null

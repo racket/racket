@@ -36,8 +36,8 @@
 ;; -----------------------------------------------------------------------------
 ;; error messages
 
-(define (raise-stx-err msg [stx #f])
-  (raise-syntax-error #f msg (current-syntax-context) stx))
+(define (raise-stx-err msg [stx #f] [other-sources null])
+  (raise-syntax-error #f msg (current-syntax-context) stx other-sources))
 
 ;; check-id: syntax-object -> identifier
 (define (check-id id)

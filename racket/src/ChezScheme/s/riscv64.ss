@@ -387,7 +387,7 @@
     (define-instruction value (fpcastto)
       [(op (x mem) (y fpur)) `(set! ,(make-live-info) ,(mem->mem x 'fp) ,y)]
       [(op (x ur) (y fpur)) `(set! ,(make-live-info) ,x (asm ,info ,asm-fpcastto ,y))])
-    
+
     (define-instruction value (fpcastfrom)
       [(op (x fpmem) (y ur)) `(set! ,(make-live-info) ,(mem->mem x 'uptr) ,y)]
       [(op (x fpur) (y ur)) `(set! ,(make-live-info) ,x (asm ,info ,asm-fpcastfrom ,y))]))
@@ -475,6 +475,14 @@
         `(set! ,(make-live-info) ,u (asm ,null-info ,asm-kill))
         `(asm ,info ,asm-unactivate-thread ,u)))])
 
+  (define-instruction value (save-errno)
+    [(op (z ur))
+     (safe-assert (eq? z %Cretval))
+     (let ([u (make-tmp 'u)])
+       (seq
+        `(set! ,(make-live-info) ,u (asm ,null-info ,asm-kill))
+        `(set! ,(make-live-info) ,z (asm ,info ,asm-save-errno ,u))))])
+
   (define-instruction value (asmlibcall)
     [(op (z ur))
      (let ([u (make-tmp 'asmlib)]) ;; for building jump addr
@@ -527,12 +535,19 @@
         (with-output-language (L15d Effect)
                               (define add-offset
                                 (lambda (r)
-                                  (if (eqv? (nanopass-case (L15d Triv) w [(immediate ,imm) imm]) 0)
-                                      (k r)
-                                      (let ([u (make-tmp 'u)])
-                                        (seq
-                                         `(set! ,(make-live-info) ,u (asm ,null-info ,asm-add ,r ,w))
-                                         (k u))))))
+                                  (nanopass-case (L15d Triv) w
+                                                 [(immediate ,imm)
+                                                  (if (eqv? imm 0)
+                                                      (k r)
+                                                      (let ([u (make-tmp 'u)])
+                                                        (seq
+                                                         `(set! ,(make-live-info) ,u (asm ,null-info ,asm-add ,r ,w))
+                                                         (k u))))]
+                                                 [else
+                                                  (let ([u (make-tmp 'u)])
+                                                    (seq
+                                                     `(set! ,(make-live-info) ,u (asm ,null-info ,asm-add ,r ,w))
+                                                     (k u)))])))
                               (if (eq? y %zero)
                                   (add-offset x)
                                   (let ([u (make-tmp 'u)])
@@ -563,7 +578,7 @@
                       `(asm ,null-info ,(asm-lock+/- op) ,r ,u1 ,u2)))))])
 
     (define-instruction effect (cas)
-      [(op (x ur) (y ur) (w imm12) (old ur) (new ur))
+      [(op (x ur) (y ur) (w imm12 ur) (old ur) (new ur))
        (lea->reg x y w
                  (lambda (r)
                    (let ([u1 (make-tmp 'u1)] [u2 (make-tmp 'u2)])
@@ -612,6 +627,7 @@
                     asm-direct-jump asm-indirect-jump asm-literal-jump asm-condition-code
                     asm-jump asm-conditional-jump asm-library-jump
                     asm-get-tc asm-activate-thread asm-deactivate-thread asm-unactivate-thread
+                    asm-save-errno
                     asm-push asm-pop asm-return asm-c-return asm-kill
                     asm-load asm-store asm-fence asm-swap asm-lock asm-lock+/- asm-move asm-move/extend
                     asm-fpmove asm-fpmove-single asm-single->double asm-double->single
@@ -1008,20 +1024,18 @@
       (Trivit (dest src0 src1)
               (emit mul dest src0 src1 code*))))
 
+  ;; overflow if hi64(src0*src1) != (lo64(src0*src1) >> 63)
   (define asm-mul/ovfl
     (lambda (code* dest src0 src1)
       (Trivit (dest src0 src1)
-        (emit xor %scratch1 src0 src1 ; 1 high bit => expect negative
-              (emit mulh %scratch0 src0 src1
+              (emit mulh %scratch1 src0 src1
                     (emit mul dest src0 src1
-                          ;; overflow if %scratch0 doesn't hold 0 for an expected
-                          ;; positive result or -1 for an expected negative result;
-                          ;; also overflow if dest doesn't match expected sign
-                          (emit srai %scratch1 %scratch1 63 ; -1 => expected negative; 0 => expected positive
-                                (emit srli %cond dest 63 ; 1 => negative in `dest`
-                                      (emit or %scratch0 %scratch0 %cond ; combine negativity of results
-                                            (emit xor %cond %scratch0 %scratch1 ; 0 => expectation matches => no overflow
-                                                  code*))))))))))
+                          (emit srai %cond dest 63
+                                (emit bne %scratch1 %cond 12
+                                      (emit addi %cond %real-zero 0
+                                            (emit jal %real-zero 8
+                                                  (emit addi %cond %real-zero 1
+                                                        code*))))))))))
 
   (define asm-div
     (lambda (code* dest src0 src1)
@@ -1408,7 +1422,7 @@
     ;; dest can be an mref, and then the offset is double-aligned
     (lambda (code* dest src)
       (gen-fpmove who code* dest src #t)))
-    
+
   (define-who asm-fpmove-single
     (lambda (code* dest src)
       (gen-fpmove who code* dest src #f)))
@@ -1460,7 +1474,7 @@
     (lambda (code* dest src)
       (Trivit (dest src)
         (emit fmov.d.x dest src '() code*))))
-  
+
   ;; flonum to fixnum
   (define-who asm-fptrunc
     (lambda (code* dest src)
@@ -1661,7 +1675,7 @@
                 [(index) (n ireg breg)
                  (safe-assert (eqv? n 0))
                  (emit add %scratch1 ireg breg
-                       (emit ld %jump %cond 0
+                       (emit ld %jump %scratch1 0
                              (emit jalr %real-zero %jump 0 '())))]
                 [else (sorry! who "unexpected src ~s" src)]))))
 
@@ -1683,6 +1697,11 @@
   (define asm-unactivate-thread
     (let ([target `(riscv64-call 0 (entry ,(lookup-c-entry unactivate-thread)))])
       (lambda (code* tmp . ignore)
+        (asm-helper-call code* target #f tmp))))
+
+  (define asm-save-errno
+    (let ([target `(riscv64-call 0 (entry ,(lookup-c-entry save-errno)))])
+      (lambda (code* dest tmp . ignore) ; dest is ignored, since it is always Cretval
         (asm-helper-call code* target #f tmp))))
 
   (define asm-push
@@ -1789,7 +1808,7 @@
                 (nanopass-case (Ltype Type) (car types)
                   [(fp-double-float) (fp-arg)]
                   [(fp-single-float) (fp-arg)]
-                  [(fp-ftd& ,ftd)
+                  [(fp-ftd& ,ftd ,fptd)
                    ;; A non-union with one floating-point member is treated
                    ;;  like that member by itself.
                    ;; A non-union that has exactly two members, at least one as
@@ -1890,7 +1909,7 @@
 
     (define (result-via-pointer-argument? type)
       (nanopass-case (Ltype Type) type
-        [(fp-ftd& ,ftd) (> ($ftd-size ftd) 16)]
+        [(fp-ftd& ,ftd ,fptd) (> ($ftd-size ftd) 16)]
         [else #f]))
 
     ;; result only meaningful if not `(result-via-pointer-argument? type)`
@@ -2049,7 +2068,7 @@
                                    [(fp) (use-fp-reg (load-single-reg reg))]
                                    [(int) (use-int-reg (load-single-into-int-reg reg))]
                                    [else (use-stack (load-single-stack isp))])]
-                                [(fp-ftd& ,ftd)
+                                [(fp-ftd& ,ftd ,fptd)
                                  (case (cat-place cat)
                                    [(fp)
                                     ;; must be 1 register
@@ -2132,15 +2151,29 @@
                                               (reg-to-memory %Carg3 (cadr offsets) (cadr sizes) r2))))]
                                      [else ($oops 'assembler-internal "unexpected result place")])))]
                       [else e]))]
-                 [add-deactivate
-                  (lambda (adjust-active? t0 live* result-live* k)
+                 [add-deactivate/errno
+                  (lambda (adjust-active? maybe-errno-lvalue t0 live* result-live* k)
                     (cond
                       [adjust-active?
                        (%seq
 			(set! ,%ac0 ,t0)
                         ,(save-and-restore live* (%inline deactivate-thread))
                         ,(k %ac0)
-                        ,(save-and-restore result-live* `(set! ,%Cretval ,(%inline activate-thread))))]
+                        ,(save-and-restore result-live* (let ([e `(set! ,%Cretval ,(%inline activate-thread))])
+                                                          (cond
+                                                            [maybe-errno-lvalue
+                                                             (%seq
+                                                              (set! ,%Cretval ,(%inline save-errno))
+                                                              ,(save-and-restore (list %Cretval) e)
+                                                              (set! ,maybe-errno-lvalue ,%Cretval))]
+                                                            [else e]))))]
+                      [maybe-errno-lvalue
+                       (%seq
+                        ,(k t0)
+                        ,(save-and-restore result-live*
+                                           (%seq
+                                            (set! ,%Cretval ,(%inline save-errno))
+                                            (set! ,maybe-errno-lvalue ,%Cretval))))]
                       [else (k t0)]))])
           (define returnem
             (lambda (frame-size locs ccall r-loc)
@@ -2165,7 +2198,7 @@
                    [arg-type* (info-foreign-arg-type* info)]
                    [result-type (info-foreign-result-type info)]
                    [ftd-result? (nanopass-case (Ltype Type) result-type
-                                  [(fp-ftd& ,ftd) #t]
+                                  [(fp-ftd& ,ftd ,fptd) #t]
                                   [else #f])]
                    [pass-result-ptr? (result-via-pointer-argument? result-type)]
                    [arg-type* (if (and ftd-result?
@@ -2185,15 +2218,15 @@
                                ;; stash extra argument on the stack to be retrieved after call and filled with the result:
                                (cons (load-int-stack frame-size) locs)]
                               [else locs])
-                            (lambda (t0 not-varargs?)
+                            (lambda (t0 not-varargs? maybe-errno-lvalue)
                               (let* ([cat (categorize-result result-type)]
                                      [result-reg* (if pass-result-ptr?
                                                       '()
                                                       (cat-regs cat))])
                                 (add-fill-result
                                  (and ftd-result? (not pass-result-ptr?)) cat frame-size
-                                 (add-deactivate
-                                  adjust-active? t0 live* result-reg*
+                                 (add-deactivate/errno
+                                  adjust-active? maybe-errno-lvalue t0 live* result-reg*
                                   (lambda (t0)
                                     `(inline ,(make-info-kill*-live* (add-caller-save-registers result-reg*) live*) ,%c-call ,t0))))))
                             (nanopass-case (Ltype Type) result-type
@@ -2317,7 +2350,7 @@
                            (case (cat-place cat)
                              [(fp int) (use-reg (load-single-stack reg-offset))]
                              [else (use-stack (load-single-stack stack-arg-offset))])]
-                          [(fp-ftd& ,ftd)
+                          [(fp-ftd& ,ftd ,fptd)
                            (cond
                              [(cat-by-reference cat)
                               ;; register or stack contains pointer to data; we
@@ -2381,7 +2414,7 @@
                      `(set! ,(car regs) ,(%inline double->single ,(%mref ,rhs ,%zero ,(constant flonum-data-disp) fp))))]
                   [(fp-void)
                    (lambda () `(nop))]
-                  [(fp-ftd& ,ftd)
+                  [(fp-ftd& ,ftd ,fptd)
                    (cond
                      [(not synthesize-first?)
                       ;; we passed the pointer to be filled, so nothing more to do here
@@ -2432,7 +2465,7 @@
                                         '()
                                         (cat-regs result-cat))]
                        [ftd-result? (nanopass-case (Ltype Type) result-type
-                                      [(fp-ftd& ,ftd) #t]
+                                      [(fp-ftd& ,ftd ,fptd) #t]
                                       [else #f])]
                        [synthesize-first? (and ftd-result?
                                                (not pass-result-ptr?))]

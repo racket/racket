@@ -7,7 +7,7 @@
 
 (define (get-machine-info)
   (bytes->string/locale
-   (atomically
+   (rktioly
     (define v (rktio_uname rktio))
     (begin0
       (rktio_to_bytes v)

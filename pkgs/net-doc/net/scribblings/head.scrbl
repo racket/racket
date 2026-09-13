@@ -36,7 +36,7 @@ exception is raised.}
 
 
 @defproc[(extract-field [field (or/c string? bytes?)] [header (or/c string? bytes?)])
-         (or/c string? bytes? false/c)]{
+         (or/c string? bytes? #f)]{
 
 Returns the header content for the specified field, or @racket[#f] if
 the field is not in the header. The @racket[field] string should not
@@ -96,7 +96,7 @@ type.}
 
 
 @defproc[(replace-field [field (or/c string? bytes?)]
-                        [value (or/c string? bytes? false/c)]
+                        [value (or/c string? bytes? #f)]
                         [header (or/c string? bytes?)])
           (or/c string? bytes?)]{
 
@@ -135,8 +135,7 @@ adding CRLF-TAB separators.}
 
 
 @defproc[(extract-addresses [line string?]
-                            [kind (one-of/c 'name 'address
-                                            'full 'all)])
+                            [kind (or/c 'name 'address 'full 'all)])
           (or/c (listof string?)
                 (listof (list/c string? string? string?)))]{
 

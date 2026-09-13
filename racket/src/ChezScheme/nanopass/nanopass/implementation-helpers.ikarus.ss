@@ -1,4 +1,4 @@
-;;; Copyright (c) 2000-2015 Dipanwita Sarkar, Andrew W. Keep, R. Kent Dybvig, Oscar Waddell
+;;; Copyright (c) 2000-2018 Dipanwita Sarkar, Andrew W. Keep, R. Kent Dybvig, Oscar Waddell
 ;;; See the accompanying file Copyright for details
 
 (library (nanopass implementation-helpers)
@@ -29,7 +29,7 @@
     indirect-export
 
     ;; compile-time environment helpers
-    #;define-property make-compile-time-value
+    define-property make-compile-time-value
 
     ;; code organization helpers
     module
@@ -49,9 +49,6 @@
     ;; the base record, so that we can use gensym syntax
     define-nanopass-record
 
-    ;; failure token so that we can know when parsing fails with a gensym
-    np-parse-fail-token
-
     ;; handy syntactic stuff
     with-implicit
 
@@ -64,7 +61,7 @@
     ; scheme-version<= with-scheme-version gensym? errorf with-output-to-string
     ; with-input-from-string
     )
-  (import (rnrs) (rnrs eval) (ikarus))
+  (import (rnrs) (rnrs eval) (ikarus) (nanopass syntactic-property))
 
   (define-syntax with-implicit
     (syntax-rules ()
@@ -80,9 +77,6 @@
                    (nongenerative #{nanopass-record d47f8omgluol6otrw1yvu5-0})
                    (fields (immutable tag nanopass-record-tag))))])))
  
-  ;; another gensym listed into this library
-  (define np-parse-fail-token '#{np-parse-fail-token dlkcd4b37swscag1dvmuiz-13})
-
   (define-syntax eq-hashtable-set! (identifier-syntax hashtable-set!))
   (define-syntax eq-hashtable-ref (identifier-syntax hashtable-ref))
 
@@ -120,7 +114,7 @@
          (with-input-from-string (format "#{~a~a ~a~a}" pretty-name extra0 unique-name extra1) read))]))
 
   (define provide-full-source-information
-    (make-parameter #f (lambda (x) (and x #t))))
+    (make-parameter #t (lambda (x) (and x #t))))
 
   (define-record-type source-information
     (nongenerative)
@@ -172,6 +166,20 @@
     (syntax-rules ()
       [(_ id indirect-id ...) (define t (if #f #f))]))
 
+  (define-syntax define-property
+    (lambda (x)
+      (syntax-case x ()
+        [(_ id key value)
+         (with-syntax ([t (datum->syntax #'id (gensym (syntax->datum #'id)))])
+           (syntax-property-set! #'id #'key (syntax->datum #'t))
+           #'(define-syntax waste (let () (set-symbol-value! 't value) (lambda (x) (syntax-violation #f "invalid syntax" x)))))])))
+
   (define-syntax with-compile-time-environment
     (syntax-rules ()
-      [(_ (arg) body* ... body) (lambda (arg) body* ... body)])))
+      [(k (arg) body* ... body)
+       (lambda (rho)
+         (let ([arg (case-lambda
+                      [(x) (rho x)]
+                      [(x y) (let ([sym (syntax-property-get x y #f)])
+                               (and sym (symbol-value sym)))])])
+           body* ... body))])))

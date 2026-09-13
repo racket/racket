@@ -34,12 +34,14 @@ The @exec{raco decompile} command accepts the following command-line flags:
         of decoding linklets to approximate Racket @racket[module] forms}
   @item{@DFlag{no-disassemble} --- show machine code as-is in a byte string,
         instead of attempting to disassemble}
+  @item{@DFlag{no-syntax} --- avoid decompiling syntax-object literals}
   @item{@DFlag{partial-fasl} --- preserve more of the original structure of
         the bytecode file, instead of focusing on procedure bodies}
 ]
 
 @history[#:changed "1.8" @elem{Added @DFlag{no-disassemble}.}
-         #:changed "1.9" @elem{Added @DFlag{partial-fasl}.}]
+         #:changed "1.9" @elem{Added @DFlag{partial-fasl}.}
+         #:changed "1.17" @elem{Added @DFlag{no-syntax}.}]
 
 @section{Racket CS Decompilation}
 
@@ -171,11 +173,22 @@ Racket @BC bytecode has a structure that is close enough to Racket's
 @defmodule[compiler/decompile]
 
 @defproc[(decompile [top (or/c linkl-directory? linkl-bundle? linkl?
-                               linklet? faslable-correlated-linklet?)])
+                               linklet? faslable-correlated-linklet?)]
+                    [#:to-linklets? to-linklets? any/c #f]
+                    [#:skip-syntax-literals? skip-syntax-literals? any/c #f])
          any/c]{
 
 Consumes the result of parsing bytecode and returns an S-expression
-(as described above) that represents the compiled code.}
+(as described above) that represents the compiled code.
+
+If @racket[to-linklets?] is true, then the result S-expression shows
+raw @racket[linklet] forms within @racket[top] instead of
+reconstructing a @racket[module] form.
+
+If @racket[skip-syntax-literals?] is true, then the result S-expression
+omits the decompilation of syntax-object literals.
+
+@history[#:changed "1.17" @elem{Added the @racket[#:skip-syntax-literals?] argument.}]}
 
 @; ------------------------------------------------------------
 

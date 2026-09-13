@@ -21,7 +21,8 @@
                                  module module*
                                  #%plain-module-begin 
                                  #%require #%provide #%declare 
-                                 #%variable-reference))))
+                                 #%variable-reference
+                                 #%foreign-inline))))
            (define (replace-same-free-id pat)
              (cond
               [(identifier? pat)
@@ -110,6 +111,7 @@
                 #%top
                 #%datum
                 #%variable-reference
+                #%foreign-inline
                 #%plain-module-begin
                 module module* #%provide #%require #%declare))))
 

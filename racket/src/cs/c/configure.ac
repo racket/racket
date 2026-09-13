@@ -5,6 +5,7 @@
 #################################################################
 
 AC_INIT([embed-boot.rkt])
+
 AC_CONFIG_HEADERS([cs_config.h])
 
 AC_CONFIG_AUX_DIR(../../lt)
@@ -13,13 +14,11 @@ AC_CANONICAL_SYSTEM
 AC_DISABLE_OPTION_CHECKING
 
 AC_ARG_ENABLE(shared,     [  --enable-shared         create shared libraries (not currently supported)])
-AC_ARG_ENABLE(standalone, [  --enable-standalone     create a standalone shared library])
 AC_ARG_ENABLE(pthread,    [  --enable-pthread        link with pthreads (usually auto-enabled if needed)])
 m4_include(../ac/iconv_arg.m4)
 m4_include(../ac/curses_arg.m4)
 AC_ARG_ENABLE(wpo,        [  --enable-wpo            agressively optimize Racket core (enabled by default)])
 AC_ARG_ENABLE(compress,   [  --enable-compress       compress compiled code (enabled by default)])
-AC_ARG_ENABLE(compressmore, [  --enable-compressmore   compress compiled code even more])
 AC_ARG_ENABLE(compressboot, [  --enable-compressboot   compress boot files])
 m4_include(../ac/path_arg.m4)
 AC_ARG_ENABLE(racket,     [  --enable-racket=<path>  use <path> as Racket for build; or "auto" to create])
@@ -41,6 +40,7 @@ m4_include(../ac/vm_arg.m4)
 m4_include(../ac/crossany_arg.m4)
 AC_ARG_ENABLE(libz,       [  --enable-libz           use installed libz if available])
 AC_ARG_ENABLE(liblz4,     [  --enable-liblz4         use installed liblz4 if available])
+m4_include(../ac/pkgs_arg.m4)
 
 m4_include(../ac/sdk.m4)
 
@@ -79,7 +79,6 @@ fi
 show_explicitly_enabled "${enable_pthread}" "pthreads"
 show_explicitly_disabled "${enable_pthread}" "pthreads"
 show_explicitly_disabled "${enable_compress}" "Compressed code"
-show_explicitly_disabled "${enable_compressmore}" "Compressed code even more"
 show_explicitly_enabled "${enable_compressboot}" "Compressed boot files"
 show_explicitly_disabled "${enable_compressboot}" "Compressed boot files"
 show_explicitly_enabled "${enable_xonx}" "Unix style"
@@ -117,6 +116,7 @@ if test "${enable_xonx}" = "" ; then
 fi
 
 m4_include(../ac/path_pkgscope.m4)
+m4_include(../ac/pkgs_show.m4)
 
 m4_include(../ac/crossany.m4)
 
@@ -182,6 +182,8 @@ use_own_zlibs=no
 
 cs_auto_flags=--disable-auto-flags
 
+dist_install_missing_pkgs=no
+
 COPY_NEW_CFLAGS_TO_CPPFLAGS=no
 
 SCHEME_LIBFFI=no
@@ -198,6 +200,8 @@ ENABLE_EXTRA_CHECKS=no
 m4_include(../ac/sdk_ios.m4)
 
 AC_PROG_CC
+
+m4_include(../ac/add_c_flags.m4)
 
 m4_include(../ac/is_gcc.m4)
 
@@ -240,6 +244,7 @@ case "$host_os" in
     LIBS="$LIBS -lsocket -lnsl -lintl"
     use_flag_pthread="no"
     use_flag_posix_pthread="yes"
+    strip_needs_dash_s="no"
     ;;
   aix*)
     ;;
@@ -270,9 +275,8 @@ case "$host_os" in
     MACH_OS=nb
     LIBS="${LIBS} -lm -lpthread"
     LINK_DYNAMIC="-rdynamic"
-    add_iconv_lib="/usr/lib/i18n/libiconv_std.a"
-    skip_curses_check=yes
-    add_curses_lib="/usr/pkg/lib/libncurses.a"
+    skip_iconv_check=yes
+    add_curses_lib="-lterminfo"
     default_post_linker="paxctl +m"
     ;;
   irix*)
@@ -305,9 +309,12 @@ case "$host_os" in
     skip_curses_check=yes
     use_flag_pthread=no
     use_own_zlibs=yes
+    dist_install_missing_pkgs=yes
+    update_guibin_default_as_root
     MACH_OS=nt
     LIBS="${LIBS} -lshell32 -luser32 -lole32 -lrpcrt4 -luuid -lws2_32 -ladvapi32 -lwinmm"
     MINGW="t"
+    # keep "winfig.bat" consistent with the compression default:
     compress_boot_files_by_default=yes
     if `which ${host}-windres > /dev/null` ; then
       WINDRES="${host}-windres"
@@ -322,18 +329,19 @@ case "$host_os" in
   darwin*)
     PREFLAGS="$PREFLAGS -DOS_X"
     MACH_OS=osx
+    if test "${enable_ios}" != "" ; then
+      MACH_OS=ios
+    fi
     LIBS="${LIBS} -framework CoreFoundation"
     LDFLAGS="${LDFLAGS} -Wl,-headerpad_max_install_names"
     SIGNED_EXE="t"
     if test "${enable_xonx}" = "no" ; then
       OSX="t"
+      dist_install_missing_pkgs=yes
+      update_guibin_default_as_root
     else
       CONFIGURE_RACKET_SO_COMPILE="PLT_CS_MAKE_UNIX_STYLE_MACOS=y"
       CPPFLAGS="${CPPFLAGS} -DRACKET_XONX"
-      strip_needs_dash_s=yes
-    fi
-    if test "${enable_embedfw}" = "yes" ; then
-      strip_needs_dash_s=yes
     fi
 
     PROPAGATE_SUB_CONFIGURE=no
@@ -428,6 +436,10 @@ case "$MACH_HOST_CPU" in
     ;;
   riscv64*)
     MACH="${thread_prefix}rv64${MACH_OS}"
+    pb_machine_name="${thread_prefix}pb64l"
+    ;;
+  loongarch64*)
+    MACH="${thread_prefix}la64${MACH_OS}"
     pb_machine_name="${thread_prefix}pb64l"
     ;;
 esac
@@ -529,6 +541,9 @@ if test "${build_os}_${build_cpu}" != "${host_os}_${host_cpu}" ; then
     riscv64*)
       BUILD_MACH="${BUILD_THREAD_PREFIX}rv64${BUILD_OS}"
       ;;
+    loongarch64*)
+      BUILD_MACH="${BUILD_THREAD_PREFIX}la64${BUILD_OS}"
+      ;;
     *)
       echo "unknown build CPU"
       exit 1
@@ -583,9 +598,6 @@ fi
 if test "${enable_compress}" != "no" ; then
   COMPRESS_COMP="--compress"
 fi
-if test "${enable_compressmore}" = "yes" ; then
-  COMPRESS_COMP="--compress-more"
-fi
 
 if test "${enable_compressboot}" = "yes" ; then
   BOOT_COMPRESS_COMP="--compress"
@@ -605,9 +617,23 @@ m4_include(../ac/postlink.m4)
 
 ############## natipkg ################
 
+m4_include(../ac/natipkg.m4)
+
 if test "${enable_natipkg}" = "yes" ; then
   CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} PLT_CS_SLSP_SUFFIX=-natipkg"
   PLT_CS_SLSP_SUFFIX="-natipkg"
+  dist_install_missing_pkgs=yes
+  use_own_zlibs=yes
+fi
+if test "${enable_nonatipkg}" = "yes" ; then
+  CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} PLT_CS_SLSP_SUFFIX=-nonatipkg"
+  PLT_CS_SLSP_SUFFIX="-nonatipkg"
+  dist_install_missing_pkgs=no
+  use_own_zlibs=no
+fi
+if test "${enable_sofind}" != "" ; then
+  CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} PLT_CS_SLSP_SUFFIX=-${enable_sofind}"
+  PLT_CS_SLSP_SUFFIX="-${enable_sofind}"
 fi
 
 ############## ubsan ################
@@ -759,6 +785,10 @@ m4_include(../ac/valid_sizeof.m4)
 if test "${enable_check}" = "yes" ; then
   ENABLE_EXTRA_CHECKS=yes
 fi
+
+############## Packages tool ################
+
+m4_include(../ac/pkgs.m4)
 
 ############## subconfigure ################
 
@@ -923,6 +953,9 @@ AC_SUBST(PLT_CS_SLSP_SUFFIX)
 AC_SUBST(RKTIO_CONFIGURE_ARGS)
 AC_SUBST(CC_FOR_BUILD)
 AC_SUBST(CFLAGS_FOR_BUILD)
+AC_SUBST(INSTALL_PKGS)
+AC_SUBST(INSTALL_MISSING_PKGS)
+AC_SUBST(INSTALL_PKG_CATALOG)
 AC_SUBST(upsrcdir)
 
 makefiles="Makefile"

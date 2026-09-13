@@ -16,18 +16,21 @@ extracting a package name.}
 Returns @racket[#t] if @racket[v] is @racket['name] , @racket['file],
 @racket['dir], @racket['git], @racket['git-url],
 @racket['github], @racket['clone], @racket['file-url],
-@racket['dir-url], @racket['link], or @racket['static-link], and
-returns @racket[#f] otherwise.
+@racket['dir-url], @racket['link], @racket['static-link],
+or @racket['attach], and returns @racket[#f] otherwise.
 
 The @racket['link] and @racket['static-link] formats are the same as
 @racket['dir] in terms of parsing, but they are treated differently
 for tasks such as package installation. The @racket['clone] and
 @racket['git-url] formats are similarly the same as
-@racket['github] or @racket['git] in terms of parsing.
+@racket['github] or @racket['git] in terms of parsing, and
+the @racket['name] and @racket['attach] formats are the same
+in terms of parsing.
 
 @history[#:changed "6.1.1.1" @elem{Added @racket['git].}
          #:changed "6.1.1.5" @elem{Added @racket['clone].}
-         #:changed "8.0.0.13" @elem{Added @racket['git-url].}]}
+         #:changed "8.0.0.13" @elem{Added @racket['git-url].}
+         #:changed "9.2.0.6" @elem{Added @racket['attach].}]}
 
 
 @defproc[(package-source->name [source string?]

@@ -64,6 +64,8 @@
           'module-compiled-realm module-compiled-realm
 
           'compiled-expression-recompile compiled-expression-recompile
+          'compiled-expression-add-target-machine compiled-expression-add-target-machine
+          'compiled-expression-summarize-target-machine compiled-expression-summarize-target-machine
 
           'make-empty-namespace make-empty-namespace
 

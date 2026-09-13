@@ -38,7 +38,11 @@
 /* A 64-bit pointer value.  In LP64 mode, this is effectively a plain
    pointer.  In ILP32 mode, it's a pointer that's been extended to 
    64 bits by "addp4".  */
+#ifdef __hpux
+typedef void *PTR64;
+#else // some other unix
 typedef void *PTR64 __attribute__((mode(DI)));
+#endif
 
 /* Memory image of fp register contents.  This is the implementation
    specific format used by ldf.fill/stf.spill.  All we care about is
@@ -76,14 +80,22 @@ endian_adjust (void *addr, size_t len)
    point types without type conversions.  Type conversion to long double breaks
    the denorm support.  */
 
+#ifdef __hpux
+#define stf_spill(addr, value)
+#else
 #define stf_spill(addr, value)	\
   asm ("stf.spill %0 = %1%P0" : "=m" (*addr) : "f"(value));
+#endif
 
 /* Load a value from ADDR, which is in the current cpu implementation's
    fp spill format.  As above, this must also be a macro.  */
 
+#ifdef __hpux
+#define ldf_fill(result, addr)
+#else
 #define ldf_fill(result, addr)	\
   asm ("ldf.fill %0 = %1%P1" : "=f"(result) : "m"(*addr));
+#endif
 
 /* Return the size of the C type associated with with TYPE.  Which will
    be one of the FFI_IA64_TYPE_HFA_* values.  */

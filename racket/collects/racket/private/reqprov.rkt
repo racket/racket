@@ -1,10 +1,9 @@
 (module reqprov '#%kernel
-  (#%require "define.rkt"
+  (#%require "core-syntax.rkt"
              (for-syntax '#%kernel
-                         "stx.rkt" "stxcase-scheme.rkt" "define-et-al.rkt"
-                         "qq-and-or.rkt" "cond.rkt"
+                         "stx.rkt" "stxcase-scheme.rkt" "core-syntax.rkt"
                          "stxloc.rkt" "qqstx.rkt" "more-scheme.rkt"
-                         "../require-transform.rkt"
+                         "../require-transform.rkt" "require-lift.rkt"
                          "../provide-transform.rkt"
                          "struct-info.rkt"
                          "../phase+space.rkt"))
@@ -82,7 +81,6 @@
     (let ([t (lambda (stx)
                (check-lib-form stx)
                (let* ([stx (xlate-path stx)]
-                      [mod-path (syntax->datum stx)]
                       [namess (syntax-local-module-exports stx)])
                  (values
                   (apply
@@ -95,7 +93,7 @@
                                                  name
                                                  stx)
                                                 name
-                                                mod-path
+                                                stx
                                                 mode
                                                 0
                                                 mode
@@ -204,20 +202,20 @@
      (lambda (stx)
        (syntax-case stx ()
          [(_ mode in ...)
-          (let ([base-mode (extract-mode stx #'mode)])
-            (shift-subs #'(for-mode in ...) base-mode))]))
+          (let ([mode-shift (extract-mode stx #'mode)])
+            (shift-subs #'(for-mode in ...) mode-shift))]))
      (lambda (stx modes)
        (syntax-case stx ()
          [(_ mode out ...)
-          (let ([base-mode (extract-mode stx #'mode)])
+          (let ([base-mode (phase+space+ 0 (extract-mode stx #'mode))])
             (exports-at-mode #'(for-mode out ...) modes base-mode))]))
      (lambda (stx modes)
        (syntax-case stx ()
          [(for-mode mode out ...)
-          (let* ([base-mode (extract-mode stx #'mode)]
+          (let* ([mode-shift (extract-mode stx #'mode)]
                  [modes (if (null? modes)
-                            (list base-mode)
-                            (map (lambda (v) (phase+space+ v base-mode)) modes))])
+                            (list (phase+space+ 0 mode-shift))
+                            (map (lambda (v) (phase+space+ v mode-shift)) modes))])
             (with-syntax ([(out ...) (map (lambda (o)
                                             (pre-expand-export o modes))
                                           (syntax->list #'(out ...)))])
@@ -249,7 +247,8 @@
                   "space must be #f or an identifier"
                   stx
                   mode))
-               (phase+space 0 base-mode)))])
+               ;; a `phase+space-shift?`, not `phase+space?`:
+               (cons 0 base-mode)))])
       (make-for-mode extract-space)))
   
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -397,7 +396,7 @@
                                                 #`(only #,(import-source-mod-path-stx src))))
                                    sources))))]))]
                   [transform-one
-                   (lambda (in)
+                   (lambda (in phase-shift)
                      ;; Recognize `for-syntax', etc. for simple cases:
                      (syntax-case in (for-meta)
                        [(for-meta n elem ...)
@@ -408,7 +407,7 @@
                          in
                          (apply append
                                 (map (lambda (in)
-                                       (transform-simple in (syntax-e #'n)))
+                                       (transform-one in (phase+space+ phase-shift (syntax-e #'n))))
                                      (syntax->list #'(elem ...)))))]
                        [(for-something elem ...)
                         (and (identifier? #'for-something)
@@ -419,21 +418,28 @@
                          in
                          (apply append
                                 (map (lambda (in)
-                                       (transform-simple in
-                                                         (cond
-                                                          [(free-identifier=? #'for-something #'for-syntax)
-                                                           1]
-                                                          [(free-identifier=? #'for-something #'for-template)
-                                                           -1]
-                                                          [(free-identifier=? #'for-something #'for-label)
-                                                           #f])))
+                                       (transform-one in
+                                                      (phase+space+
+                                                       phase-shift
+                                                       (cond
+                                                         [(free-identifier=? #'for-something #'for-syntax)
+                                                          1]
+                                                         [(free-identifier=? #'for-something #'for-template)
+                                                          -1]
+                                                         [(free-identifier=? #'for-something #'for-label)
+                                                          #f]))))
                                      (syntax->list #'(elem ...)))))]
-                       [_ (transform-simple in 0 #| run phase |#)]))])
+                       [_ (transform-simple in phase-shift)]))])
            (syntax-case stx ()
              [(_ in)
-              (with-syntax ([(new-in ...) (transform-one #'in)])
-                (syntax/loc stx
-                  (#%require new-in ...)))]
+              (let ([lifted-require-definitions (box '())])
+                (parameterize ([syntax-local-lift-require-definition-param lifted-require-definitions])
+                  (with-syntax ([(new-in ...) (transform-one #'in 0 #| run phase |#)]
+                                [(lifted-require-definitions ...)
+                                 (reverse (unbox lifted-require-definitions))])
+                    (syntax/loc stx
+                      (begin (#%require new-in ...)
+                             lifted-require-definitions ...)))))]
              [(_ in ...)
               ;; Prefetch on simple module paths:
               (let ([prefetches
@@ -524,13 +530,7 @@
                                       id
                                       (cadr (syntax->list id))))
                                 ids)])
-              (let ([dup-id (check-duplicate-identifier new-ids)])
-                (when dup-id
-                  (raise-syntax-error
-                   #f
-                   "duplicate identifier"
-                   stx
-                   dup-id)))
+              (raise-if-duplicate-identifiers "duplicate identifier" stx new-ids)
               (values
                (apply
                 append
@@ -575,13 +575,7 @@
                            stx
                            id)))
                       ids)
-            (let ([dup-id (check-duplicate-identifier ids)])
-              (when dup-id
-                (raise-syntax-error
-                 #f
-                 "duplicate identifier"
-                 stx
-                 dup-id)))
+            (raise-if-duplicate-identifiers "duplicate identifier" stx ids)
             (for-each (lambda (id)
                         (or (ormap (lambda (import)
                                      (import-identifier=? id (import-local-id import)))
@@ -673,13 +667,7 @@
                            stx
                            id)))
                       (append orig-ids bind-ids))
-            (let ([dup-id (check-duplicate-identifier bind-ids)])
-              (when dup-id
-                (raise-syntax-error
-                 #f
-                 "duplicate identifier"
-                 stx
-                 dup-id)))
+            (raise-if-duplicate-identifiers "duplicate identifier" stx bind-ids)
             (let ([new+olds
                    (apply
                     append

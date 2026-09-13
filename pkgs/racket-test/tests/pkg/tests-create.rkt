@@ -48,6 +48,33 @@
    (shelly-create "pkg-b-second" "plt")
    (shelly-create "pkg-a-first" "plt")
 
+   (shelly-case
+    "create with --adjacent-deps"
+    $ (format "rm -rf test-pkgs/additional")
+    $ (format "raco pkg create --format zip --dest test-pkgs/additional --adjacent-deps test-pkgs/pkg-test2")
+    $ (format "test -f test-pkgs/additional/pkg-test2.zip")
+    $ (format "test -f test-pkgs/additional/pkg-test1.zip"))
+
+   (with-fake-root
+     (shelly-case
+      "create with --adjacent-deps --from-install"
+      $ (format "rm -rf test-pkgs/additional")
+      $ (format "raco pkg install --copy test-pkgs/pkg-test1 test-pkgs/pkg-test2")
+      $ (format "raco pkg create --format zip --dest test-pkgs/additional --adjacent-deps --from-install pkg-test2")
+      $ (format "test -f test-pkgs/additional/pkg-test2.zip")
+      $ (format "test -f test-pkgs/additional/pkg-test1.zip")))
+
+   (define-syntax-rule (shelly-create-dir pkg)
+     (shelly-case
+      (format "create format dir")
+      $ (format "rm -rf test-pkgs/dir/~a test-pkgs/dir/~a.CHECKSUM"
+                pkg pkg)
+      $ (format "raco pkg create --dest test-pkgs/dir --format dir test-pkgs/~a"
+                pkg)
+      $ (format "test -d test-pkgs/dir/~a" pkg)
+      $ (format "test -f test-pkgs/dir/~a.CHECKSUM" pkg)))
+   (shelly-create-dir "pkg-test1")
+     
    $ "raco pkg create --format txt test-pkgs/pkg-test1" =exit> 1
 
    (when (directory-exists? "test-pkgs/pkg-test1b")
@@ -60,6 +87,7 @@
    (shelly-create "pkg-test1b" "zip")
 
    (shelly-create "pkg-test2" "zip")
+   (shelly-create "pkg-test2" "tgz")
 
    (shelly-case
     "create is robust against ending /s"

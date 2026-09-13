@@ -2,9 +2,11 @@
 ;; with-syntax, generate-temporaries
 
 (module with-stx '#%kernel
-  (#%require "stx.rkt" "define-et-al.rkt" "qq-and-or.rkt" "cond.rkt" "stxcase.rkt"
+  (#%require "stx.rkt" "core-syntax.rkt" "stxcase.rkt"
+             (rename "core-syntax.rkt" -define define)
+             (rename "core-syntax.rkt" -define-syntax define-syntax)
              (for-syntax '#%kernel "stxcase.rkt" "stxloc.rkt" 
-                         "gen-temp.rkt" "sc.rkt" "qq-and-or.rkt" "cond.rkt"))
+                         "stx.rkt" "sc.rkt" "core-syntax.rkt"))
 
   (-define (with-syntax-fail stx)
     (raise-syntax-error
@@ -26,17 +28,17 @@
          (syntax-case x ()
            ((_ () e1 e2 ...)
             (syntax/loc x (let () e1 e2 ...)))
-           ((_ ((out in) ...) e1 e2 ...)
-            (let ([ins (syntax->list (syntax (in ...)))])
+           ((who ((out in) ...) e1 e2 ...)
+            (let ([ins (syntax->list (syntax (in ...)))]
+                  [gen-temp-id (make-stx-id-counter 'ws)])
               ;; Check for duplicates or other syntax errors:
-              (get-match-vars (syntax _) x (syntax (out ...)) null)
+              (get-match-vars (syntax who) x (syntax (out ...)) null)
               ;; Generate temps and contexts:
-              (let ([tmps (map (lambda (x) (gen-temp-id 'ws)) ins)]
+              (let ([tmps (map (lambda (x) (gen-temp-id)) ins)]
                     [heres (map (lambda (x)
                                   (datum->syntax
                                    x
-                                   'here
-                                   x))
+                                   'here))
                                 ins)]
                     [outs (syntax->list (syntax (out ...)))])
                 ;; Let-bind RHSs, then build up nested syntax-cases:

@@ -4,8 +4,7 @@
                     [tcp-connect plain-tcp-connect]
                     [tcp-abandon-port plain-tcp-abandon-port])
          openssl
-         "win32-ssl.rkt"
-         "osx-ssl.rkt")
+         "platform-ssl.rkt")
 
 (provide (all-defined-out))
 

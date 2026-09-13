@@ -492,7 +492,7 @@ of sequences and dispatching to an appropriate iterator.
 
 The @racket[for] forms can provide the performance of hand-written
 loops when enough information is apparent about the sequences to
-iterate. Specifically, the clause should have one of the following
+iterate, specifically when the clause has one of the following
 @racket[_fast-clause] forms:
 
 @racketgrammar[
@@ -504,7 +504,8 @@ fast-clause [id fast-seq]
 
 @racketgrammar[
 #:literals [in-range in-inclusive-range in-naturals in-list in-mlist in-vector in-string in-bytes in-value stop-before stop-after]
-fast-seq (in-range expr)
+fast-seq literal
+         (in-range expr)
          (in-range expr expr)
          (in-range expr expr expr)
          (in-inclusive-range expr expr)
@@ -536,15 +537,19 @@ fast-parallel-seq (in-parallel fast-seq ...)
 ]
 
 @examples[
+(define lst '(a b c d e f g h))
 (time (for ([i (in-range 100000)])
-        (for ([elem (in-list '(a b c d e f g h))]) (code:comment @#,elem{fast})
+        (for ([elem (in-list lst)])         (code:comment @#,elem{fast})
           (void))))
 (time (for ([i (in-range 100000)])
-        (for ([elem '(a b c d e f g h)])           (code:comment @#,elem{slower})
+        (for ([elem '(a b c d e f g h)])    (code:comment @#,elem{also fast})
           (void))))
-(time (let ([seq (in-list '(a b c d e f g h))])
+(time (for ([i (in-range 100000)])
+        (for ([elem lst])                   (code:comment @#,elem{slower})
+          (void))))
+(time (let ([seq (in-list lst)])
         (for ([i (in-range 100000)])
-          (for ([elem seq])                        (code:comment @#,elem{slower})
+          (for ([elem seq])                 (code:comment @#,elem{also slower})
             (void)))))
 ]
 

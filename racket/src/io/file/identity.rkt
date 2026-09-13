@@ -7,13 +7,14 @@
 
 (provide path-or-fd-identity)
 
-;; In atomic mode; returns out of atomic mode
+;; in some locked mode on entry that includes rktio, leaves that locked mode on return
 (define (path-or-fd-identity who
                              #:host-path [host-path #f]
                              #:as-link? [as-link? #f] ; used only if `host-path`
                              #:fd [fd #f]
                              #:port [port #f] ; for errors, and non-#f if `fd` provided
-                             #:no-error? [no-error? #f])
+                             #:no-error? [no-error? #f]
+                             #:unlock [unlock (lambda () (end-rktio))])
   (define r0 (if host-path
                  (rktio_path_identity rktio host-path (not as-link?))
                  (rktio_fd_identity rktio fd)))
@@ -22,7 +23,7 @@
                 (begin0
                   (rktio_identity_to_vector r0)
                   (rktio_free r0))))
-  (end-atomic)
+  (unlock)
   (cond
     [(rktio-error? r0)
      (and (not no-error?)

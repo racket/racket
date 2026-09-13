@@ -1,12 +1,13 @@
 (module gen-system '#%kernel
   
-  ;; Command-line argument: <dest-file> <target-machine> <kernel-target-machine> <cross-target-machine> <srcdir> <slsp-suffix>
+  ;; Command-line argument: <dest-file> <target-machine> <kernel-target-machine> <cross-target-machine> <srcdir> <slsp-suffix> <macosx-or-other>
 
   (define-values (target-machine) (string->symbol (vector-ref (current-command-line-arguments) 1)))
   (define-values (machine) (string->symbol (vector-ref (current-command-line-arguments) 2)))
   (define-values (cross-target-machine) (vector-ref (current-command-line-arguments) 3))
   (define-values (srcdir) (vector-ref (current-command-line-arguments) 4))
   (define-values (slsp-suffix) (vector-ref (current-command-line-arguments) 5))
+  (define-values (macosx?) (equal? "macosx" (vector-ref (current-command-line-arguments) 6)))
 
   (define-values (definitions)
     (call-with-input-file
@@ -31,14 +32,20 @@
                                    (if (eq? key (cadr a))
                                        (parse-cond (caddr a))
                                        (loop (cdr l)))
-                                   (loop (cdr l))))))])
+                                   (if (if (eq? 'define-syntax (car a))
+                                           (if (pair? (cadr a))
+                                               (eq? (caadr a) key)
+                                               #f)
+                                           #f)
+                                       (parse-macro (caddr a))
+                                       (loop (cdr l)))))))])
         (loop definitions))))
 
   (define-values (parse-cond)
     (lambda (e)
       (if (if (matches? e '(case (machine-type) . _))
               #t
-              (matches? e '(case (reflect-machine-type) . _)))
+              (matches? e '(case (reflect-machine-type . _) . _)))
           (letrec-values ([(loop)
                            (lambda (l)
                              (if (null? l)
@@ -58,18 +65,28 @@
     (lambda (e)
       (if (matches? e '(quote _))
           (cadr e)
-          (if (matches? e '(string->utf8 _))
-              (string->bytes/utf-8 (cadr e))
-              (if (matches? e '(if unix-style-macos? _ _))
-                  (if (eq? (system-type) 'macosx)
-                      (parse-expr (cadddr e))
-                      (parse-expr (caddr e)))
-                  (if (matches? e '(if unix-link-shared? _ _))
-                      ;; Currently assuming shared-library mode is not a cross compile:
-                      (if (eq? (system-type 'link) 'shared)
-                          (parse-expr (caddr e))
-                          (parse-expr (cadddr e)))
-                      (error 'parse-expr "could not parse ~e" e)))))))
+          (if (matches? e '(bytes->immutable-bytes _))
+              (parse-expr (cadr e))
+              (if (matches? e '(string->utf8 _))
+                  (string->bytes/utf-8 (cadr e))
+                  (if (if (matches? e '(if unix-style-macos? _ _))
+                          #t
+                          (matches? e '(if (reflect-unix-style-macos?) _ _)))
+                      (if macosx?
+                          (parse-expr (cadddr e))
+                          (parse-expr (caddr e)))
+                      (if (matches? e 'unix-link)
+                          ;; Currently assuming shared-library mode is not a cross compile:
+                          (if (eq? (system-type 'link) 'shared)
+                              'shared
+                              'static)
+                          (error 'parse-expr "could not parse ~e" e))))))))
+
+  (define-values (parse-macro)
+    (lambda (e)
+      (if (matches? e '#`(quote #,(datum->syntax #'here _)))
+          (parse-cond (caddr (cadr (cadr (cadr e)))))
+          (error 'parse-macro "could not parse ~e" e))))
 
   (define-values (matches?)
     (lambda (e pat)
@@ -91,9 +108,9 @@
               #t
               (memq a (cdr l))))))
 
-  (define-values (os) (lookup 'os-symbol))
-  (define-values (os*) (lookup 'os*-symbol))
-  (define-values (arch) (lookup 'arch-symbol))
+  (define-values (os) (lookup 'reflect-os-symbol))
+  (define-values (os*) (lookup 'reflect-os*-symbol))
+  (define-values (arch) (lookup 'reflect-arch-symbol))
   (define-values (link) (lookup 'link-symbol))
   (define-values (so-suffix) (lookup 'so-suffix-bytes))
   (define-values (so-mode) (lookup 'so-mode))
@@ -126,6 +143,12 @@
                         (if (eq? arch 'ppc)
                             32
                             64)))
+          'so-find (if (equal? slsp-suffix "")
+                       (if (eq? os 'unix)
+                           'system
+                           'natipkg)
+                       (string->symbol (substring slsp-suffix 1)))
+          'platform lib-subpath
           'gc 'cs
           'vm 'chez-scheme
           'link link

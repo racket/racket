@@ -26,7 +26,8 @@
          "prepare.rkt"
          "log.rkt"
          "parsed.rkt"
-         "../compile/correlate.rkt")
+         "../compile/correlate.rkt"
+         "../eval/protect.rkt")
 
 ;; ----------------------------------------
 
@@ -63,6 +64,7 @@
                                  [binding-layer (if sc
                                                     (increment-binding-layer ids ctx sc)
                                                     (expand-context-binding-layer ctx))]
+                                 [name #f]
                                  [frame-id #:parent root-expand-context #f]))
   (define exp-body (if sc
                        (expand-body sc-bodys body-ctx #:source (keep-as-needed ctx s #:keep-for-error? #t))
@@ -485,6 +487,29 @@
           s
           `(,(m 'quote-syntax)
             ,datum-s)))])))
+
+(add-core-form!
+ '#%foreign-inline
+ (lambda (s ctx)
+   (log-expand ctx 'prim-foreign-inline #f)
+   (define-match m-mode s #:try '(foreign-inline datum mode))
+   (define-match m s #:unless (m-mode) '(foreign-inline datum))
+   (when (m-mode)
+     (unless (memq (syntax-e (m-mode 'mode)) '(#:copy* #:copy #:pure* #:pure #:effect))
+       (raise-syntax-error #f "invalid foreign-inline mode keyword" s (m-mode 'mode))))
+   (unless (eq? (current-code-inspector) initial-code-inspector)
+     (raise-syntax-error #f "unsafe compilation disallowed by code inspector" s))
+   (if (expand-context-to-parsed? ctx)
+       (parsed-foreign-inline (keep-properties-only~ s)
+                              (syntax->datum (if (m-mode)
+                                                 (m-mode 'datum)
+                                                 (m 'datum)))
+                              (if (m-mode)
+                                  (string->symbol (keyword->string (syntax-e (m-mode 'mode))))
+                                  'effect))
+       (if (m-mode)
+           s
+           (rebuild s `(,(m 'foreign-inline) ,(m 'datum) #:effect))))))
 
 (add-core-form!
  'if

@@ -249,6 +249,14 @@
        #"aB"
        1)
 
+(check #"\\X"
+       #"ab"
+       1)
+
+(check #"\\X"
+       #"\r\n1"
+       2)
+
 (check #".*"
        #"abaacacaaacacaaacd"
        100000)

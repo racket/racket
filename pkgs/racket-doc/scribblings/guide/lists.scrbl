@@ -127,11 +127,8 @@ Since a Racket list is a linked list, the two core operations on a
 non-empty list are
 
 @itemize[
-
  @item{@racket[first]: get the first thing in the list; and}
-
  @item{@racket[rest]: get the rest of the list.}
-
 ]
 
 @examples[
@@ -172,8 +169,8 @@ With these pieces, you can write your own versions of the
 #:eval list-eval
 (define (my-length lst)
   (cond
-   [(empty? lst) 0]
-   [else (+ 1 (my-length (rest lst)))]))
+    [(empty? lst) 0]
+    [else (+ 1 (my-length (rest lst)))]))
 (my-length empty)
 (my-length (list "a" "b" "c"))
 ]
@@ -181,9 +178,9 @@ With these pieces, you can write your own versions of the
 #:eval list-eval
 (define (my-map f lst)
   (cond
-   [(empty? lst) empty]
-   [else (cons (f (first lst))
-               (my-map f (rest lst)))]))
+    [(empty? lst) empty]
+    [else (cons (f (first lst))
+                (my-map f (rest lst)))]))
 (my-map string-upcase (list "ready" "set" "go"))
 ]
 
@@ -224,8 +221,8 @@ argument @racket[len]:
   (code:comment @#,t{local function @racket[iter]:})
   (define (iter lst len)
     (cond
-     [(empty? lst) len]
-     [else (iter (rest lst) (+ len 1))]))
+      [(empty? lst) len]
+      [else (iter (rest lst) (+ len 1))]))
   (code:comment @#,t{body of @racket[my-length] calls @racket[iter]:})
   (iter lst 0))
 ]
@@ -268,10 +265,10 @@ usually not worthwhile, as discussed below.}
 (define (my-map f lst)
   (define (iter lst backward-result)
     (cond
-     [(empty? lst) (reverse backward-result)]
-     [else (iter (rest lst)
-                 (cons (f (first lst))
-                       backward-result))]))
+      [(empty? lst) (reverse backward-result)]
+      [else (iter (rest lst)
+                  (cons (f (first lst))
+                        backward-result))]))
   (iter lst empty))
 ]
 
@@ -317,13 +314,13 @@ would more likely just write the following:
 #:eval list-eval
 (define (remove-dups l)
   (cond
-   [(empty? l) empty]
-   [(empty? (rest l)) l]
-   [else
-    (let ([i (first l)])
-      (if (equal? i (first (rest l)))
-          (remove-dups (rest l))
-          (cons i (remove-dups (rest l)))))]))
+    [(empty? l) empty]
+    [(empty? (rest l)) l]
+    [else
+     (let ([i (first l)])
+       (if (equal? i (first (rest l)))
+           (remove-dups (rest l))
+           (cons i (remove-dups (rest l)))))]))
 (remove-dups (list "a" "b" "b" "b" "c" "c"))
 ]
 

@@ -3,11 +3,12 @@
 
 @title{Getting Started}
 
-To get started with Racket,
-@link["http://racket-lang.org/download/"]{download it} from the web page and
-install it. If you are a beginner or would like to use a graphical environment
-to run programs, run the @exec{DrRacket} executable. Otherwise, the @exec{racket}
-executable will run a command-line Read-Eval-Print-Loop
+To get started with Racket, @hyperlink["http://racket-lang.org/download/"]{download it}
+from the web page and install it. If you are a beginner or would like to use a
+graphical environment to run programs, run the @exec{DrRacket} executable.
+@margin-note*{If you prefer, you can also work with your favorite text editor
+(see @secref["other-editors" #:doc '(lib "scribblings/guide/guide.scrbl")]).}
+Otherwise, the @exec{racket} executable will run a command-line Read-Eval-Print-Loop
 (@tech[#:doc '(lib "scribblings/guide/guide.scrbl")]{REPL}).
 
 On Windows, you can start DrRacket from the @onscreen{Racket} entry in the
@@ -19,14 +20,16 @@ On Mac OS, double click on the @onscreen{DrRacket} icon. It is probably in a
 @onscreen{Racket} folder that you dragged into your
 @onscreen{Applications} folder. If you want to use command-line tools, instead,
 Racket executables are in the @filepath{bin} directory of the @onscreen{Racket}
-folder (and if you want to set your @envvar{PATH} environment variable, you'll
-need to do that manually).
+folder (see @hyperlink["https://github.com/racket/racket/wiki/Configure-Command-Line-for-Racket"]{Configure
+Command Line for Racket} to set your @envvar{PATH} environment variable).
 
-On Unix (including Linux), the @exec{drracket} executable can be run directly from the
-command-line if it is in your path, which is probably the case if you chose a
-Unix-style distribution when installing. Otherwise, navigate to the directory
-where the Racket distribution is installed, and the @exec{drracket} executable will be
-in the @filepath{bin} subdirectory.
+On Unix (including Linux), double click on the @onscreen{DrRacket} icon if your
+distribution creates one, which is case for many environments. The
+@exec{drracket} executable can also be run directly from the command-line if it
+is in your path, which is probably the case if you chose a Unix-style distribution
+when installing. Otherwise, navigate to the directory where the Racket distribution
+is installed, and the @exec{drracket} executable will be in the @filepath{bin}
+subdirectory.
 
 If you are new to programming or if you have the patience to work
 through a textbook:

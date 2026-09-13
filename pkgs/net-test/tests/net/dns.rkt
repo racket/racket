@@ -92,7 +92,12 @@
 (define *indiana-ip*   "129.79.247.31")
 (define *utah-host*    "rains.cs.utah.edu")
 (define *utah-ip*      "155.98.68.106")
-(define *nwu-mx*       '("cuda.eecs.northwestern.edu" "barra.eecs.northwestern.edu"))
+(define *nwu-mx*       '("chcspprf10.ads.northwestern.edu"
+                         "chcspprf11.ads.northwestern.edu"
+                         "chcspprf12.ads.northwestern.edu"
+                         "evcspprf10.ads.northwestern.edu"
+                         "evcspprf11.ads.northwestern.edu"
+                         "evcspprf12.ads.northwestern.edu"))
 (define *kame-url*     "www.kame.net")
 (define *kame-ips*      '("2001:2f0:0:8800:226:2dff:fe0b:4311" "2001:2f0:0:8800::1:1"))
 (define *xmpp-client*  (srv-rr 0 0 5222 "xmpp.racket-lang.org"))

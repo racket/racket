@@ -51,7 +51,7 @@ char *binary_type_hack = "bINARy tYPe:ezic";
 
 /* This path list is used instead of the one in the Racket/GRacket
    binary. That way, the same Racket/GRacket binary can be shared
-   among embedding exectuables that have different collection
+   among embedding executables that have different collection
    paths. */
 PRESERVE_IN_EXECUTABLE
 char *_coldir = "coLLECTs dIRECTORy:" /* <- this tag stays, so we can find it again */
@@ -188,6 +188,26 @@ static int as_int(char *_c)
   return c[0] | ((int)c[1] << 8) | ((int)c[2] << 16)  | ((int)c[3] << 24);
 }
 
+static char *do_path_append(const char *s1, int l1, const char *s2) XFORM_SKIP_PROC
+{
+  int l2;
+  char *s;
+
+  l2 = strlen(s2);
+
+  s  = (char *)malloc(l1 + l2 + 2);
+
+  memcpy(s, s1, l1);
+  if (s[l1 - 1] != '/') {
+    s[l1++] = '/';
+  }
+
+  memcpy(s + l1, s2, l2);
+  s[l1 + l2] = 0;
+
+  return s;
+}
+
 char *absolutize(char *p, char *d)
 {
   int l1;
@@ -246,7 +266,7 @@ int main(int argc, char **argv)
   char *exe_path, *lib_path, *dll_path;
   int start, decl_end, prog_end, end, count, fd, v, en, x11;
   int argpos, inpos, collcount = 1, fix_argv;
-  int bufsize = 127;
+  size_t bufsize = 127;
 
   if (config[7] == '[') {
     write_str(2, argv[0]);
@@ -254,7 +274,7 @@ int main(int argc, char **argv)
     return 1;
   }
 
-  me = lookup_exe_via_path(me);
+  me = get_self_path_generic(me);
   
   /* me is now an absolute path to the binary */
 

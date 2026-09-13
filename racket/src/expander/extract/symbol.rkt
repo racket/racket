@@ -20,9 +20,9 @@
      [else used])))
 
 ;; Pick a symbol like `sym` that's not in the set `used`
-(define (distinct-symbol sym used)
+(define (distinct-symbol sym used [sep "$"])
   (let loop ([n 1])
-    (define s (string->symbol (format "~a$~a" sym n)))
+    (define s (string->symbol (format "~a~a~a" sym sep n)))
     (if (set-member? used s)
         (loop (add1 n))
         s)))

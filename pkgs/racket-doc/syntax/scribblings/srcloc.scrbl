@@ -219,7 +219,9 @@ The first produces a string describing the source location; the second appends
 ]
 
 @history[#:changed "8.1.0.5" @elem{Changed format to separate a line and column
-                                   with @litchar{:} instead of @litchar{.}}]}
+                                   with @litchar{:} instead of @litchar{.}}
+         #:changed "9.2.0.3" @elem{Changed syntax-object handling to use
+                                   @racket[error-syntax->srcloc-handler].}]}
 
 @section[#:tag "location"]{Source Location Utilities}
 

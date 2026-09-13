@@ -83,3 +83,5 @@
                             (continuation-prompt-available? 'tag)))
                     'tag)
        '(#t #t))
+(check-fail (call/prompt apply 'tag)
+            "apply: wrong number of arguments: [no arguments]\n")

@@ -13,6 +13,9 @@
          path-element?
          shrink-path-wrt)
 
+(define (raise-argument-error who ctc v)
+  (raise-argument-error* who 'racket/primitive ctc v))
+
 (define (simple-form-path p)
   (unless (path-string? p)
     (raise-argument-error 'simple-form-path "path-string?" p))
@@ -162,7 +165,7 @@
 (define (file-name who name dir-ok?)
   (unless (or (path-string? name)
               (path-for-some-system? name))
-    (raise-argument-error who "(or/c path-string? path-for-some-system?)" name))
+    (raise-argument-error* who 'racket/primitive "(or/c path-string? path-for-some-system?)" name))
   (let-values ([(base file dir?) (split-path name)])
     (and (or dir-ok? (not dir?))
          (path-for-some-system? file) file)))
@@ -173,7 +176,7 @@
 (define (path-only name)
   (unless (or (path-string? name)
               (path-for-some-system? name))
-    (raise-argument-error 'path-only "(or/c path-string? path-for-some-system?)" name))
+    (raise-argument-error* 'path-only 'racket/primitive "(or/c path-string? path-for-some-system?)" name))
   (let-values ([(base file dir?) (split-path name)])
     (cond [dir? (if (string? name) (string->path name) name)]
           [(path-for-some-system? base) base]

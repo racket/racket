@@ -96,7 +96,18 @@
                          'immobile-cell-ref (lambda (ib) (ptr-ref ib _racket))
                          'immobile-cell->address (lambda (b) b)
                          'address->immobile-cell (lambda (b) b)
-                         'set-fs-change-properties! void))
+                         'set-fs-change-properties! void
+                         'make-mutex (lambda () 'mutex)
+                         'make-condition (lambda () 'cond)
+                         'mutex-acquire (lambda (m) (start-atomic))
+                         'mutex-release (lambda (m) (end-atomic))
+                         'condition-wait (lambda (m c)
+                                           (semaphore-post m)
+                                           (semaphore-wait c)
+                                           (semaphore-wait m))
+                         'condition-signal semaphore-post
+                         'assert-push-lock-level! void
+                         'assert-pop-lock-level! void))
 
 (primitive-table '#%thread
                  (hasheq 'thread thread
@@ -113,6 +124,12 @@
                          'make-channel make-channel
                          'channel-put-evt channel-put-evt
                          'wrap-evt wrap-evt
+                         'channel-get-poll-or-semaphore (lambda (ch)
+                                                          (or (sync/timeout 0 (handle-evt ch list))
+                                                              never-evt))
+                         'channel-put-poll-or-semaphore (lambda (put-evt)
+                                                          (or (sync/timeout 0 (handle-evt put-evt list))
+                                                              never-evt))
                          'handle-evt handle-evt
                          'always-evt always-evt
                          'choice-evt (lambda (l) (apply choice-evt l))
@@ -129,14 +146,24 @@
                          'poll-ctx-sched-info poll-ctx-sched-info
                          'set-poll-ctx-incomplete?! void
                          'schedule-info-did-work! void
+                         'delayed-poll (lambda (thunk) (thunk))
                          'control-state-evt control-state-evt
                          'async-evt async-evt
                          'schedule-info-current-exts schedule-info-current-exts
                          'current-sandman current-sandman
                          'unsafe-start-atomic start-atomic
                          'unsafe-end-atomic end-atomic
-                         'start-atomic/no-interrupts start-atomic
-                         'end-atomic/no-interrupts end-atomic
+                         'start-atomic/no-gc-interrupts start-atomic
+                         'end-atomic/no-gc-interrupts end-atomic
+                         'start-uninterruptible/no-gc-interrupts start-atomic
+                         'end-uninterruptible/no-gc-interrupts end-atomic
+                         'unsafe-start-uninterruptible start-atomic ; because mutex & condition are implemented as semaphores
+                         'unsafe-end-uninterruptible end-atomic
+                         'unsafe-make-uninterruptible-lock (lambda () 'dummy)
+                         'unsafe-uninterruptible-lock-acquire void
+                         'unsafe-uninterruptible-lock-release void
+                         'unsafe-uninterruptible-custodian-lock-acquire void
+                         'unsafe-uninterruptible-custodian-lock-release void
                          'in-atomic-mode? in-atomic-mode?
                          'current-custodian current-custodian
                          'custodian-shut-down? (lambda (c)

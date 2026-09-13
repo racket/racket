@@ -53,9 +53,9 @@
                    bstr3 terminator))
    (define pos
      (case (or target (path->string (system-library-subpath #f)))
-       [("ta6osx" "ti3osx" "tarm64osx"
-         "x86_64-darwin" "i386-darwin" "aarch64-darwin"
-         "x86_64-macosx" "i386-macosx" "aarch64-macosx")
+       [("ta6osx" "ti3osx" "tarm64osx" "tppc32osx"
+         "x86_64-darwin" "i386-darwin" "aarch64-darwin" "ppc-darwin"
+         "x86_64-macosx" "i386-macosx" "aarch64-macosx" "ppc-macsosx")
         ;; Mach-O
         (when (file-exists? dest-file)
           ;; explicit delete to avoid signature unhappiness
@@ -129,7 +129,13 @@
      (define big-endian?
        (if target
            (case target
-             [("tppc32le") #t]
+             [("tppc32osx" "ppc32osx"
+                          "tppc32le" "ppc32le"
+                          "tppc32fb" "ppc32fb"
+                          "tppc32ob" "ppc32ob"
+                          "tppc32nb" "ppc32nb"
+                          "tpb64b" "pb64b"
+                          "tpb32b" "pb32b") #t]
              [else #f])
            (system-big-endian?)))
 

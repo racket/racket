@@ -1,6 +1,10 @@
 name: CI Win
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - master
+  pull_request:
 
 permissions:
   contents: read
@@ -11,7 +15,7 @@ jobs:
 # These jobs build each Racket component separately and tests on the component start as soon as each
 # component finishes building.
   buildtest-win:
-    runs-on: windows-latest
+    runs-on: windows-2022
 
     strategy:
       fail-fast: false
@@ -24,7 +28,7 @@ jobs:
     #   Version: VisualStudio/16.3.6+29418.71
     #   Location: C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v7
     - name: Build 3m
       if: matrix.mode == '3m'
       shell: cmd
@@ -109,3 +113,9 @@ jobs:
     - name: Run syntax tests
       shell: cmd
       run: racket\raco.exe test -c tests/syntax
+    - name: Install demo tests dependency
+      shell: cmd
+      run: racket\raco.exe pkg install --auto compiler-test
+    - name: Run demod tests
+      shell: cmd
+      run: racket\raco.exe test  -l tests/compiler/demodularizer/demod-test.rkt

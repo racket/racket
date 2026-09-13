@@ -55,6 +55,9 @@ ROSYM static Scheme_Object *contract_symbol;
 ROSYM static Scheme_Object *arity_property;
 ROSYM static Scheme_Object *def_err_val_proc;
 ROSYM static Scheme_Object *def_err_stx_proc;
+ROSYM static Scheme_Object *def_err_stx_name_proc;
+ROSYM static Scheme_Object *def_err_stx_srcloc_proc;
+ROSYM static Scheme_Object *def_err_mod_path_proc;
 ROSYM static Scheme_Object *def_error_esc_proc;
 ROSYM static Scheme_Object *def_err_msg_adjust_proc;
 ROSYM static Scheme_Object *def_err_msg_adjust_name_proc;
@@ -106,6 +109,9 @@ static Scheme_Object *error_escape_handler(int, Scheme_Object *[]);
 static Scheme_Object *error_display_handler(int, Scheme_Object *[]);
 static Scheme_Object *error_value_string_handler(int, Scheme_Object *[]);
 static Scheme_Object *error_syntax_string_handler(int, Scheme_Object *[]);
+static Scheme_Object *error_syntax_name_handler(int, Scheme_Object *[]);
+static Scheme_Object *error_syntax_srcloc_handler(int, Scheme_Object *[]);
+static Scheme_Object *error_module_path_string_handler(int, Scheme_Object *[]);
 static Scheme_Object *current_error_message_adjuster(int, Scheme_Object *[]);
 static Scheme_Object *exit_handler(int, Scheme_Object *[]);
 static Scheme_Object *exe_yield_handler(int, Scheme_Object *[]);
@@ -114,11 +120,15 @@ static Scheme_Object *error_print_context_length(int, Scheme_Object *[]);
 static Scheme_Object *error_print_srcloc(int, Scheme_Object *[]);
 static Scheme_Object *error_message_to_adjusted_string(int, Scheme_Object *[]);
 static Scheme_Object *error_contract_to_adjusted_string(int, Scheme_Object *[]);
+static Scheme_Object *exn_classify_errno(int, Scheme_Object *[]);
 static MZ_NORETURN void def_error_escape_proc(int, Scheme_Object *[]);
 static Scheme_Object *def_error_display_proc(int, Scheme_Object *[]);
 static Scheme_Object *emergency_error_display_proc(int, Scheme_Object *[]);
 static Scheme_Object *def_error_value_string_proc(int, Scheme_Object *[]);
 static Scheme_Object *def_error_syntax_string_proc(int, Scheme_Object *[]);
+static Scheme_Object *def_error_syntax_name_proc(int argc, Scheme_Object *argv[]);
+static Scheme_Object *def_error_syntax_srcloc_proc(int argc, Scheme_Object *argv[]);
+static Scheme_Object *def_error_module_path_string_proc(int argc, Scheme_Object *argv[]);
 static Scheme_Object *def_error_message_adjust_proc(int, Scheme_Object *[]);
 static Scheme_Object *def_error_message_adjust_name_proc(int, Scheme_Object *[]);
 static Scheme_Object *def_error_message_adjust_message_proc(int, Scheme_Object *[]);
@@ -151,6 +161,8 @@ static void update_want_level(Scheme_Logger *logger, Scheme_Object *name);
 static Scheme_Object *check_arity_property_value_ok(int argc, Scheme_Object *argv[]);
 
 static char *make_provided_list(Scheme_Object *o, int count, intptr_t *lenout);
+static char *reindent(const char *s, intptr_t *lenout);
+static char *reindent_separate(const char *s, intptr_t *lenout);
 
 static char *init_buf(intptr_t *len, intptr_t *blen);
 
@@ -615,7 +627,7 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 		  int i;
                   i = scheme_utf8_encode((const unsigned int *)mbuf, 0, len, NULL, 0, 1);
                   es = (char *)scheme_malloc_atomic(i + 1);
-                  (void)scheme_utf8_encode((const unsigned int *)mbuf, 0, len, es, 0, 1);
+                  (void)scheme_utf8_encode((const unsigned int *)mbuf, 0, len, (unsigned char *)es, 0, 1);
                   es[i] = 0;
 		  /* Remove newlines: */
 		  for (i = strlen(es) - 1; i > 0; i--) {
@@ -669,6 +681,7 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 	    Scheme_Object *o;
 	    o = (Scheme_Object *)ptrs[pp++];
 	    t = scheme_make_provided_string(o, 1, &tlen);
+            t = reindent(t, &tlen);
 	  }
 	  break;
 	case '@':
@@ -843,6 +856,9 @@ void scheme_init_error(Scheme_Startup_Env *env)
   ADD_PARAMETER("error-display-handler",       error_display_handler,      MZCONFIG_ERROR_DISPLAY_HANDLER,       env);
   ADD_PARAMETER("error-value->string-handler", error_value_string_handler, MZCONFIG_ERROR_PRINT_VALUE_HANDLER,   env);
   ADD_PARAMETER("error-syntax->string-handler", error_syntax_string_handler, MZCONFIG_ERROR_PRINT_SYNTAX_HANDLER, env);
+  ADD_PARAMETER("error-syntax->name-handler", error_syntax_name_handler, MZCONFIG_ERROR_NAME_SYNTAX_HANDLER, env);
+  ADD_PARAMETER("error-syntax->srcloc-handler", error_syntax_srcloc_handler, MZCONFIG_ERROR_SRCLOC_SYNTAX_HANDLER, env);
+  ADD_PARAMETER("error-module-path->string-handler", error_module_path_string_handler, MZCONFIG_ERROR_PRINT_MODULE_PATH_HANDLER, env);
   ADD_PARAMETER("current-error-message-adjuster", current_error_message_adjuster, MZCONFIG_ERROR_MESSAGE_ADJUSTER, env);
   ADD_PARAMETER("error-escape-handler",        error_escape_handler,       MZCONFIG_ERROR_ESCAPE_HANDLER,        env);
   ADD_PARAMETER("exit-handler",                exit_handler,               MZCONFIG_EXIT_HANDLER,                env);
@@ -853,6 +869,8 @@ void scheme_init_error(Scheme_Startup_Env *env)
 
   ADD_PRIM_W_ARITY("error-message->adjusted-string",  error_message_to_adjusted_string, 4, 4, env);
   ADD_PRIM_W_ARITY("error-contract->adjusted-string", error_contract_to_adjusted_string, 2, 2, env);
+
+  ADD_PRIM_W_ARITY("exn-classify-errno", exn_classify_errno, 1, 1, env);
 
   ADD_NONCM_PRIM("exit",              scheme_do_exit,  0, 1, env);
 
@@ -892,6 +910,15 @@ void scheme_init_error(Scheme_Startup_Env *env)
 
   REGISTER_SO(def_err_stx_proc);
   def_err_stx_proc = scheme_make_prim_w_arity(def_error_syntax_string_proc, "default-error-syntax->string-handler", 2, 2);
+
+  REGISTER_SO(def_err_stx_name_proc);
+  def_err_stx_name_proc = scheme_make_prim_w_arity(def_error_syntax_name_proc, "default-error-name->string-handler", 1, 1);
+
+  REGISTER_SO(def_err_stx_srcloc_proc);
+  def_err_stx_srcloc_proc = scheme_make_prim_w_arity(def_error_syntax_srcloc_proc, "default-error-name->srcloc-handler", 1, 1);
+
+  REGISTER_SO(def_err_mod_path_proc);
+  def_err_mod_path_proc = scheme_make_prim_w_arity(def_error_module_path_string_proc, "default-error-module-path->string-handler", 2, 2);
 
   REGISTER_SO(def_err_msg_adjust_proc);
   REGISTER_SO(def_err_msg_adjust_name_proc);
@@ -1006,7 +1033,10 @@ void scheme_init_error_config(void)
   scheme_set_root_param(MZCONFIG_EXIT_HANDLER, scheme_def_exit_proc);
   scheme_set_root_param(MZCONFIG_ERROR_DISPLAY_HANDLER, default_display_handler);
   scheme_set_root_param(MZCONFIG_ERROR_PRINT_VALUE_HANDLER, def_err_val_proc);
-  scheme_set_root_param(MZCONFIG_ERROR_PRINT_SYNTAX_HANDLER, def_err_val_proc);
+  scheme_set_root_param(MZCONFIG_ERROR_PRINT_SYNTAX_HANDLER, def_err_stx_proc);
+  scheme_set_root_param(MZCONFIG_ERROR_NAME_SYNTAX_HANDLER, def_err_stx_name_proc);
+  scheme_set_root_param(MZCONFIG_ERROR_SRCLOC_SYNTAX_HANDLER, def_err_stx_srcloc_proc);
+  scheme_set_root_param(MZCONFIG_ERROR_PRINT_MODULE_PATH_HANDLER, def_err_mod_path_proc);
   scheme_set_root_param(MZCONFIG_ERROR_MESSAGE_ADJUSTER, def_err_msg_adjust_proc);
   scheme_set_root_param(MZCONFIG_EXE_YIELD_HANDLER, def_exe_yield_proc);
 }
@@ -1145,7 +1175,10 @@ static char *init_buf(intptr_t *len, intptr_t *_size)
   local_max_symbol_length = scheme_get_max_symbol_length();
   print_width             = scheme_get_print_width();
 
-  size = (3 * local_max_symbol_length + 500 + 2 * print_width);
+  size = (3 * local_max_symbol_length + 500
+          /* in an extreme case, each "\n" is replaced by "\n    ",
+             so that's why there's an extra factor of 4 */
+          + 2 * 4 * print_width);
 
   /* out parameters */
   if (len)
@@ -1511,6 +1544,7 @@ static char *make_arity_expect_string(const char *name, int namelen,
         }
 
 	o = error_write_to_string_w_max(argv[i], len, &l);
+        o = reindent_separate(o, &l);
 	memcpy(s + pos, o, l);
 	pos += l;
       }
@@ -1808,6 +1842,8 @@ char *scheme_make_arg_lines_string(const char *indent, int which, int argc, Sche
         pos += plen;
       
 	o = error_write_to_string_w_max(argv[i], len, &l);
+        o = reindent_separate(o, &l);
+
 	memcpy(other + pos, o, l);
 	pos += l;
       }
@@ -1979,6 +2015,7 @@ static MZ_NORETURN void wrong_contract_for_realm(const char *name, Scheme_Object
     kind = "value";
 
   s = scheme_make_provided_string(o, 1, &slen);
+  s = reindent(s, &slen);
 
   if ((which < 0) || (argc <= 1)) {
     scheme_raise_realm_exn(MZEXN_FAIL_CONTRACT,
@@ -2090,6 +2127,8 @@ static MZ_NORETURN void do_out_of_range(const char *name, Scheme_Object *realm, 
     }
 
     sstr = scheme_make_provided_string(s, 2, &sstrlen);
+    sstr = reindent(sstr, &sstrlen);
+
     scheme_raise_realm_exn(MZEXN_FAIL_CONTRACT,
                            strlen(name), realm, realm,
                            "%s: %sindex is %s\n  %sindex: %s\n  %s%V%s%V]\n  %s: %t",
@@ -2219,6 +2258,7 @@ void scheme_contract_error(const char *name, const char *msg, ...)
   for (i = 0; i < cnt; i++) {
     if (vs[i]) {
       v_str = scheme_make_provided_string(vs[i], 1, &v_str_len);
+      v_str = reindent(v_str, &v_str_len);
       v_strs[i] = v_str;
       v_str_lens[i] = v_str_len;
     } else
@@ -2622,6 +2662,7 @@ void scheme_wrong_rator(Scheme_Object *rator, int argc, Scheme_Object **argv)
   char *s, *r;
 
   r = scheme_make_provided_string(rator, 1, &rlen);
+  r = reindent(r, &rlen);
 
   s = scheme_make_arg_lines_string("   ", -1, argc, argv, &slen);
 
@@ -2854,6 +2895,60 @@ static char *make_provided_list(Scheme_Object *o, int count, intptr_t *lenout)
   return accum;
 }
 
+static char *do_reindent(const char *s, intptr_t *lenout, int prefix)
+{
+  intptr_t len = *lenout, i, j, count = 0, new_len;
+  char *new_s;
+
+  if (s[0] == '\n')
+    return (char *)s;
+
+  for (i = 0; i < len; i++) {
+    if (s[i] == '\n')
+      count++;
+  }
+  if (count == 0)
+    return (char *)s;
+
+  new_len = len + (3 * count) + (prefix * 4);
+  new_s = scheme_malloc_atomic(new_len + 1);
+
+  if (prefix) {
+    new_s[0] = '\n';
+    new_s[1] = ' ';
+    new_s[2] = ' ';
+    new_s[3] = ' ';
+    j = 4;
+  } else
+    j = 0;
+
+  for (i = 0; i < len; i++) {
+    if (s[i] == '\n') {
+      new_s[j] = '\n';
+      new_s[j+1] = ' ';
+      new_s[j+2] = ' ';
+      new_s[j+3] = ' ';
+      j += 4;
+    } else
+      new_s[j++] = s[i];
+  }
+
+  new_s[new_len] = 0;
+
+  *lenout = new_len;
+  return new_s;
+}
+
+static char *reindent(const char *s, intptr_t *lenout)
+{
+  return do_reindent(s, lenout, 1);
+}
+
+static char *reindent_separate(const char *s, intptr_t *lenout)
+{
+  return do_reindent(s, lenout, 0);
+}
+
 static Scheme_Object *do_error(const char *who, int mode, int argc, Scheme_Object *argv[])
 {
   Scheme_Object *newargs[2];
@@ -2897,7 +2992,7 @@ static Scheme_Object *do_error(const char *who, int mode, int argc, Scheme_Objec
   } else {
     Scheme_Object *strout;
     char *str;
-    intptr_t len, i;
+    intptr_t len, i, width;
 
     /* String followed by other values: */
     if (!SCHEME_CHAR_STRINGP(argv[0]))
@@ -2905,10 +3000,16 @@ static Scheme_Object *do_error(const char *who, int mode, int argc, Scheme_Objec
 
     strout = scheme_make_byte_string_output_port();
 
+    if (argc > 1)
+      width = scheme_get_print_width();
+    else
+      width = 0;
+
     scheme_internal_display(argv[0], strout);
     for (i = 1; i < argc ; i++) {
       scheme_write_byte_string(" ", 1, strout);
-      scheme_internal_write(argv[i], strout);
+      str = error_write_to_string_w_max(argv[i], width, &len);
+      scheme_write_byte_string(str, len, strout);
     }
 
     str = scheme_get_sized_byte_string_output(strout, &len);
@@ -3114,6 +3215,8 @@ static Scheme_Object *do_raise_mismatch_error(const char *who, int mismatch, int
         } else {
           st = scheme_make_provided_string(s, scount / 2, &slen);
         }
+        if (!mismatch)
+          st = reindent(st, &slen);
       }
       total += slen;
       ss[i-(1+use_realm)] = st;
@@ -3659,6 +3762,28 @@ def_error_syntax_string_proc(int argc, Scheme_Object *argv[])
   return scheme_make_sized_utf8_string(s, l);
 }
 
+static Scheme_Object *
+def_error_syntax_name_proc(int argc, Scheme_Object *argv[])
+{
+  /* this handler gets replaced by the expander, which is in charge of syntax objects */
+  return scheme_false;
+}
+
+static Scheme_Object *
+def_error_syntax_srcloc_proc(int argc, Scheme_Object *argv[])
+{
+  /* this handler gets replaced by the expander, which is in charge of syntax objects */
+  return scheme_false;
+}
+
+static Scheme_Object *def_error_module_path_string_proc(int argc, Scheme_Object *argv[])
+{
+  if (SCHEME_TRUEP(argv[1]) && !SCHEME_INTP(argv[1]))
+    scheme_wrong_contract("default-error-module-path->string-handler", "number?", 1, argc, argv);
+
+  return def_error_syntax_string_proc(argc, argv);
+}
+
 static MZ_NORETURN void
 def_error_escape_proc(int argc, Scheme_Object *argv[])
 {
@@ -3699,6 +3824,33 @@ error_syntax_string_handler(int argc, Scheme_Object *argv[])
 {
   return scheme_param_config("error-value->syntax-handler",
 			     scheme_make_integer(MZCONFIG_ERROR_PRINT_SYNTAX_HANDLER),
+			     argc, argv,
+			     2, NULL, NULL, 0);
+}
+
+static Scheme_Object *
+error_syntax_name_handler(int argc, Scheme_Object *argv[])
+{
+  return scheme_param_config("error-value->name-handler",
+			     scheme_make_integer(MZCONFIG_ERROR_NAME_SYNTAX_HANDLER),
+			     argc, argv,
+			     1, NULL, NULL, 0);
+}
+
+static Scheme_Object *
+error_syntax_srcloc_handler(int argc, Scheme_Object *argv[])
+{
+  return scheme_param_config("error-value->srcloc-handler",
+			     scheme_make_integer(MZCONFIG_ERROR_SRCLOC_SYNTAX_HANDLER),
+			     argc, argv,
+			     1, NULL, NULL, 0);
+}
+
+static Scheme_Object *
+error_module_path_string_handler(int argc, Scheme_Object *argv[])
+{
+  return scheme_param_config("error-module-path->name-handler",
+			     scheme_make_integer(MZCONFIG_ERROR_PRINT_MODULE_PATH_HANDLER),
 			     argc, argv,
 			     2, NULL, NULL, 0);
 }
@@ -3989,6 +4141,9 @@ static int get_want_level(Scheme_Logger *logger, Scheme_Object *name)
 
 int scheme_log_level_topic_p(Scheme_Logger *logger, int level, Scheme_Object *name)
 {
+  if (level == 0) /* never gets 'none messages */
+    return 0; 
+  
   if (!logger) {
     Scheme_Config *config;
     config = scheme_current_config();
@@ -4100,6 +4255,9 @@ void scheme_log_name_pfx_message(Scheme_Logger *logger, int level, Scheme_Object
      configuration of scheme_log_abort(). */
   Scheme_Object *queue, *q, *msg = NULL, *b;
   Scheme_Log_Reader *lr;
+
+  if (level == 0) /* 'none never logs */
+    return;
 
   if (!logger) {
     Scheme_Config *config;
@@ -4476,6 +4634,9 @@ log_level_p(int argc, Scheme_Object *argv[])
       scheme_wrong_contract("log-level?", "(or/c f? #symbol)", 2, argc, argv);
     name = argv[2];
   }
+
+  if (level == 0) /* never gets 'none messages */
+    return scheme_false; 
 
   want_level = get_want_level(logger, name);
 
@@ -4974,6 +5135,45 @@ static Scheme_Object *error_contract_to_adjusted_string(int argc, Scheme_Object 
   base_adjr = scheme_get_param(scheme_current_config(), MZCONFIG_ERROR_MESSAGE_ADJUSTER);
 
   return apply_adjusters(argv[0], argv[1], NULL, NULL, base_adjr, adjust_CONTRACT_MODE);
+}
+
+static Scheme_Object *exn_classify_errno(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *p = argv[0];
+  const char *s;
+
+  if (SCHEME_CHAPERONE_STRUCTP(p)
+      && scheme_is_struct_instance(exn_table[MZEXN].type, p)) {
+    if (scheme_is_struct_instance(exn_table[MZEXN_FAIL_FILESYSTEM_EXISTS].type, p))
+      return scheme_intern_symbol("EEXIST");
+    if (scheme_is_struct_instance(exn_table[MZEXN_FAIL_FILESYSTEM_ERRNO].type, p)
+        || scheme_is_struct_instance(exn_table[MZEXN_FAIL_NETWORK_ERRNO].type, p))
+      p = scheme_struct_ref(p, 2);
+    else
+      return scheme_false;
+  } else  {
+    if (!SCHEME_PAIRP(p)
+        || !(SCHEME_INTP(SCHEME_CAR(p)) || SCHEME_BIGNUMP(SCHEME_CAR(p)))
+        || !(SAME_OBJ(SCHEME_CDR(p), posix_symbol)
+             || SAME_OBJ(SCHEME_CDR(p), windows_symbol)
+             || SAME_OBJ(SCHEME_CDR(p), gai_symbol)))
+      scheme_wrong_contract("exn-classify-errno", "(or/c exn? (cons/c exact-integer? (or/c 'posix 'windows 'gai)))", 0, argc, argv);
+  }
+
+  if (!SCHEME_INTP(SCHEME_CAR(p)))
+    return scheme_false;
+
+  s = rktio_classify_error(SAME_OBJ(SCHEME_CDR(p), posix_symbol)
+                           ? RKTIO_ERROR_KIND_POSIX
+                           : (SAME_OBJ(SCHEME_CDR(p), windows_symbol)
+                              ? RKTIO_ERROR_KIND_WINDOWS
+                              : RKTIO_ERROR_KIND_GAI),
+                           SCHEME_INT_VAL(SCHEME_CAR(p)));
+
+  if (!s)
+    return scheme_false;
+
+  return scheme_intern_symbol(s);
 }
 
 /***********************************************************************/

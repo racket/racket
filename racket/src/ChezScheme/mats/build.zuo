@@ -19,7 +19,7 @@
 ;; expected).
 ;;
 ;; When running a single test, you can specify a configuration variant
-;; for the test by suplying variable arguments alongside the target.
+;; for the test by supplying variable arguments alongside the target.
 ;; For example,
 ;;
 ;;   zuo . <test>.mo o=3
@@ -138,6 +138,9 @@
 
 (define one-test-option
   (hash 'o "3" 'eoc "f" 'name "simple"))
+
+(define one-safe-test-option
+  (hash 'o "0" 'eoc "f" 'name "simple"))
 
 (define some-fast-test-options
   ;; no interpreter tests
@@ -363,7 +366,7 @@
                                                  "cc")))
                         (cons "FTYPE_CFLAGS"
                               (build-shell (or (lookup 'CPPFLAGS) "")
-                                           (if (glob-match? "*nt" m)
+                                           (if (eq? 'windows (system-type))
                                                "-DWIN32"
                                                "")
                                            (or (lookup 'mdinclude) "")
@@ -635,6 +638,10 @@
                 ,(lambda (target)
                    (summarize-results (list one-test-option)))
                 :quiet]
+       [:target test-one-safe (,(options-name one-safe-test-option))
+                ,(lambda (target)
+                   (summarize-results (list one-safe-test-option)))
+                :quiet]
        [:target test-some-fast ,(map options-name some-fast-test-options)
                 ,(lambda (target)
                    (summarize-results some-fast-test-options))
@@ -759,7 +766,7 @@
                                                       (string->shell (at-dir "../bin" m
                                                                              (~a "csv" (get-dll-version)
                                                                                  ".lib"))))]
-				       [(glob-match? "*nt" m)
+				       [(eq? 'windows (system-type))
 					(config-merge config 'LDFLAGS
 						      (string->shell (at-dir "../boot" m "schemeexe.lib")))]
 				       [else config])])

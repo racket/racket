@@ -1,0 +1,15 @@
+diff -u -r old/glib-2.77.2/gio/meson.build new/glib-2.77.2/gio/meson.build
+--- old/glib-2.77.2/gio/meson.build	2023-08-12 17:38:03
++++ new/glib-2.77.2/gio/meson.build	2023-08-18 17:51:43
+@@ -1093,10 +1093,6 @@
+   endforeach
+ endif
+ 
+-if build_tests
+-    subdir('tests')
+-endif
+-
+ # The following is an example for building internal marshallers that are used
+ # by GIO. We cannot guarantee glib-genmarshal availability while building GLib
+ # so they are pre-generated and placed into gmarshal-internal.[ch].
+ 

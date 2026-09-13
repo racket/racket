@@ -1,4 +1,4 @@
-\documentclass[letterpaper,10pt]{book}
+\documentclass[letterpaper,10pt,oneside]{book}
 \usepackage{fullpage}
 \usepackage{scheme}
 \usepackage[pdftitle="Nanopass Framework Users Guide",
@@ -182,7 +182,7 @@ off of C to target JavaScript, LLVM, or other back ends.
 
 \section{Other Uses of the Nanopass Frameowrk}
 The nanopass framework was used to replace the original Chez Scheme
-compiler~\cite{dybvig:csug8} with a nanopass version of the compiler.
+compiler~\cite{dybvig:csug9} with a nanopass version of the compiler.
 The nanopass version has officially been released as Chez Scheme version 9.0.
 Chez Scheme is a closed-source commercial compiler.
 

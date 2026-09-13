@@ -10,7 +10,7 @@
       (hash-set! futures (current-future) #t))
     (hash-count futures)))
 
-(test 2
+(test 1
   (let ([futures (make-hasheq)])
     (for/async ([i (in-range 10)])
       #:break (= i 1)

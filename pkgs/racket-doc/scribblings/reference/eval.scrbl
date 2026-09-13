@@ -524,7 +524,7 @@ a procedure that yields to one or more available GUI events.
 @history[#:added "8.3.0.3"]}
 
 
-@defparam[current-read-interaction proc (any/c input-port? -> any)]{
+@defparam[current-read-interaction proc (any/c input-port? . -> . any)]{
 
 A @tech{parameter} that determines the current @deftech{read interaction
 handler}, which is procedure that takes an arbitrary value and an
@@ -540,7 +540,7 @@ The default read interaction handler accepts @racket[_src] and
 ]}
 
 
-@defparam[current-print proc (any/c -> any)]{
+@defparam[current-print proc (any/c . -> . any)]{
 
 A @tech{parameter} that determines the @deftech{print handler} that is called
  by @racket[read-eval-print-loop] to print the result of an evaluation
@@ -606,6 +606,35 @@ optimization passes to produce an equivalent compiled form with
 potentially different performance characteristics.
 
 @history[#:added "6.3"]}
+
+@defproc[(compiled-expression-add-target-machine [ce compiled-expression?]
+                                                 [other-ce (or/c compiled-expression? hash?)])
+         compiled-expression?]{
+
+Returns a compiled expression like @racket[ce], but augments or
+replaces cross-compilation information in @racket[ce] with information
+from @racket[other-ce]. The intent is that @racket[ce] and
+@racket[other-ce] have been compiled with different values for
+@racket[current-compile-target-machine], and @racket[ce] will be used
+to run a module on the compiling machine, while information from
+@racket[other-ce] is needed for cross-compiling imports of the module.
+
+The @racket[other-ce] argument can be a compiled module or a summary of a module's
+information as produced by @racket[compiled-expression-summarize-target-machine].
+
+@history[#:added "8.12.0.3"
+         #:changed "8.17.0.3" @elem{Added support for @racket[other-ce]
+                                    as a summary.}]}
+
+
+@defproc[(compiled-expression-summarize-target-machine [other-ce compiled-expression?])
+         hash?]{
+
+Returns a value that has the same information as @racket[other-ce]
+for @racket[compiled-expression-add-target-machine], but in a form that can be
+portably serialized via @racketmodname[racket/fasl].
+
+@history[#:added "8.17.0.3"]}
 
 
 @defproc[(compiled-expression? [v any/c]) boolean?]{
