@@ -104,3 +104,25 @@ void rktio_free(void *p)
 {
   free(p);
 }
+
+/* __has_feature(address_sanitizer) is the Clang spelling; define a fallback
+   so the check also compiles on GCC/MSVC, which use __SANITIZE_ADDRESS__. */
+#ifndef __has_feature
+# define __has_feature(x) 0
+#endif
+
+#if defined(__SANITIZE_ADDRESS__) || __has_feature(address_sanitizer)
+# include <sanitizer/lsan_interface.h>
+# define RKTIO_HAS_LSAN 1
+#endif
+
+/* Tell LeakSanitizer that O is intentionally retained: it is referenced only
+   from the Racket/Chez Scheme GC heap, which LSan does not scan, so it would
+   otherwise be reported as a false-positive leak. A no-op without ASan/LSan. */
+void rktio_lsan_ignore_object(void *o)
+{
+#ifdef RKTIO_HAS_LSAN
+  __lsan_ignore_object(o);
+#endif
+  (void)o;
+}
