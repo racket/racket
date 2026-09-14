@@ -431,7 +431,7 @@
      ;; and we don't work on BC enough for it to matter anymore:
      jit-headers))
 
-  (define windows-libs '("WS2_32.lib" "Shell32.lib" "User32.lib" "Winmm.lib"
+  (define windows-libs '("WS2_32.lib" "Shell32.lib" "User32.lib" "Winmm.lib" "Psapi.lib"
                                       "RpCrt4.lib" "Ole32.lib" "Advapi32.lib"))
   (define MemoryModule.o (at-dir (.c->.o "MemoryModule.c")))
   (define dll_via_temp.o (at-dir (.c->.o "dll_via_temp.c")))

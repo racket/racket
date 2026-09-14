@@ -479,40 +479,39 @@ ptr S_save_errno(void) {
     int errno_val;
 
 #ifdef WIN32
-    {
-      ptr tc = get_thread_context();
-      if (CURRENTERRNOSOURCE(tc) == Sfalse) {
-	errno_val = errno;
-      } else if (Schar_value(STRIT(SYMNAME(CURRENTERRNOSOURCE(tc)), 0)) == 'm' /* msvcrt */) {
-	if (!msvcrt_get_errno_ptr) {
-	  HMODULE hm;
-	  get_errno_ptr_t new_get_errno_ptr = NULL;
-	  hm = LoadLibrary("msvcrt.dll");
-	  if (hm)
-	    new_get_errno_ptr = (get_errno_ptr_t)GetProcAddress(hm, "_errno");
-	  if (!new_get_errno_ptr)
-	    new_get_errno_ptr = get_errno_ptr;
-	  while (msvcrt_get_errno_ptr == NULL) {
-	    COMPARE_AND_SWAP_PTR(&msvcrt_get_errno_ptr, NULL, new_get_errno_ptr);
-	  }
-	}
-	errno_val = *(msvcrt_get_errno_ptr());
-      } else {
-	if (!ucrt_get_errno_ptr) {
-	  HMODULE hm;
-	  get_errno_ptr_t new_get_errno_ptr = NULL;
-	  hm = LoadLibrary("ucrtbase.dll");
-	  if (hm)
-	    new_get_errno_ptr = (get_errno_ptr_t)GetProcAddress(hm, "_errno");
-	  if (!new_get_errno_ptr)
-	    new_get_errno_ptr = get_errno_ptr;
-	  while (ucrt_get_errno_ptr == NULL) {
-	    COMPARE_AND_SWAP_PTR(&ucrt_get_errno_ptr, NULL, new_get_errno_ptr);
-	  }
-	}
-	errno_val = *(ucrt_get_errno_ptr());
+  ptr tc = get_thread_context();
+  if (CURRENTERRNOSOURCE(tc) == Sfalse) {
+    errno_val = errno;
+  } else if (Schar_value(STRIT(SYMNAME(CURRENTERRNOSOURCE(tc)), 0)) == 'm' /* msvcrt */) {
+    if (!msvcrt_get_errno_ptr) {
+        HMODULE hm;
+        get_errno_ptr_t new_get_errno_ptr = NULL;
+      hm = GetModuleHandle("msvcrt.dll");
+      if (hm)
+        new_get_errno_ptr = (get_errno_ptr_t)GetProcAddress(hm, "_errno");
+      if (!new_get_errno_ptr)
+      new_get_errno_ptr = get_errno_ptr;
+
+      while (msvcrt_get_errno_ptr == NULL) {
+        COMPARE_AND_SWAP_PTR(&msvcrt_get_errno_ptr, NULL, new_get_errno_ptr);
       }
     }
+  	errno_val = *(msvcrt_get_errno_ptr());
+  } else {
+	  if (!ucrt_get_errno_ptr) {
+	    HMODULE hm;
+	    get_errno_ptr_t new_get_errno_ptr = NULL;
+	    hm = GetModuleHandle("ucrtbase.dll");
+	    if (hm)
+	      new_get_errno_ptr = (get_errno_ptr_t)GetProcAddress(hm, "_errno");
+	    if (!new_get_errno_ptr)
+	      new_get_errno_ptr = get_errno_ptr;
+	    while (ucrt_get_errno_ptr == NULL) {
+	      COMPARE_AND_SWAP_PTR(&ucrt_get_errno_ptr, NULL, new_get_errno_ptr);
+	    }
+	  }
+    errno_val = *(ucrt_get_errno_ptr());
+  }
 #else
     errno_val = errno;
 #endif

@@ -143,7 +143,7 @@ static CSI_proc get_csi(void)
   
   if (!tried_csi) {
     HMODULE hm;
-    hm = LoadLibraryW(L"kernel32.dll");
+    hm = GetModuleHandleW(L"kernel32.dll");
     if (hm)
       csi = (CSI_proc)GetProcAddress(hm, "CancelSynchronousIo");
     else
