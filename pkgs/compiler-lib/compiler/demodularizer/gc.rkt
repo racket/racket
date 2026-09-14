@@ -154,38 +154,43 @@
               (used-name! b))])]))
 
     (for ([b (in-list body)])
-      (match b
-        [`(define-values ,ids ,rhs)
-         (maybe-add-inline! ids rhs inlines)
-         (define done? #f)
-         (define (used-rhs!)
-           (unless done?
-             (set! done? #t)
-             (used! rhs))
-           ;; All in group are used together:
-           (for-each used! ids))
-         (for ([id (in-list ids)])
-           (cond
-             [(eq? 'used (hash-ref used id #f))
-              (used-rhs!)]
-             [else
-              (hash-set! used id used-rhs!)]))
-         (unless (and (not keep-defines?)
-                      (or prune-definitions?
-                          (pure? rhs ready inlines #hasheq())))
-           (used-rhs!))
-         (for ([id (in-list ids)])
-           (hash-set! ready id #t))]
-        [_
-         (cond
-           [(transformer-definition-name b)
-            => (lambda (name)
-                 (define (used-trans!) (used! b))
-                 (if (hash-ref used name #f)
-                     (used-trans!)
-                     (hash-set! used name used-trans!)))]
-           [(pure? b ready inlines #hasheq()) (void)]
-           [else (used! b)])]))))
+      (let loop ([b b])
+        (cond
+          [(faslable-correlated? b)
+           (loop (faslable-correlated-e b))]
+        [else
+         (match b
+           [`(define-values ,ids ,rhs)
+            (maybe-add-inline! ids rhs inlines)
+            (define done? #f)
+            (define (used-rhs!)
+              (unless done?
+                (set! done? #t)
+                (used! rhs))
+              ;; All in group are used together:
+              (for-each used! ids))
+            (for ([id (in-list ids)])
+              (cond
+                [(eq? 'used (hash-ref used id #f))
+                 (used-rhs!)]
+                [else
+                 (hash-set! used id used-rhs!)]))
+            (unless (and (not keep-defines?)
+                         (or prune-definitions?
+                             (pure? rhs ready inlines #hasheq())))
+              (used-rhs!))
+            (for ([id (in-list ids)])
+              (hash-set! ready id #t))]
+           [_
+            (cond
+              [(transformer-definition-name b)
+               => (lambda (name)
+                    (define (used-trans!) (used! b))
+                    (if (hash-ref used name #f)
+                        (used-trans!)
+                        (hash-set! used name used-trans!)))]
+              [(pure? b ready inlines #hasheq()) (void)]
+              [else (used! b)])])])))))
 
 (define (gc-definitions used phase-merged)
   ;; Anything not marked as used at this point can be dropped
@@ -201,24 +206,29 @@
     (define pruned-body
       ;; Drop unused definitions
       (for/list ([b (in-list body)]
-                 #:when (match b
-                          [`(define-values ,ids ,rhs)
-                           (maybe-add-inline! ids rhs inlines)
-                           (for/or ([id (in-list ids)])
-                             (hash-set! ready id #t))
-                           (define keep?
-                             (for/or ([id (in-list ids)])
-                               (eq? 'used (hash-ref used id #f))))
-                            (when keep?
-                              (for ([id (in-list ids)])
-                                (hash-set! new-defined-names id #t)))
-                            keep?]
-                          [_
-                           (cond
-                             [(transformer-definition-name b)
-                              => (lambda (name)
-                                   (eq? 'used (hash-ref used name #f)))]
-                             [else (not (pure? b ready inlines used))])]))
+                 #:when (let loop ([b b])
+                          (cond
+                            [(faslable-correlated? b)
+                             (loop (faslable-correlated-e b))]
+                            [else
+                             (match b
+                               [`(define-values ,ids ,rhs)
+                                (maybe-add-inline! ids rhs inlines)
+                                (for/or ([id (in-list ids)])
+                                  (hash-set! ready id #t))
+                                (define keep?
+                                  (for/or ([id (in-list ids)])
+                                    (eq? 'used (hash-ref used id #f))))
+                                (when keep?
+                                  (for ([id (in-list ids)])
+                                    (hash-set! new-defined-names id #t)))
+                                keep?]
+                               [_
+                                (cond
+                                  [(transformer-definition-name b)
+                                   => (lambda (name)
+                                        (eq? 'used (hash-ref used name #f)))]
+                                  [else (not (pure? b ready inlines used))])])])))
         b))
 
     ;; Drop assignments to unused definitions and perform inlines

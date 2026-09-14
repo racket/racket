@@ -3,16 +3,17 @@
 
 ;; Mutable hash tables need a lock
 ;; and an iteration vector
-(define-record locked-iterable-hash (lock
-                                     cells    ; vector of cells for iteration
-                                     retry?)) ; is `cells` maybe incomplete?
+(define-racket-record-type locked-iterable-hash
+  [fields (mutable lock)
+          (mutable cells)      ; vector of cells for iteration
+          (mutable retry?)])   ; is `cells` maybe incomplete?
 
 ;; To support iteration and locking, we wrap Chez's mutable hash
 ;; tables in a `mutable-hash` record
-(define-record mutable-hash locked-iterable-hash
-  (ht)) ; Chez Scheme hashtable
-(define-record eq-mutable-hash mutable-hash
-  ())
+(define-racket-record-type mutable-hash locked-iterable-hash
+  [fields (immutable ht)]) ; Chez Scheme hashtable
+(define-racket-record-type eq-mutable-hash mutable-hash
+  [fields])
 
 (define (create-mutable-hash ht lock) (make-mutable-hash lock #f #t ht))
 (define (create-eq-mutable-hash ht) (make-eq-mutable-hash (make-nonscheduler-lock) #f #t ht))
@@ -1049,13 +1050,13 @@
 ;; ----------------------------------------
 
 (define (set-hash-hash!)
-  (struct-set-equal+hash! (record-type-descriptor mutable-hash)
+  (struct-set-equal+hash! rtd:mutable-hash
                           hash=?
                           hash-hash-code)
-  (struct-set-equal+hash! (record-type-descriptor hash-impersonator)
+  (struct-set-equal+hash! rtd:hash-impersonator
                           #f
                           hash-hash-code)
-  (struct-set-equal+hash! (record-type-descriptor hash-chaperone)
+  (struct-set-equal+hash! rtd:hash-chaperone
                           #f
                           hash-hash-code))
 
@@ -1065,8 +1066,10 @@
 ;; `impersonator-of?` and `chaperone-of?`:
 (define-record hash-procs (ref set remove key clear equal-key))
 
-(define-record hash-impersonator impersonator (procs))
-(define-record hash-chaperone chaperone (procs))
+(define-racket-record-type hash-impersonator impersonator
+  [fields (immutable procs)])
+(define-racket-record-type hash-chaperone chaperone
+  [fields (immutable procs)])
 
 (define/who (impersonate-hash ht ref set remove key . args)
   (check who

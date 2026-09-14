@@ -49,7 +49,7 @@
        (cons "I386"
              (or-windows "i3le.c"))]
       [(or (string=? arch "arm32")
-           (string=? arch "arm7"))
+           (string=? arch "armv7"))
        (cons "ARMV6"
              "clearcache.c")]
       [(string=? arch "arm64")

@@ -4711,7 +4711,7 @@
              (#2%display 1))))
 )
 
-(unless (memq (machine-type) '(arm32le tarm32le arm64le tarm64le arm64osx tarm64osx arm7le tarm7le ; timestamp counter tends to be priviledged on Arm
+(unless (memq (machine-type) '(arm32le tarm32le arm64le tarm64le arm64osx tarm64osx armv7le tarmv7le ; timestamp counter tends to be priviledged on Arm
                                        arm64ios tarm64ios arm64nt tarm64nt
                                        pb pb32l pb32b pb64l pb64b tpb tpb32l tpb32b tpb64l tpb64b)) ; doesn't increment for pb
   (mat $read-time-stamp-counter

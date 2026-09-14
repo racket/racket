@@ -2562,12 +2562,15 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
         int kind;
         kind = (((Scheme_Primitive_Proc *)(obj))->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK);
 	if ((kind == SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_GETTER)
+            || (kind == SCHEME_PRIM_STRUCT_METATYPE_INDEXLESS_GETTER)
             || (kind == SCHEME_PRIM_STRUCT_TYPE_CONSTR)
             || (kind == SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_SETTER)
             || (kind == SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER)
             || (kind == SCHEME_PRIM_STRUCT_TYPE_BROKEN_INDEXED_SETTER)
             || (kind == SCHEME_PRIM_STRUCT_TYPE_INDEXED_GETTER)
-            || (kind == SCHEME_PRIM_STRUCT_TYPE_PRED)) {
+            || (kind == SCHEME_PRIM_STRUCT_METATYPE_INDEXED_GETTER)
+            || (kind == SCHEME_PRIM_STRUCT_TYPE_PRED)
+            || (kind == SCHEME_PRIM_STRUCT_METATYPE_PRED)) {
 	  print_named(obj, "struct-procedure", 
 		      ((Scheme_Closed_Primitive_Proc *)obj)->name, 
 		      -1, pp);

@@ -924,6 +924,23 @@
   (test (char->integer #\h) peek-byte r))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that a thread blocked in a commit can give up a port
+;; so that another thread can make progress
+
+(for ([thread (in-list thread-procs)])
+  (define-values (in out) (make-pipe))
+  (write-bytes #"abc" out)
+  (define a (thread (lambda ()
+                      (peek-byte in)
+                      (port-commit-peeked 1 (port-progress-evt in) (make-semaphore) in))))
+  (sync (system-idle-evt))
+  (define ch (make-channel))
+  (thread (lambda () (channel-put ch (peek-byte in))))
+  (test (char->integer #\a) sync ch)
+  (test (char->integer #\a) read-byte in)
+  (thread-wait a))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  Check that breaks are enabled properly:
 
 (let ([try

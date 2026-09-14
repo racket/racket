@@ -642,6 +642,23 @@
   (test '(10 CHANGED) (list (treelist-ref tl 10)
                             (mutable-treelist-ref mtl 10))))
 
+;; dropping leaves interior nodes carrying a size vector, which copying and
+;; snapshotting have to cope with
+
+(let ()
+  (define mtl (list->mutable-treelist (range 200)))
+  (mutable-treelist-drop! mtl 12)
+  (test (range 12 200) mutable-treelist->list (mutable-treelist-copy mtl))
+  (test (list->treelist (range 12 200)) mutable-treelist-snapshot mtl))
+
+(let ()
+  (define mtl (list->mutable-treelist (range 200)))
+  (mutable-treelist-drop! mtl 12)
+  (define copy (mutable-treelist-copy mtl))
+  (mutable-treelist-set! copy 0 'CHANGED)
+  (test '(12 CHANGED) (list (mutable-treelist-ref mtl 0)
+                            (mutable-treelist-ref copy 0))))
+
 ;; ----------------------------------------
 
 (report-errs)

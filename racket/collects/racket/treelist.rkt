@@ -1705,8 +1705,11 @@ minimum required storage. |#
                           (cond
                             [(fx= height 0) (vector*-copy n)]
                             [else
-                             (for/vector #:length (vector-length n) ([e (in-vector n)])
-                                         (copy-node e (fx- height 1)))]))])]))
+                             (define children (node-children n))
+                             (Node (for/vector #:length (vector*-length children)
+                                               ([e (in-vector children)])
+                                     (copy-node e (fx- height 1)))
+                                   (node-sizes n))]))])]))
 
 (define (treelist-set! tl index el)
   (cond

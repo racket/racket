@@ -13,11 +13,14 @@
 ;; can be updated atomically in the case of `ptr-set!`. A `_gcpointer`
 ;; corresponds to a cpointer where the fptr answers #t for
 ;; `ftype-scheme-object-pointer?`.
-(define-record-type (cpointer make-cpointer authentic-cpointer?)
-  (fields (mutable fptr) (mutable tags)))
-(define-record-type cpointer+offset
-  (parent cpointer)
-  (fields base-fptr))
+(define-racket-record-type cpointer
+  [fields (mutable fptr) (mutable tags)]
+  [nongenerative]
+  [sealed #f]
+  [constructor make-cpointer]
+  [predicate authentic-cpointer?])
+(define-racket-record-type cpointer+offset cpointer
+  [fields (immutable base-fptr)])
 
 (define-values (prop:cpointer has-cpointer-property? cpointer-property-ref)
   (make-struct-type-property 'cpointer
@@ -101,7 +104,7 @@
 
 (define/who (set-cpointer-tag! p t)
   (if (authentic-cpointer? p)
-      (cpointer-tags-set! p t)
+      (set-cpointer-tags! p t)
       (if (cpointer? p)
           (let ([q (extract-authentic-cpointer p)])
             (if q
@@ -162,7 +165,7 @@
     (raise-argument-error who "(and/c cpointer? ptr-offset?)" p))
   (unless (exact-integer? n)
     (raise-argument-error who "exact-integer?" n))
-  (cpointer-fptr-set! p (let ([m (cpointer+offset-base-fptr p)])
+  (set-cpointer-fptr! p (let ([m (cpointer+offset-base-fptr p)])
                           (cond
                             [(ftype-scheme-object-pointer? m)
                              (make-ftype-scheme-object-pointer (ftype-scheme-object-pointer-object m)
@@ -227,13 +230,13 @@
       (raise-argument-error 'ptr-add! "exact-integer?" n))
     (unless (ctype? type)
       (raise-argument-error 'ptr-add! "ctype?" type))
-    (cpointer-fptr-set! p (fptr-add (cpointer-fptr p) (* n (ctype-sizeof type))))]
+    (set-cpointer-fptr! p (fptr-add (cpointer-fptr p) (* n (ctype-sizeof type))))]
    [(p n)
     (unless (cpointer+offset? p)
       (raise-argument-error 'ptr-add! "(and/c cpointer? offset-ptr?)" p))
     (unless (exact-integer? n)
       (raise-argument-error 'ptr-add! "exact-integer?" n))
-    (cpointer-fptr-set! p (fptr-add (cpointer-fptr p) n))]))
+    (set-cpointer-fptr! p (fptr-add (cpointer-fptr p) n))]))
 
 ;; ----------------------------------------
 
@@ -872,9 +875,13 @@
   (check who ffi-lib? lib)
   (ffi-unload-lib (ffi-lib-handle lib))) 
 
-(define-record-type (cpointer/ffi-obj make-ffi-obj ffi-obj?)
-  (parent cpointer)
-  (fields lib name))
+(define-racket-record-type cpointer/ffi-obj cpointer
+  [fields (immutable lib)
+          (immutable name)]
+  [nongenerative]
+  [sealed #t]
+  [constructor make-ffi-obj]
+  [predicate ffi-obj?])
 
 (define (ffi-obj* who name lib wrap)
   (check who bytes? name)
@@ -1324,9 +1331,8 @@
   (when (ftype-scheme-object-pointer? p)
     (unlock-object (ftype-scheme-object-pointer-object p))))
 
-(define-record-type (cpointer/cell make-cpointer/cell cpointer/cell?)
-  (parent cpointer)
-  (fields))
+(define-racket-record-type cpointer/cell cpointer
+  [fields])
 
 (define immobile-cells (make-eq-hashtable))
 
@@ -1970,9 +1976,12 @@
 
 ;; ----------------------------------------
 
-(define-record-type (callback create-callback ffi-callback?)
-  (parent cpointer)
-  (fields code))
+(define-racket-record-type callback cpointer
+  [fields (immutable code)]
+  [nongenerative]
+  [sealed #t]
+  [constructor create-callback]
+  [predicate ffi-callback?])
 
 (define/who ffi-callback
   (case-lambda
@@ -2520,7 +2529,7 @@
 ;; ----------------------------------------
 
 (define (set-cpointer-hash!)
-  (struct-set-equal+hash! (record-type-descriptor cpointer)
+  (struct-set-equal+hash! rtd:cpointer
                           (lambda (a b eql?)
                             (ptr-equal? a b))
                           (lambda (a hc)
@@ -2529,8 +2538,8 @@
                                   (+ (eq-hash-code (ftype-scheme-object-pointer-object m))
                                      (ftype-scheme-object-pointer-offset m))
                                   (ftype-pointer-address m)))))
-  (inherit-equal+hash! (record-type-descriptor cpointer+offset)
-                       (record-type-descriptor cpointer)))
+  (inherit-equal+hash! rtd:cpointer+offset
+                       rtd:cpointer))
 
 ;; ----------------------------------------
 

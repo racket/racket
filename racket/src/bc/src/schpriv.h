@@ -1165,6 +1165,8 @@ typedef struct Scheme_Struct_Type {
 
   Scheme_Object *guard;
 
+  struct Scheme_Object *metaobj;
+
 #if defined(MZ_GC_BACKTRACE) && defined(MZ_PRECISE_GC)
   intptr_t current_instance_count;
   intptr_t current_instance_sizes;
@@ -1183,6 +1185,8 @@ typedef struct Scheme_Struct_Type {
 #define STRUCT_TYPE_FLAG_SYSTEM_OPAQUE       0x2
 #define STRUCT_TYPE_FLAG_AUTHENTIC           0x4
 #define STRUCT_TYPE_FLAG_SEALED              0x8
+#define STRUCT_TYPE_FLAG_META               0x10
+#define STRUCT_TYPE_FLAG_MAKES_AUTHENTIC    0x20
 
 typedef struct Scheme_Structure
 {

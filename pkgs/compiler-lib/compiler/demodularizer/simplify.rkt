@@ -200,27 +200,32 @@
 
     (define assigners (make-hasheq))
     (for ([b (in-list body)])
-      (match b
-        [`(define-values (,id) ,rhs)
-         (let ([rhs (unwrap rhs)])
-           (match rhs
-             [`(lambda (,arg ...)
-                 (begin
-                   (set! ,lhs ,rhs)
-                   ...))
-              (define mapping
-                (for/fold ([mapping #hasheq()]) ([lhs (in-list lhs)]
-                                                 [rhs (in-list rhs)])
-                  (and mapping
-                       (memq rhs arg)
-                       (hash-ref defined-names lhs #f)
-                       (hash-set mapping rhs lhs))))
-              (when (and mapping
-                         (= (hash-count mapping) (length rhs)))
-                (hash-set! assigners id (assigner (for/list ([arg (in-list arg)])
-                                                    (hash-ref mapping arg #f)))))]
-             [_ (void)]))]
-        [_ (void)]))
+      (let loop ([b b])
+        (cond
+          [(faslable-correlated? b)
+           (loop (faslable-correlated-e b))]
+          [else
+           (match b
+             [`(define-values (,id) ,rhs)
+              (let ([rhs (unwrap rhs)])
+                (match rhs
+                  [`(lambda (,arg ...)
+                      (begin
+                        (set! ,lhs ,rhs)
+                        ...))
+                   (define mapping
+                     (for/fold ([mapping #hasheq()]) ([lhs (in-list lhs)]
+                                                      [rhs (in-list rhs)])
+                       (and mapping
+                            (memq rhs arg)
+                            (hash-ref defined-names lhs #f)
+                            (hash-set mapping rhs lhs))))
+                   (when (and mapping
+                              (= (hash-count mapping) (length rhs)))
+                     (hash-set! assigners id (assigner (for/list ([arg (in-list arg)])
+                                                         (hash-ref mapping arg #f)))))]
+                  [_ (void)]))]
+             [_ (void)])])))
 
     ;; Update linklet body based on gathered information
     ;; -------------------------------------------------

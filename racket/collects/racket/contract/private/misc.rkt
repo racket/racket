@@ -144,18 +144,18 @@
         [1/10 m]
         [1/10 n]
         [1/10 (if (<= n 0 1 m)
-                  (random)
+                  (rand)
                   (rand-choice [1/2 n] [else m]))]
         [else
          (cond
            [(or (= n -inf.0) (= m +inf.0))
-            (define c (random 4294967087))
+            (define c (rand 4294967087))
             (cond
               [(and (= n -inf.0) (= m +inf.0)) c]
               [(= m +inf.0) (+ n c)]
               [(= n -inf.0) (- m c)])]
            [else
-            (+ n (* (random) (- m n)))])]))]))
+            (+ n (* (rand) (- m n)))])]))]))
 
 (define-struct between/c-s (low high)
   #:property prop:custom-write custom-write-property-proc
@@ -238,10 +238,10 @@
           (λ ()
             (rand-choice
              [1/10 -inf.0]
-             [2/10 (random)]
-             [2/10 (- (random))]
-             [2/10 (random 4294967087)]
-             [2/10 (- (random 4294967087))]
+             [2/10 (rand)]
+             [2/10 (- (rand))]
+             [2/10 (rand 4294967087)]
+             [2/10 (- (rand 4294967087))]
              [else 0])))]
        [(and (= x -inf.0) (equal? name '</c))
         (λ (fuel) #f)]
@@ -252,10 +252,10 @@
           (λ ()
             (rand-choice
              [1/10 +inf.0]
-             [2/10 (random)]
-             [2/10 (- (random))]
-             [2/10 (random 4294967087)]
-             [2/10 (- (random 4294967087))]
+             [2/10 (rand)]
+             [2/10 (- (rand))]
+             [2/10 (rand 4294967087)]
+             [2/10 (- (rand 4294967087))]
              [else 0])))]
        [else
         (λ (fuel)
@@ -263,8 +263,8 @@
             (rand-choice
              [1/10 (-/+ +inf.0)]
              [1/10 (-/+ x 0.01)]
-             [4/10 (-/+ x (random))]
-             [else (-/+ x (random 4294967087))])))]))
+             [4/10 (-/+ x (rand))]
+             [else (-/+ x (rand 4294967087))])))]))
    #:stronger </>-ctc-stronger
    #:equivalent </>-ctc-equivalent))
 
@@ -702,13 +702,13 @@
     [(zero? (hash-count env-hash))
      (rand-choice
       [1/3 (any/c-structured-value)]
-      [1/3 (any/c-procedure env-hash fuel)]
+      [1/3 (any/c-procedure env fuel)]
       [else (any/c-from-predicate-generator env-hash fuel)])]
     [else
      (rand-choice
       [1/4 (oneof (hash-ref env-hash (oneof (hash-keys env-hash))))]
       [1/4 (any/c-structured-value)]
-      [1/4 (any/c-procedure env-hash fuel)]
+      [1/4 (any/c-procedure env fuel)]
       [else (any/c-from-predicate-generator env-hash fuel)])]))
 
 (define (any/c-structured-value)
@@ -718,11 +718,11 @@
       [else
        (rand-choice
         [1/10 (cons (loop (- depth 1)) (loop (- depth 1)))]
-        [1/10 (make-vector (random 10) (λ (_) (loop (- depth 1))))]
-        [1/10 (make-hash (for/list ([i (in-range (random 10))])
+        [1/10 (make-vector (rand 10) (λ (_) (loop (- depth 1))))]
+        [1/10 (make-hash (for/list ([i (in-range (rand 10))])
                            (cons (loop (- depth 1))
                                  (loop (- depth 1)))))]
-        [1/10 (make-immutable-hash (for/list ([i (in-range (random 10))])
+        [1/10 (make-immutable-hash (for/list ([i (in-range (rand 10))])
                                      (cons (loop (- depth 1))
                                            (loop (- depth 1)))))]
         [1/10 (box (loop (- depth 1)))]
@@ -741,7 +741,9 @@
     (λ args
       (apply
        values
-       (for/list ([i (in-range (rand-nat))])
+       (for/list ([i (in-range (let ([ans (rand-nat)])
+                                 (printf "~s values\n" ans)
+                                 ans))])
          (random-any/c env fuel))))
     (rand-nat))
    'random-any/c-generated-procedure))

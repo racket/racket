@@ -203,7 +203,7 @@
    ]
   [(i3le ti3le a6le ta6le arm32le tarm32le arm64le tarm64le
          ppc32le tppc32le rv64le trv64le la64le tla64le
-         arm7le tarm7le)
+         armv7le tarmv7le)
    (mat load-shared-object
       (file-exists? foreign1.so)
       (begin (load-shared-object foreign1.so) #t)
@@ -3381,7 +3381,7 @@
         [(i3ob ti3ob a6ob ta6ob a6s2 ta6s2 i3s2 ti3s2 i3qnx ti3qnx i3nb ti3nb a6nb ta6nb)
          '(load-shared-object "libc.so")]
         [(i3le ti3le a6le ta6le arm32le tarm32le arm64le tarm64le ppc32le tppc32le
-               rv64le trv64le la64le tla64le arm7le tarm7le)
+               rv64le trv64le la64le tla64le armv7le tarmv7le)
          '(load-shared-object "libc.so.6")]
 	[(a6hk ta6hk)
 	 '(load-shared-object "libroot.so")]

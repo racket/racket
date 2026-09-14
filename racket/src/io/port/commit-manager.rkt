@@ -140,11 +140,12 @@
 ;;  out of atomic mode
 (define (commit-manager-pause mgr)
   (define lock (make-semaphore))
-  (define suspend-evt (thread-suspend-evt (current-thread)))
+  (define suspend-evt #f)
   (dynamic-wind
    void
    (lambda ()
      (non-atomically
+      (set! suspend-evt (thread-suspend-evt (current-thread)))
       ;; resume the manager thread, just in case:
       (thread-resume (commit-manager-thread mgr) (current-thread))
       ;; ask the manager to pause; syncing on the channel means that
@@ -162,7 +163,7 @@
      (semaphore-post lock)))
   ;; If this thread was suspended during `pause-waiting-commit`, we
   ;; may have let the committing thread go, so try again
-  (when (sync/timeout 0 suspend-evt)
+  (when (and suspend-evt (sync/timeout 0 suspend-evt))
     (commit-manager-pause mgr)))
 
 ;; in atomic mode; can leave it and return

@@ -5,7 +5,8 @@
          "import.rkt"
          "export.rkt"
          "wrap-path.rkt"
-         "gensym.rkt")
+         "gensym.rkt"
+         "mutated-state.rkt")
 
 (provide init-inline-fuel
          can-inline?
@@ -100,6 +101,10 @@
                      (known-field-accessor-type-id k)]
                     [(known-field-mutator? k)
                      (known-field-mutator-type-id k)]
+                    [(known-struct-type-maker? k)
+                     (known-struct-type-maker-base-rtd k)]
+                    [(known-struct-metatype-ref? k)
+                     (known-struct-metatype-ref-type-id k)]
                     [else #f]))
   (define env
     ;; A `needed->env` setup can fail if a needed import cannot be
@@ -121,6 +126,14 @@
                     im)]
       [(known-field-mutator/need-imports? k)
        (needed->env (known-field-mutator/need-imports-needed k)
+                    add-import!
+                    im)]
+      [(known-struct-type-maker/need-imports? k)
+       (needed->env (known-struct-type-maker/need-imports-needed k)
+                    add-import!
+                    im)]
+      [(known-struct-metatype-ref/need-imports? k)
+       (needed->env (known-struct-metatype-ref/need-imports-needed k)
                     add-import!
                     im)]
       [else '()]))
@@ -236,12 +249,12 @@
 
 ;; ----------------------------------------
 
-(define (known-inline->export-known k prim-knowns imports exports serializable?)
+(define (known-inline->export-known k prim-knowns imports exports added-exports mutated serializable?)
   (cond
     [(known-procedure/can-inline? k)
      (define expr (known-procedure/can-inline-expr k))
      (define needed
-       (needed-imports expr prim-knowns imports exports '() '#hasheq()))
+       (needed-imports expr prim-knowns imports exports added-exports mutated '() '#hasheq()))
      (cond
        [(not needed) (known-procedure (known-procedure-arity-mask k))]
        [(hash-empty? needed) (cond
@@ -255,7 +268,8 @@
          (if serializable? (wrap-truncate-paths expr) expr)
          (needed->list needed))])]
     [(known-struct-constructor? k)
-     (define needed (needed-imports (known-struct-constructor-type-id k) prim-knowns imports exports '() '#hasheq()))
+     (define needed
+       (needed-imports (known-struct-constructor-type-id k) prim-knowns imports exports added-exports mutated '() '#hasheq()))
      (cond
        [needed
         (known-struct-constructor/need-imports (known-procedure-arity-mask k)
@@ -266,7 +280,8 @@
         (known-constructor (known-procedure-arity-mask k)
                            (known-constructor-type k))])]
     [(known-struct-predicate? k)
-     (define needed (needed-imports (known-struct-predicate-type-id k) prim-knowns imports exports '() '#hasheq()))
+     (define needed
+       (needed-imports (known-struct-predicate-type-id k) prim-knowns imports exports added-exports mutated '() '#hasheq()))
      (cond
        [needed
         (known-struct-predicate/need-imports (known-procedure-arity-mask k)
@@ -279,7 +294,8 @@
         (known-predicate (known-procedure-arity-mask k)
                          (known-predicate-type k))])]
     [(known-field-accessor? k)
-     (define needed (needed-imports (known-field-accessor-type-id k) prim-knowns imports exports '() '#hasheq()))
+     (define needed
+       (needed-imports (known-field-accessor-type-id k) prim-knowns imports exports added-exports mutated '() '#hasheq()))
      (cond
        [needed
         (known-field-accessor/need-imports (known-procedure-arity-mask k)
@@ -293,7 +309,8 @@
         (known-accessor (known-procedure-arity-mask k)
                         (known-accessor-type k))])]
     [(known-field-mutator? k)
-     (define needed (needed-imports (known-field-mutator-type-id k) prim-knowns imports exports '() '#hasheq()))
+     (define needed
+       (needed-imports (known-field-mutator-type-id k) prim-knowns imports exports added-exports mutated '() '#hasheq()))
      (cond
        [needed
         (known-field-mutator/need-imports (known-procedure-arity-mask k)
@@ -305,37 +322,60 @@
        [else
         (known-mutator (known-procedure-arity-mask k)
                        (known-mutator-type k))])]
+    [(known-struct-type-maker? k)
+     (define needed
+       (needed-imports (known-struct-type-maker-base-rtd k) prim-knowns imports exports added-exports mutated '() '#hasheq()))
+     (cond
+       [needed
+        (known-struct-type-maker/need-imports (known-procedure-arity-mask k)
+                                              (known-struct-type-maker-base-rtd k)
+                                              (known-struct-type-maker-field-count k)
+                                              (known-struct-type-maker-auto-authentic? k)
+                                              (needed->list needed))]
+       [else
+        (known-procedure (known-procedure-arity-mask k))])]
+    [(known-struct-metatype-ref? k)
+     (define needed
+       (needed-imports (known-struct-metatype-ref-type-id k) prim-knowns imports exports added-exports mutated '() '#hasheq()))
+     (cond
+       [needed
+        (known-struct-metatype-ref/need-imports (known-procedure-arity-mask k)
+                                                (known-struct-metatype-ref-type-id k)
+                                                (known-struct-metatype-ref-pos k)
+                                                (needed->list needed))]
+       [else
+        (known-procedure (known-procedure-arity-mask k))])]
     [else k]))
 
-(define (needed-imports v prim-knowns imports exports env needed)
+(define (needed-imports v prim-knowns imports exports added-exports mutated env needed)
   (and
    needed
    (match v
      [`(lambda ,args . ,bodys)
-      (body-needed-imports bodys prim-knowns imports exports (add-args env args) needed)]
+      (body-needed-imports bodys prim-knowns imports exports added-exports mutated (add-args env args) needed)]
      [`(case-lambda [,argss . ,bodyss] ...)
       (for/fold ([needed needed]) ([args (in-list argss)]
                                    [bodys (in-list bodyss)])
-        (body-needed-imports bodys prim-knowns imports exports (add-args env args) needed))]
+        (body-needed-imports bodys prim-knowns imports exports added-exports mutated (add-args env args) needed))]
      [`(quote ,_) needed]
-     [`(let-values . ,_) (let-needed-imports v prim-knowns imports exports env needed)]
-     [`(letrec-values . ,_) (let-needed-imports v prim-knowns imports exports env needed)]
+     [`(let-values . ,_) (let-needed-imports v prim-knowns imports exports added-exports mutated env needed)]
+     [`(letrec-values . ,_) (let-needed-imports v prim-knowns imports exports added-exports mutated env needed)]
      [`(if ,tst ,thn ,els)
-      (needed-imports tst prim-knowns imports exports env
-                      (needed-imports thn prim-knowns imports exports env
-                                      (needed-imports els prim-knowns imports exports env
+      (needed-imports tst prim-knowns imports exports added-exports mutated env
+                      (needed-imports thn prim-knowns imports exports added-exports mutated env
+                                      (needed-imports els prim-knowns imports exports added-exports mutated env
                                                       needed)))]
      [`(with-continuation-mark ,key ,val ,body)
-      (needed-imports key prim-knowns imports exports env
-                      (needed-imports val prim-knowns imports exports env
-                                      (needed-imports body prim-knowns imports exports env
+      (needed-imports key prim-knowns imports exports added-exports mutated env
+                      (needed-imports val prim-knowns imports exports added-exports mutated env
+                                      (needed-imports body prim-knowns imports exports added-exports mutated env
                                                       needed)))]
      [`(begin ,exps ...)
-      (body-needed-imports exps prim-knowns imports exports env needed)]
+      (body-needed-imports exps prim-knowns imports exports added-exports mutated env needed)]
      [`(begin0 ,exps ...)
-      (body-needed-imports exps prim-knowns imports exports env needed)]
+      (body-needed-imports exps prim-knowns imports exports added-exports mutated env needed)]
      [`(begin-unsafe ,exps ...)
-      (body-needed-imports exps prim-knowns imports exports env needed)]
+      (body-needed-imports exps prim-knowns imports exports added-exports mutated env needed)]
      [`(set! ,id ,rhs)
       (define u (unwrap id))
       (cond
@@ -343,8 +383,8 @@
          ;; Cannot inline assignment to an exported variable
          #f]
         [else
-         (needed-imports id prim-knowns imports exports env
-                         (needed-imports rhs prim-knowns imports exports env
+         (needed-imports id prim-knowns imports exports added-exports mutated env
+                         (needed-imports rhs prim-knowns imports exports added-exports mutated env
                                          needed))])]
      [`(#%variable-reference . ,_)
       ;; Cannot inline a variable reference
@@ -352,7 +392,7 @@
      [`(#%foreign-inline ,_ ,mode)
       (and (memq (unwrap mode) '(copy copy*)) needed)]
      [`(,rator . ,_)
-      (body-needed-imports v prim-knowns imports exports env needed)]
+      (body-needed-imports v prim-knowns imports exports added-exports mutated env needed)]
      [`,_
       (let ([u-v (unwrap v)])
         (cond
@@ -369,24 +409,43 @@
               => (lambda (im)
                    (hash-set needed u-v (cons (import-ext-id im)
                                               (import-group-index (import-grp im)))))]
+             [(hash-ref added-exports u-v #f)
+              => (lambda (ex-id)
+                   (hash-set needed u-v (cons (cadr ex-id) #f)))]
+             [(simple-mutated-state? (hash-ref mutated u-v #f))
+              ;; Free variable, assuming defined but not exported => add export
+              (define int-id (deterministic-gensym u-v))
+              (define ext-id (let loop ([i 0])
+                               (define sym (if (eqv? i 0)
+                                               u-v
+                                               (string-append (symbol->string u-v) (number->string i))))
+                               (cond
+                                 [(or (hash-ref exports sym #f)
+                                      (hash-ref added-exports sym #f))
+                                  (loop (add1 i))]
+                                 [else sym])))
+              (hash-set! added-exports u-v (list int-id ext-id))
+              (hash-set! added-exports '#:added (cons (list u-v ext-id) (hash-ref added-exports '#:added null)))
+              (hash-set needed u-v (cons ext-id #f))]
              [else
-              ;; Free variable (possibly defined but not exported) => cannot inline
+              ;; Mutated variable, which we don't want to deal with as an export,
+              ;; since the linklet variable is set only at the end of the linklet
               #f])]
           [else needed]))])))
 
-(define (body-needed-imports l prim-knowns imports exports env needed)
+(define (body-needed-imports l prim-knowns imports exports added-exports mutated env needed)
   (for/fold ([needed needed]) ([e (in-wrap-list l)])
-    (needed-imports e prim-knowns imports exports env needed)))
+    (needed-imports e prim-knowns imports exports added-exports mutated env needed)))
 
-(define (let-needed-imports v prim-knowns imports exports env needed)
+(define (let-needed-imports v prim-knowns imports exports added-exports mutated env needed)
   (match v
     [`(,let-id ([,idss ,rhss] ...) ,bodys ...)
      (define new-env (for*/fold ([env env]) ([ids (in-list idss)]
                                              [id (in-list ids)])
                        (cons (unwrap id) env)))
-     (body-needed-imports bodys prim-knowns imports exports new-env
+     (body-needed-imports bodys prim-knowns imports exports added-exports mutated new-env
                           (for/fold ([needed needed]) ([rhs (in-list rhss)])
-                            (needed-imports rhs prim-knowns imports exports new-env
+                            (needed-imports rhs prim-knowns imports exports added-exports mutated new-env
                                             needed)))]))
 
 (define (add-args env args)

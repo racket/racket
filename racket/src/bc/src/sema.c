@@ -628,6 +628,14 @@ XFORM_NONGCING int scheme_try_plain_sema(Scheme_Object *o)
     return 0;
 }
 
+static int is_main_thread_or_nestee(Scheme_Thread *p)
+{
+  while (p->nester) {
+    p = p->nester;
+  }
+  return SAME_OBJ(p, scheme_main_thread);
+}
+
 int scheme_wait_semas_chs(int n, Scheme_Object **o, int just_try, Syncing *syncing)
      /* When syncing is supplied, o can contain Scheme_Channel_Syncer
 	and never-evt values, and just_try must be 0. */
@@ -758,7 +766,7 @@ int scheme_wait_semas_chs(int n, Scheme_Object **o, int just_try, Syncing *synci
 	  }
 	}
 
-	if (!scheme_current_thread->next) {
+	if (is_main_thread_or_nestee(scheme_current_thread)) {
 	  void **a;
 
 	  /* We're not allowed to suspend the main thread. Delay

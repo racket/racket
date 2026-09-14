@@ -200,9 +200,9 @@
   (do-equal? a b 'equal-always? (lambda (x y) (|#%app| eql? x y))))
 
 (define (struct-common-equal+hash a b)
-  (let ([av (struct-property-ref prop:equal+hash (#%$record-type-descriptor a) #f)])
+  (let ([av (struct-equal+hash-property-ref (#%$record-type-descriptor a) #f)])
     (and av
-         (let ([bv (struct-property-ref prop:equal+hash (#%$record-type-descriptor b) #f)])
+         (let ([bv (struct-equal+hash-property-ref (#%$record-type-descriptor b) #f)])
            (and (eq? av bv)
                 av)))))
 

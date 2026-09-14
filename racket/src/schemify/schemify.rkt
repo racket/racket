@@ -139,22 +139,53 @@
                          serializable?-box datum-intern? allow-set!-undefined? add-import! target
                          unsafe-mode? enforce-constant? allow-inline? no-prompt? #t
                          compiler-query))
+       ;; Convert internal to external identifiers for known-value info;
+       ;; this step might add exports, so we need an outer loop to recur
+       ; to handle additions
+       (define added-exports (make-hasheq))
+       (define external-knowns
+         (let loop ([knowns (hasheq)] [ex-ids ex-ids])
+           (define external-knowns
+             (for/fold ([knowns knowns]) ([ex-id (in-list ex-ids)])
+               (define id (ex-int-id ex-id))
+               (define v (known-inline->export-known (hash-ref defn-info id #f)
+                                                     prim-knowns imports exports added-exports mutated
+                                                     serializable?-box))
+               (cond
+                 [(not (set!ed-mutated-state? (hash-ref mutated id #f)))
+                  (define ext-id (ex-ext-id ex-id))
+                  (hash-set knowns ext-id (or v a-known-constant))]
+                 [else knowns])))
+           (define added-ids (hash-ref added-exports '#:added null))
+           (cond
+             [(null? added-ids) external-knowns]
+             [else
+              (hash-remove! added-exports '#:added)
+              (loop external-knowns added-ids)])))
+       (define added-export-ids (hash-values added-exports))
+       (define added-export-body
+         (for/list ([(id ex-id) (in-hash added-exports)])
+           `(variable-set!/define ,(ex-int-id ex-id) ,id ',(variable-constance id defn-info mutated))))
        (define all-grps (append grps (reverse new-grps)))
+       (define all-ex-ids (append added-export-ids ex-ids))
        (values
         ;; Build `lambda` with schemified body:
         `(lambda (instance-variable-reference
                   ,@(for*/list ([grp (in-list all-grps)]
                                 [im (in-list (import-group-imports grp))])
                       (import-id im))
+                  ,@(for/list ([ex-id (in-list added-export-ids)])
+                      (ex-int-id ex-id))
                   ,@(for/list ([ex-id (in-list ex-ids)])
                       (export-id (hash-ref exports (ex-int-id ex-id)))))
-           ,@new-body)
+           ,@new-body
+           ,@added-export-body)
         ;; Imports (external names), possibly extended via inlining:
         (for/list ([grp (in-list all-grps)])
           (for/list ([im (in-list (import-group-imports grp))])
             (import-ext-id im)))
         ;; Exports (external names, but paired with source name if it's different):
-        (for/list ([ex-id (in-list ex-ids)])
+        (for/list ([ex-id (in-list all-ex-ids)])
           (define sym (ex-ext-id ex-id))
           (define int-sym (ex-int-id ex-id))
           (define src-sym (hash-ref src-syms int-sym sym)) ; external name unless 'source-name
@@ -183,17 +214,8 @@
                           [else
                            ;; Otherwise, accept any value:
                            #t]))))))
-        ;; Convert internal to external identifiers for known-value info
-        (for/fold ([knowns (hasheq)]) ([ex-id (in-list ex-ids)])
-          (define id (ex-int-id ex-id))
-          (define v (known-inline->export-known (hash-ref defn-info id #f)
-                                                prim-knowns imports exports
-                                                serializable?-box))
-          (cond
-            [(not (set!ed-mutated-state? (hash-ref mutated id #f)))
-             (define ext-id (ex-ext-id ex-id))
-             (hash-set knowns ext-id (or v a-known-constant))]
-            [else knowns])))])))
+        ;; Known-value info for use by importing linklets
+        external-knowns)])))
 
 ;; ----------------------------------------
 
@@ -458,7 +480,7 @@
   (define ex-id (id-to-variable int-id exports extra-variables))
   `(variable-set!/define ,ex-id ,id ',(variable-constance int-id knowns mutated)))
 
-;; returns a list equilanet to a sequence of `variable-set!/define` forms
+;; returns a list equivalent to a sequence of `variable-set!/define` forms
 (define (make-set-consistent-variables ids exports knowns mutated extra-variables)
   (cond
     [(null? ids) null]
@@ -517,7 +539,7 @@
                                `[,formals ,@(schemify-body (maybe-unsafe v body) 'tail)]))
              explicit-unnamed?)]
            [`(define-values (,struct:s ,make-s ,s? ,acc/muts ...)
-               (let-values (((,struct: ,make ,?1 ,-ref ,-set!) ,mk))
+               (let-values (((,struct: ,make ,?1 ,-ref . ,_) ,mk))
                  (values ,struct:2
                          ,make2
                          ,?2
@@ -526,6 +548,7 @@
             (define new-seq
               (struct-convert v prim-knowns knowns imports exports mutated
                               (lambda (v knowns) (schemify/knowns knowns inline-fuel 'fresh unsafe-mode? v))
+                              (lambda (k im) (inline-type-id k im add-import! mutated imports))
                               target no-prompt? #t))
             (or new-seq
                 (match v
@@ -609,6 +632,7 @@
             (or (and (not (or (aim? target 'interp) (aim? target 'cify)))
                      (struct-convert-local v prim-knowns knowns imports mutated simples
                                            (lambda (v knowns) (schemify/knowns knowns inline-fuel 'fresh unsafe-mode? v))
+                                           (lambda (k im) (inline-type-id k im add-import! mutated imports))
                                            #:unsafe-mode? unsafe-mode?
                                            #:target target))
                 (unnest-let
@@ -651,6 +675,7 @@
             (cond
               [(struct-convert-local v #:letrec? #t prim-knowns knowns imports mutated simples
                                      (lambda (v knowns) (schemify/knowns knowns inline-fuel 'fresh unsafe-mode? v))
+                                     (lambda (k im) (inline-type-id k im add-import! mutated imports))
                                      #:unsafe-mode? unsafe-mode?
                                      #:target target)
                => (lambda (form) form)]
@@ -985,6 +1010,27 @@
                            (wrap-tmp tmp-rhs (cadr args)
                                      mut))]
                 [else #f]))
+            (define (inline-metatype-ref k s-rator im args)
+              (define type-id (and (pair? args)
+                                   (pair? (cdr args))
+                                   (null? (cddr args))
+                                   (inline-type-id k im add-import! mutated imports)))
+              (cond
+                [type-id
+                 (define pos (known-struct-metatype-ref-pos k))
+                 (define tmp (maybe-tmp (car args) 'v))
+                 (define tmp-default (maybe-tmp (cadr args) 'default))
+                 (define ref
+                   `(let ([c (unsafe-object-type ,tmp)])
+                      (if (unsafe-struct? c ,(schemify type-id 'fresh))
+                          ,(if pos
+                               `(unsafe-struct*-ref c ,pos)
+                               `c)
+                          (,s-rator ,tmp ,tmp-default))))
+                 (wrap-tmp tmp (car args)
+                           (wrap-tmp tmp-default (cadr args)
+                                     ref))]
+                [else #f]))
             (or (left-left-lambda-convert rator inline-fuel)
                 (and (positive? inline-fuel)
                      (inline-rator))
@@ -1027,6 +1073,12 @@
                                 (aim? target 'system)))
                           (known-field-mutator? k)
                           (inline-field-mutate k s-rator im args))
+                     => (lambda (e) e)]
+                    [(and (not (or
+                                (aim? target 'cify)
+                                (aim? target 'system)))
+                          (known-struct-metatype-ref? k)
+                          (inline-metatype-ref k s-rator im args))
                      => (lambda (e) e)]
                     [(and unsafe-mode?
                           (known-procedure/has-unsafe? k))

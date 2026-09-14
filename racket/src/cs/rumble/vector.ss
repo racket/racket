@@ -46,8 +46,12 @@
 
 ;; ----------------------------------------
 
-(define-record vector-chaperone chaperone (ref set))
-(define-record vector-impersonator impersonator (ref set))
+(define-racket-record-type vector-chaperone chaperone
+  [fields (immutable ref)
+          (immutable set)])
+(define-racket-record-type vector-impersonator impersonator
+  [fields (immutable ref)
+          (immutable set)])
 
 (define/who (chaperone-vector vec ref set . props)
   (check who vector? vec)
@@ -77,11 +81,11 @@
         (make-props-impersonator val vec props))))
 
 (define (set-vector-impersonator-hash!)
-  (struct-set-equal+hash! (record-type-descriptor vector-chaperone)
+  (struct-set-equal+hash! rtd:vector-chaperone
                           #f
                           (lambda (c hash-code)
                             (hash-code (vector-copy c))))
-  (struct-set-equal+hash! (record-type-descriptor vector-impersonator)
+  (struct-set-equal+hash! rtd:vector-impersonator
                           #f
                           (lambda (i hash-code)
                             (hash-code (vector-copy i)))))
@@ -95,8 +99,10 @@
 
 ;; ----------------------------------------
 
-(define-record vector*-chaperone vector-chaperone ())
-(define-record vector*-impersonator vector-impersonator ())
+(define-racket-record-type vector*-chaperone vector-chaperone
+  [fields])
+(define-racket-record-type vector*-impersonator vector-impersonator
+  [fields])
 
 (define/who (chaperone-vector* vec ref set . props)
   (check who vector? vec)
@@ -127,8 +133,10 @@
 
 ;; ----------------------------------------
 
-(define-record vector-unsafe-chaperone chaperone (vec))
-(define-record vector-unsafe-impersonator impersonator (vec))
+(define-racket-record-type vector-unsafe-chaperone chaperone
+  [fields (immutable vec)])
+(define-racket-record-type vector-unsafe-impersonator impersonator
+  [fields (immutable vec)])
 
 (define/who (unsafe-impersonate-vector vec alt-vec . props)
   (check who mutable-vector? :contract "(and/c vector? (not/c immutable?))" vec)

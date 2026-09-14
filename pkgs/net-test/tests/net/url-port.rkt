@@ -28,7 +28,17 @@
              (run-server 0
                          (lambda (ip op)
                            (let-values ([(ip op) (wrap-ports ip op)])
-                             (regexp-match #rx"(\r\n|^)\r\n" ip)
+                             ;; Read the request header block:
+                             (define header (regexp-match #px"(?s:.*?\r\n)\r\n" ip))
+                             ;; Drain the request body. On macOS (BSD sockets), closing a socket
+                             ;; that still has unconsumed received data makes the kernel send a
+                             ;; RST instead of a graceful FIN, which can discard the buffered
+                             ;; response and lead to "Connection reset by peer" in the client.
+                             (let ([m (and header
+                                           (regexp-match #px#"(?i:content-length):[ \t]*([0-9]+)"
+                                                         (car header)))])
+                               (when m
+                                 (read-bytes (string->number (bytes->string/utf-8 (cadr m))) ip)))
                              (display (resolve-response response) op)
                              (close-output-port op)
                              (close-input-port ip)))

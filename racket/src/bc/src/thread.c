@@ -2566,6 +2566,17 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
 #endif
     process->stack_start = stack_base;
 
+#ifdef MZ_USE_PSEUDORANDOM_FUEL
+    {
+      /* Seed the fuel generator from PLT_FUEL_SEED, if set, so that
+         different runs can explore different thread schedules while
+         still allowing a run to be reproduced from its seed */
+      char *seed = getenv("PLT_FUEL_SEED");
+      if (seed)
+        srandom((unsigned int)strtoul(seed, NULL, 10));
+    }
+#endif
+
   } else {
     prefix = 1;
   }
@@ -5972,11 +5983,17 @@ static void suspend_thread(Scheme_Thread *p)
       scheme_thread_block(0.0);
       p->ran_some = 1;
     }
-  } else if ((running & (MZTHREAD_NEED_KILL_CLEANUP
-			 | MZTHREAD_NEED_SUSPEND_CLEANUP))
-	     && (running & MZTHREAD_SUSPENDED)) {
-    /* p probably needs to get out of semaphore-wait lines, etc. */
-    scheme_weak_resume_thread(p);
+  } else if (((running & (MZTHREAD_NEED_KILL_CLEANUP
+                          | MZTHREAD_NEED_SUSPEND_CLEANUP))
+              && (running & MZTHREAD_SUSPENDED))
+             || (running & MZTHREAD_NEED_SUSPEND_CLEANUP)) {
+    /* p probably needs to get out of semaphore-wait lines, etc.
+       In the MZTHREAD_NEED_SUSPEND_CLEANUP case, p may be runnable
+       (e.g., just woken up and not yet swapped in), and it still
+       needs to run to clean up before suspending, so leave it
+       runnable; it will suspend itself after cleaning up. */
+    if (running & MZTHREAD_SUSPENDED)
+      scheme_weak_resume_thread(p);
     p->running |= MZTHREAD_USER_SUSPENDED;
   } else {
     if (p == scheme_current_thread) {

@@ -439,6 +439,9 @@ scheme_init_unsafe_vector (Scheme_Startup_Env *env)
   p = scheme_make_immed_prim(unsafe_struct_star_type, "unsafe-struct*-type", 1, 1);
   scheme_addto_prim_instance("unsafe-struct*-type", p, env);
 
+  p = scheme_make_immed_prim(unsafe_struct_star_type, "unsafe-object-type", 1, 1);
+  scheme_addto_prim_instance("unsafe-object-type", p, env);
+
   REGISTER_SO(scheme_unsafe_string_length_proc);
   p = scheme_make_immed_prim(unsafe_string_len, "unsafe-string-length", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
@@ -1681,7 +1684,10 @@ static Scheme_Object *unsafe_struct_star_cas (int argc, Scheme_Object *argv[])
 
 static Scheme_Object *unsafe_struct_star_type (int argc, Scheme_Object *argv[])
 {
-  return (Scheme_Object *)((Scheme_Structure *)argv[0])->stype;
+  if (SCHEME_STRUCTP(argv[0]))
+    return (Scheme_Object *)((Scheme_Structure *)argv[0])->stype;
+  else
+    return scheme_false;
 }
 
 static Scheme_Object *unsafe_string_len (int argc, Scheme_Object *argv[])

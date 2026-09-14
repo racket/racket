@@ -4099,13 +4099,19 @@
    #f
    'region))
 (define struct:region
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'region
    #f
    (|#%nongenerative-uid| region)
    #f
    #f
-   '(7 . 126)))
+   '(7 . 126)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2980 (finish_2457 struct:region))
 (define region1.1
   (|#%name|
@@ -4325,13 +4331,19 @@
    #f
    'stat))
 (define struct:stat
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'stat
    #f
    (|#%nongenerative-uid| stat)
    #f
    #f
-   '(4 . 15)))
+   '(4 . 15)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2500 (finish_2114 struct:stat))
 (define stat2.1
   (|#%name|
@@ -5592,13 +5604,19 @@
    #f
    'weak-intern-table))
 (define struct:weak-intern-table
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'weak-intern-table
    #f
    (|#%nongenerative-uid| weak-intern-table)
    #f
    #f
-   '(1 . 0)))
+   '(1 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2507 (finish_2792 struct:weak-intern-table))
 (define weak-intern-table1.1
   (|#%name|
@@ -5624,13 +5642,19 @@
    #f
    'table))
 (define struct:table
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'table
    #f
    (|#%nongenerative-uid| table)
    #f
    #f
-   '(3 . 0)))
+   '(3 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2522 (finish_2969 struct:table))
 (define table2.1
   (|#%name|
@@ -5833,13 +5857,19 @@
    #f
    'resolved-module-path))
 (define struct:resolved-module-path
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'resolved-module-path
    #f
    (|#%nongenerative-uid| resolved-module-path)
    #f
    #f
-   '(1 . 0)))
+   '(1 . 0)
+   'make-struct-type
+   (finish_2266 'proc)
+   (finish_2266 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2442 (finish_2266 struct:resolved-module-path))
 (define resolved-module-path1.1
   (|#%name|
@@ -6088,13 +6118,19 @@
    #f
    'module-path-index))
 (define struct:module-path-index
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'module-path-index
    #f
    (|#%nongenerative-uid| module-path-index)
    #f
    #f
-   '(4 . 12)))
+   '(4 . 12)
+   'make-struct-type
+   (finish_2670 'proc)
+   (finish_2670 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2892 (finish_2670 struct:module-path-index))
 (define module-path-index2.1
   (|#%name|
@@ -6708,13 +6744,19 @@
    #f
    'promise))
 (define struct:promise
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'promise
    #f
    (|#%nongenerative-uid| promise)
    #f
    #f
-   '(2 . 3)))
+   '(2 . 3)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2268 (finish_2890 struct:promise))
 (define promise1.1
   (|#%name|
@@ -6813,13 +6855,19 @@
    #f
    'serialize-state))
 (define struct:serialize-state
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'serialize-state
    #f
    (|#%nongenerative-uid| serialize-state)
    #f
    #f
-   '(18 . 0)))
+   '(18 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2707 (finish_1890 struct:serialize-state))
 (define serialize-state1.1
   (|#%name|
@@ -7290,13 +7338,19 @@
    #f
    'preserved-property-value))
 (define struct:preserved-property-value
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'preserved-property-value
    #f
    (|#%nongenerative-uid| preserved-property-value)
    #f
    #f
-   '(1 . 0)))
+   '(1 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2588 (finish_2102 struct:preserved-property-value))
 (define preserved-property-value1.1
   (|#%name|
@@ -7486,13 +7540,19 @@
    #f
    'modified-content))
 (define struct:modified-content
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'modified-content
    #f
    (|#%nongenerative-uid| modified-content)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2176 (finish_2619 struct:modified-content))
 (define modified-content1.1
   (|#%name|
@@ -7765,13 +7825,19 @@
    #f
    'syntax))
 (define struct:syntax
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'syntax
    #f
    (|#%nongenerative-uid| syntax)
    #t
    #f
-   '(7 . 1)))
+   '(7 . 1)
+   'make-struct-type
+   (finish_2398 'proc)
+   (finish_2398 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2447 (finish_2398 struct:syntax))
 (define syntax2.1
   (|#%name|
@@ -8111,13 +8177,19 @@
    #f
    'syntax-state))
 (define struct:syntax-state
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'syntax-state
    #f
    (|#%nongenerative-uid| syntax-state)
    #f
    #f
-   '(3 . 1)))
+   '(3 . 1)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2710 (finish_2442 struct:syntax-state))
 (define syntax-state17.1
   (|#%name|
@@ -8232,13 +8304,19 @@
    #f
    'full-binding))
 (define struct:full-binding
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'full-binding
    #f
    (|#%nongenerative-uid| full-binding)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   (finish_2247 'proc)
+   (finish_2247 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2734 (finish_2247 struct:full-binding))
 (define full-binding1.1
   (|#%name|
@@ -8549,13 +8627,19 @@
    #f
    'full-module-binding))
 (define struct:full-module-binding
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'full-module-binding
    struct:full-binding
    (|#%nongenerative-uid| full-module-binding)
    #f
    #f
-   '(9 . 0)))
+   '(9 . 0)
+   'make-struct-type
+   (finish_2458 'proc)
+   (finish_2458 'arity)
+   #f
+   #f))
 (define effect_2481 (finish_2458 struct:full-module-binding))
 (define full-module-binding45.1
   (|#%name|
@@ -8649,13 +8733,19 @@
    #f
    'simple-module-binding))
 (define struct:simple-module-binding
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'simple-module-binding
    #f
    (|#%nongenerative-uid| simple-module-binding)
    #f
    #f
-   '(4 . 0)))
+   '(4 . 0)
+   'make-struct-type
+   (finish_2620 'proc)
+   (finish_2620 'arity)
+   #f
+   #f))
 (define effect_2891 (finish_2620 struct:simple-module-binding))
 (define simple-module-binding46.1
   (|#%name|
@@ -8919,13 +9009,19 @@
    #f
    'like-ambiguous-binding))
 (define struct:like-ambiguous-binding
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'like-ambiguous-binding
    #f
    (|#%nongenerative-uid| like-ambiguous-binding)
    #f
    #f
-   '(0 . 0)))
+   '(0 . 0)
+   'make-struct-type
+   (finish_2061 'proc)
+   (finish_2061 'arity)
+   #f
+   #f))
 (define effect_2690 (finish_2061 struct:like-ambiguous-binding))
 (define like-ambiguous-binding1.1
   (|#%name|
@@ -8960,13 +9056,19 @@
    #f
    'table-with-bulk-bindings))
 (define struct:table-with-bulk-bindings
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'table-with-bulk-bindings
    #f
    (|#%nongenerative-uid| table-with-bulk-bindings)
    #f
    #f
-   '(3 . 0)))
+   '(3 . 0)
+   'make-struct-type
+   (finish_2494 'proc)
+   (finish_2494 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2950 (finish_2494 struct:table-with-bulk-bindings))
 (define table-with-bulk-bindings1.1
   (|#%name|
@@ -9019,13 +9121,19 @@
    #f
    'bulk-binding-at))
 (define struct:bulk-binding-at
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'bulk-binding-at
    #f
    (|#%nongenerative-uid| bulk-binding-at)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   (finish_2866 'proc)
+   (finish_2866 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2253 (finish_2866 struct:bulk-binding-at))
 (define bulk-binding-at2.1
   (|#%name|
@@ -9056,13 +9164,19 @@
    #f
    'bulk-binding-class))
 (define struct:bulk-binding-class
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'bulk-binding-class
    #f
    (|#%nongenerative-uid| bulk-binding-class)
    #f
    #f
-   '(4 . 0)))
+   '(4 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2841 (finish_2732 struct:bulk-binding-class))
 (define bulk-binding-class3.1
   (|#%name|
@@ -10369,13 +10483,19 @@
    #f
    'fallback))
 (define struct:fallback
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'fallback
    #f
    (structure-type-lookup-prefab-uid 'fallback #f 1 0 #f '(0))
    #f
    #f
-   '(1 . 1)))
+   '(1 . 1)
+   'make-struct-type
+   #f
+   #f
+   #f
+   'prefab))
 (define effect_2114 (finish_2185 struct:fallback))
 (define fallback1.1
   (|#%name|
@@ -10485,13 +10605,19 @@
    #f
    'entry))
 (define struct:entry
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'entry
    #f
    (|#%nongenerative-uid| entry)
    #f
    #f
-   '(4 . 0)))
+   '(4 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2728 (finish_2822 struct:entry))
 (define entry1.1
   (|#%name|
@@ -10544,13 +10670,19 @@
    #f
    'shifted-entry))
 (define struct:shifted-entry
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'shifted-entry
    #f
    (|#%nongenerative-uid| shifted-entry)
    #f
    #f
-   '(3 . 0)))
+   '(3 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2358 (finish_2410 struct:shifted-entry))
 (define shifted-entry2.1
   (|#%name|
@@ -10778,13 +10910,19 @@
    #f
    'scope))
 (define struct:scope
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'scope
    #f
    (|#%nongenerative-uid| scope)
    #f
    #f
-   '(3 . 4)))
+   '(3 . 4)
+   'make-struct-type
+   (finish_2872 'proc)
+   (finish_2872 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2269 (finish_2872 struct:scope))
 (define scope1.1
   (|#%name|
@@ -10840,13 +10978,19 @@
    #f
    'interned-scope))
 (define struct:interned-scope
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'interned-scope
    struct:scope
    (|#%nongenerative-uid| interned-scope)
    #f
    #f
-   '(1 . 0)))
+   '(1 . 0)
+   'make-struct-type
+   (finish_3100 'proc)
+   (finish_3100 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2498 (finish_3100 struct:interned-scope))
 (define interned-scope2.1
   (|#%name|
@@ -10976,13 +11120,19 @@
    #f
    'multi-scope))
 (define struct:multi-scope
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'multi-scope
    #f
    (|#%nongenerative-uid| multi-scope)
    #t
    #f
-   '(5 . 0)))
+   '(5 . 0)
+   'make-struct-type
+   (finish_2795 'proc)
+   (finish_2795 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_1895 (finish_2795 struct:multi-scope))
 (define multi-scope3.1
   (|#%name|
@@ -11063,13 +11213,19 @@
    #f
    'representative-scope))
 (define struct:representative-scope
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'representative-scope
    struct:scope
    (|#%nongenerative-uid| representative-scope)
    #f
    #f
-   '(2 . 3)))
+   '(2 . 3)
+   'make-struct-type
+   (finish_1951 'proc)
+   (finish_1951 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2683 (finish_1951 struct:representative-scope))
 (define representative-scope4.1
   (|#%name|
@@ -11151,13 +11307,19 @@
    #f
    'shifted-multi-scope))
 (define struct:shifted-multi-scope
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'shifted-multi-scope
    #f
    (|#%nongenerative-uid| shifted-multi-scope)
    #t
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   (finish_3292 'proc)
+   (finish_3292 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2854 (finish_3292 struct:shifted-multi-scope))
 (define shifted-multi-scope5.1
   (|#%name|
@@ -11231,13 +11393,19 @@
    #f
    'shifted-to-label-phase))
 (define struct:shifted-to-label-phase
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'shifted-to-label-phase
    #f
    (structure-type-lookup-prefab-uid 'shifted-to-label-phase #f 1 0 #f '(0))
    #f
    #f
-   '(1 . 1)))
+   '(1 . 1)
+   'make-struct-type
+   #f
+   #f
+   #f
+   'prefab))
 (define effect_2315 (finish_3013 struct:shifted-to-label-phase))
 (define shifted-to-label-phase6.1
   (|#%name|
@@ -12127,13 +12295,19 @@
    #f
    'propagation))
 (define struct:propagation
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'propagation
    #f
    (|#%nongenerative-uid| propagation)
    #t
    #f
-   '(7 . 0)))
+   '(7 . 0)
+   'make-struct-type
+   (finish_2814 'proc)
+   (finish_2814 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2326 (finish_2814 struct:propagation))
 (define propagation12.1
   (|#%name|
@@ -13382,13 +13556,19 @@
    #f
    'full-local-binding))
 (define struct:full-local-binding
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'full-local-binding
    struct:full-binding
    (|#%nongenerative-uid| full-local-binding)
    #f
    #f
-   '(1 . 0)))
+   '(1 . 0)
+   'make-struct-type
+   (finish_2041 'proc)
+   (finish_2041 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_3011 (finish_2041 struct:full-local-binding))
 (define full-local-binding1.1
   (|#%name|
@@ -13506,13 +13686,19 @@
    #f
    'id-rename-transformer))
 (define struct:id-rename-transformer
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'rename-transformer
    #f
    (|#%nongenerative-uid| rename-transformer)
    #f
    #f
-   '(1 . 0)))
+   '(1 . 0)
+   'make-struct-type
+   (finish_2476 'proc)
+   (finish_2476 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2525 (finish_2476 struct:id-rename-transformer))
 (define id-rename-transformer1.1
   (|#%name|
@@ -13761,13 +13947,19 @@
    #f
    'non-source-shift))
 (define struct:non-source-shift
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'non-source-shift
    #f
    (structure-type-lookup-prefab-uid 'non-source-shift #f 2 0 #f '(0 1))
    #f
    #f
-   '(2 . 3)))
+   '(2 . 3)
+   'make-struct-type
+   #f
+   #f
+   #f
+   'prefab))
 (define effect_3061 (finish_2455 struct:non-source-shift))
 (define non-source-shift11.1
   (|#%name|
@@ -14305,13 +14497,19 @@
    #f
    'provided))
 (define struct:provided
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'provided
    #f
    (|#%nongenerative-uid| provided)
    #f
    #f
-   '(3 . 0)))
+   '(3 . 0)
+   'make-struct-type
+   (finish_3200 'proc)
+   (finish_3200 'arity)
+   #f
+   #f))
 (define effect_2629 (finish_3200 struct:provided))
 (define provided1.1
   (|#%name|
@@ -14529,13 +14727,19 @@
    #f
    'bulk-binding))
 (define struct:bulk-binding
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'bulk-binding
    #f
    (|#%nongenerative-uid| bulk-binding)
    #f
    #f
-   '(8 . 9)))
+   '(8 . 9)
+   'make-struct-type
+   (finish_2524 'proc)
+   (finish_2524 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2834 (finish_2524 struct:bulk-binding))
 (define bulk-binding12.1
   (|#%name|
@@ -14654,13 +14858,19 @@
    #f
    'bulk-provide))
 (define struct:bulk-provide
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'bulk-provide
    #f
    (|#%nongenerative-uid| bulk-provide)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2392 (finish_2579 struct:bulk-provide))
 (define bulk-provide13.1
   (|#%name|
@@ -14722,13 +14932,19 @@
    #f
    'bulk-binding-registry))
 (define struct:bulk-binding-registry
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'bulk-binding-registry
    #f
    (|#%nongenerative-uid| bulk-binding-registry)
    #f
    #f
-   '(1 . 0)))
+   '(1 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2403 (finish_2603 struct:bulk-binding-registry))
 (define bulk-binding-registry14.1
   (|#%name|
@@ -14794,13 +15010,19 @@
    #f
    'root-expand-context/outer))
 (define struct:root-expand-context/outer
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'root-expand-context
    #f
    (|#%nongenerative-uid| root-expand-context)
    #f
    #f
-   '(4 . 0)))
+   '(4 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2124 (finish_2813 struct:root-expand-context/outer))
 (define root-expand-context/outer1.1
   (|#%name|
@@ -14843,13 +15065,19 @@
    #f
    'root-expand-context/inner))
 (define struct:root-expand-context/inner
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'root-expand-context/inner
    #f
    (|#%nongenerative-uid| root-expand-context/inner)
    #f
    #f
-   '(7 . 0)))
+   '(7 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2880 (finish_2837 struct:root-expand-context/inner))
 (define root-expand-context/inner2.1
   (|#%name|
@@ -15349,13 +15577,19 @@
    #f
    'module-registry))
 (define struct:module-registry
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'module-registry
    #f
    (|#%nongenerative-uid| module-registry)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2565 (finish_2938 struct:module-registry))
 (define module-registry1.1
   (|#%name|
@@ -15493,13 +15727,19 @@
    #f
    'namespace))
 (define struct:namespace
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'namespace
    #f
    (|#%nongenerative-uid| namespace)
    #f
    #f
-   '(17 . 8192)))
+   '(17 . 8192)
+   'make-struct-type
+   (finish_2563 'proc)
+   (finish_2563 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_3128 (finish_2563 struct:namespace))
 (define namespace1.1
   (|#%name|
@@ -15570,13 +15810,19 @@
    #f
    'definitions))
 (define struct:definitions
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'definitions
    #f
    (|#%nongenerative-uid| definitions)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2319 (finish_2741 struct:definitions))
 (define definitions2.1
   (|#%name|
@@ -16115,13 +16361,19 @@
    #f
    'syntax-binding-set))
 (define struct:syntax-binding-set
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'syntax-binding-set
    #f
    (|#%nongenerative-uid| syntax-binding-set)
    #f
    #f
-   '(1 . 0)))
+   '(1 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2582 (finish_2245 struct:syntax-binding-set))
 (define syntax-binding-set1.1
   (|#%name|
@@ -16170,13 +16422,19 @@
    #f
    'bind))
 (define struct:bind
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'bind
    #f
    (|#%nongenerative-uid| bind)
    #f
    #f
-   '(3 . 0)))
+   '(3 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2584 (finish_2672 struct:bind))
 (define bind2.1
   (|#%name|
@@ -16735,13 +16993,19 @@
    #f
    'module-use))
 (define struct:module-use
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'module-use
    #f
    (|#%nongenerative-uid| module-use)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   (finish_2922 'proc)
+   (finish_2922 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2097 (finish_2922 struct:module-use))
 (define module-use1.1
   (|#%name|
@@ -16801,13 +17065,19 @@
    #f
    'portal-syntax))
 (define struct:portal-syntax
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'portal-syntax
    #f
    (|#%nongenerative-uid| portal-syntax)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2071 (finish_2362 struct:portal-syntax))
 (define portal-syntax1.1
   (|#%name|
@@ -16856,13 +17126,19 @@
    #f
    'module))
 (define struct:module
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'module
    #f
    (|#%nongenerative-uid| module)
    #f
    #f
-   '(24 . 64)))
+   '(24 . 64)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2640 (finish_2696 struct:module))
 (define module1.1
   (|#%name|
@@ -16935,13 +17211,19 @@
    #f
    'module-linklet-info))
 (define struct:module-linklet-info
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'module-linklet-info
    #f
    (|#%nongenerative-uid| module-linklet-info)
    #f
    #f
-   '(6 . 0)))
+   '(6 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   #f))
 (define effect_2508 (finish_2550 struct:module-linklet-info))
 (define module-linklet-info2.1
   (|#%name|
@@ -17105,13 +17387,19 @@
    #f
    'module-instance))
 (define struct:module-instance
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'module-instance
    #f
    (|#%nongenerative-uid| module-instance)
    #f
    #f
-   '(8 . 52)))
+   '(8 . 52)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2382 (finish_2793 struct:module-instance))
 (define module-instance48.1
   (|#%name|
@@ -19231,13 +19519,19 @@
           #f
           'set!-transformer)))
     (let ((struct:set!-transformer_0
-           (make-record-type-descriptor
+           (|#%make-record-type-descriptor|
+            |#%racket-base-rtd|
             'set!-transformer
             #f
             #f
             #f
             #f
-            '(1 . 0))))
+            '(1 . 0)
+            'make-struct-type
+            (finish915 'proc)
+            (finish915 'arity)
+            #f
+            |#%system-inspector|)))
       (let ((effect916 (finish915 struct:set!-transformer_0)))
         (let ((set!-transformer1_0
                (|#%name|
@@ -19321,13 +19615,19 @@
    #f
    'local-variable))
 (define struct:local-variable
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'local-variable
    #f
    (|#%nongenerative-uid| local-variable)
    #f
    #f
-   '(1 . 0)))
+   '(1 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2625 (finish_2125 struct:local-variable))
 (define local-variable1.1
   (|#%name|
@@ -19380,13 +19680,19 @@
    #f
    'core-form))
 (define struct:core-form
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'core-form
    #f
    (|#%nongenerative-uid| core-form)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   #f))
 (define effect_2077 (finish_2414 struct:core-form))
 (define core-form7.1
   (|#%name|
@@ -19660,13 +19966,19 @@
    #f
    'expand-context/outer))
 (define struct:expand-context/outer
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'expand-context
    struct:root-expand-context/outer
    (|#%nongenerative-uid| expand-context)
    #f
    #f
-   '(11 . 0)))
+   '(11 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2851 (finish_2652 struct:expand-context/outer))
 (define expand-context/outer1.1
   (|#%name|
@@ -19732,13 +20044,19 @@
    #f
    'expand-context/inner))
 (define struct:expand-context/inner
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'expand-context/inner
    struct:root-expand-context/inner
    (|#%nongenerative-uid| expand-context/inner)
    #f
    #f
-   '(22 . 0)))
+   '(22 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_3326 (finish_2648 struct:expand-context/inner))
 (define expand-context/inner2.1
   (|#%name|
@@ -21445,13 +21763,19 @@
    #f
    'compile-context))
 (define struct:compile-context
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'compile-context
    #f
    (|#%nongenerative-uid| compile-context)
    #f
    #f
-   '(7 . 0)))
+   '(7 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2620 (finish_2958 struct:compile-context))
 (define compile-context1.1
   (|#%name|
@@ -23933,13 +24257,19 @@
    #f
    'mpi-intern-table))
 (define struct:mpi-intern-table
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'mpi-intern-table
    #f
    (|#%nongenerative-uid| mpi-intern-table)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2611 (finish_2322 struct:mpi-intern-table))
 (define mpi-intern-table1.1
   (|#%name|
@@ -24056,7 +24386,7 @@
   (lambda (s_0)
     (let ((built-in-s_0 (string->symbol (format ".~s" s_0))))
       (begin (hash-set! built-in-symbols built-in-s_0 #t) built-in-s_0))))
-(define effect_2181
+(define effect_2483
   (begin
     (void
      (begin
@@ -24124,7 +24454,7 @@
              get-thread-id
              threaded?
              make-record-type-descriptor
-             make-record-type-descriptor*
+             |#%make-record-type-descriptor|
              make-record-constructor-descriptor
              record-constructor
              record-accessor
@@ -24138,6 +24468,8 @@
              |#%nongenerative-uid|
              |#%struct-ref-error|
              |#%struct-set!-error|
+             |#%make-struct-type-type|
+             |#%base-rtd|
              unsafe-struct?
              unsafe-sealed-struct?
              unsafe-struct
@@ -24209,13 +24541,19 @@
    #f
    'module-path-index-table))
 (define struct:module-path-index-table
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'module-path-index-table
    #f
    (|#%nongenerative-uid| module-path-index-table)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2626 (finish_2005 struct:module-path-index-table))
 (define module-path-index-table1.1
   (|#%name|
@@ -28094,13 +28432,19 @@
    #f
    'parsed))
 (define struct:parsed
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'parsed
    #f
    (|#%nongenerative-uid| parsed)
    #f
    #f
-   '(1 . 0)))
+   '(1 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   #f))
 (define effect_3056 (finish_2891 struct:parsed))
 (define parsed1.1
   (|#%name|
@@ -28122,13 +28466,19 @@
    #f
    'parsed-id))
 (define struct:parsed-id
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'parsed-id
    struct:parsed
    (|#%nongenerative-uid| parsed-id)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2596 (finish_2783 struct:parsed-id))
 (define parsed-id2.1
   (|#%name|
@@ -28153,13 +28503,19 @@
    #f
    'parsed-primitive-id))
 (define struct:parsed-primitive-id
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'parsed-primitive-id
    struct:parsed-id
    (|#%nongenerative-uid| parsed-primitive-id)
    #f
    #f
-   '(0 . 0)))
+   '(0 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2448 (finish_2627 struct:parsed-primitive-id))
 (define parsed-primitive-id3.1
   (|#%name|
@@ -28183,13 +28539,19 @@
    #f
    'parsed-top-id))
 (define struct:parsed-top-id
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'parsed-top-id
    struct:parsed-id
    (|#%nongenerative-uid| parsed-top-id)
    #f
    #f
-   '(0 . 0)))
+   '(0 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2581 (finish_2584 struct:parsed-top-id))
 (define parsed-top-id4.1
   (|#%name|
@@ -28211,13 +28573,19 @@
    #f
    'parsed-lambda))
 (define struct:parsed-lambda
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'parsed-lambda
    struct:parsed
    (|#%nongenerative-uid| parsed-lambda)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2349 (finish_2495 struct:parsed-lambda))
 (define parsed-lambda5.1
   (|#%name|
@@ -28243,13 +28611,19 @@
    #f
    'parsed-case-lambda))
 (define struct:parsed-case-lambda
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'parsed-case-lambda
    struct:parsed
    (|#%nongenerative-uid| parsed-case-lambda)
    #f
    #f
-   '(1 . 0)))
+   '(1 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2437 (finish_2679 struct:parsed-case-lambda))
 (define parsed-case-lambda6.1
   (|#%name|
@@ -28275,13 +28649,19 @@
    #f
    'parsed-app))
 (define struct:parsed-app
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'parsed-app
    struct:parsed
    (|#%nongenerative-uid| parsed-app)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2862 (finish_2548 struct:parsed-app))
 (define parsed-app7.1
   (|#%name|
@@ -28307,13 +28687,19 @@
    #f
    'parsed-if))
 (define struct:parsed-if
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'parsed-if
    struct:parsed
    (|#%nongenerative-uid| parsed-if)
    #f
    #f
-   '(3 . 0)))
+   '(3 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2506 (finish_2663 struct:parsed-if))
 (define parsed-if8.1
   (|#%name|
@@ -28340,13 +28726,19 @@
    #f
    'parsed-set!))
 (define struct:parsed-set!
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'parsed-set!
    struct:parsed
    (|#%nongenerative-uid| parsed-set!)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2747 (finish_3030 struct:parsed-set!))
 (define parsed-set!9.1
   (|#%name|
@@ -28372,13 +28764,19 @@
    #f
    'parsed-with-continuation-mark))
 (define struct:parsed-with-continuation-mark
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'parsed-with-continuation-mark
    struct:parsed
    (|#%nongenerative-uid| parsed-with-continuation-mark)
    #f
    #f
-   '(3 . 0)))
+   '(3 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2564 (finish_2301 struct:parsed-with-continuation-mark))
 (define parsed-with-continuation-mark10.1
   (|#%name|
@@ -28417,13 +28815,19 @@
    #f
    '|parsed-#%variable-reference|))
 (define |struct:parsed-#%variable-reference|
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    '|parsed-#%variable-reference|
    struct:parsed
    (|#%nongenerative-uid| |parsed-#%variable-reference|)
    #f
    #f
-   '(1 . 0)))
+   '(1 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_3025 (finish_2388 |struct:parsed-#%variable-reference|))
 (define |parsed-#%variable-reference11.1|
   (|#%name|
@@ -28454,13 +28858,19 @@
    #f
    'parsed-begin))
 (define struct:parsed-begin
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'parsed-begin
    struct:parsed
    (|#%nongenerative-uid| parsed-begin)
    #f
    #f
-   '(1 . 0)))
+   '(1 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2189 (finish_2060 struct:parsed-begin))
 (define parsed-begin12.1
   (|#%name|
@@ -28484,13 +28894,19 @@
    #f
    'parsed-begin0))
 (define struct:parsed-begin0
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'parsed-begin0
    struct:parsed
    (|#%nongenerative-uid| parsed-begin0)
    #f
    #f
-   '(1 . 0)))
+   '(1 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2190 (finish_2062 struct:parsed-begin0))
 (define parsed-begin013.1
   (|#%name|
@@ -28514,13 +28930,19 @@
    #f
    'parsed-quote))
 (define struct:parsed-quote
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'parsed-quote
    struct:parsed
    (|#%nongenerative-uid| parsed-quote)
    #f
    #f
-   '(1 . 0)))
+   '(1 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2174 (finish_2790 struct:parsed-quote))
 (define parsed-quote14.1
   (|#%name|
@@ -28544,13 +28966,19 @@
    #f
    'parsed-quote-syntax))
 (define struct:parsed-quote-syntax
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'parsed-quote-syntax
    struct:parsed
    (|#%nongenerative-uid| parsed-quote-syntax)
    #f
    #f
-   '(1 . 0)))
+   '(1 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_3320 (finish_2149 struct:parsed-quote-syntax))
 (define parsed-quote-syntax15.1
   (|#%name|
@@ -28578,13 +29006,19 @@
    #f
    'parsed-foreign-inline))
 (define struct:parsed-foreign-inline
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'parsed-foreign-inline
    struct:parsed
    (|#%nongenerative-uid| parsed-foreign-inline)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2571 (finish_2709 struct:parsed-foreign-inline))
 (define parsed-foreign-inline16.1
   (|#%name|
@@ -28616,13 +29050,19 @@
    #f
    'parsed-let_-values))
 (define struct:parsed-let_-values
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'parsed-let_-values
    struct:parsed
    (|#%nongenerative-uid| parsed-let_-values)
    #f
    #f
-   '(3 . 0)))
+   '(3 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2494 (finish_2373 struct:parsed-let_-values))
 (define parsed-let_-values17.1
   (|#%name|
@@ -28656,13 +29096,19 @@
    #f
    'parsed-let-values))
 (define struct:parsed-let-values
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'parsed-let-values
    struct:parsed-let_-values
    (|#%nongenerative-uid| parsed-let-values)
    #f
    #f
-   '(0 . 0)))
+   '(0 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2429 (finish_2586 struct:parsed-let-values))
 (define parsed-let-values18.1
   (|#%name|
@@ -28684,13 +29130,19 @@
    #f
    'parsed-letrec-values))
 (define struct:parsed-letrec-values
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'parsed-letrec-values
    struct:parsed-let_-values
    (|#%nongenerative-uid| parsed-letrec-values)
    #f
    #f
-   '(0 . 0)))
+   '(0 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2573 (finish_2434 struct:parsed-letrec-values))
 (define parsed-letrec-values19.1
   (|#%name|
@@ -28714,13 +29166,19 @@
    #f
    'parsed-define-values))
 (define struct:parsed-define-values
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'parsed-define-values
    struct:parsed
    (|#%nongenerative-uid| parsed-define-values)
    #f
    #f
-   '(3 . 0)))
+   '(3 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2826 (finish_2907 struct:parsed-define-values))
 (define parsed-define-values20.1
   (|#%name|
@@ -28756,13 +29214,19 @@
    #f
    'parsed-define-syntaxes))
 (define struct:parsed-define-syntaxes
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'parsed-define-syntaxes
    struct:parsed
    (|#%nongenerative-uid| parsed-define-syntaxes)
    #f
    #f
-   '(3 . 0)))
+   '(3 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2530 (finish_3035 struct:parsed-define-syntaxes))
 (define parsed-define-syntaxes21.1
   (|#%name|
@@ -28798,13 +29262,19 @@
    #f
    'parsed-begin-for-syntax))
 (define struct:parsed-begin-for-syntax
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'parsed-begin-for-syntax
    struct:parsed
    (|#%nongenerative-uid| parsed-begin-for-syntax)
    #f
    #f
-   '(1 . 0)))
+   '(1 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2361 (finish_2438 struct:parsed-begin-for-syntax))
 (define parsed-begin-for-syntax22.1
   (|#%name|
@@ -28835,13 +29305,19 @@
    #f
    '|parsed-#%declare|))
 (define |struct:parsed-#%declare|
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    '|parsed-#%declare|
    struct:parsed
    (|#%nongenerative-uid| |parsed-#%declare|)
    #f
    #f
-   '(0 . 0)))
+   '(0 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2603 (finish_2594 |struct:parsed-#%declare|))
 (define |parsed-#%declare23.1|
   (|#%name|
@@ -28863,13 +29339,19 @@
    #f
    'parsed-require))
 (define struct:parsed-require
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'parsed-require
    struct:parsed
    (|#%nongenerative-uid| parsed-require)
    #f
    #f
-   '(1 . 0)))
+   '(1 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2194 (finish_2834 struct:parsed-require))
 (define parsed-require24.1
   (|#%name|
@@ -28895,13 +29377,19 @@
    #f
    '|parsed-#%module-begin|))
 (define |struct:parsed-#%module-begin|
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    '|parsed-#%module-begin|
    struct:parsed
    (|#%nongenerative-uid| |parsed-#%module-begin|)
    #f
    #f
-   '(3 . 0)))
+   '(3 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2515 (finish_2226 |struct:parsed-#%module-begin|))
 (define |parsed-#%module-begin25.1|
   (|#%name|
@@ -28940,13 +29428,19 @@
    #f
    'parsed-module))
 (define struct:parsed-module
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'parsed-module
    struct:parsed
    (|#%nongenerative-uid| parsed-module)
    #f
    #f
-   '(14 . 0)))
+   '(14 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2433 (finish_2959 struct:parsed-module))
 (define parsed-module26.1
   (|#%name|
@@ -29010,13 +29504,19 @@
    #f
    'parsed-bundle))
 (define struct:parsed-bundle
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'parsed-bundle
    struct:parsed
    (|#%nongenerative-uid| parsed-bundle)
    #f
    #f
-   '(1 . 0)))
+   '(1 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2594 (finish_2842 struct:parsed-bundle))
 (define parsed-bundle27.1
   (|#%name|
@@ -29186,13 +29686,19 @@
    #f
    'requires+provides))
 (define struct:requires+provides
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'requires+provides
    #f
    (|#%nongenerative-uid| requires+provides)
    #f
    #f
-   '(13 . 7168)))
+   '(13 . 7168)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_3171 (finish_3291 struct:requires+provides))
 (define requires+provides1.1
   (|#%name|
@@ -29278,13 +29784,19 @@
    #f
    'required))
 (define struct:required
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'required
    #f
    (|#%nongenerative-uid| required)
    #f
    #f
-   '(4 . 0)))
+   '(4 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2757 (finish_2532 struct:required))
 (define required2.1
   (|#%name|
@@ -29312,13 +29824,19 @@
    #f
    'bulk-required))
 (define struct:bulk-required
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'bulk-required
    #f
    (|#%nongenerative-uid| bulk-required)
    #f
    #f
-   '(5 . 0)))
+   '(5 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_3099 (finish_2664 struct:bulk-required))
 (define bulk-required3.1
   (|#%name|
@@ -31304,13 +31822,19 @@
    #f
    'adjust-only))
 (define struct:adjust-only
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'adjust-only
    #f
    (|#%nongenerative-uid| adjust-only)
    #f
    #f
-   '(1 . 0)))
+   '(1 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2893 (finish_2697 struct:adjust-only))
 (define adjust-only1.1
   (|#%name|
@@ -31355,13 +31879,19 @@
    #f
    'adjust-prefix))
 (define struct:adjust-prefix
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'adjust-prefix
    #f
    (|#%nongenerative-uid| adjust-prefix)
    #f
    #f
-   '(1 . 0)))
+   '(1 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2600 (finish_2542 struct:adjust-prefix))
 (define adjust-prefix2.1
   (|#%name|
@@ -31408,13 +31938,19 @@
    #f
    'adjust-all-except))
 (define struct:adjust-all-except
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'adjust-all-except
    #f
    (|#%nongenerative-uid| adjust-all-except)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2205 (finish_2348 struct:adjust-all-except))
 (define adjust-all-except3.1
   (|#%name|
@@ -31480,13 +32016,19 @@
    #f
    'adjust-rename))
 (define struct:adjust-rename
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'adjust-rename
    #f
    (|#%nongenerative-uid| adjust-rename)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_3082 (finish_2750 struct:adjust-rename))
 (define adjust-rename4.1
   (|#%name|
@@ -34639,13 +35181,19 @@
    #f
    'compiled-in-memory))
 (define struct:compiled-in-memory
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'compiled-in-memory
    #f
    (|#%nongenerative-uid| compiled-in-memory)
    #f
    #f
-   '(16 . 0)))
+   '(16 . 0)
+   'make-struct-type
+   (finish_3098 'proc)
+   (finish_3098 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2572 (finish_3098 struct:compiled-in-memory))
 (define compiled-in-memory1.1
   (|#%name|
@@ -35011,13 +35559,19 @@
    #f
    'correlated-linklet))
 (define struct:correlated-linklet
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'correlated-linklet
    #f
    (|#%nongenerative-uid| correlated-linklet)
    #f
    #f
-   '(3 . 4)))
+   '(3 . 4)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2738 (finish_2248 struct:correlated-linklet))
 (define correlated-linklet1.1
   (|#%name|
@@ -35084,7 +35638,8 @@
    #f
    'faslable-correlated))
 (define struct:faslable-correlated
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'faslable-correlated
    #f
    (structure-type-lookup-prefab-uid
@@ -35096,7 +35651,12 @@
     '(0 1 2 3 4 5 6))
    #f
    #f
-   '(7 . 127)))
+   '(7 . 127)
+   'make-struct-type
+   #f
+   #f
+   #f
+   'prefab))
 (define effect_2370 (finish_2389 struct:faslable-correlated))
 (define faslable-correlated2.1
   (|#%name|
@@ -35249,7 +35809,8 @@
    #f
    'faslable-correlated-linklet))
 (define struct:faslable-correlated-linklet
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'faslable-correlated-linklet
    #f
    (structure-type-lookup-prefab-uid
@@ -35261,7 +35822,12 @@
     '(0 1))
    #f
    #f
-   '(2 . 3)))
+   '(2 . 3)
+   'make-struct-type
+   #f
+   #f
+   #f
+   'prefab))
 (define effect_2374 (finish_2803 struct:faslable-correlated-linklet))
 (define faslable-correlated-linklet3.1
   (|#%name|
@@ -35774,13 +36340,19 @@
    #f
    'linklet-directory))
 (define struct:linklet-directory
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'linklet-directory
    #f
    (|#%nongenerative-uid| linklet-directory)
    #f
    #f
-   '(1 . 0)))
+   '(1 . 0)
+   'make-struct-type
+   (finish_2902 'proc)
+   (finish_2902 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2692 (finish_2902 struct:linklet-directory))
 (define linklet-directory1.1
   (|#%name|
@@ -35837,13 +36409,19 @@
    #f
    'linklet-bundle))
 (define struct:linklet-bundle
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'linklet-bundle
    #f
    (|#%nongenerative-uid| linklet-bundle)
    #f
    #f
-   '(1 . 0)))
+   '(1 . 0)
+   'make-struct-type
+   (finish_2824 'proc)
+   (finish_2824 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2464 (finish_2824 struct:linklet-bundle))
 (define linklet-bundle2.1
   (|#%name|
@@ -36048,13 +36626,19 @@
    #f
    'namespace-scopes))
 (define struct:namespace-scopes
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'namespace-scopes
    #f
    (structure-type-lookup-prefab-uid 'namespace-scopes #f 2 0 #f '(0 1))
    #f
    #f
-   '(2 . 3)))
+   '(2 . 3)
+   'make-struct-type
+   #f
+   #f
+   #f
+   'prefab))
 (define effect_2465 (finish_2892 struct:namespace-scopes))
 (define namespace-scopes1.1
   (|#%name|
@@ -36178,13 +36762,19 @@
    #f
    'syntax-literals))
 (define struct:syntax-literals
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'syntax-literals
    #f
    (|#%nongenerative-uid| syntax-literals)
    #f
    #f
-   '(2 . 3)))
+   '(2 . 3)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2822 (finish_2887 struct:syntax-literals))
 (define syntax-literals1.1
   (|#%name|
@@ -36284,13 +36874,19 @@
    #f
    'header))
 (define struct:header
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'header
    #f
    (|#%nongenerative-uid| header)
    #f
    #f
-   '(8 . 36)))
+   '(8 . 36)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2459 (finish_2543 struct:header))
 (define header2.1
   (|#%name|
@@ -36483,13 +37079,19 @@
    #f
    'variable-use))
 (define struct:variable-use
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'variable-use
    #f
    (|#%nongenerative-uid| variable-use)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   #f))
 (define effect_2838 (finish_2560 struct:variable-use))
 (define variable-use3.1
   (|#%name|
@@ -37297,13 +37899,19 @@
    #f
    'module-use*))
 (define struct:module-use*
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'module-use*
    struct:module-use
    (|#%nongenerative-uid| module-use*)
    #f
    #f
-   '(2 . 3)))
+   '(2 . 3)
+   'make-struct-type
+   (finish_2356 'proc)
+   (finish_2356 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2316 (finish_2356 struct:module-use*))
 (define module-use*1.1
   (|#%name|
@@ -38523,13 +39131,19 @@
    #f
    'link-info))
 (define struct:link-info
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'link-info
    #f
    (|#%nongenerative-uid| link-info)
    #f
    #f
-   '(4 . 0)))
+   '(4 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2792 (finish_2980 struct:link-info))
 (define link-info1.1
   (|#%name|
@@ -40532,13 +41146,19 @@
    #f
    'known-defined/delay))
 (define struct:known-defined/delay
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'known-defined/delay
    #f
    (structure-type-lookup-prefab-uid 'known-defined/delay #f 1 0 #f '(0))
    #f
    #f
-   '(1 . 1)))
+   '(1 . 1)
+   'make-struct-type
+   #f
+   #f
+   #f
+   'prefab))
 (define effect_2998 (finish_2519 struct:known-defined/delay))
 (define known-defined/delay2.1
   (|#%name|
@@ -40589,13 +41209,19 @@
    #f
    'known-property))
 (define struct:known-property
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'known-property
    #f
    (structure-type-lookup-prefab-uid 'known-property #f 0 0 #f '())
    #f
    #f
-   '(0 . 0)))
+   '(0 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   'prefab))
 (define effect_2476 (finish_2590 struct:known-property))
 (define known-property3.1
   (|#%name|
@@ -40627,7 +41253,8 @@
    #f
    'known-property-of-function))
 (define struct:known-property-of-function
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'known-property-of-function
    #f
    (structure-type-lookup-prefab-uid
@@ -40639,7 +41266,12 @@
     '(0))
    #f
    #f
-   '(1 . 1)))
+   '(1 . 1)
+   'make-struct-type
+   #f
+   #f
+   #f
+   'prefab))
 (define effect_2945 (finish_2139 struct:known-property-of-function))
 (define known-property-of-function4.1
   (|#%name|
@@ -40693,13 +41325,19 @@
    #f
    'known-function))
 (define struct:known-function
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'known-function
    #f
    (structure-type-lookup-prefab-uid 'known-function #f 2 0 #f '(0 1))
    #f
    #f
-   '(2 . 3)))
+   '(2 . 3)
+   'make-struct-type
+   #f
+   #f
+   #f
+   'prefab))
 (define effect_2741 (finish_2740 struct:known-function))
 (define known-function5.1
   (|#%name|
@@ -40761,7 +41399,8 @@
    #f
    'known-function-of-satisfying))
 (define struct:known-function-of-satisfying
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'known-function-of-satisfying
    #f
    (structure-type-lookup-prefab-uid
@@ -40773,7 +41412,12 @@
     '(0 1))
    #f
    #f
-   '(2 . 3)))
+   '(2 . 3)
+   'make-struct-type
+   #f
+   #f
+   #f
+   'prefab))
 (define effect_2265 (finish_2071 struct:known-function-of-satisfying))
 (define known-function-of-satisfying6.1
   (|#%name|
@@ -40844,13 +41488,19 @@
    #f
    'known-predicate))
 (define struct:known-predicate
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'known-predicate
    #f
    (structure-type-lookup-prefab-uid 'known-predicate #f 1 0 #f '(0))
    #f
    #f
-   '(1 . 1)))
+   '(1 . 1)
+   'make-struct-type
+   #f
+   #f
+   #f
+   'prefab))
 (define effect_2144 (finish_2577 struct:known-predicate))
 (define known-predicate7.1
   (|#%name|
@@ -40897,13 +41547,19 @@
    #f
    'known-satisfies))
 (define struct:known-satisfies
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'known-satisfies
    #f
    (structure-type-lookup-prefab-uid 'known-satisfies #f 1 0 #f '(0))
    #f
    #f
-   '(1 . 1)))
+   '(1 . 1)
+   'make-struct-type
+   #f
+   #f
+   #f
+   'prefab))
 (define effect_1976 (finish_2468 struct:known-satisfies))
 (define known-satisfies8.1
   (|#%name|
@@ -40952,13 +41608,19 @@
    #f
    'known-struct-op))
 (define struct:known-struct-op
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'known-struct-op
    #f
    (structure-type-lookup-prefab-uid 'known-struct-op #f 2 0 #f '(0 1))
    #f
    #f
-   '(2 . 3)))
+   '(2 . 3)
+   'make-struct-type
+   #f
+   #f
+   #f
+   'prefab))
 (define effect_2534 (finish_2604 struct:known-struct-op))
 (define known-struct-op9.1
   (|#%name|
@@ -44026,13 +44688,19 @@
    #f
    'protected-core))
 (define struct:protected-core
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'protected-core
    #f
    (|#%nongenerative-uid| protected-core)
    #f
    #f
-   '(1 . 0)))
+   '(1 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_3023 (finish_2981 struct:protected-core))
 (define protected-core1.1
   (|#%name|
@@ -45424,13 +46092,19 @@
    #f
    'instance-data))
 (define struct:instance-data
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'instance-data
    #f
    (|#%nongenerative-uid| instance-data)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2595 (finish_2479 struct:instance-data))
 (define instance-data9.1
   (|#%name|
@@ -47897,13 +48571,19 @@
    #f
    'recompiled))
 (define struct:recompiled
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'recompiled
    #f
    (|#%nongenerative-uid| recompiled)
    #f
    #f
-   '(3 . 0)))
+   '(3 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_1973 (finish_2360 struct:recompiled))
 (define recompiled1.1
   (|#%name|
@@ -49624,13 +50304,19 @@
    #f
    'lift-context))
 (define struct:lift-context
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'lift-context
    #f
    (|#%nongenerative-uid| lift-context)
    #f
    #f
-   '(3 . 0)))
+   '(3 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_1545 (finish_2589 struct:lift-context))
 (define lift-context1.1
   (|#%name|
@@ -49658,13 +50344,19 @@
    #f
    'lifted-bind))
 (define struct:lifted-bind
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'lifted-bind
    #f
    (|#%nongenerative-uid| lifted-bind)
    #f
    #f
-   '(3 . 0)))
+   '(3 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_1767 (finish_2698 struct:lifted-bind))
 (define lifted-bind2.1
   (|#%name|
@@ -49893,13 +50585,19 @@
    #f
    'module-lift-context))
 (define struct:module-lift-context
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'module-lift-context
    #f
    (|#%nongenerative-uid| module-lift-context)
    #f
    #f
-   '(3 . 0)))
+   '(3 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2649 (finish_3138 struct:module-lift-context))
 (define module-lift-context15.1
   (|#%name|
@@ -49974,13 +50672,19 @@
    #f
    'require-lift-context))
 (define struct:require-lift-context
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'require-lift-context
    #f
    (|#%nongenerative-uid| require-lift-context)
    #f
    #f
-   '(3 . 0)))
+   '(3 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_3057 (finish_2859 struct:require-lift-context))
 (define require-lift-context16.1
   (|#%name|
@@ -50047,13 +50751,19 @@
    #f
    'to-module-lift-context))
 (define struct:to-module-lift-context
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'to-module-lift-context
    #f
    (|#%nongenerative-uid| to-module-lift-context)
    #f
    #f
-   '(4 . 0)))
+   '(4 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_3069 (finish_2755 struct:to-module-lift-context))
 (define to-module-lift-context20.1
   (|#%name|
@@ -50115,13 +50825,19 @@
    #f
    'already-expanded))
 (define struct:already-expanded
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'expanded-syntax
    #f
    (|#%nongenerative-uid| expanded-syntax)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2568 (finish_2433 struct:already-expanded))
 (define already-expanded1.1
   (|#%name|
@@ -50190,13 +50906,19 @@
    #f
    'make-liberal-define-context))
 (define struct:liberal-define-context
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'liberal-define-context
    #f
    (|#%nongenerative-uid| liberal-define-context)
    #f
    #f
-   '(0 . 0)))
+   '(0 . 0)
+   'make-struct-type
+   (finish_2095 'proc)
+   (finish_2095 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2849 (finish_2095 struct:liberal-define-context))
 (define make-liberal-define-context
   (|#%name|
@@ -50315,13 +51037,19 @@
    #f
    'reference-record))
 (define struct:reference-record
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'reference-record
    #f
    (|#%nongenerative-uid| reference-record)
    #f
    #f
-   '(3 . 7)))
+   '(3 . 7)
+   'make-struct-type
+   #f
+   #f
+   #f
+   #f))
 (define effect_2371 (finish_2318 struct:reference-record))
 (define reference-record1.1
   (|#%name|
@@ -50474,13 +51202,19 @@
    #f
    'expanded+parsed))
 (define struct:expanded+parsed
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'expanded+parsed
    #f
    (|#%nongenerative-uid| expanded+parsed)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2270 (finish_2886 struct:expanded+parsed))
 (define expanded+parsed1.1
   (|#%name|
@@ -50506,13 +51240,19 @@
    #f
    'semi-parsed-define-values))
 (define struct:semi-parsed-define-values
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'semi-parsed-define-values
    #f
    (|#%nongenerative-uid| semi-parsed-define-values)
    #f
    #f
-   '(4 . 0)))
+   '(4 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2353 (finish_2856 struct:semi-parsed-define-values))
 (define semi-parsed-define-values2.1
   (|#%name|
@@ -50555,13 +51295,19 @@
    #f
    'semi-parsed-begin-for-syntax))
 (define struct:semi-parsed-begin-for-syntax
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'semi-parsed-begin-for-syntax
    #f
    (|#%nongenerative-uid| semi-parsed-begin-for-syntax)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2814 (finish_2970 struct:semi-parsed-begin-for-syntax))
 (define semi-parsed-begin-for-syntax3.1
   (|#%name|
@@ -52405,13 +53151,19 @@
    #f
    'internal-definition-context))
 (define struct:internal-definition-context
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'internal-definition-context
    #f
    (|#%nongenerative-uid| internal-definition-context)
    #f
    #f
-   '(7 . 0)))
+   '(7 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2979 (finish_2794 struct:internal-definition-context))
 (define internal-definition-context1.1
   (|#%name|
@@ -52567,13 +53319,19 @@
    #f
    'env-mixin))
 (define struct:env-mixin
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'env-mixin
    #f
    (|#%nongenerative-uid| env-mixin)
    #f
    #f
-   '(4 . 0)))
+   '(4 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2352 (finish_2692 struct:env-mixin))
 (define env-mixin2.1
   (|#%name|
@@ -57683,13 +58441,19 @@
    #f
    'lifted-parsed-begin))
 (define struct:lifted-parsed-begin
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'lifted-parsed-begin
    #f
    (|#%nongenerative-uid| lifted-parsed-begin)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2583 (finish_2305 struct:lifted-parsed-begin))
 (define lifted-parsed-begin11.1
   (|#%name|
@@ -59982,13 +60746,19 @@
    #f
    'shadow-directory))
 (define struct:shadow-directory
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'shadow-directory
    #f
    (|#%nongenerative-uid| shadow-directory)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2776 (finish_3090 struct:shadow-directory))
 (define shadow-directory1.1
   (|#%name|
@@ -61077,13 +61847,19 @@
    #f
    'read-config/outer))
 (define struct:read-config/outer
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'read-config
    #f
    (|#%nongenerative-uid| read-config)
    #f
    #f
-   '(7 . 0)))
+   '(7 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2490 (finish_2405 struct:read-config/outer))
 (define read-config/outer1.1
   (|#%name|
@@ -61123,13 +61899,19 @@
    #f
    'read-config/inner))
 (define struct:read-config/inner
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'read-config/inner
    #f
    (|#%nongenerative-uid| read-config/inner)
    #f
    #f
-   '(13 . 0)))
+   '(13 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2436 (finish_2733 struct:read-config/inner))
 (define read-config/inner2.1
   (|#%name|
@@ -61286,13 +62068,19 @@
    #f
    'read-config-state))
 (define struct:read-config-state
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'read-config-state
    #f
    (|#%nongenerative-uid| read-config-state)
    #f
    #f
-   '(2 . 3)))
+   '(2 . 3)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2073 (finish_2658 struct:read-config-state))
 (define read-config-state3.1
   (|#%name|
@@ -61813,13 +62601,19 @@
    #f
    'make-special-comment))
 (define struct:special-comment
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'special-comment
    #f
    (|#%nongenerative-uid| special-comment)
    #f
    #f
-   '(1 . 0)))
+   '(1 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_3106 (finish_2605 struct:special-comment))
 (define 1/make-special-comment
   (|#%name|
@@ -61843,13 +62637,19 @@
    #f
    'readtable))
 (define struct:readtable
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'readtable
    #f
    (|#%nongenerative-uid| readtable)
    #f
    #f
-   '(4 . 0)))
+   '(4 . 0)
+   'make-struct-type
+   (finish_2508 'proc)
+   (finish_2508 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2167 (finish_2508 struct:readtable))
 (define readtable1.1
   (|#%name|
@@ -62195,13 +62995,19 @@
    #f
    'special))
 (define struct:special
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'special
    #f
    (|#%nongenerative-uid| special)
    #f
    #f
-   '(1 . 0)))
+   '(1 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2677 (finish_2954 struct:special))
 (define special1.1
   (|#%name|
@@ -62736,13 +63542,19 @@
    #f
    'accum-string))
 (define struct:accum-string
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'accum-string
    #f
    (|#%nongenerative-uid| accum-string)
    #f
    #f
-   '(2 . 3)))
+   '(2 . 3)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2784 (finish_2485 struct:accum-string))
 (define accum-string1.1
   (|#%name|
@@ -62851,13 +63663,19 @@
    #f
    'indentation))
 (define struct:indentation
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'indentation
    #f
    (|#%nongenerative-uid| indentation)
    #f
    #f
-   '(8 . 246)))
+   '(8 . 246)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2185 (finish_2880 struct:indentation))
 (define indentation1.1
   (|#%name|
@@ -63830,13 +64648,19 @@
    #f
    'parse-state))
 (define struct:parse-state
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'parse-state
    #f
    (|#%nongenerative-uid| parse-state)
    #f
    #f
-   '(5 . 0)))
+   '(5 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2177 (finish_2818 struct:parse-state))
 (define parse-state6.1
   (|#%name|
@@ -63870,13 +64694,19 @@
    #f
    'rect-prefix))
 (define struct:rect-prefix
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'rect-prefix
    #f
    (|#%nongenerative-uid| rect-prefix)
    #f
    #f
-   '(3 . 0)))
+   '(3 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2477 (finish_2141 struct:rect-prefix))
 (define rect-prefix7.1
   (|#%name|
@@ -63904,13 +64734,19 @@
    #f
    'polar-prefix))
 (define struct:polar-prefix
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'polar-prefix
    #f
    (|#%nongenerative-uid| polar-prefix)
    #f
    #f
-   '(3 . 0)))
+   '(3 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2366 (finish_3094 struct:polar-prefix))
 (define polar-prefix8.1
   (|#%name|
@@ -64022,13 +64858,19 @@
    #f
    'lazy-expt))
 (define struct:lazy-expt
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'lazy-expt
    #f
    (|#%nongenerative-uid| lazy-expt)
    #f
    #f
-   '(3 . 0)))
+   '(3 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2131 (finish_3231 struct:lazy-expt))
 (define lazy-expt9.1
   (|#%name|
@@ -64055,13 +64897,19 @@
    #f
    'lazy-rational))
 (define struct:lazy-rational
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'lazy-rational
    #f
    (|#%nongenerative-uid| lazy-rational)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_3104 (finish_2687 struct:lazy-rational))
 (define lazy-rational10.1
   (|#%name|
@@ -73171,13 +74019,19 @@
    #f
    'serialized-syntax))
 (define struct:serialized-syntax
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'serialized-syntax
    #f
    (structure-type-lookup-prefab-uid 'serialized-syntax #f 5 0 #f '(0 1 2 3 4))
    #f
    #f
-   '(5 . 31)))
+   '(5 . 31)
+   'make-struct-type
+   #f
+   #f
+   #f
+   'prefab))
 (define effect_2423 (finish_2681 struct:serialized-syntax))
 (define serialized-syntax1.1
   (|#%name|

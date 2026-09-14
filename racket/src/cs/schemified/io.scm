@@ -2493,7 +2493,8 @@
    #f
    'sandman))
 (define struct:sandman
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'sandman
    #f
    (structure-type-lookup-prefab-uid
@@ -2505,7 +2506,12 @@
     '(0 1 2 3 4 5 6 7 8 9 10))
    #f
    #f
-   '(11 . 2047)))
+   '(11 . 2047)
+   'make-struct-type
+   #f
+   #f
+   #f
+   'prefab))
 (define effect_2951 (finish_1970 struct:sandman))
 (define sandman1.1
   (|#%name|
@@ -3311,13 +3317,19 @@
    #f
    'm+s))
 (define struct:m+s
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'm+s
    #f
    (|#%nongenerative-uid| m+s)
    #f
    #f
-   '(3 . 0)))
+   '(3 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2626 (finish_3115 struct:m+s))
 (define m+s1.1
   (|#%name|
@@ -3590,13 +3602,19 @@
    #f
    'exts))
 (define struct:exts
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'exts
    #f
    (|#%nongenerative-uid| exts)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2505 (finish_2882 struct:exts))
 (define exts1.1
   (|#%name|
@@ -3883,13 +3901,19 @@
    #f
    'create-core-port))
 (define struct:core-port
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'core-port
    #f
    (|#%nongenerative-uid| core-port)
    #f
    #f
-   '(8 . 252)))
+   '(8 . 252)
+   'make-struct-type
+   (finish_2338 'proc)
+   (finish_2338 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2337 (finish_2338 struct:core-port))
 (define create-core-port
   (|#%name|
@@ -3938,13 +3962,19 @@
    #f
    'core-port-methods))
 (define struct:core-port-methods.1
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'core-port-methods
    #f
    (|#%nongenerative-uid| core-port-methods)
    #f
    #f
-   '(5 . 0)))
+   '(5 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2309 (finish_2057 struct:core-port-methods.1))
 (define core-port-methods1.1
   (|#%name|
@@ -4068,13 +4098,19 @@
    #f
    'direct))
 (define struct:direct
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'direct
    #f
    (|#%nongenerative-uid| direct)
    #f
    #f
-   '(3 . 7)))
+   '(3 . 7)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2682 (finish_2711 struct:direct))
 (define direct2.1
   (|#%name|
@@ -4104,13 +4140,19 @@
    #f
    'location))
 (define struct:location
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'location
    #f
    (|#%nongenerative-uid| location)
    #f
    #f
-   '(5 . 31)))
+   '(5 . 31)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_3131 (finish_2554 struct:location))
 (define location3.1
   (|#%name|
@@ -4160,13 +4202,19 @@
    #f
    'lock))
 (define struct:lock
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'lock
    #f
    (|#%nongenerative-uid| lock)
    #f
    #f
-   '(5 . 7)))
+   '(5 . 7)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2400 (finish_2359 struct:lock))
 (define lock1.1
   (|#%name|
@@ -4436,13 +4484,19 @@
    #f
    'create-core-input-port))
 (define struct:core-input-port
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'core-input-port
    struct:core-port
    (|#%nongenerative-uid| core-input-port)
    #f
    #f
-   '(2 . 3)))
+   '(2 . 3)
+   'make-struct-type
+   (finish_2218 'proc)
+   (finish_2218 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2528 (finish_2218 struct:core-input-port))
 (define create-core-input-port
   (|#%name|
@@ -4480,13 +4534,19 @@
    #f
    'core-input-port-methods))
 (define struct:core-input-port-methods.1
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'core-input-port-methods
    struct:core-port-methods.1
    (|#%nongenerative-uid| core-input-port-methods)
    #f
    #f
-   '(6 . 0)))
+   '(6 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2085 (finish_2853 struct:core-input-port-methods.1))
 (define core-input-port-methods6.1
   (|#%name|
@@ -4748,13 +4808,19 @@
    #f
    'create-core-output-port))
 (define struct:core-output-port
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'core-output-port
    struct:core-port
    (|#%nongenerative-uid| core-output-port)
    #f
    #f
-   '(4 . 15)))
+   '(4 . 15)
+   'make-struct-type
+   (finish_3032 'proc)
+   (finish_3032 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2808 (finish_3032 struct:core-output-port))
 (define create-core-output-port
   (|#%name|
@@ -4806,13 +4872,19 @@
    #f
    'core-output-port-methods))
 (define struct:core-output-port-methods.1
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'core-output-port-methods
    struct:core-port-methods.1
    (|#%nongenerative-uid| core-output-port-methods)
    #f
    #f
-   '(4 . 0)))
+   '(4 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2050 (finish_2648 struct:core-output-port-methods.1))
 (define core-output-port-methods6.1
   (|#%name|
@@ -4996,13 +5068,19 @@
    #f
    'write-evt))
 (define struct:write-evt
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'write-evt
    #f
    (|#%nongenerative-uid| write-evt)
    #f
    #f
-   '(1 . 0)))
+   '(1 . 0)
+   'make-struct-type
+   (finish_2564 'proc)
+   (finish_2564 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2493 (finish_2564 struct:write-evt))
 (define write-evt7.1
   (|#%name|
@@ -5056,13 +5134,19 @@
    #f
    'utf-8-state))
 (define struct:utf-8-state
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'utf-8-state
    #f
    (|#%nongenerative-uid| utf-8-state)
    #f
    #f
-   '(3 . 0)))
+   '(3 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2751 (finish_2110 struct:utf-8-state))
 (define utf-8-state1.1
   (|#%name|
@@ -6224,13 +6308,19 @@
    #f
    'commit-manager))
 (define struct:commit-manager
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'commit-manager
    #f
    (|#%nongenerative-uid| commit-manager)
    #f
    #f
-   '(3 . 0)))
+   '(3 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2594 (finish_2075 struct:commit-manager))
 (define commit-manager1.1
   (|#%name|
@@ -6262,13 +6352,19 @@
    #f
    'commit-request))
 (define struct:commit-request
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'commit-request
    #f
    (|#%nongenerative-uid| commit-request)
    #f
    #f
-   '(6 . 0)))
+   '(6 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2646 (finish_2247 struct:commit-request))
 (define commit-request2.1
   (|#%name|
@@ -6308,13 +6404,19 @@
    #f
    'commit-response))
 (define struct:commit-response
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'commit-response
    #f
    (|#%nongenerative-uid| commit-response)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2529 (finish_2621 struct:commit-response))
 (define commit-response3.1
   (|#%name|
@@ -6589,7 +6691,7 @@
 (define commit-manager-pause
   (lambda (mgr_0)
     (let ((lock_0 (make-semaphore)))
-      (let ((suspend-evt_0 (thread-suspend-evt (current-thread))))
+      (let ((suspend-evt_0 #f))
         (begin
           (dynamic-wind
            void
@@ -6598,6 +6700,7 @@
                (unsafe-end-atomic)
                (begin0
                  (begin
+                   (set! suspend-evt_0 (thread-suspend-evt (current-thread)))
                    (thread-resume
                     (commit-manager-thread mgr_0)
                     (current-thread))
@@ -6606,13 +6709,14 @@
                      (commit-manager-pause-channel mgr_0)
                      (|#%app|
                       1/choice-evt
-                      (list
-                       lock_0
-                       suspend-evt_0
-                       (thread-dead-evt (current-thread)))))))
+                      (let ((app_0 suspend-evt_0))
+                        (list
+                         lock_0
+                         app_0
+                         (thread-dead-evt (current-thread))))))))
                  (unsafe-start-atomic))))
            (lambda () (semaphore-post lock_0)))
-          (if (sync/timeout 0 suspend-evt_0)
+          (if (if suspend-evt_0 (sync/timeout 0 suspend-evt_0) #f)
             (commit-manager-pause mgr_0)
             (void)))))))
 (define commit-manager-wait
@@ -6658,13 +6762,19 @@
    #f
    'create-commit-input-port))
 (define struct:commit-input-port
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'commit-input-port
    struct:core-input-port
    (|#%nongenerative-uid| commit-input-port)
    #f
    #f
-   '(2 . 3)))
+   '(2 . 3)
+   'make-struct-type
+   (finish_3101 'proc)
+   (finish_3101 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2802 (finish_3101 struct:commit-input-port))
 (define create-commit-input-port
   (|#%name|
@@ -6702,13 +6812,19 @@
    #f
    'commit-input-port-methods))
 (define struct:commit-input-port-methods.1
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'commit-input-port-methods
    struct:core-input-port-methods.1
    (|#%nongenerative-uid| commit-input-port-methods)
    #f
    #f
-   '(1 . 0)))
+   '(1 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_3199 (finish_2483 struct:commit-input-port-methods.1))
 (define commit-input-port-methods5.1
   (|#%name|
@@ -6879,13 +6995,19 @@
    #f
    'create-peek-via-read-input-port))
 (define struct:peek-via-read-input-port
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'peek-via-read-input-port
    struct:commit-input-port
    (|#%nongenerative-uid| peek-via-read-input-port)
    #f
    #f
-   '(5 . 31)))
+   '(5 . 31)
+   'make-struct-type
+   (finish_2316 'proc)
+   (finish_2316 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2578 (finish_2316 struct:peek-via-read-input-port))
 (define create-peek-via-read-input-port
   (|#%name|
@@ -6952,13 +7074,19 @@
    #f
    'peek-via-read-input-port-methods))
 (define struct:peek-via-read-input-port-methods.1
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'peek-via-read-input-port-methods
    struct:commit-input-port-methods.1
    (|#%nongenerative-uid| peek-via-read-input-port-methods)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2499 (finish_2372 struct:peek-via-read-input-port-methods.1))
 (define peek-via-read-input-port-methods10.1
   (|#%name|
@@ -8494,13 +8622,19 @@
    #f
    'create-fd-input-port))
 (define struct:fd-input-port
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'fd-input-port
    struct:peek-via-read-input-port
    (|#%nongenerative-uid| fd-input-port)
    #f
    #f
-   '(4 . 15)))
+   '(4 . 15)
+   'make-struct-type
+   (finish_2841 'proc)
+   (finish_2841 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_1979 (finish_2841 struct:fd-input-port))
 (define create-fd-input-port
   (|#%name|
@@ -8550,13 +8684,19 @@
    #f
    'fd-input-port-methods))
 (define struct:fd-input-port-methods.1
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'fd-input-port-methods
    struct:peek-via-read-input-port-methods.1
    (|#%nongenerative-uid| fd-input-port-methods)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2420 (finish_2012 struct:fd-input-port-methods.1))
 (define fd-input-port-methods7.1
   (|#%name|
@@ -8935,13 +9075,19 @@
    #f
    'create-fd-output-port))
 (define struct:fd-output-port
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'fd-output-port
    struct:core-output-port
    (|#%nongenerative-uid| fd-output-port)
    #f
    #f
-   '(8 . 255)))
+   '(8 . 255)
+   'make-struct-type
+   (finish_3078 'proc)
+   (finish_3078 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2896 (finish_3078 struct:fd-output-port))
 (define create-fd-output-port
   (|#%name|
@@ -9017,13 +9163,19 @@
    #f
    'fd-output-port-methods))
 (define struct:fd-output-port-methods.1
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'fd-output-port-methods
    struct:core-output-port-methods.1
    (|#%nongenerative-uid| fd-output-port-methods)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_1955 (finish_2810 struct:fd-output-port-methods.1))
 (define fd-output-port-methods27.1
   (|#%name|
@@ -9785,13 +9937,19 @@
    #f
    'fd-evt))
 (define struct:fd-evt
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'fd-evt
    #f
    (|#%nongenerative-uid| fd-evt)
    #f
    #f
-   '(3 . 0)))
+   '(3 . 0)
+   'make-struct-type
+   (finish_2545 'proc)
+   (finish_2545 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2660 (finish_2545 struct:fd-evt))
 (define fd-evt47.1
   (|#%name|
@@ -9909,13 +10067,19 @@
    #f
    'rktio-fd-flushed-evt))
 (define struct:rktio-fd-flushed-evt
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'rktio-fd-flushed-evt
    #f
    (|#%nongenerative-uid| rktio-fd-flushed-evt)
    #f
    #f
-   '(1 . 0)))
+   '(1 . 0)
+   'make-struct-type
+   (finish_2402 'proc)
+   (finish_2402 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2170 (finish_2402 struct:rktio-fd-flushed-evt))
 (define rktio-fd-flushed-evt48.1
   (|#%name|
@@ -10272,13 +10436,19 @@
    #f
    'progress-evt))
 (define struct:progress-evt
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'progress-evt
    #f
    (|#%nongenerative-uid| progress-evt)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   (finish_2339 'proc)
+   (finish_2339 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2490 (finish_2339 struct:progress-evt))
 (define progress-evt1.1
   (|#%name|
@@ -11178,13 +11348,19 @@
    #f
    'create-pipe-data))
 (define struct:pipe-data
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'pipe-data
    #f
    (|#%nongenerative-uid| pipe-data)
    #f
    #f
-   '(16 . 65534)))
+   '(16 . 65534)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_3021 (finish_2207 struct:pipe-data))
 (define create-pipe-data
   (|#%name|
@@ -11279,13 +11455,19 @@
    #f
    'pipe-data-methods))
 (define struct:pipe-data-methods.1
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'pipe-data-methods
    #f
    (|#%nongenerative-uid| pipe-data-methods)
    #f
    #f
-   '(0 . 0)))
+   '(0 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2537 (finish_2129 struct:pipe-data-methods.1))
 (define pipe-data-methods10.1
   (|#%name|
@@ -11403,13 +11585,19 @@
    #f
    'create-pipe-input-port))
 (define struct:pipe-input-port
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'pipe-input-port
    struct:commit-input-port
    (|#%nongenerative-uid| pipe-input-port)
    #f
    #f
-   '(1 . 1)))
+   '(1 . 1)
+   'make-struct-type
+   (finish_3163 'proc)
+   (finish_3163 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2318 (finish_3163 struct:pipe-input-port))
 (define create-pipe-input-port
   (|#%name|
@@ -11435,13 +11623,19 @@
    #f
    'pipe-input-port-methods))
 (define struct:pipe-input-port-methods.1
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'pipe-input-port-methods
    struct:commit-input-port-methods.1
    (|#%nongenerative-uid| pipe-input-port-methods)
    #f
    #f
-   '(0 . 0)))
+   '(0 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2335 (finish_2415 struct:pipe-input-port-methods.1))
 (define pipe-input-port-methods15.1
   (|#%name|
@@ -11802,13 +11996,19 @@
    #f
    'create-pipe-output-port))
 (define struct:pipe-output-port
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'pipe-output-port
    struct:core-output-port
    (|#%nongenerative-uid| pipe-output-port)
    #f
    #f
-   '(1 . 1)))
+   '(1 . 1)
+   'make-struct-type
+   (finish_2124 'proc)
+   (finish_2124 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2635 (finish_2124 struct:pipe-output-port))
 (define create-pipe-output-port
   (|#%name|
@@ -11836,13 +12036,19 @@
    #f
    'pipe-output-port-methods))
 (define struct:pipe-output-port-methods.1
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'pipe-output-port-methods
    struct:core-output-port-methods.1
    (|#%nongenerative-uid| pipe-output-port-methods)
    #f
    #f
-   '(0 . 0)))
+   '(0 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_3193 (finish_2185 struct:pipe-output-port-methods.1))
 (define pipe-output-port-methods20.1
   (|#%name|
@@ -12418,13 +12624,19 @@
    #f
    'pipe-write-poller))
 (define struct:pipe-write-poller
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'pipe-write-poller
    #f
    (|#%nongenerative-uid| pipe-write-poller)
    #f
    #f
-   '(1 . 0)))
+   '(1 . 0)
+   'make-struct-type
+   (finish_2435 'proc)
+   (finish_2435 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2599 (finish_2435 struct:pipe-write-poller))
 (define pipe-write-poller27.1
   (|#%name|
@@ -12518,13 +12730,19 @@
    #f
    'pipe-read-poller))
 (define struct:pipe-read-poller
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'pipe-read-poller
    #f
    (|#%nongenerative-uid| pipe-read-poller)
    #f
    #f
-   '(1 . 0)))
+   '(1 . 0)
+   'make-struct-type
+   (finish_2170 'proc)
+   (finish_2170 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2907 (finish_2170 struct:pipe-read-poller))
 (define pipe-read-poller28.1
   (|#%name|
@@ -15731,13 +15949,19 @@
    #f
    'utf-8-converter))
 (define struct:utf-8-converter
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'utf-8-converter
    #f
    (|#%nongenerative-uid| utf-8-converter)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2402 (finish_2760 struct:utf-8-converter))
 (define utf-8-converter1.1
   (|#%name|
@@ -16549,13 +16773,19 @@
    #f
    'bytes-converter))
 (define struct:bytes-converter
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'bytes-converter
    #f
    (|#%nongenerative-uid| bytes-converter)
    #f
    #f
-   '(2 . 3)))
+   '(2 . 3)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2496 (finish_2770 struct:bytes-converter))
 (define bytes-converter1.1
   (|#%name|
@@ -17364,13 +17594,19 @@
    #f
    'cache))
 (define struct:cache
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'cache
    #f
    (|#%nongenerative-uid| cache)
    #f
    #f
-   '(4 . 15)))
+   '(4 . 15)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2561 (finish_1919 struct:cache))
 (define cache1.1
   (|#%name|
@@ -17733,13 +17969,19 @@
    #f
    'path))
 (define struct:path
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'path
    #f
    (|#%nongenerative-uid| path)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   (finish_2782 'proc)
+   (finish_2782 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2995 (finish_2782 struct:path))
 (define path1.1
   (|#%name|
@@ -18916,13 +19158,19 @@
    #f
    'create-bytes-input-port))
 (define struct:bytes-input-port
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'bytes-input-port
    struct:commit-input-port
    (|#%nongenerative-uid| bytes-input-port)
    #f
    #f
-   '(3 . 7)))
+   '(3 . 7)
+   'make-struct-type
+   (finish_2932 'proc)
+   (finish_2932 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2847 (finish_2932 struct:bytes-input-port))
 (define create-bytes-input-port
   (|#%name|
@@ -18964,13 +19212,19 @@
    #f
    'bytes-input-port-methods))
 (define struct:bytes-input-port-methods.1
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'bytes-input-port-methods
    struct:commit-input-port-methods.1
    (|#%nongenerative-uid| bytes-input-port-methods)
    #f
    #f
-   '(0 . 0)))
+   '(0 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2130 (finish_2871 struct:bytes-input-port-methods.1))
 (define bytes-input-port-methods4.1
   (|#%name|
@@ -19224,13 +19478,19 @@
    #f
    'create-bytes-output-port))
 (define struct:bytes-output-port
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'bytes-output-port
    struct:core-output-port
    (|#%nongenerative-uid| bytes-output-port)
    #f
    #f
-   '(3 . 7)))
+   '(3 . 7)
+   'make-struct-type
+   (finish_2411 'proc)
+   (finish_2411 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2052 (finish_2411 struct:bytes-output-port))
 (define create-bytes-output-port
   (|#%name|
@@ -19276,13 +19536,19 @@
    #f
    'bytes-output-port-methods))
 (define struct:bytes-output-port-methods.1
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'bytes-output-port-methods
    struct:core-output-port-methods.1
    (|#%nongenerative-uid| bytes-output-port-methods)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2430 (finish_2698 struct:bytes-output-port-methods.1))
 (define bytes-output-port-methods8.1
   (|#%name|
@@ -19738,13 +20004,19 @@
    #f
    'create-max-output-port))
 (define struct:max-output-port
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'max-output-port
    struct:core-output-port
    (|#%nongenerative-uid| max-output-port)
    #f
    #f
-   '(2 . 3)))
+   '(2 . 3)
+   'make-struct-type
+   (finish_2069 'proc)
+   (finish_2069 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_3019 (finish_2069 struct:max-output-port))
 (define create-max-output-port
   (|#%name|
@@ -19778,13 +20050,19 @@
    #f
    'max-output-port-methods))
 (define struct:max-output-port-methods.1
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'max-output-port-methods
    struct:core-output-port-methods.1
    (|#%nongenerative-uid| max-output-port-methods)
    #f
    #f
-   '(0 . 0)))
+   '(0 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2933 (finish_2618 struct:max-output-port-methods.1))
 (define max-output-port-methods1.1
   (|#%name|
@@ -20696,13 +20974,19 @@
    #f
    'create-nowhere-output-port))
 (define struct:nowhere-output-port
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'nowhere-output-port
    struct:core-output-port
    (|#%nongenerative-uid| nowhere-output-port)
    #f
    #f
-   '(0 . 0)))
+   '(0 . 0)
+   'make-struct-type
+   (finish_2460 'proc)
+   (finish_2460 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2267 (finish_2460 struct:nowhere-output-port))
 (define create-nowhere-output-port
   (|#%name|
@@ -20726,13 +21010,19 @@
    #f
    'nowhere-output-port-methods))
 (define struct:nowhere-output-port-methods.1
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'nowhere-output-port-methods
    struct:core-output-port-methods.1
    (|#%nongenerative-uid| nowhere-output-port-methods)
    #f
    #f
-   '(0 . 0)))
+   '(0 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2301 (finish_2952 struct:nowhere-output-port-methods.1))
 (define nowhere-output-port-methods1.1
   (|#%name|
@@ -20975,13 +21265,19 @@
    #f
    'as-constructor))
 (define struct:as-constructor
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'as-constructor
    #f
    (|#%nongenerative-uid| as-constructor)
    #f
    #f
-   '(1 . 0)))
+   '(1 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2645 (finish_2175 struct:as-constructor))
 (define as-constructor1.1
   (|#%name|
@@ -23968,13 +24264,19 @@
    #f
    'starting-point))
 (define struct:starting-point
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'starting-point
    #f
    (|#%nongenerative-uid| starting-point)
    #f
    #f
-   '(7 . 0)))
+   '(7 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2521 (finish_3672 struct:starting-point))
 (define starting-point7.1
   (|#%name|
@@ -25822,13 +26124,19 @@
    #f
    'security-guard))
 (define struct:security-guard
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'security-guard
    #f
    (|#%nongenerative-uid| security-guard)
    #f
    #f
-   '(4 . 0)))
+   '(4 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2369 (finish_2262 struct:security-guard))
 (define security-guard1.1
   (|#%name|
@@ -31151,13 +31459,19 @@
    #f
    'environment-variables))
 (define struct:environment-variables
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'environment-variables
    #f
    (|#%nongenerative-uid| environment-variables)
    #f
    #f
-   '(1 . 1)))
+   '(1 . 1)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2329 (finish_2186 struct:environment-variables))
 (define environment-variables1.1
   (|#%name|
@@ -32866,13 +33180,19 @@
    #f
    'logger))
 (define struct:logger
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'logger
    #f
    (|#%nongenerative-uid| logger)
    #f
    #f
-   '(11 . 376)))
+   '(11 . 376)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2687 (finish_1890 struct:logger))
 (define logger1.1
   (|#%name|
@@ -33301,13 +33621,19 @@
    #f
    'queue))
 (define struct:queue
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'queue
    #f
    (|#%nongenerative-uid| queue)
    #f
    #f
-   '(2 . 3)))
+   '(2 . 3)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2998 (finish_2164 struct:queue))
 (define queue1.1
   (|#%name|
@@ -33334,13 +33660,19 @@
    #f
    'node))
 (define struct:node
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'node
    #f
    (|#%nongenerative-uid| node)
    #f
    #f
-   '(3 . 6)))
+   '(3 . 6)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2547 (finish_2845 struct:node))
 (define node2.1
   (|#%name|
@@ -33397,13 +33729,19 @@
    #f
    'log-receiver))
 (define struct:log-receiver
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'log-receiver
    #f
    (|#%nongenerative-uid| log-receiver)
    #f
    #f
-   '(1 . 0)))
+   '(1 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2969 (finish_2335 struct:log-receiver))
 (define log-receiver1.1
   (|#%name|
@@ -33505,13 +33843,19 @@
    #f
    'queue-log-receiver))
 (define struct:queue-log-receiver
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'log-receiver
    struct:log-receiver
    (|#%nongenerative-uid| log-receiver)
    #f
    #f
-   '(3 . 0)))
+   '(3 . 0)
+   'make-struct-type
+   (finish_2386 'proc)
+   (finish_2386 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2324 (finish_2386 struct:queue-log-receiver))
 (define queue-log-receiver2.1
   (|#%name|
@@ -33638,13 +33982,19 @@
    #f
    'stdio-log-receiver))
 (define struct:stdio-log-receiver
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'stdio-log-receiver
    struct:log-receiver
    (|#%nongenerative-uid| stdio-log-receiver)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   (finish_2083 'proc)
+   (finish_2083 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2591 (finish_2083 struct:stdio-log-receiver))
 (define stdio-log-receiver3.1
   (|#%name|
@@ -33777,13 +34127,19 @@
    #f
    'syslog-log-receiver))
 (define struct:syslog-log-receiver
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'syslog-log-receiver
    struct:log-receiver
    (|#%nongenerative-uid| syslog-log-receiver)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   (finish_2544 'proc)
+   (finish_2544 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2288 (finish_2544 struct:syslog-log-receiver))
 (define syslog-log-receiver4.1
   (|#%name|
@@ -34745,13 +35101,19 @@
    #f
    'fs-change-evt))
 (define struct:fs-change-evt
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'filesystem-change-evt
    #f
    (|#%nongenerative-uid| filesystem-change-evt)
    #f
    #f
-   '(2 . 3)))
+   '(2 . 3)
+   'make-struct-type
+   (finish_2790 'proc)
+   (finish_2790 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_3368 (finish_2790 struct:fs-change-evt))
 (define fs-change-evt1.1
   (|#%name|
@@ -35288,13 +35650,19 @@
    #f
    'make-subprocess))
 (define struct:subprocess
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'subprocess
    #f
    (|#%nongenerative-uid| subprocess)
    #f
    #f
-   '(3 . 3)))
+   '(3 . 3)
+   'make-struct-type
+   (finish_3020 'proc)
+   (finish_3020 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2289 (finish_3020 struct:subprocess))
 (define make-subprocess
   (|#%name|
@@ -36311,13 +36679,19 @@
    #f
    'create-tcp-input-port))
 (define struct:tcp-input-port
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'tcp-input-port
    struct:fd-input-port
    (|#%nongenerative-uid| tcp-input-port)
    #f
    #f
-   '(1 . 1)))
+   '(1 . 1)
+   'make-struct-type
+   (finish_2010 'proc)
+   (finish_2010 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2486 (finish_2010 struct:tcp-input-port))
 (define create-tcp-input-port
   (|#%name|
@@ -36345,13 +36719,19 @@
    #f
    'tcp-input-port-methods))
 (define struct:tcp-input-port-methods.1
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'tcp-input-port-methods
    struct:fd-input-port-methods.1
    (|#%nongenerative-uid| tcp-input-port-methods)
    #f
    #f
-   '(0 . 0)))
+   '(0 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2506 (finish_2584 struct:tcp-input-port-methods.1))
 (define tcp-input-port-methods1.1
   (|#%name|
@@ -36499,13 +36879,19 @@
    #f
    'create-tcp-output-port))
 (define struct:tcp-output-port
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'tcp-output-port
    struct:fd-output-port
    (|#%nongenerative-uid| tcp-output-port)
    #f
    #f
-   '(1 . 1)))
+   '(1 . 1)
+   'make-struct-type
+   (finish_2476 'proc)
+   (finish_2476 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2179 (finish_2476 struct:tcp-output-port))
 (define create-tcp-output-port
   (|#%name|
@@ -36535,13 +36921,19 @@
    #f
    'tcp-output-port-methods))
 (define struct:tcp-output-port-methods.1
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'tcp-output-port-methods
    struct:fd-output-port-methods.1
    (|#%nongenerative-uid| tcp-output-port-methods)
    #f
    #f
-   '(0 . 0)))
+   '(0 . 0)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2820 (finish_2811 struct:tcp-output-port-methods.1))
 (define tcp-output-port-methods9.1
   (|#%name|
@@ -36731,13 +37123,19 @@
    #f
    'rktio-evt))
 (define struct:rktio-evt
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'rktio-evt
    #f
    (|#%nongenerative-uid| rktio-evt)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   (finish_2561 'proc)
+   (finish_2561 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_1868 (finish_2561 struct:rktio-evt))
 (define rktio-evt1.1
   (|#%name|
@@ -36925,13 +37323,19 @@
    #f
    'connect-progress))
 (define struct:connect-progress
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'connect-progress
    #f
    (|#%nongenerative-uid| connect-progress)
    #f
    #f
-   '(2 . 3)))
+   '(2 . 3)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2319 (finish_3124 struct:connect-progress))
 (define connect-progress1.1
   (|#%name|
@@ -37346,13 +37750,19 @@
    #f
    'tcp-listener))
 (define struct:tcp-listener
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'tcp-listener
    #f
    (|#%nongenerative-uid| tcp-listener)
    #f
    #f
-   '(3 . 0)))
+   '(3 . 0)
+   'make-struct-type
+   (finish_2775 'proc)
+   (finish_2775 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2347 (finish_2775 struct:tcp-listener))
 (define tcp-listener1.1
   (|#%name|
@@ -37826,13 +38236,19 @@
    #f
    'accept-evt))
 (define struct:accept-evt
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'tcp-accept-evt
    #f
    (|#%nongenerative-uid| tcp-accept-evt)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   (finish_1939 'proc)
+   (finish_1939 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2608 (finish_1939 struct:accept-evt))
 (define accept-evt6.1
   (|#%name|
@@ -37944,13 +38360,19 @@
    #f
    'udp))
 (define struct:udp
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'udp
    #f
    (|#%nongenerative-uid| udp)
    #f
    #f
-   '(4 . 15)))
+   '(4 . 15)
+   'make-struct-type
+   #f
+   #f
+   #f
+   |#%system-inspector|))
 (define effect_2743 (finish_2442 struct:udp))
 (define udp1.1
   (|#%name|
@@ -39288,13 +39710,19 @@
    #f
    'udp-sending-evt))
 (define struct:udp-sending-evt
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'udp-send-evt
    #f
    (|#%nongenerative-uid| udp-send-evt)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   (finish_2690 'proc)
+   (finish_2690 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2114 (finish_2690 struct:udp-sending-evt))
 (define udp-sending-evt66.1
   (|#%name|
@@ -39320,13 +39748,19 @@
    #f
    'udp-sending-ready-evt))
 (define struct:udp-sending-ready-evt
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'udp-send-ready-evt
    struct:rktio-evt
    (|#%nongenerative-uid| udp-send-ready-evt)
    #f
    #f
-   '(0 . 0)))
+   '(0 . 0)
+   'make-struct-type
+   (finish_2617 'proc)
+   (finish_2617 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2524 (finish_2617 struct:udp-sending-ready-evt))
 (define udp-sending-ready-evt67.1
   (|#%name|
@@ -39717,13 +40151,19 @@
    #f
    'udp-receiving-evt))
 (define struct:udp-receiving-evt
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'udp-receive-evt
    #f
    (|#%nongenerative-uid| udp-receive-evt)
    #f
    #f
-   '(2 . 0)))
+   '(2 . 0)
+   'make-struct-type
+   (finish_2327 'proc)
+   (finish_2327 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2638 (finish_2327 struct:udp-receiving-evt))
 (define udp-receiving-evt43.1
   (|#%name|
@@ -39749,13 +40189,19 @@
    #f
    'udp-receiving-ready-evt))
 (define struct:udp-receiving-ready-evt
-  (make-record-type-descriptor
+  (|#%make-record-type-descriptor|
+   |#%racket-base-rtd|
    'udp-receive-ready-evt
    struct:rktio-evt
    (|#%nongenerative-uid| udp-receive-ready-evt)
    #f
    #f
-   '(0 . 0)))
+   '(0 . 0)
+   'make-struct-type
+   (finish_2856 'proc)
+   (finish_2856 'arity)
+   #f
+   |#%system-inspector|))
 (define effect_2865 (finish_2856 struct:udp-receiving-ready-evt))
 (define udp-receiving-ready-evt44.1
   (|#%name|

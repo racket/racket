@@ -664,7 +664,7 @@
           (λ () (oneof all-zeros))]
          [else
           (λ ()
-            (case (random 10)
+            (case (rand 10)
               [(0)
                ;; try the inexact/exact variant (if there is one)
                (cond
@@ -731,7 +731,7 @@
      (λ (fuel)
        (and (>= delta 1)
             (λ ()
-              (integer->char (+ low (random delta)))))))))
+              (integer->char (+ low (rand delta)))))))))
 
 (define (regexp/c-equivalent this that)
   (and (regexp/c? that)

@@ -1958,6 +1958,7 @@ mark_struct_type_val {
   gcMARK2(t->props, gc);
   gcMARK2(t->proc_attr, gc);
   gcMARK2(t->guard, gc);
+  gcMARK2(t->metaobj, gc);
   gcMARK2(t->immutables, gc);
 
  size:

@@ -165,8 +165,7 @@
 
 (define (set-exn-srcloc-properties!)
   (let ([add! (lambda (rtd)
-                (struct-property-set! prop:exn:srclocs rtd exn:fail:read-srclocs)
-                (hashtable-set! rtd-props rtd (list prop:exn:srclocs)))])
+                (struct-property-set! prop:exn:srclocs rtd exn:fail:read-srclocs))])
     (add! struct:exn:fail:read)
     (add! struct:exn:fail:read:non-char)
     (add! struct:exn:fail:read:eof)))

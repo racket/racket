@@ -569,7 +569,7 @@
     (define howmany (length pair-gens))
     (and (not (zero? howmany))
          (λ ()
-           ((list-ref pair-gens (random howmany)))))))
+           ((list-ref pair-gens (rand howmany)))))))
 
 (struct the-cons/dc (forwards? undep dep here name-info))
 

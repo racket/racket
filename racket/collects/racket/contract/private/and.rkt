@@ -347,16 +347,16 @@
      (λ (fuel)
        (and (>= upper-bound 1)
             (λ ()
-              (+ _start (random upper-bound)))))]
+              (+ _start (rand upper-bound)))))]
     [else
      (λ (fuel)
        (λ ()
          (cond
-           [(zero? (random 20)) 0]
+           [(zero? (rand 20)) 0]
            [else
-            (* (if (zero? (random 2)) -1 1)
-               (+ (expt 2 (geo-dist 1/2))
-                  (geo-dist 1/2)))])))]))
+            (* (if (zero? (rand 2)) -1 1)
+               (+ (expt 2 (rand-nat 1/2))
+                  (rand-nat 1/2)))])))]))
 
 (struct integer-in-ctc (start end)
   #:property prop:custom-write custom-write-property-proc
@@ -378,12 +378,6 @@
    #:stronger integer-in-stronger
    #:equivalent integer-in-equivalent
    #:generate integer-in-generate))
-
-(define (geo-dist p)
-  (let loop ([n 0])
-    (cond
-      [(< (random) p) (loop (+ n 1))]
-      [else n])))
 
 (define/final-prop (integer-in start end)
   (define (|(or/c #f exact-integer?)| x) (or (not x) (exact-integer? x)))

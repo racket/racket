@@ -10,7 +10,7 @@
     [(string=? arch "i3") "x86"]
     [(string=? arch "rv64") "riscv64"]
     [(string=? arch "la64") "loongarch64"]
-    [(string=? arch "arm7") "arm32"]
+    [(string=? arch "armv7") "arm32"]
     [else arch]))
 
 ;; Get or synthesize a "machine.def" file and supporting files,

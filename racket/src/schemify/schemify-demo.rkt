@@ -68,7 +68,7 @@
 (define-values (schemified importss exports import-keys imports-abis exports-info)
   (schemify-linklet `(linklet 
                       ()
-                      (x y [z ext-z] w c1 c2)
+                      (x y [z ext-z] w c1 c2 class2-struct-type-ref)
                        .
                       ,(map
                         wrap
@@ -103,7 +103,47 @@
                                                                      (fx+ x 2))))
                           (define-values (done) (z))
                           (define-values (call) (lambda () (values 'c1 'c2)))
-                          (define-values (c1 c2) (call)))))
+                          (define-values (c1 c2) (call))
+                          (define-values (struct:class-struct-type make-class-struct-type class-struct-type?
+                                                                   class-type-ref
+                                                                   class-struct-type-ref)
+                            (let-values ([(-struct:class-struct-type -make-class-struct-type -class-struct-type? -class-struct-type-ref)
+                                          (make-struct-metatype 'class #f 1)])
+                              (values -struct:class-struct-type -make-class-struct-type -class-struct-type?
+                                      (make-struct-type-metaaccessor -class-struct-type-ref)
+                                      (make-struct-field-accessor -class-struct-type-ref 0))))
+                          (define-values (struct:c make-c c? c-ref1 c-ref2)
+                            (let-values ([(-struct:c -make-c -c? -c-ref -c-set!)
+                                          (make-class-struct-type 'c #f 2 0 #f null 'current #f '(0 1) #f #f 'vtable)])
+                              (values -struct:c -make-c -c?
+                                      (make-struct-field-accessor -c-ref 0)
+                                      (make-struct-field-accessor -c-ref 1))))
+                          (define-values (class-ref)
+                            (lambda (o)
+                              (list (class-struct-type? o)
+                                    (class-struct-type-ref o))))
+                          (define-values (struct:class2-struct-type make-class2-struct-type class2-struct-type?
+                                                                    exposed-class2-struct-type-ref
+                                                                    class2-type-ref
+                                                                    class2-struct-type-ref
+                                                                    class2-struct-type-metaref)
+                            (let-values ([(-struct:class2-struct-type -make-class2-struct-type -class2-struct-type? -class2-struct-type-ref)
+                                          (make-struct-metatype 'class2 struct:class-struct-type 2 'authentic)])
+                              (values -struct:class2-struct-type -make-class2-struct-type -class2-struct-type?
+                                      -class2-struct-type-ref
+                                      (make-struct-type-metaaccessor -class2-struct-type-ref)
+                                      (make-struct-field-accessor -class2-struct-type-ref 1)
+                                      (make-struct-field-metaaccessor -class2-struct-type-ref 1))))
+                          (define-values (class2-t-ref)
+                            (lambda (o)
+                              (class2-type-ref (list o o) 'ok)))
+                          (define-values (class2-t-metaref)
+                            (lambda (o)
+                              (class2-struct-type-metaref (list o o) 'ok)))
+                          (define-values (class2-ref)
+                            (lambda (o)
+                              (list (class2-struct-type? o)
+                                    (class2-struct-type-ref o)))))))
                     #;
                     (call-with-input-file "regexp.rktl" read)
                     #t          ; serializable

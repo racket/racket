@@ -382,6 +382,7 @@
                           (if msvc? (list bc_suffix.h) '())
                           (list (at-source "include/scheme.h")
                                 (at-source "include/schthread.h")
+                                (at-source "src/schpriv.h")
                                 (at-source "sconfig.h")
                                 (at-source "src/stypes.h")
                                 mzconfig.h)))

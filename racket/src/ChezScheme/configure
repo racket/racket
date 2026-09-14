@@ -261,8 +261,8 @@ if [ "$unixsuffix" != "" ] ; then
         tm32=tarm32${unixsuffix}
         tm64=tarm64${unixsuffix}
         if [ "$android" = "yes" ]; then
-            m32=arm7${unixsuffix}
-            tm32=tarm7${unixsuffix}
+            m32=armv7${unixsuffix}
+            tm32=tarmv7${unixsuffix}
         fi
     elif uname -m | grep 'riscv64' > /dev/null 2>&1 ; then
         m32=""

@@ -197,6 +197,7 @@
           impersonator-val ; not exported to Racket
           impersonate-ref ; not exported to Racket
           impersonate-set! ; not exported to Racket
+          impersonate-type-ref ; not exported to Racket
           impersonator-property?
           make-impersonator-property
           impersonator-property-predicate-procedure?
@@ -247,11 +248,20 @@
           struct-type-property-accessor-procedure?
           struct-type-property-predicate-procedure?
           make-struct-type
+          make-struct-metatype
+          |#%make-struct-metatype|            ; not exported to Racket
+          |#%make-record-type-descriptor|     ; not exported to Racket
           make-struct-type-install-properties ; not exported to Racket
           structure-type-lookup-prefab-uid    ; not exported to Racket
           make-struct-field-accessor
           make-struct-field-mutator
+          make-struct-field-metaaccessor
+          make-struct-type-metaaccessor
           struct-type-constructor-add-guards ; not exported to Racket
+          |#%base-rtd| ; not exported to Racket
+          |#%racket-base-rtd| ; not exported to Racket
+          |#%racket-type-base-rtd| ; not exported to Racket
+          |#%system-inspector| ; not exported to Racket
           |#%struct-constructor| ; not exported to Racket
           |#%struct-predicate| ; not exported to Racket
           |#%struct-field-accessor| ; not exported to Racket
@@ -259,14 +269,17 @@
           |#%nongenerative-uid| ; not exported to Racket
           |#%struct-ref-error| ; not exported to Racket
           |#%struct-set!-error| ; not exported to Racket
+          |#%make-position-based-accessor| ; not exported to Racket
           struct-property-set!  ; not exported to Racket
           struct-constructor-procedure?
           struct-predicate-procedure?
           struct-accessor-procedure?
           struct-mutator-procedure?
+          struct-metaaccessor-procedure?
           struct?
           struct-type?
           procedure-struct-type?
+          struct-metatype?
           struct-type-info
           struct-type-sealed?
           struct-type-authentic?
@@ -813,6 +826,7 @@
           unsafe-struct*-set!
           unsafe-struct*-cas!
           unsafe-struct*-type
+          unsafe-object-type
           unsafe-struct?        ; not exported to racket
           unsafe-sealed-struct? ; not exported to racket
           unsafe-struct         ; not exported to racket
@@ -895,6 +909,7 @@
   (include "rumble/constant.ss")
   (include "rumble/hash-code.ss")
   (include "rumble/symbol.ss")
+  (include "rumble/racket-struct.ss")
   (include "rumble/struct.ss")
   (include "rumble/prefab.ss")
   (include "rumble/impersonator.ss")

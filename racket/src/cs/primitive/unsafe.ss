@@ -147,6 +147,7 @@
   [unsafe-mutable-hash-iterate-next (known-procedure 4)]
   [unsafe-mutable-hash-iterate-pair (known-procedure 12)]
   [unsafe-mutable-hash-iterate-value (known-procedure 12)]
+  [unsafe-object-type (known-procedure/succeeds 2)]
   [unsafe-os-semaphore-post (known-procedure 2)]
   [unsafe-os-semaphore-wait (known-procedure 2)]
   [unsafe-os-thread-enabled? (known-procedure 1)]

@@ -14,11 +14,11 @@
 (define current-contract-pseudo-random-generator
   (make-parameter (make-pseudo-random-generator)))
 
-(define (rand [x #f]) 
-  (if x
-      (random x (current-contract-pseudo-random-generator))
-      (random (current-contract-pseudo-random-generator))))
-
+(define rand
+  (case-lambda
+    [(k) (random k (current-contract-pseudo-random-generator))]
+    [(min max) (random min max (current-contract-pseudo-random-generator))]
+    [() (random (current-contract-pseudo-random-generator))]))
 
 (define (rand-seed x)
   (parameterize ([current-pseudo-random-generator (current-contract-pseudo-random-generator)])

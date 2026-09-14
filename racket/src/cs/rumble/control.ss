@@ -111,8 +111,12 @@
                                        cc-guard      ; for impersonated tag, initially #f
                                        avail-cache)) ; cache for `continuation-prompt-available?`
 
-(define-record-type (continuation-prompt-tag create-continuation-prompt-tag authentic-continuation-prompt-tag?)
-  (fields (mutable name))) ; mutable => constructor generates fresh instances
+(define-racket-record-type continuation-prompt-tag
+  [fields (mutable name)] ; mutable => constructor generates fresh instances
+  [nongenerative]
+  [sealed #t]
+  [constructor create-continuation-prompt-tag]
+  [predicate authentic-continuation-prompt-tag?])
 
 (define the-default-continuation-prompt-tag (create-continuation-prompt-tag 'default))
 
@@ -496,11 +500,26 @@
 ;; ----------------------------------------
 ;; Capturing and applying continuations
 
-(define-record continuation (mc))
-(define-record full-continuation continuation (k winders mark-stack mark-splice tag))
-(define-record composable-continuation full-continuation (wind?))
-(define-record non-composable-continuation full-continuation ())
-(define-record escape-continuation continuation (tag))
+(define-racket-record-type continuation
+  [fields (immutable mc)])
+(define-racket-record-type full-continuation continuation
+  [fields (immutable k)
+          (immutable winders)
+          (immutable mark-stack)
+          (immutable mark-splice)
+          (immutable tag)])
+(define-racket-record-type composable-continuation full-continuation
+  [fields (immutable wind?)]
+  [sealed #t]
+  [procedure 'cont])
+(define-racket-record-type non-composable-continuation full-continuation
+  [fields]
+  [sealed #t]
+  [procedure 'cont])
+(define-racket-record-type escape-continuation continuation
+  [fields (immutable tag)]
+  [sealed #t]
+  [procedure 'cont])
 
 (define/who call-with-current-continuation
   (case-lambda
@@ -799,19 +818,8 @@
                             "attempt to cross a continuation barrier"))
 
 (define (set-continuation-applicables!)
-  ;; These procedure registrations may be short-circuited by a special
-  ;; case that dispatches directly to `apply-continuation`
-  (struct-property-set! prop:procedure
-                        (record-type-descriptor composable-continuation)
-                        (lambda (c . args) (apply-composable-continuation c args)))
-  (struct-property-set! prop:procedure
-                        (record-type-descriptor non-composable-continuation)
-                        (lambda (c . args) (apply-non-composable-continuation c args)))
-  (struct-property-set! prop:procedure
-                        (record-type-descriptor escape-continuation)
-                        (lambda (c . args) (apply-escape-continuation c args)))
   (struct-property-set! prop:object-name
-                        (record-type-descriptor continuation-prompt-tag)
+                        rtd:continuation-prompt-tag
                         0))
 
 ;; ----------------------------------------
@@ -1602,8 +1610,12 @@
 (define-record-type (continuation-mark-key create-continuation-mark-key authentic-continuation-mark-key?)
   (fields (mutable name))) ; `mutable` ensures that `create-...` allocates
 
-(define-record continuation-mark-key-impersonator impersonator (get set))
-(define-record continuation-mark-key-chaperone chaperone (get set))
+(define-racket-record-type continuation-mark-key-impersonator impersonator
+  [fields (immutable get)
+          (immutable set)])
+(define-racket-record-type continuation-mark-key-chaperone chaperone
+  [fields (immutable get)
+          (immutable set)])
 
 (define make-continuation-mark-key
   (case-lambda
@@ -1717,8 +1729,10 @@
       (and (impersonator? v)
            (authentic-continuation-prompt-tag? (impersonator-val v)))))
 
-(define-record continuation-prompt-tag-impersonator impersonator (procs))
-(define-record continuation-prompt-tag-chaperone chaperone (procs))
+(define-racket-record-type continuation-prompt-tag-impersonator impersonator
+  [fields (immutable procs)])
+(define-racket-record-type continuation-prompt-tag-chaperone chaperone
+  [fields (immutable procs)])
 
 (define-record continuation-prompt-tag-procs (handler abort cc-guard cc-impersonate comp-impersonate))
 

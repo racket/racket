@@ -325,7 +325,8 @@ that are overridden by further impersonators, for example.
 
 @defproc[(impersonate-struct [v any/c]
                              [struct-type struct-type? _unspecified]
-                             [orig-proc (or/c struct-accessor-procedure?
+                             [orig-proc (or/c (and/c struct-accessor-procedure?
+                                                     (not/c struct-metaaccessor-procedure?))
                                               struct-mutator-procedure?
                                               struct-type-property-accessor-procedure?)]
                              [redirect-proc (or/c procedure? #f)] ... ...
@@ -848,6 +849,12 @@ a @racket[orig-proc] is originally applied:
        would return @racket[#f] as its first argument. An
        @racket[orig-proc] can be @racket[struct-info] only if
        @racket[struct-type] or some other @racket[orig-proc] is supplied.}
+
+ @item{A metatype accessor from @racket[make-struct-metatype] can be
+      supplied as @racket[orig-proc]. The corresponding
+      @racket[redirect-proc] must accept two arguments, @racket[_self]
+      and its structure type @racket[_struct:t]; it must return a
+      chaperone of @racket[_struct:t].}
 
  @item{Any accessor or mutator @racket[orig-proc] that is an
        @tech{impersonator} must be specifically a @tech{chaperone}.}

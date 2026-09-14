@@ -151,6 +151,7 @@ static int mark_struct_type_val_MARK(void *p, struct NewGC *gc) {
   gcMARK2(t->props, gc);
   gcMARK2(t->proc_attr, gc);
   gcMARK2(t->guard, gc);
+  gcMARK2(t->metaobj, gc);
   gcMARK2(t->immutables, gc);
 
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
@@ -181,6 +182,7 @@ static int mark_struct_type_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(t->props, gc);
   gcFIXUP2(t->proc_attr, gc);
   gcFIXUP2(t->guard, gc);
+  gcFIXUP2(t->metaobj, gc);
   gcFIXUP2(t->immutables, gc);
 
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS

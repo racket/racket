@@ -100,6 +100,7 @@
             "name.ss"
             "constant.ss"
             "hash-code.ss"
+            "racket-struct.ss"
             "struct.ss"
             "prefab.ss"
             "procedure.ss"

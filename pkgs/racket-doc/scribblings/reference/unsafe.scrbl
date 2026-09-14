@@ -544,6 +544,15 @@ returning only the first result, and without support for
 @history[#:added "8.8.0.3"]}
 
 
+@defproc[(unsafe-object-type [v any/c]) (or/c struct-type? #f)]{
+
+Like @racket[unsafe-struct*-type], but accepts any value, and the
+result is @racket[#f] if no structure type is available for
+@racket[v].
+
+@history[#:added "9.3.0.6"]}
+
+
 @deftogether[(
 @defproc[(unsafe-mutable-hash-iterate-first
           [hash (and/c hash? (not/c immutable?) hash-strong?)])

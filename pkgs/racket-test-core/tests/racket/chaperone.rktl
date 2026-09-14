@@ -9,7 +9,8 @@
                   unsafe-impersonate-procedure
                   unsafe-chaperone-procedure)
          (only-in '#%unsafe
-                  unsafe-impersonate-hash))
+                  unsafe-impersonate-hash)
+         racket/unsafe/undefined)
 
 (define secondary-hash-unused? (eq? 'cs (system-type 'gc)))
 
@@ -3000,6 +3001,169 @@
     (err/rt-test (blue-ref a1))
 
     (void)))
+
+;; ----------------------------------------
+
+(let ()
+  (struct p (x y))
+  (define up (p unsafe-undefined 0))
+  (test #t (eq? unsafe-undefined (p-x up)))
+  (test #t eqv? 0 (p-y up))
+  (define up/no-undefined (chaperone-struct-unsafe-undefined up))
+  (err/rt-test (p-x up/no-undefined))
+  (test #f procedure? up/no-undefined))
+
+(let ()
+  (struct p (x y)
+    #:property prop:chaperone-unsafe-undefined '(y x))
+  (define up (p unsafe-undefined 0))
+  (test #t (eqv? 0 (p-y up)))
+  (err/rt-test (p-x up))
+  (test #f procedure? up))
+
+(let ()
+  (struct p (x y)
+    #:property prop:procedure 1)
+  (define up (p unsafe-undefined (lambda () 0)))
+  (test #t (eq? unsafe-undefined (p-x up)))
+  (test #t eqv? 0 (up))
+  (define up/no-undefined (chaperone-struct-unsafe-undefined up))
+  (err/rt-test (p-x up/no-undefined))
+  (test #t procedure? up/no-undefined))
+
+(let ()
+  (struct p (x y)
+    #:property prop:procedure 1
+    #:property prop:chaperone-unsafe-undefined '(y x))
+  (define up (p unsafe-undefined (lambda () 0)))
+  (test #t (eqv? 0 (up)))
+  (err/rt-test (p-x up))
+  (test #t procedure? up))
+
+;; ----------------------------------------
+
+(define-syntax-rule (struct-metatype-tests [defn ...]
+                                           struct:klass make-klass klass? klass-ref
+                                           klass-one klass-two
+                                           klass-meta-one klass-meta-two)
+  (let ()
+    defn
+    ...
+    (define another-klass-meta-one (make-struct-field-metaaccessor klass-ref 0))
+    (define another-klass-meta-two (make-struct-field-metaaccessor klass-ref 1))
+    (define-values (s:b make-b b? b-ref b-set!) (make-klass 'b #f 2 0 #f null #f #f '(1) #f #f (box 'One) (box 'Two)))
+    (define b (make-b 1 2))
+
+    (define chap-s:b (chaperone-struct s:b klass-one (lambda (s bx) (chaperone-box bx (lambda (b v) v) (lambda (b v) v)))))
+
+    (test #t chaperone-of? chap-s:b s:b)
+    (test #t chaperone-of? (klass-one chap-s:b) (klass-one s:b))
+    (test #f eq? (klass-one chap-s:b) (klass-one s:b))
+    (test #t eq? (klass-two chap-s:b) (klass-two s:b))
+
+    (define chap-b (chaperone-struct b klass-ref
+                                     (lambda (o s:t)
+                                       (chaperone-struct s:t klass-two (lambda (s bx) (chaperone-box bx (lambda (b v) v) (lambda (b v) v)))))))
+    (test #t chaperone-of? chap-b b)
+    (test #t chaperone-of? (klass-meta-two chap-b 'no1) (klass-meta-two b 'no2))
+    (test #t eq? (klass-meta-one chap-b 'no1) (klass-meta-one b 'no2))
+    (test #f eq? (klass-meta-two chap-b 'no1) (klass-meta-two b 'no2))
+    (test #t eq? (another-klass-meta-one chap-b 'no1) (klass-meta-one b 'no2))
+    (test #f eq? (another-klass-meta-two chap-b 'no1) (klass-meta-two b 'no2))
+
+    (err/rt-test (impersonate-struct b klass-ref (lambda (o s:t) 'no)))
+
+    (let ()
+      (define-values (struct:klass2 make-klass2 klass2? klass2-ref) (make-struct-metatype 'klass2 #f 2 #f))
+      (define klass2-meta-one (make-struct-field-metaaccessor klass2-ref 0))
+      (test 'no1 klass2-meta-one b 'no1)
+      (test 'no1 klass2-meta-one chap-b 'no1))
+
+    (define bad-chap-b (chaperone-struct b klass-ref (lambda (o s:t) 'oops)))
+    (test #t chaperone-of? bad-chap-b b)
+    (err/rt-test (klass-meta-one bad-chap-b 'no1)
+                 exn:fail:contract?
+                 #rx"non-chaperone result")))
+
+(define-syntax-rule (struct-metatype-tests/non-optimized struct-metatype-tests authenticity ...)
+  (struct-metatype-tests [(define-values (struct:klass make-klass klass? klass-ref)
+                            ((black-box make-struct-metatype) 'klass #f 2 authenticity ...))
+                          (define klass-one (make-struct-field-accessor klass-ref 0 'one-ref))
+                          (define klass-two (make-struct-field-accessor klass-ref 1 'two-ref))
+                          (define klass-meta-one (make-struct-field-metaaccessor klass-ref 0))
+                          (define klass-meta-two (make-struct-field-metaaccessor klass-ref 1))]
+                         struct:klass make-klass klass? klass-ref
+                         klass-one klass-two
+                         klass-meta-one klass-meta-two))
+
+(struct-metatype-tests/non-optimized struct-metatype-tests #f)
+
+;; optimized:
+(define-syntax-rule (struct-metatype-tests/optimized struct-metatype-tests authenticity ...)
+  (struct-metatype-tests [(define-values (struct:klass make-klass klass? klass-ref
+                                                       klass-one klass-two
+                                                       klass-meta-one klass-meta-two)
+                            (let-values ([(struct:klass make-klass klass? klass-ref)
+                                          (make-struct-metatype 'klass #f 2 authenticity ...)])
+                              (values struct:klass make-klass klass? klass-ref
+                                      (make-struct-field-accessor klass-ref 0 'one-ref)
+                                      (make-struct-field-accessor klass-ref 1 'two-ref)
+                                      (make-struct-field-metaaccessor klass-ref 0)
+                                      (make-struct-field-metaaccessor klass-ref 1))))]
+                         struct:klass make-klass klass? klass-ref
+                         klass-one klass-two
+                         klass-meta-one klass-meta-two))
+
+(struct-metatype-tests/optimized struct-metatype-tests #f)
+
+(define-syntax-rule (struct-metatype-metaauthentic-tests
+                     [defn ...]
+                     struct:klass make-klass klass? klass-ref
+                     klass-one klass-two
+                     klass-meta-one klass-meta-two)
+  (let ()
+    defn
+    ...
+    (define-values (s:b make-b b? b-ref b-set!) (make-klass 'b #f 2 0 #f null #f #f '(1) #f #f (box 'One) (box 'Two)))
+    (define b-x (make-struct-field-accessor b-ref 0 'x))
+    (define b (make-b 1 2))
+
+    (err/rt-test (chaperone-struct s:b klass-one (lambda (s bx) bx))
+                 exn:fail:contract?
+                 #rx"cannot chaperone instance of an authentic structure type")
+
+    (define chap-b (chaperone-struct b b-x (lambda (o v) v)))
+    (test #t chaperone-of? chap-b b)
+    (test #t chaperone-of? (klass-meta-two chap-b 'no1) (klass-meta-two b 'no2))
+    (test #t eq? (klass-meta-one chap-b 'no1) (klass-meta-one b 'no2))
+    (test #t eq? (klass-meta-two chap-b 'no1) (klass-meta-two b 'no2))))
+
+(struct-metatype-tests/non-optimized struct-metatype-metaauthentic-tests)
+(struct-metatype-tests/non-optimized struct-metatype-metaauthentic-tests 'metaauthentic)
+(struct-metatype-tests/optimized struct-metatype-metaauthentic-tests)
+(struct-metatype-tests/optimized struct-metatype-metaauthentic-tests 'metaauthentic)
+
+(define-syntax-rule (struct-metatype-authentic-tests
+                     [defn ...]
+                     struct:klass make-klass klass? klass-ref
+                     klass-one klass-two
+                     klass-meta-one klass-meta-two)
+  (let ()
+    defn
+    ...
+    (define-values (s:b make-b b? b-ref b-set!) (make-klass 'b #f 2 0 #f null #f #f '(1) #f #f (box 'One) (box 'Two)))
+    (define b-x (make-struct-field-accessor b-ref 0 'x))
+    (define b (make-b 1 2))
+
+    (err/rt-test (chaperone-struct s:b klass-one (lambda (s bx) bx))
+                 exn:fail:contract?
+                 #rx"cannot chaperone instance of an authentic structure type")
+    (err/rt-test (chaperone-struct b b-x (lambda (o v) v)))
+                 exn:fail:contract?
+                 #rx"cannot chaperone instance of an authentic structure type"))
+
+(struct-metatype-tests/non-optimized struct-metatype-authentic-tests 'authentic)
+(struct-metatype-tests/optimized struct-metatype-authentic-tests 'authentic)
 
 ;; ----------------------------------------
 

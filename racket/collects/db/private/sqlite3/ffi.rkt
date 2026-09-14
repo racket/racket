@@ -7,7 +7,8 @@
          ffi/unsafe/define
          ffi/vcruntime
          setup/cross-system)
-(require "ffi-constants.rkt")
+(require "ffi-constants.rkt"
+         "../generic/sql-data.rkt")
 (provide (all-from-out "ffi-constants.rkt")
          (protect-out (all-defined-out)))
 
@@ -268,7 +269,8 @@
               #f
               (lambda (v)
                 (define type (sqlite3_value_type v))
-                (cond [(= type SQLITE_INTEGER) (sqlite3_value_int64 v)]
+                (cond [(= type SQLITE_NULL)    sql-null]
+                      [(= type SQLITE_INTEGER) (sqlite3_value_int64 v)]
                       [(= type SQLITE_FLOAT)   (sqlite3_value_double v)]
                       [(= type SQLITE_TEXT)
                        (bytes->string/utf-8 (pointer->bytes (sqlite3_value_text v)
@@ -386,7 +388,8 @@
     (ptr-ref argp _sqlite3_value* i)))
 
 (define (sqlite3_result* ctx r)
-  (cond [(fixnum? r) (sqlite3_result_int64 ctx r)] ;; FIXME: fixnum -> int64
+  (cond [(sql-null? r) (sqlite3_result_null ctx)]
+        [(fixnum? r) (sqlite3_result_int64 ctx r)] ;; FIXME: fixnum -> int64
         [(real? r) (sqlite3_result_double ctx r)]
         [(string? r) (sqlite3_result_text ctx r)]
         [(bytes? r) (sqlite3_result_blob ctx r)]

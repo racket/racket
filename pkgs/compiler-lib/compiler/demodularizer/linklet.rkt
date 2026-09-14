@@ -73,7 +73,7 @@
 (define (linklet*-body linkl)
   (cond
     [(faslable-correlated-linklet? linkl)
-     ;; keep correlated wrappers only on `lambda` and `case-lambda` forms:
+     ;; keep correlated wrappers only on `lambda`, `case-lambda`, and `define-values` forms:
      (match (faslable-correlated-linklet-expr linkl)
        [`(linklet ,imports ,exports . ,body)
         (let loop ([v body])
@@ -83,7 +83,8 @@
              (cond
                [(and (pair? e)
                      (or (eq? (car e) 'lambda)
-                         (eq? (car e) 'case-lambda)))
+                         (eq? (car e) 'case-lambda)
+                         (eq? (car e) 'define-values)))
                 (struct-copy faslable-correlated v
                              [e (loop (faslable-correlated-e v))])]
                [else

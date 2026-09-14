@@ -84,7 +84,7 @@ override the default @racket[equal?] definition through the
 @section[#:tag "creatingmorestructs"]{Creating Structure Types}
 
 @defproc[(make-struct-type [name symbol?]
-                           [super-type (or/c struct-type? #f)]
+                           [super-type (or/c (and/c struct-type? (not/c struct-metatype?)) #f)]
                            [init-field-cnt exact-nonnegative-integer?]
                            [auto-field-cnt exact-nonnegative-integer?]
                            [auto-v any/c #f]
@@ -101,11 +101,13 @@ override the default @racket[equal?] definition through the
                                        null]
                            [guard (or/c procedure? #f) #f]
                            [constructor-name (or/c symbol? #f) #f])
-          (values struct-type?
+          (values (and/c struct-type? struct-metatype?)
                   struct-constructor-procedure?
                   struct-predicate-procedure?
-                  struct-accessor-procedure?
-                  struct-mutator-procedure?)]{
+                  (and/c struct-accessor-procedure?
+                         (procedure-arity-includes/c 2))
+                  (and/c struct-mutator-procedure?
+                         (procedure-arity-includes/c 3)))]{
 
 Creates a new structure type, unless @racket[inspector] is
 @racket['prefab], in which case @racket[make-struct-type] accesses a
@@ -248,13 +250,14 @@ The result of @racket[make-struct-type] is five values:
 
 @history[#:changed "9.0.0.6" @elem{Added @racket['current] as an allowed value for @racket[inspector].}]}
 
-@defproc[(make-struct-field-accessor [accessor-proc struct-accessor-procedure?]
+@defproc[(make-struct-field-accessor [accessor-proc (and/c struct-accessor-procedure?
+                                                           (procedure-arity-includes/c 2))]
                                      [field-pos exact-nonnegative-integer?]
                                      [field/proc-name (or/c symbol? #f) 
                                                       (symbol->string (format "field~a" field-pos))]
                                      [arg-contract-str (or/c string? symbol? #f) #f]
                                      [realm symbol? 'racket])
-         procedure?]{
+         struct-accessor-procedure?]{
 
 Returns a field accessor that is equivalent to @racket[(lambda (s)
 (accessor-proc s field-pos))].  The @racket[accessor-proc] must be
@@ -288,13 +291,14 @@ For examples, see @racket[make-struct-type].
 @history[#:changed "8.4.0.2" @elem{Added the @racket[arg-contract-str]
                                     and @racket[realm] arguments.}]}
 
-@defproc[(make-struct-field-mutator [mutator-proc struct-mutator-procedure?]
+@defproc[(make-struct-field-mutator [mutator-proc (and/c struct-mutator-procedure?
+                                                         (procedure-arity-includes/c 3))]
                                     [field-pos exact-nonnegative-integer?]
                                     [field/proc-name (or/c symbol? #f)
                                                      (symbol->string (format "field~a" field-pos))]
                                     [arg-contract-str (or/c string? symbol? #f) #f]
                                     [realm symbol? 'racket])
-         procedure?]{
+         struct-mutator-accessor-procedure?]{
 
 Returns a field mutator that is equivalent to @racket[(lambda (s v)
 (mutator-proc s field-pos v))].  The @racket[mutator-proc] must be
@@ -325,6 +329,152 @@ instance of a structure type that might have subtypes.
 
 @history[#:added "8.0.0.7"]}
 
+
+@defproc[(make-struct-metatype [name symbol?]
+                               [super-metatype (or/c struct-metatype? #f)]
+                               [init-field-cnt exact-nonnegative-integer?]
+                               [authenticity (or/c #f 'metaauthentic 'authentic) 'metaauthentic])
+         (values
+          struct-type?
+          (procedure-arity-includes/c (+ 11 init-field-cnt))
+          struct-predicate-procedure?
+          (and/c struct-metaaccessor-procedure?
+                 struct-accessor-procedure?
+                 (procedure-arity-includes/c 2)))]{
+
+Creates a @deftech{structure metatype} that can be used to generate
+new @tech{structure types}. The new structure metatype is a
+submetatype of @racket[super-metatype] if @racket[super-metatype] is
+provided as non-@racket[#f].
+
+The result is four values:
+
+@itemlist[
+
+ @item{@racket[_metastruct:name]: A structure metatype that is
+ instantiated by each structure type (not its instances) produced by
+ calling the @racket[_make-name-type] result. If
+ @racket[super-metatype] is provided, structure types produced by
+ @racket[_make-name-type] are also instances of
+ @racket[super-metatype].
+
+ The @racket[_metastruct:name] result also counts as a structure type,
+ but it is instantiated only as other structure types. As a structure
+ type, @racket[_metastruct:name] is controlled by an inspector that
+ has no parent (so the structure type cannot be inspected via
+ @racket[struct-type-info], for example).
+
+ If @racket[authenticity] is @racket['metaauthentic] or @racket['authentic],
+ then @racket[_metastruct:name] is created with @racket[prop:authentic].
+ If @racket[super-metatype] is provided, it must have the same authenticity.}
+
+ @item{@racket[_make-name-type]: A procedure like @racket[make-struct-type], but all
+ arguments of @racket[make-struct-type] are required for
+ @racket[_make-name-type], and @racket[_make-name-type] requires
+ @racket[init-field-cnt] additional arguments. If @racket[super-metatype],
+ it contributes additional required arguments before the
+ @racket[init-field-cnt] additional arguments.
+
+ If @racket[authenticity] is @racket['authentic], then every structure
+ type created by @racket[_make-name-type] has
+ @racket[prop:authentic].}
+
+ @item{@racket[_name?]: A predicate to recognize structure types
+ produced by @racket[_make-name-type] or a submetatype's maker.}
+
+ @item{@racket[_name-ref]: An accessor procedure for use on a result
+ of @racket[_make-name-type] to extract one of the additional
+ @racket[init-field-cnt] arguments that were provided to
+ @racket[_make-name-type]. This accessor is analogous to the
+ position-based accessor returned by @racket[make-struct-type], and it
+ can be converted to a position-specific accessor using
+ @racket[make-struct-field-accessor]. The accessor's argument
+ can be any @racket[_metastruct:name], including structure types
+ produced via makers of a submetatypes.
+
+ The @racket[_name-ref] procedure can be provided to
+ @racket[chaperone-struct] to interpose on extraction of an instance's
+ structure type, as long as @racket[authenticity] is not
+ @racket['authentic] and the instance's strcuture type is itself of an
+ instance of @racket[_metastruct:name].
+
+ See also @racket[make-struct-field-metaaccessor] and
+ @racket[make-struct-type-accessor].}
+
+]
+
+A structure type produced by @racket[_make-name-type] can be used as
+supertype for @racket[make-struct-type] or vice-versa. A structure
+metatype produced by @racket[make-struct-metatype] cannot be used as
+a supertype for @racket[make-struct-type], and
+@racket[super-metatype] cannot be a structure type produced by
+@racket[make-struct-type] or by any @racket[_make-name-type]
+produced by @racket[make-struct-type].
+
+Fields added in a structure metatype are similar to property values
+that can associated with a structure type by supplying a
+@tech{structure type property} to @racket[make-struct-type]. Structure
+metatype fields may be accessed more efficiently than property values,
+however, due to the single-inheretance nature of metatypes.
+
+@examples[
+#:eval struct-eval
+(define-values (struct:klass make-klass-struct-type klass-type? klass-type-ref)
+  (make-struct-metatype 'klass #f 1))
+(define klass-vtable (make-struct-field-accessor klass-type-ref 0))
+(define instance-vtable (make-struct-field-metaaccessor klass-type-ref 0))
+
+(define-values (struct:posn make-posn posn? posn-ref posn-set!)
+  (make-klass-struct-type 'p #f 2 0 #f null 'current #f '(0 1) #f #f
+                          (vector (lambda (p) (list 'x '= (posn-ref p 0)))
+                                  (lambda (p) (list 'y '= (posn-ref p 1))))))
+
+(define p (make-posn 1 2))
+
+((vector-ref (instance-vtable p 'oops) 0) p)
+((vector-ref (instance-vtable p 'oops) 1) p)
+
+(eq? ((make-struct-type-metaaccessor klass-type-ref) p 'oops)
+     struct:posn)
+]
+
+@history[#:added "9.3.0.6"]}
+
+@defproc[(struct-metatype? [v any/c]) boolean?]{Returns @racket[#t] if
+ @racket[v] is a @tech{structure metatype} value created via
+ @racket[make-struct-metatype], @racket[#f] otherwise.
+
+@history[#:added "9.3.0.6"]}
+
+@defproc[(make-struct-field-metaaccessor [accessor-proc struct-metaaccessor-procedure?]
+                                         [field-pos exact-nonnegative-integer?])
+         (procedure-arity-includes/c 2)]{
+
+Converts an @racket[accessor-proc] from @racket[make-struct-metatype]
+to work on instances of structure types that instantiate the metatype
+created by @racket[make-struct-metatype], and also to access a
+specific field by its position within the metatype.
+
+The resulting procedure accepts two argument: the structure whose
+structure type is accessed, and a default value to return if the first
+argument is not an instance of a structure type recognized by
+@racket[accessor-proc]. In other words, the resulting procedure never
+throws an exception when given two arguments.
+
+See @racket[make-struct-metatype] for an example.
+
+@history[#:added "9.3.0.6"]}
+
+@defproc[(make-struct-type-metaaccessor [accessor-proc struct-metaaccessor-procedure?])
+         (procedure-arity-includes/c 2)]{
+
+Like @racket[make-struct-field-metaaccessor], but the accessor's
+result for recognized instances is the instance's structure type,
+instead of a field within the structure type.
+
+See @racket[make-struct-metatype] for an example.
+
+@history[#:added "9.3.0.6"]}
 
 @;------------------------------------------------------------------------
 @section[#:tag "structprops"]{Structure Type Properties}
@@ -610,6 +760,10 @@ is inaccessible.)}
  @racket[#t] if @racket[v] is a mutator procedure generated by
  @racket[struct], @racket[make-struct-type], or
  @racket[make-struct-field-mutator], @racket[#f] otherwise.}
+
+@defproc[(struct-metaaccessor-procedure? [v any/c]) boolean?]{Returns
+ @racket[#t] if @racket[v] is an accessor procedure generated by
+ @racket[make-struct-metatype].}
 
 @defproc[(prefab-struct-key [v any/c]) (or/c #f symbol? list?)]{
 

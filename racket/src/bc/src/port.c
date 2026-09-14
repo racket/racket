@@ -1553,6 +1553,7 @@ static void release_input_lock_and_elect_new_leader(Scheme_Input_Port *ip)
   scheme_post_sema_all(ip->input_lock);
   ip->input_lock = NULL;
   ip->input_giveup = NULL;
+  ip->direct_read_waiting = 0;
 
   if (ip->input_extras_ready) {
     scheme_post_sema_all(ip->input_extras_ready);
@@ -1899,11 +1900,8 @@ int scheme_peeked_read_via_get(Scheme_Input_Port *ip,
              to give it a chance */
           current_leader = 0;
           release_input_lock_and_elect_new_leader(ip);
+          scheme_thread_block(0.0);
         }
-
-	scheme_thread_block(0.0);
-
-        ip->direct_read_waiting = 0;
       }
     }
   }
