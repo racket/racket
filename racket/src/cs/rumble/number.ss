@@ -175,35 +175,13 @@
   (inexact->exact fl))
 
 (define/who (flreal-part a)
-  (or (and
-       (complex? a)
-       (not (real? a)) ; => complex imaginary part
-       (let ([r (real-part a)])
-         (and (flonum? r) r)))
-      (check who (lambda (a) #f)
-             :contract (string-append
-                        "(and/c complex?\n"
-                        "       (lambda (c) (flonum? (real-part c)))\n"
-                        "       (lambda (c) (flonum? (imag-part c))))")
-             a)))
+  (#2%cfl-real-part a))
 
 (define/who (flimag-part a)
-  (or (and
-       (complex? a)
-       (let ([r (imag-part a)])
-         (and (flonum? r) ; => complex real part
-              r)))
-      (check who (lambda (a) #f)
-             :contract (string-append
-                        "(and/c complex?\n"
-                        "       (lambda (c) (flonum? (real-part c)))\n"
-                        "       (lambda (c) (flonum? (imag-part c))))")
-             a)))
+  (#2%cfl-imag-part a))
 
 (define/who (make-flrectangular a b)
-  (check who flonum? a)
-  (check who flonum? b)
-  (make-rectangular a b))
+  (#2%fl-make-rectangular a b))
 
 (define (system-big-endian?)
   (eq? (native-endianness) (endianness big)))
