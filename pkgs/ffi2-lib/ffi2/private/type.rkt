@@ -132,7 +132,16 @@
           (raise-syntax-error #f "ffi2 type allowed only as a procedure return" stx t-id))
         (unless (or for-argument? for-return? (not (eq? 'racket (ffi2-type-category v))))
           (raise-syntax-error #f "ffi2 type allowed only as a procedure argument or return" stx t-id))
-        v)
+        (define fresh-intro (make-syntax-introducer))
+        (define (intro stx)
+          (and stx (fresh-intro (syntax-local-introduce (datum->syntax #f stx)))))
+        ;; introduce names in the same way as `syntax-local-apply-transformer`
+        (struct-copy ffi2-type v
+                     [defns (intro (ffi2-type-defns v))]
+                     [predicate (intro (ffi2-type-predicate v))]
+                     [racket->c (intro (ffi2-type-racket->c v))]
+                     [c->racket (intro (ffi2-type-c->racket v))]
+                     [release (intro (ffi2-type-release v))]))
       (cond
         [(ffi2-type? v)
          (unless (identifier? t-stx)

@@ -372,7 +372,7 @@
                                     field-compound? field-ptr-vm-type
                                     field-release]
                      ...)
-                    (map (lambda (t)
+                    (map (lambda (t) 
                            (list (ffi2-type-vm-type t)
                                  (ffi2-type-defns t)
                                  (ffi2-type-c->racket t)

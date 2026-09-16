@@ -30,3 +30,9 @@
              (parameterize ([current-namespace (variable-reference->namespace
                                                 (#%variable-reference))])
                (eval '(ffi2-ref ip (num_t #:wrong))))))
+
+;; make sure expansion doesn't create ambigious bindings
+(define-ffi2-type t_t int_t
+  #:racket->c list)
+(define (make v)
+  (ffi2-procedure v ((list_t t_t) . -> . void_t)))
