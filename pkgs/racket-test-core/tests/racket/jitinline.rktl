@@ -786,11 +786,13 @@
     (un 105 'real-part 105)
     (un-exact 10.0 'flreal-part 10.0+7.0i #t)
     (check-error-message 'flreal-part (eval `(lambda (x) (flreal-part x))) #:bad-value 1+2i)
+    (check-error-message 'flreal-part (eval `(lambda (x) (flreal-part x))) #:bad-value 1.0)
     (un 2 'imag-part 1+2i)
     (un-exact 0 'imag-part 106)
     (un-exact 0 'imag-part 106.0)
     (un-exact 7.0 'flimag-part 10.0+7.0i #t)
     (check-error-message 'flimag-part (eval `(lambda (x) (flimag-part x))) #:bad-value 1+2i)
+    (check-error-message 'flimag-part (eval `(lambda (x) (flimag-part x))) #:bad-value 1.0)
 
     (bin 1+2i 'make-rectangular 1 2)
     (bin-exact 1.0+2.0i 'make-rectangular 1 2.0)

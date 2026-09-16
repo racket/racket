@@ -7,8 +7,9 @@
          "for-util.rkt")
 
 (define 1ary-table
-  (list (list flimag-part unsafe-flimag-part)
-        (list flreal-part unsafe-flreal-part)))
+  null)
+;; note: flimag-part and flreal-part need complex numbers with inexact
+;; imaginary parts, not just flonums; we test them more in "jitinline.rktl"
 
 (define 2ary-table
   (list (list make-flrectangular unsafe-make-flrectangular)))

@@ -175,10 +175,22 @@
   (inexact->exact fl))
 
 (define/who (flreal-part a)
-  (#2%cfl-real-part a))
+  (if (flonum? a) ;; =? imaginary 0 part
+      (#%$app/no-return raise-flx-part-argument-error who a)
+      (#2%cfl-real-part a)))
 
 (define/who (flimag-part a)
-  (#2%cfl-imag-part a))
+  (if (flonum? a) ;; =? imaginary 0 part
+      (#%$app/no-return raise-flx-part-argument-error who a)
+      (#2%cfl-imag-part a)))
+
+(define (raise-flx-part-argument-error who a)
+  (raise-argument-error who
+                        (string-append
+                         "(and/c complex?\n"
+                         "       (lambda (c) (flonum? (real-part c)))\n"
+                         "       (lambda (c) (flonum? (imag-part c))))")
+                        a))
 
 (define/who (make-flrectangular a b)
   (#2%fl-make-rectangular a b))
