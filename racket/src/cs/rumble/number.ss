@@ -13,8 +13,7 @@
 (define (single-flonum-available?) #f)
 
 (define/who (real->double-flonum x)
-  (check who real? x)
-  (exact->inexact x))
+  (#2%real->flonum x))
 
 (define/who (real->single-flonum x)
   (check who real? x)

@@ -68,7 +68,7 @@
                 fxsll/wraparound fxlshift/wraparound
                 fxsrl fxrshift/logical
                 exact inexact->exact
-                real->flonum ->fl
+                real->flonum real->double-flonum
                 time-utc->date seconds->date
                 make-record-type-descriptor* make-struct-type
                 atan2 atan

@@ -199,11 +199,34 @@
           [else
            (hash-ref env s s)])))))
 
+;; perform conversions that the backend can handle so that
+;; they don't change the overall compilation result
+(define (simplify-compiled e)
+  (match e
+    [`(($primitive 3 fl+) ,e)
+     (define (obviously-flonum? e fuel)
+       (match e
+         [`(($primitive ,_ ,(or 'fl+ 'fl- 'fl*)) ,e ...) #t]
+         [`(($primitive ,_ fixnum->flonum) ,_) #t]
+         [`(($primitive ,_ $real->flonum) ,_ ,_) #t]
+         [(? flonum?) #t]
+         [`(if ,_ ,thn ,els)
+          (and (not (zero? fuel))
+               (obviously-flonum? thn (sub1 fuel))
+               (obviously-flonum? els (sub1 fuel)))]
+         [_ #f]))
+     (if (obviously-flonum? e 1)
+         e
+         `(($primitive 3 fl+) ,(simplify-compiled e)))]
+    [`(,a ...)
+     (map simplify-compiled e)]
+    [_ e]))
+
 (define (comp=? c1 c2 want-same?)
   (cond
     [(eq? 'chez-scheme (system-type 'vm))
-     (let ([t1 (compile/optimize c1)]
-           [t2 (compile/optimize c2)])
+     (let ([t1 (simplify-compiled (compile/optimize c1))]
+           [t2 (simplify-compiled (compile/optimize c2))])
        (define same? (equal? t1 t2))
        (when (and (not same?) want-same?)
          (pretty-write t1)
@@ -844,20 +867,15 @@
 (test-comp '(lambda (z) (let ([f (lambda (i) (car i))]) (f z)) #t)
            '(lambda (z) (let ([f (lambda (i) (car i))]) (f z)) (pair? z)))
 
-(test-comp #:except 'chez-scheme ; real->double-flonum is not primitive
-           '(lambda (z) (fl+ z z))
+(test-comp '(lambda (z) (fl+ z z))
            '(lambda (z) (real->double-flonum (fl+ z z))))
-(test-comp #:except 'chez-scheme
-           '(lambda (z) (fl+ z z))
+(test-comp '(lambda (z) (fl+ z z))
            '(lambda (z) (exact->inexact (fl+ z z))))
-(test-comp #:except 'chez-scheme
-           '(lambda (z) (real->double-flonum z))
+(test-comp '(lambda (z) (real->double-flonum z))
            '(lambda (z) (real->double-flonum (real->double-flonum z))))
-(test-comp #:except 'chez-scheme
-           '(lambda (z) (unsafe-fx->fl (fx+ z z)))
+(test-comp '(lambda (z) (unsafe-fx->fl (fx+ z z)))
            '(lambda (z) (real->double-flonum (fx+ z z))))
-(test-comp #:except 'chez-scheme
-           '(lambda (z) (unsafe-fx->fl (fx+ z z)))
+(test-comp '(lambda (z) (unsafe-fx->fl (fx+ z z)))
            '(lambda (z) (exact->inexact (fx+ z z))))
 
 ; Test that the optimizer infers correctly the type of all the arguments
