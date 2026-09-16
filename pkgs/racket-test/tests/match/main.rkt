@@ -6,6 +6,7 @@
          "examples.rkt"
          "case-tests.rkt"
          "hash-table-tests.rkt"
+         "pattern-bound-identifiers-tests.rkt"
          rackunit rackunit/text-ui
          (only-in racket/base local-require))
 
@@ -649,7 +650,8 @@
                             other-tests 
                             other-plt-tests
                             case-tests
-                            hash-table-tests)
+                            hash-table-tests
+                            pattern-bound-identifiers-tests)
              'verbose))
 
 (module+ main
