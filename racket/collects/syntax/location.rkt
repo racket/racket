@@ -17,10 +17,12 @@
 
 (begin-for-syntax
 
+  (define cache (make-hash))
+  
   (define (source-location-relative-source loc)
     (define src (source-location-source loc))
     (and (path-string? src)
-         (path->relative-string/library src #f)))
+         (path->relative-string/library src #f #:cache cache)))
 
   (define (syntax-quote-source stx)
     (cond
