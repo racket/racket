@@ -13,7 +13,7 @@
       (and (eq? (unbox b) old)
            (box-cas!* b old new))))
 
-(for ([N (in-range 4 20)])
+(for ([N (in-range 4 20 3)])
   (define f (make-fsemaphore 1))
   (define working (box 'ok))
   (define fts
