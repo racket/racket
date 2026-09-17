@@ -9,8 +9,8 @@ REM Racket, or by "../../build.zuo" after "../../winfig.bat" is used
 
 set SLSP_SUFFIX=
 set ENABLE_CIFY=auto
-set MORE_CFLAGS=
-set MORE_LDFLAGS=
+set MORE_CFLAGS=-DPSAPI_VERSION=2
+set MORE_LDFLAGS=-DPSAPI_VERSION=2
 
 :argloop
 shift

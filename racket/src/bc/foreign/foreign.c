@@ -5499,9 +5499,9 @@ static void save_errno_values(int kind)
 
   if (kind == 2) {
     intptr_t v = 0;
-#   ifdef WINDOWS_DYNAMIC_LOAD
+#ifdef WINDOWS_DYNAMIC_LOAD
     v = GetLastError();
-#   endif /* WINDOWS_DYNAMIC_LOAD */
+#endif /* WINDOWS_DYNAMIC_LOAD */
     p->saved_errno = v;
     return;
   }
@@ -5514,7 +5514,13 @@ static void save_errno_values(int kind)
      `errno`. */
   if (!get_errno_ptr) {
     HMODULE hm;
-    hm = LoadLibrary("msvcrt.dll");
+    #if defined(_M_IX86)
+      hm = LoadLibraryW(L"msvcrt.dll");
+    #else
+      LoadLibraryW(L"vcruntime140.dll");
+      hm = LoadLibraryW(L"ucrtbase.dll");
+    #endif
+    
     if (hm) {
       get_errno_ptr = (get_errno_ptr_t)GetProcAddress(hm, "_errno");
     }

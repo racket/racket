@@ -233,7 +233,7 @@
   (define embed+boot-deps (list petite-v.boot scheme-v.boot racket-v.boot
                                 (at-source "embed-boot.rkt")))
   
-  (define windows-libs '("WS2_32.lib" "Shell32.lib" "User32.lib" "Winmm.lib"
+  (define windows-libs '("WS2_32.lib" "Shell32.lib" "User32.lib" "Winmm.lib" "Psapi.lib"
                                       "RpCrt4.lib" "Ole32.lib" "Advapi32.lib"))
 
   (define racket.manifest (at-source "../../worksp/racket/racket.manifest"))

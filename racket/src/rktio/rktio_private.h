@@ -5,16 +5,20 @@
 #include "rktio_platform.h"
 
 #ifdef RKTIO_SYSTEM_WINDOWS
-# if _WIN32_WINNT < 0x602
-#  undef _WIN32_WINNT
-#  define _WIN32_WINNT 0x602
-# endif
-# include <winsock2.h>
-# include <windows.h>
+#if _WIN32_WINNT < 0x602
+#undef _WIN32_WINNT
+#define _WIN32_WINNT 0x602
 #endif
+
+#include <winsock2.h>
+#include <windows.h>
+#include <VersionHelpers.h>
+#endif
+
 #ifdef RKTIO_USE_PTHREADS
 # include <pthread.h>
 #endif
+
 #ifdef RKTIO_USE_XLOCALE
 # ifdef RKTIO_USE_XLOCALE_HEADER
 #  include <xlocale.h>
@@ -486,5 +490,11 @@ void rktio_set_console_handler(void);
 /* A lazy solution to some lazy-initialization synchronization,
    depends on the first call to rktio_init() not being concurrent
    (as does some other initialization for Windows): */
-extern HANDLE rktio_global_lock;
+extern CRITICAL_SECTION rktio_global_cs;
+
+#define VCRUNTIME_DLL "VCRUNTIME140.dll"
+#define VCRUNTIME_1_DLL "VCRUNTIME140_1.dll"
+#define UCRT_DLL "ucrtbase.dll"
+#define MSVCRT_DLL "msvcrt.dll"
+
 #endif

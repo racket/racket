@@ -6,23 +6,23 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 #ifdef RKTIO_SYSTEM_UNIX
-# include <unistd.h>
-# include <utime.h>
-# include <fcntl.h>
-# include <pwd.h>
-# include <grp.h>
-# include <dirent.h>
-# include <sys/time.h>
-# include <sys/utsname.h>
+#include <unistd.h>
+#include <utime.h>
+#include <fcntl.h>
+#include <pwd.h>
+#include <grp.h>
+#include <dirent.h>
+#include <sys/time.h>
+#include <sys/utsname.h>
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
-# include <windows.h>
-# include <shlobj.h>
-# include <direct.h>
-# include <sys/types.h>
-# include <sys/stat.h>
-# include <sys/utime.h>
-# include <io.h>
+#include <windows.h>
+#include <shlobj.h>
+#include <direct.h>
+#include <sys/types.h>
+#include <sys/utime.h>
+#include <io.h>
+  #include <psapi.h>
 #endif
 
 #if defined(S_IFDIR) && !defined(S_ISDIR)
@@ -68,41 +68,6 @@ typedef struct group_member_cache_entry_t {
 # define GROUP_CACHE_SIZE 10
 #endif
 
-#ifdef RKTIO_SYSTEM_WINDOWS
-static int procs_inited = 0;
-typedef BOOLEAN (WINAPI*CreateSymbolicLinkProc_t)(wchar_t *dest, wchar_t *src, DWORD flags);
-static CreateSymbolicLinkProc_t CreateSymbolicLinkProc = NULL;
-
-typedef BOOL (WINAPI*DeviceIoControlProc_t)(HANDLE hDevice, DWORD dwIoControlCode, LPVOID lpInBuffer,
-					    DWORD nInBufferSize, LPVOID lpOutBuffer, DWORD nOutBufferSize,
-					    LPDWORD lpBytesReturned, LPOVERLAPPED lpOverlapped);
-static DeviceIoControlProc_t DeviceIoControlProc;
-
-typedef DWORD (WINAPI*GetFinalPathNameByHandle_t)(HANDLE hFile, wchar_t *lpszFilePath,
-                                                  DWORD cchFilePath, DWORD  dwFlags);
-GetFinalPathNameByHandle_t GetFinalPathNameByHandleProc;
-
-# define rktioFILE_NAME_NORMALIZED 0x0
-#endif
-
-#ifdef RKTIO_SYSTEM_WINDOWS
-static void init_procs()
-{
-  if (!procs_inited) {
-    HMODULE hm;
-
-    procs_inited = 1;
-    
-    hm = LoadLibraryW(L"kernel32.dll");
-
-    CreateSymbolicLinkProc = (CreateSymbolicLinkProc_t)GetProcAddress(hm, "CreateSymbolicLinkW");
-    DeviceIoControlProc = (DeviceIoControlProc_t)GetProcAddress(hm, "DeviceIoControl");
-    GetFinalPathNameByHandleProc = (GetFinalPathNameByHandle_t)GetProcAddress(hm, "GetFinalPathNameByHandleW");
-
-    FreeLibrary(hm);
-  }
-}
-#endif
 
 #ifdef RKTIO_SYSTEM_WINDOWS
 # define RKTIO_UNC_READ  RKTIO_PERMISSION_READ
@@ -238,11 +203,7 @@ static char *UNC_readlink(rktio_t *rktio, rktio_err_t *err, const char *fn)
   int len, off;
   wchar_t *lk;
   wchar_t *wp;
-
-  init_procs();
-
-  if (!DeviceIoControlProc) return NULL;
-
+  
   wp = WIDE_PATH_copy(fn, err);
   if (!wp) {
     /* Treat invalid path as non-existent path */
@@ -265,7 +226,7 @@ static char *UNC_readlink(rktio_t *rktio, rktio_err_t *err, const char *fn)
 
   while (1) {
     buffer = (char *)malloc(size);
-    if (DeviceIoControlProc(h, mzFSCTL_GET_REPARSE_POINT, NULL, 0, buffer, size,
+    if (DeviceIoControl(h, mzFSCTL_GET_REPARSE_POINT, NULL, 0, buffer, size,
 			    &got, NULL))
       break;
     else if (GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
@@ -492,11 +453,10 @@ static int UNC_stat(rktio_t *rktio, rktio_err_t *err,
 	free(wp);
 
         do {
-          init_procs();
           if (dest) free(dest);
           dest_len = len + 1;
           dest = malloc(dest_len * sizeof(wchar_t));
-          len = GetFinalPathNameByHandleProc(h, dest, dest_len, rktioFILE_NAME_NORMALIZED);
+          len = GetFinalPathNameByHandleW(h, dest, dest_len, FILE_NAME_NORMALIZED);
         } while (len > dest_len);
 
         if (!len) {
@@ -972,8 +932,6 @@ static rktio_identity_t *get_identity(rktio_t *rktio, rktio_fd_t *fd, const char
   BY_HANDLE_FILE_INFORMATION info;
   HANDLE fdh;
 
-  init_procs();
-
   if (path) {
     const wchar_t *wp;
     wp = WIDE_PATH_temp(path);
@@ -983,10 +941,7 @@ static rktio_identity_t *get_identity(rktio_t *rktio, rktio_fd_t *fd, const char
                       FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
                       NULL,
                       OPEN_EXISTING,
-                      FILE_FLAG_BACKUP_SEMANTICS 
-                      | ((fd && CreateSymbolicLinkProc)
-                         ? mzFILE_FLAG_OPEN_REPARSE_POINT 
-                         : 0),
+                      FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
                       NULL);
     if (fdh == INVALID_HANDLE_VALUE) {
       get_windows_error();
@@ -1272,7 +1227,6 @@ int rktio_make_link(rktio_t *rktio, const char *src, const char *dest, int dest_
    file */
 {
 #if defined(RKTIO_SYSTEM_WINDOWS)
-  init_procs();
 
 # ifndef SYMBOLIC_LINK_FLAG_DIRECTORY
 #  define SYMBOLIC_LINK_FLAG_DIRECTORY 0x1
@@ -1281,32 +1235,29 @@ int rktio_make_link(rktio_t *rktio, const char *src, const char *dest, int dest_
 #  define SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE 0x2
 # endif
 
-  if (CreateSymbolicLinkProc) {
-    int flags = SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
-    wchar_t *src_w;
-    wchar_t *dest_w;
+  int flags = SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
+  wchar_t *src_w;
+  wchar_t *dest_w;
 
-    if (dest_is_directory)
-      flags |= SYMBOLIC_LINK_FLAG_DIRECTORY; /* directory */
+  if (dest_is_directory)
+    flags |= SYMBOLIC_LINK_FLAG_DIRECTORY; /* directory */
 
-    src_w = WIDE_PATH_copy(src, &rktio->err);
-    if (!src_w) return 0;
+  src_w = WIDE_PATH_copy(src, &rktio->err);
+  if (!src_w) return 0;
 
-    dest_w = WIDE_PATH_temp(dest);
-    if (!dest_w) return 0;
+  dest_w = WIDE_PATH_temp(dest);
+  if (!dest_w) return 0;
 
-    if (CreateSymbolicLinkProc(src_w, dest_w, flags)) {
-      free(src_w);
-      return 1;
-    }
-    if (GetLastError() == ERROR_ALREADY_EXISTS)
-      set_racket_error(RKTIO_ERROR_EXISTS);
-    else
-      get_windows_error();
+  if (CreateSymbolicLinkW(src_w, dest_w, flags)) {
     free(src_w);
-  } else
-    set_racket_error(RKTIO_ERROR_UNSUPPORTED);
-  
+    return 1;
+  }
+  if (GetLastError() == ERROR_ALREADY_EXISTS)
+    set_racket_error(RKTIO_ERROR_EXISTS);
+  else
+    get_windows_error();
+  free(src_w);
+
   return 0;
 #else
   while (1) {
@@ -1709,7 +1660,7 @@ static rktio_directory_list_t *do_directory_list_start(rktio_t *rktio, const cha
     int err_val;
     err_val = GetLastError();
     free(wp);  
-    if ((err_val == ERROR_DIRECTORY) && CreateSymbolicLinkProc) {
+    if ((err_val == ERROR_DIRECTORY)) {
       /* check for symbolic link */
       const char *resolved;
       if (UNC_stat(rktio, &rktio->err, filename, NULL, NULL, NULL, NULL, NULL, &resolved, RKTUS_NO_SET)) {
