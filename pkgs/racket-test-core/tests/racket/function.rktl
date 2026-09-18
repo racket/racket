@@ -229,6 +229,13 @@
           [else 1])
         procedure-result-arity (s car)))
 
+(let ()
+  (define-values (struct:s make-s s? s-ref s-set!) (make-struct-type 's #f 1 0 #f))
+  (test 1 procedure-result-arity make-s)
+  (test 1 procedure-result-arity s?)
+  (test 1 procedure-result-arity s-ref)
+  (test 1 procedure-result-arity s-set!))
+
 ;; ---------- identity ----------
 (let ()
   (test 'foo identity 'foo)

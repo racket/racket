@@ -417,6 +417,8 @@
          (if (chaperone? p)
              (unsafe-procedure-chaperone-replace-proc p)
              (unsafe-procedure-impersonator-replace-proc p)))]
+       [(eq? v 'position-based-accessor) 1]
+       [(eq? v 'position-based-mutator) 1]
        [else (procedure-result-arity v)]))]
    [else #f]))
 
