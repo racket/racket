@@ -890,7 +890,10 @@
             ;; Fold to a boolean to allow earlier simplification
             (aim? target 'cify)]
            [`((letrec-values ,binds ,rator) ,rands ...)
-            (schemify `(letrec-values ,binds (,rator . ,rands)) wcm-state)]
+            (schemify
+             (left-to-right/letrec binds rator rands
+                                  prim-knowns knowns imports mutated simples unsafe-mode?)
+             wcm-state)]
            [`(,rator ,exps ...)
             (define (left-left-lambda-convert rator inline-fuel)
               (match rator

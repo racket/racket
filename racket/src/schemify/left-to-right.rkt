@@ -8,6 +8,7 @@
 (provide left-to-right/let
          left-to-right/let-values
          left-to-right/app
+         left-to-right/letrec
 
          make-let-values)
 
@@ -79,6 +80,32 @@
          target
          prim-knowns knowns imports mutated simples
 	 unsafe-mode?)]))]))
+
+;; Keep ordered entry arguments outside a named loop's recursive scope.
+;; The operator must only allocate the loop closure, and arguments must
+;; not capture a continuation: reentering argument evaluation must not
+;; allocate a different closure that can be observed through `eq?`.
+(define (left-to-right/letrec binds rator rands
+                              prim-knowns knowns imports mutated simples unsafe-mode?)
+  (define e `(letrec-values ,binds (,rator . ,rands)))
+  (match binds
+    [`([(,id) ,rhs])
+     (cond
+       [(and (wrap-eq? id rator)
+             (match rhs
+               [`(lambda . ,_) #t]
+               [`(case-lambda . ,_) #t]
+               [`,_ #f])
+             (for/and ([rand (in-list rands)])
+               (simple? rand prim-knowns knowns imports mutated simples unsafe-mode?
+                        #:pure? #f)))
+        (define ids (for/list ([rand (in-list rands)])
+                      (deterministic-gensym "loop_arg_")))
+        `(let-values ,(for/list ([id (in-list ids)] [rand (in-list rands)])
+                        `[(,id) ,rand])
+           (letrec-values ,binds (,rator . ,ids)))]
+       [else e])]
+    [`,_ e]))
 
 ;; Convert an application to enforce left-to-right evaluation order.
 (define (left-to-right/app rator rands app-form target

@@ -146,8 +146,8 @@
                (simple? e #f))))]
       [`(set! ,_ ,e)
        #:guard (not pure?)
-       (simple? e 1)
-       (returns 1)]
+       (and (simple? e 1)
+            (returns 1))]
       [`(if ,tst ,thn ,els)
        (and (simple? tst 1)
             (simple? thn result-arity)
