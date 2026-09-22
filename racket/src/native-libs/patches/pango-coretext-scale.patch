@@ -1,0 +1,12 @@
+diff -r -u old/pango-1.58.0/pango/pangocoretext.c new/pango-1.58.0/pango/pangocoretext.c
+--- old/pango-1.58.0/pango/pangocoretext.c	2026-06-26 10:39:37
++++ new/pango-1.58.0/pango/pangocoretext.c	2026-09-22 12:32:33
+@@ -197,7 +197,7 @@
+       variations = pango_core_text_font_key_get_variations (ctfont->priv->key);
+ 
+       hb_font = hb_coretext_font_create (ctfont->priv->font_ref);
+-      hb_font_set_scale (hb_font, size / x_scale, size / y_scale);
++      hb_font_set_scale (hb_font, size / y_scale, size / y_scale);
+ 
+       if (variations)
+         {

@@ -124,13 +124,16 @@
 ;; Support registration of extra font families:
 (define-patch-path coretext-fontreg-patch "patches/coretext-fontreg.patch")
 
+;; Repair text scaling with different vertical and horizontal scales:
+(define-patch-path pango-coretext-scale-patch "patches/pango-coretext-scale.patch")
+
 ;; Adds cairo_quartz_get_cg_context_with_clip, which is based on
 ;; https://hg.mozilla.org/mozilla-central/file/tip/gfx/cairo/native-clipping.patch
 (define-patch-path cairo-cg-surface-patch "patches/cairo-cg-surface.patch")
 
 ;; Drop a glyph-advance hack that interferes with italic output to PDF
 (define-patch-path cairo-quartz-advance-patch "patches/cairo-quartz-advance.patch")
-
+<
 ;; When substitutions are handled by Pango/Cairo and a substition ends up
 ;; empty, then carry on with PDF writing anyway; that can happen when writing
 ;; "算法名称" with "Lucida Grande" on macOS Monterey, for example
@@ -859,7 +862,8 @@
                        #:configure (meson-configure
                                     '("-Dfontconfig=enabled"))
                        #:patches (append
-                                  (list coretext-fontreg-patch)))]
+                                  (list coretext-fontreg-patch
+                                        pango-coretext-scale-patch)))]
     [("gmp") (config #:patches (cond
                                  [gcc-4.0?
                                   (list gmp-weak-patch)]
