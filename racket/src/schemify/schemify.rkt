@@ -16,8 +16,9 @@
          "find-known.rkt"
          "infer-known.rkt"
          "inline.rkt"
-         "letrec.rkt"
+         "letrec.rkt"         
          "unnest-let.rkt"
+         "let-values.rkt"
          "infer-name.rkt"
          "maybe-unsafe.rkt"
          "ptr-ref-set.rkt"
@@ -521,7 +522,9 @@
                   wcm-state)
   ;; `wcm-state` is one of: 'tail (= unknown), 'fresh (= no marks), or 'marked (= some marks)
   (let schemify/knowns ([knowns knowns] [inline-fuel init-inline-fuel] [wcm-state wcm-state] [unsafe-mode? unsafe-mode?] [v v])
-    (define (schemify v wcm-state [unsafe-mode? unsafe-mode?])
+    (define (schemify* v wcm-state unsafe-mode?)
+      (define (schemify v wcm-state [unsafe-mode? unsafe-mode?]) (schemify* v wcm-state unsafe-mode?))
+      (define (schemify-body body wcm-state [unsafe-mode? unsafe-mode?]) (schemify-body* body wcm-state unsafe-mode?))
       (define s-v
         (reannotate
          v 
@@ -635,15 +638,22 @@
                                            (lambda (k im) (inline-type-id k im add-import! mutated imports))
                                            #:unsafe-mode? unsafe-mode?
                                            #:target target))
-                (unnest-let
-                 (left-to-right/let-values idss
-                                           (for/list ([rhs (in-list rhss)])
-                                             (schemify rhs 'fresh))
-                                           (schemify-body bodys wcm-state)
-                                           mutated
-                                           target
-					   unsafe-mode?)
-                 prim-knowns knowns imports mutated simples unsafe-mode?))]
+                (cond
+                  ;; split immediate `values` pattern early to improve constant and copy propagation
+                  [(convert-simple-let-values-bindings idss rhss prim-knowns knowns imports mutated simples unsafe-mode?)
+                   => (lambda (binds)
+                        (schemify `(let-values ,binds
+                                     . ,bodys)
+                                  wcm-state))]
+                  [else
+                   (unnest-let
+                    (left-to-right/let-values idss
+                                              (for/list ([rhs (in-list rhss)])
+                                                (schemify rhs 'fresh))
+                                              (schemify-body bodys wcm-state)
+                                              target
+                                              prim-knowns knowns imports mutated simples unsafe-mode?)
+                       prim-knowns knowns imports mutated simples unsafe-mode?)]))]
            [`(letrec-values () ,bodys ...)
             (schemify `(begin . ,bodys) wcm-state)]
            [`(letrec-values ([() (values)]) ,bodys ...)
@@ -701,12 +711,16 @@
                                 (cond
                                   [(null? ids)
                                    `([,(deterministic-gensym "lr")
-                                      ,(make-let-values null rhs '(void) target unsafe-mode?)])]
+                                      ,(make-let-values null rhs '(void) target
+                                                        prim-knowns knowns imports mutated simples
+                                                        unsafe-mode?)])]
                                   [(and (pair? ids) (null? (cdr ids)))
                                    `([,(car ids) ,rhs])]
                                   [else
                                    (define lr (deterministic-gensym "lr"))
-                                   `([,lr ,(make-let-values ids rhs `(vector . ,ids) target unsafe-mode?)]
+                                   `([,lr ,(make-let-values ids rhs `(vector . ,ids) target
+                                                            prim-knowns knowns imports mutated simples
+                                                            unsafe-mode?)]
                                      ,@(for/list ([id (in-list ids)]
                                                   [pos (in-naturals)])
                                          `[,id (unsafe-vector*-ref ,lr ,pos)]))]))))
@@ -1166,13 +1180,13 @@
                    [else v])]))])))
       (optimize s-v prim-knowns primitives knowns imports mutated target compiler-query))
 
-    (define (schemify-body l wcm-state [unsafe-mode? unsafe-mode?])
+    (define (schemify-body* l wcm-state [unsafe-mode? unsafe-mode?])
       (cond
         [(null? l) null]
         [(null? (cdr l))
-         (list (schemify (car l) wcm-state unsafe-mode?))]
+         (list (schemify* (car l) wcm-state unsafe-mode?))]
         [else
-         (cons (schemify (car l) 'fresh unsafe-mode?)
-               (schemify-body (cdr l) wcm-state unsafe-mode?))]))
+         (cons (schemify* (car l) 'fresh unsafe-mode?)
+               (schemify-body* (cdr l) wcm-state unsafe-mode?))]))
 
-    (schemify v wcm-state)))
+    (schemify* v wcm-state unsafe-mode?)))

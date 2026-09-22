@@ -2010,12 +2010,12 @@
                 (let-values ([(a b) (values (cons 1 z) (cons 2 z))])
                   (list a b)))))
            '(module m racket/base
-             ;; Reference to a ready module-level variable shouldn't
-             ;; prevent let-values splitting
              (#%plain-module-begin
               (define z (random))
               (define (f)
-                (list (cons 1 z) (cons 2 z))))))
+                (let ([x (cons 1 z)]
+                      [y (cons 2 z)])
+                  (list x y))))))
 
 (test-comp '(module m racket/base
              ;; Don't reorder references to a mutable variable
@@ -2026,14 +2026,33 @@
                   (list b a)))
               (set! z 5)))
            '(module m racket/base
-             ;; Reference to a ready module-level variable shouldn't
-             ;; prevent let-values splitting
              (#%plain-module-begin
               (define z (random))
               (define (f)
                 (list (cons 2 z) (cons 1 z)))
               (set! z 5)))
            #f)
+
+(test-comp #:except 'racket
+           '(module m racket/base
+             ;; Allow `values` splitting with nested `let` on RHS
+             (#%plain-module-begin
+              (define (f)
+                (let-values ([(a b) (let ([one (f)])
+                                      (values (cons one 0) (cons one 0)))])
+                  (list a b)))))
+           '(module m racket/base
+             (#%plain-module-begin
+              (define (f)
+                (let ([one (f)])
+                  (list (cons one 0)
+                        (cons one 0)))))))
+
+(test-comp '(module m racket/base
+              (let-values ([(vx vy) (values (add1 10) 12)])
+                (println (+ vx vy))))
+           '(module m racket/base
+              (println 23)))
 
 (test-comp #:except 'chez-scheme
            '(lambda (z)

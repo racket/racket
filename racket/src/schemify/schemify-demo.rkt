@@ -29,8 +29,10 @@
          [(procedure? v)
           (define a (procedure-arity-mask v))
           (values s (case s
-                      [(+ - * / integer->char char->integer void)
+                      [(+ - * / integer->char char->integer void add1 sub1)
                        (known-procedure/folding a)]
+                      [(cons)
+                       (known-procedure/allocates a)]
                       [(fx+ fxlshift)
                        (known-procedure/folding/limited a 'fixnum)]
                       [(expt arithmetic-shift)
@@ -143,7 +145,14 @@
                           (define-values (class2-ref)
                             (lambda (o)
                               (list (class2-struct-type? o)
-                                    (class2-struct-type-ref o)))))))
+                                    (class2-struct-type-ref o))))
+                          (let-values ([(vx vy) (values (add1 10) 12)])
+                            (println (+ vx vy)))
+                          (let-values ([(also-values) values])
+                            (lambda (ax)
+                              (let-values ([(wx wy) (let-values ([(ax2) (sub1 ax)])
+                                                      (values (add1 ax2) (sub1 ax2)))])
+                                (println (+ wx wy))))))))
                     #;
                     (call-with-input-file "regexp.rktl" read)
                     #t          ; serializable
