@@ -135,7 +135,6 @@
                (simple? rhs 1))
              (simple? body result-arity)))]
       [`(begin ,es ...)
-       #:guard (not pure?)
        (simple-begin? es)]
       [`(begin-unsafe ,es ...)
        (simple-begin? es)]

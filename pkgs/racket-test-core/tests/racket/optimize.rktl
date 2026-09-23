@@ -1523,8 +1523,7 @@
            '(module ? racket/base
               (define x (if (zero? (random 2)) '() '(1)))
               x))
-(test-comp #:except 'chez-scheme
-           '(lambda (x) (if (null? x) x x))
+(test-comp '(lambda (x) (if (null? x) x x))
            '(lambda (x) x))
 (test-comp #:except 'chez-scheme
            '(lambda (x) (if (null? x) null x))
@@ -2273,6 +2272,14 @@
                      (E (λ () T)))
              5)
            5)
+
+(test-comp '(letrec-values ([() (begin 'ok (values))]
+                            [() (let () (begin (list 1) (vector 2 3) (values)))]
+                            [(f) (lambda (x) (if (zero? x) x (f (sub1 x))))]
+                            [() (begin #'x (values))])
+              (f 10))
+           '(letrec ([f (lambda (x) (if (zero? x) x (f (sub1 x))))])
+              (f 10)))
 
 (parameterize ([compile-context-preservation-enabled 
                 ;; Avoid different amounts of unrolling

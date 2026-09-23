@@ -7455,11 +7455,9 @@
                                                                      2)))))
                                                               r_1))
                                                           r_0)))))))))))
-                                     (if (if (if (eq? 'begin hd_0)
-                                               (let ((a_0 (cdr (unwrap e_0))))
-                                                 (wrap-list? a_0))
-                                               #f)
-                                           (not pure?1_0)
+                                     (if (if (eq? 'begin hd_0)
+                                           (let ((a_0 (cdr (unwrap e_0))))
+                                             (wrap-list? a_0))
                                            #f)
                                        (let ((es_0
                                               (let ((d_0 (cdr (unwrap e_0))))
@@ -26356,6 +26354,78 @@
                        body_0))))))))
           (error 'match "failed ~e" e_0))
         e_0))))
+(define letrec-prune-empty-clauses
+  (lambda (idss_0
+           rhss_0
+           bodys_0
+           prim-knowns_0
+           knowns_0
+           imports_0
+           mutated_0
+           simples_0
+           unsafe-mode?_0)
+    (call-with-values
+     (lambda ()
+       (letrec*
+        ((loop_0
+          (|#%name|
+           loop
+           (lambda (idss_1 rhss_1)
+             (if (null? idss_1)
+               (values null null)
+               (if (if (null? (car idss_1))
+                     (let ((temp5_0 (car rhss_1)))
+                       (simple?.1
+                        #f
+                        #f
+                        #t
+                        0
+                        #f
+                        temp5_0
+                        prim-knowns_0
+                        knowns_0
+                        imports_0
+                        mutated_0
+                        simples_0
+                        unsafe-mode?_0))
+                     #f)
+                 (let ((app_0 (cdr idss_1))) (loop_0 app_0 (cdr rhss_1)))
+                 (let ((app_0 (cdr idss_1)))
+                   (call-with-values
+                    (lambda () (loop_0 app_0 (cdr rhss_1)))
+                    (lambda (new-idss_0 new-rhss_0)
+                      (if (eq? new-idss_0 (cdr idss_1))
+                        (values idss_1 rhss_1)
+                        (let ((app_1 (cons (car idss_1) new-idss_0)))
+                          (values
+                           app_1
+                           (cons (car rhss_1) new-rhss_0)))))))))))))
+        (loop_0 idss_0 rhss_0)))
+     (lambda (new-idss_0 new-rhss_0)
+       (if (eq? new-idss_0 idss_0)
+         #f
+         (list*
+          'letrec-values
+          (reverse$1
+           (letrec*
+            ((for-loop_0
+              (|#%name|
+               for-loop
+               (lambda (fold-var_0 lst_0 lst_1)
+                 (if (if (pair? lst_0) (pair? lst_1) #f)
+                   (let ((new-ids_0 (unsafe-car lst_0)))
+                     (let ((rest_0 (unsafe-cdr lst_0)))
+                       (let ((new-rhs_0 (unsafe-car lst_1)))
+                         (let ((rest_1 (unsafe-cdr lst_1)))
+                           (let ((fold-var_1
+                                  (cons
+                                   (list new-ids_0 new-rhs_0)
+                                   fold-var_0)))
+                             (let ((fold-var_2 (values fold-var_1)))
+                               (for-loop_0 fold-var_2 rest_0 rest_1)))))))
+                   fold-var_0)))))
+            (for-loop_0 null new-idss_0 new-rhss_0)))
+          bodys_0))))))
 (define id-to-variable
   (lambda (int-id_0 exports_0 extra-variables_0)
     (export-id
@@ -35623,164 +35693,179 @@
                                                                                        temp149_0))))
                                                                                (if cond-val_0
                                                                                  cond-val_0
-                                                                                 (if (letrec-splitable-values-binding?
-                                                                                      idss_0
-                                                                                      rhss_0)
-                                                                                   (schemify_1
-                                                                                    (letrec-split-values-binding
-                                                                                     idss_0
-                                                                                     rhss_0
-                                                                                     bodys_0)
-                                                                                    wcm-state_2)
-                                                                                   (letrec-conversion
-                                                                                    idss_0
-                                                                                    mutated_0
-                                                                                    target_0
-                                                                                    (let ((app_0
-                                                                                           (apply
-                                                                                            append
-                                                                                            (reverse$1
-                                                                                             (letrec*
-                                                                                              ((for-loop_0
-                                                                                                (|#%name|
-                                                                                                 for-loop
-                                                                                                 (lambda (fold-var_0
-                                                                                                          lst_0
-                                                                                                          lst_1)
-                                                                                                   (if (if (pair?
-                                                                                                            lst_0)
-                                                                                                         (pair?
-                                                                                                          lst_1)
-                                                                                                         #f)
-                                                                                                     (let ((ids_0
-                                                                                                            (unsafe-car
-                                                                                                             lst_0)))
-                                                                                                       (let ((rest_0
-                                                                                                              (unsafe-cdr
-                                                                                                               lst_0)))
-                                                                                                         (let ((rhs_0
+                                                                                 (let ((cond-val_1
+                                                                                        (letrec-prune-empty-clauses
+                                                                                         idss_0
+                                                                                         rhss_0
+                                                                                         bodys_0
+                                                                                         prim-knowns_0
+                                                                                         knowns_1
+                                                                                         imports_0
+                                                                                         mutated_0
+                                                                                         simples_0
+                                                                                         unsafe-mode?_2)))
+                                                                                   (if cond-val_1
+                                                                                     (schemify_1
+                                                                                      cond-val_1
+                                                                                      wcm-state_2)
+                                                                                     (if (letrec-splitable-values-binding?
+                                                                                          idss_0
+                                                                                          rhss_0)
+                                                                                       (schemify_1
+                                                                                        (letrec-split-values-binding
+                                                                                         idss_0
+                                                                                         rhss_0
+                                                                                         bodys_0)
+                                                                                        wcm-state_2)
+                                                                                       (letrec-conversion
+                                                                                        idss_0
+                                                                                        mutated_0
+                                                                                        target_0
+                                                                                        (let ((app_0
+                                                                                               (apply
+                                                                                                append
+                                                                                                (reverse$1
+                                                                                                 (letrec*
+                                                                                                  ((for-loop_0
+                                                                                                    (|#%name|
+                                                                                                     for-loop
+                                                                                                     (lambda (fold-var_0
+                                                                                                              lst_0
+                                                                                                              lst_1)
+                                                                                                       (if (if (pair?
+                                                                                                                lst_0)
+                                                                                                             (pair?
+                                                                                                              lst_1)
+                                                                                                             #f)
+                                                                                                         (let ((ids_0
                                                                                                                 (unsafe-car
-                                                                                                                 lst_1)))
-                                                                                                           (let ((rest_1
+                                                                                                                 lst_0)))
+                                                                                                           (let ((rest_0
                                                                                                                   (unsafe-cdr
-                                                                                                                   lst_1)))
-                                                                                                             (let ((fold-var_1
-                                                                                                                    (let ((fold-var_1
-                                                                                                                           (cons
-                                                                                                                            (let ((rhs_1
-                                                                                                                                   (schemify_1
-                                                                                                                                    rhs_0
-                                                                                                                                    'fresh)))
-                                                                                                                              (if (null?
-                                                                                                                                   ids_0)
-                                                                                                                                (list
-                                                                                                                                 (let ((app_0
-                                                                                                                                        (deterministic-gensym
-                                                                                                                                         "lr")))
-                                                                                                                                   (list
-                                                                                                                                    app_0
-                                                                                                                                    (make-let-values
-                                                                                                                                     null
-                                                                                                                                     rhs_1
-                                                                                                                                     '(void)
-                                                                                                                                     target_0
-                                                                                                                                     prim-knowns_0
-                                                                                                                                     knowns_1
-                                                                                                                                     imports_0
-                                                                                                                                     mutated_0
-                                                                                                                                     simples_0
-                                                                                                                                     unsafe-mode?_2))))
-                                                                                                                                (if (if (pair?
+                                                                                                                   lst_0)))
+                                                                                                             (let ((rhs_0
+                                                                                                                    (unsafe-car
+                                                                                                                     lst_1)))
+                                                                                                               (let ((rest_1
+                                                                                                                      (unsafe-cdr
+                                                                                                                       lst_1)))
+                                                                                                                 (let ((fold-var_1
+                                                                                                                        (let ((fold-var_1
+                                                                                                                               (cons
+                                                                                                                                (let ((rhs_1
+                                                                                                                                       (schemify_1
+                                                                                                                                        rhs_0
+                                                                                                                                        'fresh)))
+                                                                                                                                  (if (null?
+                                                                                                                                       ids_0)
+                                                                                                                                    (list
+                                                                                                                                     (let ((app_0
+                                                                                                                                            (deterministic-gensym
+                                                                                                                                             "lr")))
+                                                                                                                                       (list
+                                                                                                                                        app_0
+                                                                                                                                        (make-let-values
+                                                                                                                                         null
+                                                                                                                                         rhs_1
+                                                                                                                                         '(void)
+                                                                                                                                         target_0
+                                                                                                                                         prim-knowns_0
+                                                                                                                                         knowns_1
+                                                                                                                                         imports_0
+                                                                                                                                         mutated_0
+                                                                                                                                         simples_0
+                                                                                                                                         unsafe-mode?_2))))
+                                                                                                                                    (if (if (pair?
+                                                                                                                                             ids_0)
+                                                                                                                                          (null?
+                                                                                                                                           (cdr
+                                                                                                                                            ids_0))
+                                                                                                                                          #f)
+                                                                                                                                      (list
+                                                                                                                                       (list
+                                                                                                                                        (car
                                                                                                                                          ids_0)
-                                                                                                                                      (null?
-                                                                                                                                       (cdr
-                                                                                                                                        ids_0))
-                                                                                                                                      #f)
-                                                                                                                                  (list
-                                                                                                                                   (list
-                                                                                                                                    (car
-                                                                                                                                     ids_0)
-                                                                                                                                    rhs_1))
-                                                                                                                                  (let ((lr_0
-                                                                                                                                         (deterministic-gensym
-                                                                                                                                          "lr")))
-                                                                                                                                    (let ((app_0
-                                                                                                                                           (list
-                                                                                                                                            lr_0
-                                                                                                                                            (make-let-values
-                                                                                                                                             ids_0
-                                                                                                                                             rhs_1
-                                                                                                                                             (list*
-                                                                                                                                              'vector
-                                                                                                                                              ids_0)
-                                                                                                                                             target_0
-                                                                                                                                             prim-knowns_0
-                                                                                                                                             knowns_1
-                                                                                                                                             imports_0
-                                                                                                                                             mutated_0
-                                                                                                                                             simples_0
-                                                                                                                                             unsafe-mode?_2))))
-                                                                                                                                      (list*
-                                                                                                                                       app_0
-                                                                                                                                       (reverse$1
-                                                                                                                                        (letrec*
-                                                                                                                                         ((for-loop_1
-                                                                                                                                           (|#%name|
-                                                                                                                                            for-loop
-                                                                                                                                            (lambda (fold-var_1
-                                                                                                                                                     lst_2
-                                                                                                                                                     pos_0)
-                                                                                                                                              (if (if (pair?
-                                                                                                                                                       lst_2)
-                                                                                                                                                    #t
-                                                                                                                                                    #f)
-                                                                                                                                                (let ((id_0
-                                                                                                                                                       (unsafe-car
-                                                                                                                                                        lst_2)))
-                                                                                                                                                  (let ((rest_2
-                                                                                                                                                         (unsafe-cdr
-                                                                                                                                                          lst_2)))
-                                                                                                                                                    (let ((fold-var_2
-                                                                                                                                                           (cons
-                                                                                                                                                            (list
-                                                                                                                                                             id_0
-                                                                                                                                                             (list
-                                                                                                                                                              'unsafe-vector*-ref
-                                                                                                                                                              lr_0
-                                                                                                                                                              pos_0))
-                                                                                                                                                            fold-var_1)))
-                                                                                                                                                      (let ((fold-var_3
-                                                                                                                                                             (values
-                                                                                                                                                              fold-var_2)))
-                                                                                                                                                        (for-loop_1
-                                                                                                                                                         fold-var_3
-                                                                                                                                                         rest_2
-                                                                                                                                                         (+
-                                                                                                                                                          pos_0
-                                                                                                                                                          1))))))
-                                                                                                                                                fold-var_1)))))
-                                                                                                                                         (for-loop_1
-                                                                                                                                          null
-                                                                                                                                          ids_0
-                                                                                                                                          0)))))))))
-                                                                                                                            fold-var_0)))
-                                                                                                                      (values
-                                                                                                                       fold-var_1))))
-                                                                                                               (for-loop_0
-                                                                                                                fold-var_1
-                                                                                                                rest_0
-                                                                                                                rest_1))))))
-                                                                                                     fold-var_0)))))
-                                                                                              (for-loop_0
-                                                                                               null
-                                                                                               idss_0
-                                                                                               rhss_0))))))
-                                                                                      (list*
-                                                                                       'letrec*
-                                                                                       app_0
-                                                                                       (schemify-body_1
-                                                                                        bodys_0
-                                                                                        wcm-state_2)))))))))))))
+                                                                                                                                        rhs_1))
+                                                                                                                                      (let ((lr_0
+                                                                                                                                             (deterministic-gensym
+                                                                                                                                              "lr")))
+                                                                                                                                        (let ((app_0
+                                                                                                                                               (list
+                                                                                                                                                lr_0
+                                                                                                                                                (make-let-values
+                                                                                                                                                 ids_0
+                                                                                                                                                 rhs_1
+                                                                                                                                                 (list*
+                                                                                                                                                  'vector
+                                                                                                                                                  ids_0)
+                                                                                                                                                 target_0
+                                                                                                                                                 prim-knowns_0
+                                                                                                                                                 knowns_1
+                                                                                                                                                 imports_0
+                                                                                                                                                 mutated_0
+                                                                                                                                                 simples_0
+                                                                                                                                                 unsafe-mode?_2))))
+                                                                                                                                          (list*
+                                                                                                                                           app_0
+                                                                                                                                           (reverse$1
+                                                                                                                                            (letrec*
+                                                                                                                                             ((for-loop_1
+                                                                                                                                               (|#%name|
+                                                                                                                                                for-loop
+                                                                                                                                                (lambda (fold-var_1
+                                                                                                                                                         lst_2
+                                                                                                                                                         pos_0)
+                                                                                                                                                  (if (if (pair?
+                                                                                                                                                           lst_2)
+                                                                                                                                                        #t
+                                                                                                                                                        #f)
+                                                                                                                                                    (let ((id_0
+                                                                                                                                                           (unsafe-car
+                                                                                                                                                            lst_2)))
+                                                                                                                                                      (let ((rest_2
+                                                                                                                                                             (unsafe-cdr
+                                                                                                                                                              lst_2)))
+                                                                                                                                                        (let ((fold-var_2
+                                                                                                                                                               (cons
+                                                                                                                                                                (list
+                                                                                                                                                                 id_0
+                                                                                                                                                                 (list
+                                                                                                                                                                  'unsafe-vector*-ref
+                                                                                                                                                                  lr_0
+                                                                                                                                                                  pos_0))
+                                                                                                                                                                fold-var_1)))
+                                                                                                                                                          (let ((fold-var_3
+                                                                                                                                                                 (values
+                                                                                                                                                                  fold-var_2)))
+                                                                                                                                                            (for-loop_1
+                                                                                                                                                             fold-var_3
+                                                                                                                                                             rest_2
+                                                                                                                                                             (+
+                                                                                                                                                              pos_0
+                                                                                                                                                              1))))))
+                                                                                                                                                    fold-var_1)))))
+                                                                                                                                             (for-loop_1
+                                                                                                                                              null
+                                                                                                                                              ids_0
+                                                                                                                                              0)))))))))
+                                                                                                                                fold-var_0)))
+                                                                                                                          (values
+                                                                                                                           fold-var_1))))
+                                                                                                                   (for-loop_0
+                                                                                                                    fold-var_1
+                                                                                                                    rest_0
+                                                                                                                    rest_1))))))
+                                                                                                         fold-var_0)))))
+                                                                                                  (for-loop_0
+                                                                                                   null
+                                                                                                   idss_0
+                                                                                                   rhss_0))))))
+                                                                                          (list*
+                                                                                           'letrec*
+                                                                                           app_0
+                                                                                           (schemify-body_1
+                                                                                            bodys_0
+                                                                                            wcm-state_2)))))))))))))))
                                                                   (if (if (eq?
                                                                            'if
                                                                            hd_0)

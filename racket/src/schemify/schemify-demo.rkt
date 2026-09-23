@@ -152,7 +152,11 @@
                             (lambda (ax)
                               (let-values ([(wx wy) (let-values ([(ax2) (sub1 ax)])
                                                       (values (add1 ax2) (sub1 ax2)))])
-                                (println (+ wx wy))))))))
+                                (println (+ wx wy)))))
+                          (letrec-values ([() (begin 'stuff (values))]
+                                          [(f) (lambda (x) (if (zero? x) 'ok (f (sub1 x))))]
+                                          [() (begin 'stuff (values))])
+                            (f 10)))))
                     #;
                     (call-with-input-file "regexp.rktl" read)
                     #t          ; serializable

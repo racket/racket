@@ -689,6 +689,10 @@
                                      #:unsafe-mode? unsafe-mode?
                                      #:target target)
                => (lambda (form) form)]
+              [(letrec-prune-empty-clauses idss rhss bodys
+                                           prim-knowns knowns imports mutated simples unsafe-mode?)
+               => (lambda (new-v)
+                    (schemify new-v wcm-state))]
               [(letrec-splitable-values-binding? idss rhss)
                (schemify
                 (letrec-split-values-binding idss rhss bodys)
