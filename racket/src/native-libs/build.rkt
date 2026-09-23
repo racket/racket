@@ -133,7 +133,7 @@
 
 ;; Drop a glyph-advance hack that interferes with italic output to PDF
 (define-patch-path cairo-quartz-advance-patch "patches/cairo-quartz-advance.patch")
-<
+
 ;; When substitutions are handled by Pango/Cairo and a substition ends up
 ;; empty, then carry on with PDF writing anyway; that can happen when writing
 ;; "算法名称" with "Lucida Grande" on macOS Monterey, for example
