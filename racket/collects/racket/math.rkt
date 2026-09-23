@@ -63,27 +63,6 @@
         (- v)))
 
 
-  ;; adapted from gambit
-  (define (ctanh xi+ieta)
-    ;; we assume that neither xi nor eta can be exact 0
-    (let* ((xi  (real-part xi+ieta))
-           (eta (imag-part xi+ieta)))
-      (if (< (/ (flasinh 1.7976931348623157e308) 4.0) (abs xi))
-          (make-rectangular (flcopysign 1.0 (exact->inexact xi))     ;; xi cannot be exact 0
-                             (flcopysign 0.0 (exact->inexact eta)))   ;; eta cannot be exact 0
-          (let* ((t (tan eta))                                    ;; sin(eta)/cos(eta) can't be exact 0, so can't be exact
-                 (beta (fl+ 1.0 (fl* t t)))                   ;; 1/cos^2(eta), can't be exact
-                 (s (sinh xi))                                    ;; sinh(xi), can't be exact zero, so can't be exact
-                 (rho (flsqrt (fl+ 1.0 (fl* s s)))))        ;; cosh(xi), can't be exact
-            (if (infinite? t)                                     ;; if sin(eta)/cos(eta) = infinity (how, I don't know)
-                (make-rectangular (fl/ rho s) (fl/ t))
-                (let ((one+beta*s^2 (fl+ 1.0 (fl* beta (fl* s s)))))
-                  (make-rectangular (fl/ (fl* beta (fl* rho s))
-                                         one+beta*s^2)
-                                    (fl/ t
-                                         one+beta*s^2))))))))
-
-
   ;; complex hyperbolic functions
   (define (sinh z)
     (unless (number? z) (raise-argument-error 'sinh "number?" z))
@@ -136,7 +115,10 @@
            ;; special case taken from gambit
            (if (eqv? (real-part z) 0)
                (make-rectangular 0 (tan (imag-part z)))
-               (ctanh z))]))
+               ;; use improved complex tan and fact that (tanh z) = (* (tan (* z i)) -i) + symmetry
+               (let ([z (tan (make-rectangular (imag-part z) (real-part z)))])
+                 (make-rectangular (imag-part z) (real-part z))))]))
+  
   ;; angle conversion
   (define (degrees->radians x)
     (unless (real? x) (raise-argument-error 'degrees->radians "real?" x))
