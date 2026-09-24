@@ -7550,7 +7550,7 @@
   (|#%name|
    modified-content-scope-propagations+taint
    (record-accessor struct:modified-content 1)))
-(define finish_2398
+(define finish_2357
   (make-struct-type-install-properties
    '(syntax)
    7
@@ -7654,19 +7654,15 @@
                                                         k_0
                                                         #f)))
                                                  (let ((table_3
-                                                        (call-with-values
-                                                         (lambda ()
-                                                           (values
-                                                            k_0
-                                                            (check-value-to-preserve
-                                                             (plain-property-value
-                                                              v_0)
-                                                             syntax?$1)))
-                                                         (lambda (key_0 val_0)
-                                                           (hash-set
-                                                            table_2
-                                                            key_0
-                                                            val_0)))))
+                                                        (let ((val_0
+                                                               (check-value-to-preserve
+                                                                (plain-property-value
+                                                                 v_0)
+                                                                syntax?$1)))
+                                                          (hash-set
+                                                           table_2
+                                                           k_0
+                                                           val_0))))
                                                    (values table_3))
                                                  table_2)))
                                           (for-loop_0
@@ -7815,11 +7811,11 @@
    #f
    '(7 . 1)
    'make-struct-type
-   (finish_2398 'proc)
-   (finish_2398 'arity)
+   (finish_2357 'proc)
+   (finish_2357 'arity)
    #f
    |#%system-inspector|))
-(define effect_2447 (finish_2398 struct:syntax))
+(define effect_2447 (finish_2357 struct:syntax))
 (define syntax2.1
   (|#%name|
    syntax
@@ -9641,19 +9637,14 @@
                                                                #f)
                                                              #f)
                                                          (let ((table_4
-                                                                (call-with-values
-                                                                 (lambda ()
-                                                                   (values
-                                                                    (|#%app|
-                                                                     interned-scope-key40_0
-                                                                     sc_0)
-                                                                    #t))
-                                                                 (lambda (key_0
-                                                                          val_0)
-                                                                   (hash-set
-                                                                    table_3
-                                                                    key_0
-                                                                    val_0)))))
+                                                                (let ((key_0
+                                                                       (|#%app|
+                                                                        interned-scope-key40_0
+                                                                        sc_0)))
+                                                                  (hash-set
+                                                                   table_3
+                                                                   key_0
+                                                                   #t))))
                                                            (values table_4))
                                                          table_3)))
                                                   (for-loop_1
@@ -9730,19 +9721,14 @@
                                                                #f)
                                                              #f)
                                                          (let ((table_4
-                                                                (call-with-values
-                                                                 (lambda ()
-                                                                   (values
-                                                                    (|#%app|
-                                                                     interned-scope-key40_0
-                                                                     sc_0)
-                                                                    #t))
-                                                                 (lambda (key_0
-                                                                          val_0)
-                                                                   (hash-set
-                                                                    table_3
-                                                                    key_0
-                                                                    val_0)))))
+                                                                (let ((key_0
+                                                                       (|#%app|
+                                                                        interned-scope-key40_0
+                                                                        sc_0)))
+                                                                  (hash-set
+                                                                   table_3
+                                                                   key_0
+                                                                   #t))))
                                                            (values table_4))
                                                          table_3)))
                                                   (for-loop_1
@@ -9808,19 +9794,14 @@
                                                                            scopes_0
                                                                            reachable-scopes_0)
                                                                         (let ((table_6
-                                                                               (call-with-values
-                                                                                (lambda ()
-                                                                                  (values
-                                                                                   (intern-scopes
-                                                                                    scopes_0
-                                                                                    state_0)
-                                                                                   binding_0))
-                                                                                (lambda (key_0
-                                                                                         val_0)
-                                                                                  (hash-set
-                                                                                   table_5
-                                                                                   key_0
-                                                                                   val_0)))))
+                                                                               (let ((key_0
+                                                                                      (intern-scopes
+                                                                                       scopes_0
+                                                                                       state_0)))
+                                                                                 (hash-set
+                                                                                  table_5
+                                                                                  key_0
+                                                                                  binding_0))))
                                                                           (values
                                                                            table_6))
                                                                         table_5)))
@@ -12820,13 +12801,8 @@
                                  i_0)))
                            (let ((table_3
                                   (let ((table_3
-                                         (call-with-values
-                                          (lambda ()
-                                            (values
-                                             (generalize-scope sc_0)
-                                             #t))
-                                          (lambda (key_0 val_0)
-                                            (hash-set table_2 key_0 val_0)))))
+                                         (let ((key_0 (generalize-scope sc_0)))
+                                           (hash-set table_2 key_0 #t))))
                                     (values table_3))))
                              (for-loop_0
                               table_3
@@ -12857,16 +12833,13 @@
                                           i_0)))
                                     (let ((table_4
                                            (let ((table_4
-                                                  (call-with-values
-                                                   (lambda ()
-                                                     (values
-                                                      (generalize-scope sc_0)
-                                                      #t))
-                                                   (lambda (key_0 val_0)
-                                                     (hash-set
-                                                      table_3
-                                                      key_0
-                                                      val_0)))))
+                                                  (let ((key_0
+                                                         (generalize-scope
+                                                          sc_0)))
+                                                    (hash-set
+                                                     table_3
+                                                     key_0
+                                                     #t))))
                                              (values table_4))))
                                       (for-loop_0
                                        table_4
@@ -14762,16 +14735,12 @@
                             table_2
                             (if (symbol-interned? sym_0)
                               (let ((table_3
-                                     (call-with-values
-                                      (lambda ()
-                                        (values
-                                         (if prefix_0
-                                           (string->symbol
-                                            (format "~a~a" prefix_0 sym_0))
-                                           sym_0)
-                                         val_0))
-                                      (lambda (key_0 val_1)
-                                        (hash-set table_2 key_0 val_1)))))
+                                     (let ((key_0
+                                            (if prefix_0
+                                              (string->symbol
+                                               (format "~a~a" prefix_0 sym_0))
+                                              sym_0)))
+                                       (hash-set table_2 key_0 val_0))))
                                 (values table_3))
                               table_2))))
                      (for-loop_0 table_3 (hash-iterate-next provides_0 i_0)))))
@@ -15405,46 +15374,43 @@
                     (lambda (phase_0 ht-s_0)
                       (let ((table_3
                              (let ((table_3
-                                    (call-with-values
-                                     (lambda ()
-                                       (values
-                                        phase_0
-                                        (hash-copy
-                                         (let ((table_3 hash2725))
-                                           (let ((table_4 table_3))
-                                             (let ((ht_1 (syntax-e$1 ht-s_0)))
-                                               (letrec*
-                                                ((for-loop_1
-                                                  (|#%name|
-                                                   for-loop
-                                                   (lambda (table_5 i_1)
-                                                     (if i_1
-                                                       (call-with-values
-                                                        (lambda ()
-                                                          (hash-iterate-key+value
-                                                           ht_1
-                                                           i_1))
-                                                        (lambda (sym_0 id_0)
-                                                          (let ((table_6
-                                                                 (let ((table_6
-                                                                        (hash-set
-                                                                         table_5
-                                                                         sym_0
-                                                                         id_0)))
-                                                                   (values
-                                                                    table_6))))
-                                                            (for-loop_1
-                                                             table_6
-                                                             (hash-iterate-next
+                                    (let ((val_0
+                                           (hash-copy
+                                            (let ((table_3 hash2725))
+                                              (let ((table_4 table_3))
+                                                (let ((ht_1
+                                                       (syntax-e$1 ht-s_0)))
+                                                  (letrec*
+                                                   ((for-loop_1
+                                                     (|#%name|
+                                                      for-loop
+                                                      (lambda (table_5 i_1)
+                                                        (if i_1
+                                                          (call-with-values
+                                                           (lambda ()
+                                                             (hash-iterate-key+value
                                                               ht_1
-                                                              i_1)))))
-                                                       table_5)))))
-                                                (for-loop_1
-                                                 table_4
-                                                 (hash-iterate-first
-                                                  ht_1)))))))))
-                                     (lambda (key_0 val_0)
-                                       (hash-set table_2 key_0 val_0)))))
+                                                              i_1))
+                                                           (lambda (sym_0 id_0)
+                                                             (let ((table_6
+                                                                    (let ((table_6
+                                                                           (hash-set
+                                                                            table_5
+                                                                            sym_0
+                                                                            id_0)))
+                                                                      (values
+                                                                       table_6))))
+                                                               (for-loop_1
+                                                                table_6
+                                                                (hash-iterate-next
+                                                                 ht_1
+                                                                 i_1)))))
+                                                          table_5)))))
+                                                   (for-loop_1
+                                                    table_4
+                                                    (hash-iterate-first
+                                                     ht_1)))))))))
+                                      (hash-set table_2 phase_0 val_0))))
                                (values table_3))))
                         (for-loop_0 table_3 (hash-iterate-next ht_0 i_0)))))
                    table_2)))))
@@ -20887,7 +20853,7 @@
                                                                                                                                   #f))
                                                                                                                                 #f)
                                                                                                                               #f)
-                                                                                                                          (let ((app_0
+                                                                                                                          (let ((bindings_2
                                                                                                                                  (cons
                                                                                                                                   (let ((app_0
                                                                                                                                          (syntax-e$1
@@ -20916,19 +20882,16 @@
                                                                                                                                            (extract-binding_0
                                                                                                                                             b_0))))))
                                                                                                                                   bindings_1)))
-                                                                                                                            (call-with-values
-                                                                                                                             (lambda ()
-                                                                                                                               (values
-                                                                                                                                app_0
-                                                                                                                                (hash-set
-                                                                                                                                 covered-scope-sets_2
-                                                                                                                                 scs_1
-                                                                                                                                 #t)))
-                                                                                                                             (lambda (bindings_2
-                                                                                                                                      covered-scope-sets_3)
-                                                                                                                               (values
-                                                                                                                                bindings_2
-                                                                                                                                covered-scope-sets_3))))
+                                                                                                                            (let ((covered-scope-sets_3
+                                                                                                                                   (hash-set
+                                                                                                                                    covered-scope-sets_2
+                                                                                                                                    scs_1
+                                                                                                                                    #t)))
+                                                                                                                              (let ((bindings_3
+                                                                                                                                     bindings_2))
+                                                                                                                                (values
+                                                                                                                                 bindings_3
+                                                                                                                                 covered-scope-sets_3))))
                                                                                                                           (values
                                                                                                                            bindings_1
                                                                                                                            covered-scope-sets_2)))
@@ -26483,21 +26446,16 @@
                                                                                        i_0)))
                                                                                  (let ((table_4
                                                                                         (let ((table_4
-                                                                                               (call-with-values
-                                                                                                (lambda ()
-                                                                                                  (values
-                                                                                                   (hash-ref
-                                                                                                    share-step-positions_0
-                                                                                                    (hash-ref
-                                                                                                     objs_0
-                                                                                                     obj_0))
-                                                                                                   obj_0))
-                                                                                                (lambda (key_0
-                                                                                                         val_0)
-                                                                                                  (hash-set
-                                                                                                   table_3
-                                                                                                   key_0
-                                                                                                   val_0)))))
+                                                                                               (let ((key_0
+                                                                                                      (hash-ref
+                                                                                                       share-step-positions_0
+                                                                                                       (hash-ref
+                                                                                                        objs_0
+                                                                                                        obj_0))))
+                                                                                                 (hash-set
+                                                                                                  table_3
+                                                                                                  key_0
+                                                                                                  obj_0))))
                                                                                           (values
                                                                                            table_4))))
                                                                                    (for-loop_0
@@ -31598,83 +31556,76 @@
                 (call-with-values
                  (lambda () (hash-iterate-key+value provides_0 i_0))
                  (lambda (phase+space_0 at-phase_0)
-                   (let ((table_3
-                          (let ((table_3
-                                 (call-with-values
-                                  (lambda ()
-                                    (values
-                                     phase+space_0
-                                     (let ((table_3 hash2610))
-                                       (let ((table_4 table_3))
-                                         (letrec*
-                                          ((for-loop_1
-                                            (|#%name|
-                                             for-loop
-                                             (lambda (table_5 i_1)
-                                               (if i_1
-                                                 (call-with-values
-                                                  (lambda ()
-                                                    (hash-iterate-key+value
-                                                     at-phase_0
-                                                     i_1))
-                                                  (lambda (sym_0 binding_0)
-                                                    (let ((table_6
-                                                           (let ((table_6
-                                                                  (call-with-values
-                                                                   (lambda ()
-                                                                     (values
-                                                                      sym_0
-                                                                      (if (eq?
-                                                                           from-mpi_0
-                                                                           to-mpi_0)
-                                                                        binding_0
-                                                                        (letrec*
-                                                                         ((loop_0
-                                                                           (|#%name|
-                                                                            loop
-                                                                            (lambda (binding_1)
-                                                                              (if (provided?
-                                                                                   binding_1)
-                                                                                (let ((app_0
-                                                                                       (loop_0
-                                                                                        (provided-binding
-                                                                                         binding_1))))
-                                                                                  (let ((app_1
-                                                                                         (provided-protected?
-                                                                                          binding_1)))
-                                                                                    (provided1.1
-                                                                                     app_0
-                                                                                     app_1
-                                                                                     (provided-syntax?
-                                                                                      binding_1))))
-                                                                                (binding-module-path-index-shift
-                                                                                 binding_1
-                                                                                 from-mpi_0
-                                                                                 to-mpi_0))))))
-                                                                         (loop_0
-                                                                          binding_0)))))
-                                                                   (lambda (key_0
-                                                                            val_0)
-                                                                     (hash-set
-                                                                      table_5
-                                                                      key_0
-                                                                      val_0)))))
-                                                             (values
-                                                              table_6))))
-                                                      (for-loop_1
-                                                       table_6
-                                                       (hash-iterate-next
+                   (let ((table_3 hash2610))
+                     (let ((table_4
+                            (let ((table_4
+                                   (let ((val_0
+                                          (let ((table_4 table_3))
+                                            (letrec*
+                                             ((for-loop_1
+                                               (|#%name|
+                                                for-loop
+                                                (lambda (table_5 i_1)
+                                                  (if i_1
+                                                    (call-with-values
+                                                     (lambda ()
+                                                       (hash-iterate-key+value
                                                         at-phase_0
-                                                        i_1)))))
-                                                 table_5)))))
-                                          (for-loop_1
-                                           table_4
-                                           (hash-iterate-first
-                                            at-phase_0)))))))
-                                  (lambda (key_0 val_0)
-                                    (hash-set table_2 key_0 val_0)))))
-                            (values table_3))))
-                     (for-loop_0 table_3 (hash-iterate-next provides_0 i_0)))))
+                                                        i_1))
+                                                     (lambda (sym_0 binding_0)
+                                                       (let ((table_6
+                                                              (let ((table_6
+                                                                     (let ((val_0
+                                                                            (if (eq?
+                                                                                 from-mpi_0
+                                                                                 to-mpi_0)
+                                                                              binding_0
+                                                                              (letrec*
+                                                                               ((loop_0
+                                                                                 (|#%name|
+                                                                                  loop
+                                                                                  (lambda (binding_1)
+                                                                                    (if (provided?
+                                                                                         binding_1)
+                                                                                      (let ((app_0
+                                                                                             (loop_0
+                                                                                              (provided-binding
+                                                                                               binding_1))))
+                                                                                        (let ((app_1
+                                                                                               (provided-protected?
+                                                                                                binding_1)))
+                                                                                          (provided1.1
+                                                                                           app_0
+                                                                                           app_1
+                                                                                           (provided-syntax?
+                                                                                            binding_1))))
+                                                                                      (binding-module-path-index-shift
+                                                                                       binding_1
+                                                                                       from-mpi_0
+                                                                                       to-mpi_0))))))
+                                                                               (loop_0
+                                                                                binding_0)))))
+                                                                       (hash-set
+                                                                        table_5
+                                                                        sym_0
+                                                                        val_0))))
+                                                                (values
+                                                                 table_6))))
+                                                         (for-loop_1
+                                                          table_6
+                                                          (hash-iterate-next
+                                                           at-phase_0
+                                                           i_1)))))
+                                                    table_5)))))
+                                             (for-loop_1
+                                              table_4
+                                              (hash-iterate-first
+                                               at-phase_0))))))
+                                     (hash-set table_2 phase+space_0 val_0))))
+                              (values table_4))))
+                       (for-loop_0
+                        table_4
+                        (hash-iterate-next provides_0 i_0))))))
                 table_2)))))
          (for-loop_0 table_1 (hash-iterate-first provides_0)))))))
 (define finish_2697
@@ -33817,10 +33768,8 @@
                   (let ((rest_0 (unsafe-cdr lst_0)))
                     (let ((table_3
                            (let ((table_3
-                                  (call-with-values
-                                   (lambda () (values (syntax-e$1 id_0) #t))
-                                   (lambda (key_0 val_0)
-                                     (hash-set table_2 key_0 val_0)))))
+                                  (let ((key_0 (syntax-e$1 id_0)))
+                                    (hash-set table_2 key_0 #t))))
                              (values table_3))))
                       (for-loop_0 table_3 rest_0))))
                 table_2)))))
@@ -38032,42 +37981,38 @@
                                  (let ((rest_0 (unsafe-cdr lst_0)))
                                    (let ((table_3
                                           (let ((table_3
-                                                 (call-with-values
-                                                  (lambda ()
-                                                    (values
-                                                     import_0
-                                                     (let ((extra-inspectors_0
-                                                            (if extra-inspectorss_0
-                                                              (hash-ref
-                                                               extra-inspectorss_0
-                                                               import_0
-                                                               #f)
-                                                              #f)))
-                                                       (lambda (guard-insp_0)
-                                                         (let ((or-part_0
-                                                                (if add-insp?_0
-                                                                  (inspector-superior?
-                                                                   inspector_0
-                                                                   guard-insp_0)
-                                                                  #f)))
-                                                           (if or-part_0
-                                                             or-part_0
-                                                             (let ((or-part_1
-                                                                    (if add-extra-insp?_0
-                                                                      (inspector-superior?
-                                                                       extra-inspector_0
-                                                                       guard-insp_0)
-                                                                      #f)))
-                                                               (if or-part_1
-                                                                 or-part_1
-                                                                 (extra-inspectors-allow?
-                                                                  extra-inspectors_0
-                                                                  guard-insp_0)))))))))
-                                                  (lambda (key_0 val_0)
-                                                    (hash-set
-                                                     table_2
-                                                     key_0
-                                                     val_0)))))
+                                                 (let ((val_0
+                                                        (let ((extra-inspectors_0
+                                                               (if extra-inspectorss_0
+                                                                 (hash-ref
+                                                                  extra-inspectorss_0
+                                                                  import_0
+                                                                  #f)
+                                                                 #f)))
+                                                          (lambda (guard-insp_0)
+                                                            (let ((or-part_0
+                                                                   (if add-insp?_0
+                                                                     (inspector-superior?
+                                                                      inspector_0
+                                                                      guard-insp_0)
+                                                                     #f)))
+                                                              (if or-part_0
+                                                                or-part_0
+                                                                (let ((or-part_1
+                                                                       (if add-extra-insp?_0
+                                                                         (inspector-superior?
+                                                                          extra-inspector_0
+                                                                          guard-insp_0)
+                                                                         #f)))
+                                                                  (if or-part_1
+                                                                    or-part_1
+                                                                    (extra-inspectors-allow?
+                                                                     extra-inspectors_0
+                                                                     guard-insp_0)))))))))
+                                                   (hash-set
+                                                    table_2
+                                                    import_0
+                                                    val_0))))
                                             (values table_3))))
                                      (for-loop_0 table_3 rest_0))))
                                table_2)))))
@@ -40138,19 +40083,14 @@
                                                                                     l+mu*s_0)
                                                                              (let ((table_6
                                                                                     (let ((table_6
-                                                                                           (call-with-values
-                                                                                            (lambda ()
-                                                                                              (values
-                                                                                               phase_1
-                                                                                               (module-uses-strip-extra-inspectorsss
-                                                                                                (cdr
-                                                                                                 l+mu*s_0))))
-                                                                                            (lambda (key_0
-                                                                                                     val_0)
-                                                                                              (hash-set
-                                                                                               table_5
-                                                                                               key_0
-                                                                                               val_0)))))
+                                                                                           (let ((val_0
+                                                                                                  (module-uses-strip-extra-inspectorsss
+                                                                                                   (cdr
+                                                                                                    l+mu*s_0))))
+                                                                                             (hash-set
+                                                                                              table_5
+                                                                                              phase_1
+                                                                                              val_0))))
                                                                                       (values
                                                                                        table_6))))
                                                                                (for-loop_0
@@ -40865,20 +40805,17 @@
                               (let ((rest_0 (unsafe-cdr lst_0)))
                                 (let ((table_3
                                        (let ((table_3
-                                              (let ((app_0
+                                              (let ((key_0
                                                      (string->symbol
                                                       (number->string pos_0))))
-                                                (call-with-values
-                                                 (lambda ()
-                                                   (values
-                                                    app_0
-                                                    (compiled-in-memory-linklet-directory
-                                                     cim_0)))
-                                                 (lambda (key_0 val_0)
-                                                   (hash-set
-                                                    table_2
-                                                    key_0
-                                                    val_0))))))
+                                                (let ((val_0
+                                                       (compiled-in-memory-linklet-directory
+                                                        cim_0)))
+                                                  (let ((key_1 key_0))
+                                                    (hash-set
+                                                     table_2
+                                                     key_1
+                                                     val_0))))))
                                          (values table_3))))
                                   (for-loop_0 table_3 rest_0 (+ pos_0 1)))))
                             table_2)))))
@@ -43679,21 +43616,16 @@
                                             (let ((rest_0 (unsafe-cdr lst_1)))
                                               (let ((table_3
                                                      (let ((table_3
-                                                            (call-with-values
-                                                             (lambda ()
-                                                               (values
-                                                                (correlated-e
-                                                                 (list-ref
-                                                                  (correlated->list
-                                                                   prop+val_0)
-                                                                  1))
-                                                                #t))
-                                                             (lambda (key_0
-                                                                      val_0)
-                                                               (hash-set
-                                                                table_2
-                                                                key_0
-                                                                val_0)))))
+                                                            (let ((key_0
+                                                                   (correlated-e
+                                                                    (list-ref
+                                                                     (correlated->list
+                                                                      prop+val_0)
+                                                                     1))))
+                                                              (hash-set
+                                                               table_2
+                                                               key_0
+                                                               #t))))
                                                        (values table_3))))
                                                 (for-loop_0 table_3 rest_0))))
                                           table_2)))))
@@ -43909,21 +43841,16 @@
                                             (let ((rest_0 (unsafe-cdr lst_1)))
                                               (let ((table_3
                                                      (let ((table_3
-                                                            (call-with-values
-                                                             (lambda ()
-                                                               (values
-                                                                (correlated-e
-                                                                 (list-ref
-                                                                  (correlated->list
-                                                                   prop+val_0)
-                                                                  1))
-                                                                #t))
-                                                             (lambda (key_0
-                                                                      val_0)
-                                                               (hash-set
-                                                                table_2
-                                                                key_0
-                                                                val_0)))))
+                                                            (let ((key_0
+                                                                   (correlated-e
+                                                                    (list-ref
+                                                                     (correlated->list
+                                                                      prop+val_0)
+                                                                     1))))
+                                                              (hash-set
+                                                               table_2
+                                                               key_0
+                                                               #t))))
                                                        (values table_3))))
                                                 (for-loop_0 table_3 rest_0))))
                                           table_2)))))
@@ -45250,19 +45177,14 @@
                                                                         (let ((table_4
                                                                                (if id*_0
                                                                                  (let ((table_4
-                                                                                        (call-with-values
-                                                                                         (lambda ()
-                                                                                           (values
-                                                                                            pos_0
-                                                                                            (eval-linklet
-                                                                                             (force-compile-linklet
-                                                                                              id*_0))))
-                                                                                         (lambda (key_0
-                                                                                                  val_0)
-                                                                                           (hash-set
-                                                                                            table_3
-                                                                                            key_0
-                                                                                            val_0)))))
+                                                                                        (let ((val_0
+                                                                                               (eval-linklet
+                                                                                                (force-compile-linklet
+                                                                                                 id*_0))))
+                                                                                          (hash-set
+                                                                                           table_3
+                                                                                           pos_0
+                                                                                           val_0))))
                                                                                    (values
                                                                                     table_4))
                                                                                  table_3)))
@@ -46146,13 +46068,9 @@
                  (lambda (phase_0 linklet_0)
                    (let ((table_3
                           (let ((table_3
-                                 (call-with-values
-                                  (lambda ()
-                                    (values
-                                     phase_0
-                                     (linklet-export-variables linklet_0)))
-                                  (lambda (key_0 val_0)
-                                    (hash-set table_2 key_0 val_0)))))
+                                 (let ((val_0
+                                        (linklet-export-variables linklet_0)))
+                                   (hash-set table_2 phase_0 val_0))))
                             (values table_3))))
                      (for-loop_0 table_3 (hash-iterate-next phases-h_0 i_0)))))
                 table_2)))))
@@ -46667,20 +46585,16 @@
                               (lambda (key_0 val_0)
                                 (let ((table_3
                                        (let ((table_3
-                                              (call-with-values
-                                               (lambda ()
-                                                 (values
-                                                  key_0
-                                                  (if (not key_0)
-                                                    (update-one-name
-                                                     val_0
-                                                     full-name_0)
-                                                    (recur_0 val_0 key_0))))
-                                               (lambda (key_1 val_1)
-                                                 (hash-set
-                                                  table_2
-                                                  key_1
-                                                  val_1)))))
+                                              (let ((val_1
+                                                     (if (not key_0)
+                                                       (update-one-name
+                                                        val_0
+                                                        full-name_0)
+                                                       (recur_0 val_0 key_0))))
+                                                (hash-set
+                                                 table_2
+                                                 key_0
+                                                 val_1))))
                                          (values table_3))))
                                   (for-loop_0
                                    table_3
@@ -47013,19 +46927,16 @@
                                       (let ((table_3
                                              (let ((linklet_0
                                                     (hash-ref h_0 pos_0 #f)))
-                                               (call-with-values
-                                                (lambda ()
-                                                  (values
-                                                   pos_0
-                                                   (if linklet_0
-                                                     (linklet-export-variables
-                                                      linklet_0)
-                                                     null)))
-                                                (lambda (key_0 val_0)
-                                                  (hash-set
-                                                   table_2
-                                                   key_0
-                                                   val_0))))))
+                                               (let ((key_0 pos_0)
+                                                     (val_0
+                                                      (if linklet_0
+                                                        (linklet-export-variables
+                                                         linklet_0)
+                                                        null)))
+                                                 (hash-set
+                                                  table_2
+                                                  key_0
+                                                  val_0)))))
                                         (values table_3))))
                                  (for-loop_0 table_3 (+ pos_0 1)))
                                table_2)))))
@@ -47485,33 +47396,28 @@
                                                                                                   linklet_0)
                                                                                            (let ((table_3
                                                                                                   (let ((table_3
-                                                                                                         (call-with-values
-                                                                                                          (lambda ()
-                                                                                                            (values
-                                                                                                             phase_0
-                                                                                                             (let ((app_1
-                                                                                                                    (hash-ref
-                                                                                                                     phase-to-link-module-uses_0
-                                                                                                                     phase_0
-                                                                                                                     #f)))
-                                                                                                               (module-linklet-info2.1
-                                                                                                                linklet_0
-                                                                                                                app_1
-                                                                                                                self_0
-                                                                                                                #f
-                                                                                                                #f
-                                                                                                                (if phase-to-link-extra-inspectorsss_0
-                                                                                                                  (hash-ref
-                                                                                                                   phase-to-link-extra-inspectorsss_0
-                                                                                                                   phase_0
-                                                                                                                   #f)
-                                                                                                                  #f)))))
-                                                                                                          (lambda (key_0
-                                                                                                                   val_0)
-                                                                                                            (hash-set
-                                                                                                             table_2
-                                                                                                             key_0
-                                                                                                             val_0)))))
+                                                                                                         (let ((val_0
+                                                                                                                (let ((app_1
+                                                                                                                       (hash-ref
+                                                                                                                        phase-to-link-module-uses_0
+                                                                                                                        phase_0
+                                                                                                                        #f)))
+                                                                                                                  (module-linklet-info2.1
+                                                                                                                   linklet_0
+                                                                                                                   app_1
+                                                                                                                   self_0
+                                                                                                                   #f
+                                                                                                                   #f
+                                                                                                                   (if phase-to-link-extra-inspectorsss_0
+                                                                                                                     (hash-ref
+                                                                                                                      phase-to-link-extra-inspectorsss_0
+                                                                                                                      phase_0
+                                                                                                                      #f)
+                                                                                                                     #f)))))
+                                                                                                           (hash-set
+                                                                                                            table_2
+                                                                                                            phase_0
+                                                                                                            val_0))))
                                                                                                     (values
                                                                                                      table_3))))
                                                                                              (for-loop_0
@@ -48030,39 +47936,34 @@
                                                            (if (number?
                                                                 phase_0)
                                                              (let ((table_3
-                                                                    (call-with-values
-                                                                     (lambda ()
-                                                                       (values
-                                                                        phase_0
-                                                                        (let ((app_1
-                                                                               (hash-ref
-                                                                                phase-to-link-module-uses_0
-                                                                                phase_0
-                                                                                #f)))
-                                                                          (let ((app_2
-                                                                                 (compiled-in-memory-original-self
-                                                                                  cim_0)))
-                                                                            (let ((app_3
-                                                                                   (compiled-in-memory-compile-time-inspector
-                                                                                    cim_0)))
-                                                                              (module-linklet-info2.1
-                                                                               linklet_0
-                                                                               app_1
-                                                                               app_2
-                                                                               #f
-                                                                               app_3
-                                                                               (if phase-to-extra-inspectorsss_0
-                                                                                 (hash-ref
-                                                                                  phase-to-extra-inspectorsss_0
-                                                                                  phase_0
-                                                                                  #f)
-                                                                                 #f)))))))
-                                                                     (lambda (key_0
-                                                                              val_0)
-                                                                       (hash-set
-                                                                        table_2
-                                                                        key_0
-                                                                        val_0)))))
+                                                                    (let ((val_0
+                                                                           (let ((app_1
+                                                                                  (hash-ref
+                                                                                   phase-to-link-module-uses_0
+                                                                                   phase_0
+                                                                                   #f)))
+                                                                             (let ((app_2
+                                                                                    (compiled-in-memory-original-self
+                                                                                     cim_0)))
+                                                                               (let ((app_3
+                                                                                      (compiled-in-memory-compile-time-inspector
+                                                                                       cim_0)))
+                                                                                 (module-linklet-info2.1
+                                                                                  linklet_0
+                                                                                  app_1
+                                                                                  app_2
+                                                                                  #f
+                                                                                  app_3
+                                                                                  (if phase-to-extra-inspectorsss_0
+                                                                                    (hash-ref
+                                                                                     phase-to-extra-inspectorsss_0
+                                                                                     phase_0
+                                                                                     #f)
+                                                                                    #f)))))))
+                                                                      (hash-set
+                                                                       table_2
+                                                                       phase_0
+                                                                       val_0))))
                                                                (values
                                                                 table_3))
                                                              table_2)))
@@ -48114,18 +48015,14 @@
                                         (lambda (sym_0 stx_0)
                                           (let ((table_3
                                                  (let ((table_3
-                                                        (call-with-values
-                                                         (lambda ()
-                                                           (values
-                                                            sym_0
-                                                            (add-syntax-literal!
-                                                             syntax-literals_0
-                                                             stx_0)))
-                                                         (lambda (key_0 val_0)
-                                                           (hash-set
-                                                            table_2
-                                                            key_0
-                                                            val_0)))))
+                                                        (let ((val_0
+                                                               (add-syntax-literal!
+                                                                syntax-literals_0
+                                                                stx_0)))
+                                                          (hash-set
+                                                           table_2
+                                                           sym_0
+                                                           val_0))))
                                                    (values table_3))))
                                             (for-loop_1
                                              table_3
@@ -48289,23 +48186,19 @@
                         (lambda (k_0 v_0)
                           (let ((table_3
                                  (let ((table_3
-                                        (call-with-values
-                                         (lambda ()
-                                           (values
-                                            k_0
-                                            (if (symbol? k_0)
-                                              (replace-linklet-bundles
-                                               v_0
-                                               (cons k_0 rev-path_0)
-                                               recompileds_0)
-                                              (if (not k_0)
-                                                (replace-linklet-bundles
-                                                 v_0
-                                                 rev-path_0
-                                                 recompileds_0)
-                                                (void)))))
-                                         (lambda (key_0 val_0)
-                                           (hash-set table_2 key_0 val_0)))))
+                                        (let ((val_0
+                                               (if (symbol? k_0)
+                                                 (replace-linklet-bundles
+                                                  v_0
+                                                  (cons k_0 rev-path_0)
+                                                  recompileds_0)
+                                                 (if (not k_0)
+                                                   (replace-linklet-bundles
+                                                    v_0
+                                                    rev-path_0
+                                                    recompileds_0)
+                                                   (void)))))
+                                          (hash-set table_2 k_0 val_0))))
                                    (values table_3))))
                             (for-loop_0
                              table_3
@@ -48706,19 +48599,14 @@
                                                                            l+mu*s_0)
                                                                     (let ((table_5
                                                                            (let ((table_5
-                                                                                  (call-with-values
-                                                                                   (lambda ()
-                                                                                     (values
-                                                                                      phase_0
-                                                                                      (module-uses-strip-extra-inspectorsss
-                                                                                       (cdr
-                                                                                        l+mu*s_0))))
-                                                                                   (lambda (key_0
-                                                                                            val_0)
-                                                                                     (hash-set
-                                                                                      table_4
-                                                                                      key_0
-                                                                                      val_0)))))
+                                                                                  (let ((val_0
+                                                                                         (module-uses-strip-extra-inspectorsss
+                                                                                          (cdr
+                                                                                           l+mu*s_0))))
+                                                                                    (hash-set
+                                                                                     table_4
+                                                                                     phase_0
+                                                                                     val_0))))
                                                                              (values
                                                                               table_5))))
                                                                       (for-loop_0
@@ -49016,18 +48904,13 @@
                                                                          (if (exact-integer?
                                                                               phase_0)
                                                                            (let ((table_6
-                                                                                  (call-with-values
-                                                                                   (lambda ()
-                                                                                     (values
-                                                                                      phase_0
-                                                                                      (linklet-summarize-target-machine-info
-                                                                                       from-body-linklet_0)))
-                                                                                   (lambda (key_0
-                                                                                            val_0)
-                                                                                     (hash-set
-                                                                                      table_5
-                                                                                      key_0
-                                                                                      val_0)))))
+                                                                                  (let ((val_0
+                                                                                         (linklet-summarize-target-machine-info
+                                                                                          from-body-linklet_0)))
+                                                                                    (hash-set
+                                                                                     table_5
+                                                                                     phase_0
+                                                                                     val_0))))
                                                                              (values
                                                                               table_6))
                                                                            table_5)))
@@ -59573,14 +59456,8 @@
                              (lambda (k_0 v_0)
                                (let ((table_3
                                       (let ((table_3
-                                             (call-with-values
-                                              (lambda ()
-                                                (values k_0 (to-path v_0)))
-                                              (lambda (key_0 val_0)
-                                                (hash-set
-                                                 table_2
-                                                 key_0
-                                                 val_0)))))
+                                             (let ((val_0 (to-path v_0)))
+                                               (hash-set table_2 k_0 val_0))))
                                         (values table_3))))
                                  (for-loop_0
                                   table_3
@@ -60577,17 +60454,13 @@
                                                 (if (directory-exists?
                                                      (build-path orig_0 p_0))
                                                   (let ((table_3
-                                                         (call-with-values
-                                                          (lambda ()
-                                                            (values
-                                                             (normal-case-path
-                                                              p_0)
-                                                             #t))
-                                                          (lambda (key_0 val_0)
-                                                            (hash-set
-                                                             table_2
-                                                             key_0
-                                                             val_0)))))
+                                                         (let ((key_0
+                                                                (normal-case-path
+                                                                 p_0)))
+                                                           (hash-set
+                                                            table_2
+                                                            key_0
+                                                            #t))))
                                                     (values table_3))
                                                   table_2)))
                                            (for-loop_0 table_3 rest_0))))
@@ -72712,25 +72585,21 @@
                                                                  mpi_0
                                                                  0
                                                                  sym_0)))
-                                                           (call-with-values
-                                                            (lambda ()
-                                                              (values
-                                                               sym_0
-                                                               (if (hash-ref
-                                                                    protected_0
-                                                                    sym_0
-                                                                    #f)
-                                                                 (provided1.1
-                                                                  binding_0
-                                                                  #t
-                                                                  #f)
-                                                                 binding_0)))
-                                                            (lambda (key_0
-                                                                     val_0)
-                                                              (hash-set
-                                                               table_2
-                                                               key_0
-                                                               val_0))))))
+                                                           (let ((key_0 sym_0)
+                                                                 (val_0
+                                                                  (if (hash-ref
+                                                                       protected_0
+                                                                       sym_0
+                                                                       #f)
+                                                                    (provided1.1
+                                                                     binding_0
+                                                                     #t
+                                                                     #f)
+                                                                    binding_0)))
+                                                             (hash-set
+                                                              table_2
+                                                              key_0
+                                                              val_0)))))
                                                     (values table_3))))
                                              (for-loop_0 table_3 rest_0))))
                                        table_2)))))
@@ -75284,23 +75153,19 @@
                                           (if (hash-ref skip-syms_0 sym_0 #f)
                                             table_2
                                             (let ((table_3
-                                                   (call-with-values
-                                                    (lambda ()
-                                                      (values
-                                                       sym_0
-                                                       (let ((or-part_0
-                                                              (hash-ref
-                                                               alts10_0
-                                                               sym_0
-                                                               #f)))
-                                                         (if or-part_0
-                                                           or-part_0
-                                                           val_0))))
-                                                    (lambda (key_0 val_1)
-                                                      (hash-set
-                                                       table_2
-                                                       key_0
-                                                       val_1)))))
+                                                   (let ((val_1
+                                                          (let ((or-part_0
+                                                                 (hash-ref
+                                                                  alts10_0
+                                                                  sym_0
+                                                                  #f)))
+                                                            (if or-part_0
+                                                              or-part_0
+                                                              val_0))))
+                                                     (hash-set
+                                                      table_2
+                                                      sym_0
+                                                      val_1))))
                                               (values table_3)))))
                                      (for-loop_0
                                       table_3

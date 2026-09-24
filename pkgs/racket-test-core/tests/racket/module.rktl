@@ -4480,5 +4480,40 @@ case of module-leve bindings; it doesn't cover local bindings.
          (read (open-input-bytes (get-output-bytes o))))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Regression test to make sure `set!` with a
+;; continuation-capturing RHS is not treated
+;; as free of continuation-capturing operations
+
+(module captures-continuation-on-rhs-or-assignment racket/base
+    (define save #f)
+  (define (k)
+    (let/cc k
+      (set! save k)
+      10))
+  (define-values (mystery-a)
+    (let-values ([(local) 0])
+      (set! local (k))))
+  (set! mystery-a 'mutable)
+  (save 2))
+
+(dynamic-require ''captures-continuation-on-rhs-or-assignment #f)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Regression test to make sure a variable referenced too
+;; early under `list` is detected as such
+
+(module use-n-for-list-too-early racket/base
+  (define new (list n))
+  (define n 0))
+(module assign-n-for-list-too-early racket/base
+  (define new (list (set! n 1)))
+  (define n 0))
+
+(err/rt-test/once (dynamic-require ''use-n-for-list-too-early #f)
+                  exn:fail:contract:variable?)
+(err/rt-test/once (dynamic-require ''assign-n-for-list-too-early #f)
+                  exn:fail:contract:variable?)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

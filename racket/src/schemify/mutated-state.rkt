@@ -60,7 +60,8 @@
   (eq? v 'not-ready))
 
 (define (too-early-mutated-state? v)
-  (or (eq? v 'too-early)
+  (or (eq? v 'not-ready)
+      (eq? v 'too-early)
       (eq? v 'set!ed-too-early)
       (eq? v 'undefined)
       (too-early? v)))

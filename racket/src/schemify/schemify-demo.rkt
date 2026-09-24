@@ -156,7 +156,11 @@
                           (letrec-values ([() (begin 'stuff (values))]
                                           [(f) (lambda (x) (if (zero? x) 'ok (f (sub1 x))))]
                                           [() (begin 'stuff (values))])
-                            (f 10)))))
+                            (f 10))
+                          (define-values (mystery-a)
+                            (let-values ([(whatever) 0])
+                              (set! whatever (call/cc values))))
+                          )))
                     #;
                     (call-with-input-file "regexp.rktl" read)
                     #t          ; serializable

@@ -5899,14 +5899,17 @@
 (define not-ready-mutated-state? (lambda (v_0) (eq? v_0 'not-ready)))
 (define too-early-mutated-state?
   (lambda (v_0)
-    (let ((or-part_0 (eq? v_0 'too-early)))
+    (let ((or-part_0 (eq? v_0 'not-ready)))
       (if or-part_0
         or-part_0
-        (let ((or-part_1 (eq? v_0 'set!ed-too-early)))
+        (let ((or-part_1 (eq? v_0 'too-early)))
           (if or-part_1
             or-part_1
-            (let ((or-part_2 (eq? v_0 'undefined)))
-              (if or-part_2 or-part_2 (too-early? v_0)))))))))
+            (let ((or-part_2 (eq? v_0 'set!ed-too-early)))
+              (if or-part_2
+                or-part_2
+                (let ((or-part_3 (eq? v_0 'undefined)))
+                  (if or-part_3 or-part_3 (too-early? v_0)))))))))))
 (define too-early-mutated-state-name
   (lambda (v_0 default-sym_0)
     (if (too-early? v_0) (too-early-name v_0) default-sym_0)))
@@ -7622,47 +7625,54 @@
                                                                               2)))))
                                                                        r_1))
                                                                    r_0))))))))))))
-                                           (if (if (if (eq? 'set! hd_0)
-                                                     (let ((a_0
-                                                            (cdr
-                                                             (unwrap e_0))))
-                                                       (let ((p_0
-                                                              (unwrap a_0)))
-                                                         (if (pair? p_0)
-                                                           (let ((a_1
-                                                                  (cdr p_0)))
-                                                             (let ((p_1
-                                                                    (unwrap
-                                                                     a_1)))
-                                                               (if (pair? p_1)
-                                                                 (let ((a_2
-                                                                        (cdr
-                                                                         p_1)))
-                                                                   (let ((app_0
-                                                                          (unwrap
-                                                                           '())))
-                                                                     (eq?
-                                                                      app_0
+                                           (if (if (eq? 'set! hd_0)
+                                                 (let ((a_0
+                                                        (cdr (unwrap e_0))))
+                                                   (let ((p_0 (unwrap a_0)))
+                                                     (if (pair? p_0)
+                                                       (let ((a_1 (cdr p_0)))
+                                                         (let ((p_1
+                                                                (unwrap a_1)))
+                                                           (if (pair? p_1)
+                                                             (let ((a_2
+                                                                    (cdr p_1)))
+                                                               (let ((app_0
                                                                       (unwrap
-                                                                       a_2))))
-                                                                 #f)))
-                                                           #f)))
-                                                     #f)
-                                                 (not pure?1_0)
+                                                                       '())))
+                                                                 (eq?
+                                                                  app_0
+                                                                  (unwrap
+                                                                   a_2))))
+                                                             #f)))
+                                                       #f)))
                                                  #f)
-                                             (let ((e_1
-                                                    (let ((d_0
-                                                           (cdr (unwrap e_0))))
-                                                      (let ((d_1
-                                                             (cdr
-                                                              (unwrap d_0))))
-                                                        (let ((a_0
-                                                               (car
-                                                                (unwrap d_1))))
-                                                          a_0)))))
-                                               (begin
-                                                 (simple?_0 e_1 1)
-                                                 (returns_0 1)))
+                                             (let ((d_0 (cdr (unwrap e_0))))
+                                               (let ((p_0 (unwrap d_0)))
+                                                 (let ((x_0
+                                                        (let ((a_0 (car p_0)))
+                                                          a_0)))
+                                                   (let ((e_1
+                                                          (let ((d_1
+                                                                 (cdr p_0)))
+                                                            (let ((a_0
+                                                                   (car
+                                                                    (unwrap
+                                                                     d_1))))
+                                                              a_0))))
+                                                     (let ((x_1 x_0))
+                                                       (let ((x_2 x_1)
+                                                             (e_2 e_1))
+                                                         (if (not pure?1_0)
+                                                           (if (simple?_0
+                                                                x_2
+                                                                1)
+                                                             (if (simple?_0
+                                                                  e_2
+                                                                  1)
+                                                               (returns_0 1)
+                                                               #f)
+                                                             #f)
+                                                           #f)))))))
                                              (if (if (eq? 'if hd_0)
                                                    (let ((a_0
                                                           (cdr (unwrap e_0))))
@@ -8346,11 +8356,18 @@
                                                          (let ((or-part_0
                                                                 (if (symbol?
                                                                      e_1)
-                                                                  (simple-mutated-state?
-                                                                   (hash-ref
-                                                                    mutated15_0
-                                                                    e_1
-                                                                    #f))
+                                                                  (if pure?1_0
+                                                                    (simple-mutated-state?
+                                                                     (hash-ref
+                                                                      mutated15_0
+                                                                      e_1
+                                                                      #f))
+                                                                    (not
+                                                                     (too-early-mutated-state?
+                                                                      (hash-ref
+                                                                       mutated15_0
+                                                                       e_1
+                                                                       #f))))
                                                                   #f)))
                                                            (if or-part_0
                                                              or-part_0
@@ -21995,11 +22012,7 @@
                                                          (unsafe-car lst_1)))
                                                     (let ((rest_1
                                                            (unsafe-cdr lst_1)))
-                                                      (call-with-values
-                                                       (lambda ()
-                                                         (call-with-values
-                                                          (lambda ()
-                                                            (values
+                                                      (let ((val_1
                                                              (if (let ((b_0
                                                                         (unwrap-let.1
                                                                          #f
@@ -22012,35 +22025,30 @@
                                                                       (unwrap
                                                                        b_0))))
                                                                acc/mut_0
-                                                               #f)
-                                                             #t))
-                                                          (lambda (val_1
-                                                                   stop?_1)
+                                                               #f)))
+                                                        (let ((val_2 val_1)
+                                                              (stop?_1 #t))
+                                                          (if (if (not
+                                                                   (let ((x_0
+                                                                          (list
+                                                                           acc/mut_0)))
+                                                                     stop?_1))
+                                                                (if (not
+                                                                     (let ((x_0
+                                                                            (list
+                                                                             make-acc/mut_0)))
+                                                                       stop?_1))
+                                                                  #t
+                                                                  #f)
+                                                                #f)
+                                                            (for-loop_0
+                                                             val_2
+                                                             stop?_1
+                                                             rest_0
+                                                             rest_1)
                                                             (values
-                                                             val_1
-                                                             stop?_1))))
-                                                       (lambda (val_1 stop?_1)
-                                                         (if (if (not
-                                                                  (let ((x_0
-                                                                         (list
-                                                                          acc/mut_0)))
-                                                                    stop?_1))
-                                                               (if (not
-                                                                    (let ((x_0
-                                                                           (list
-                                                                            make-acc/mut_0)))
-                                                                      stop?_1))
-                                                                 #t
-                                                                 #f)
-                                                               #f)
-                                                           (for-loop_0
-                                                            val_1
-                                                            stop?_1
-                                                            rest_0
-                                                            rest_1)
-                                                           (values
-                                                            val_1
-                                                            stop?_1))))))))
+                                                             val_2
+                                                             stop?_1))))))))
                                               (values val_0 stop?_0))))))
                                        (for-loop_0
                                         #f
@@ -28722,66 +28730,32 @@
                             (unwrap-list d_0))))
                      (if (let ((app_0 (length ids_0)))
                            (= app_0 (length args_0)))
-                       (if (letrec*
-                            ((for-loop_0
-                              (|#%name|
-                               for-loop
-                               (lambda (result_0 lst_0)
-                                 (if (pair? lst_0)
-                                   (let ((arg_0 (unsafe-car lst_0)))
-                                     (let ((rest_0 (unsafe-cdr lst_0)))
-                                       (let ((result_1
-                                              (let ((result_1
-                                                     (simple?.1
-                                                      #f
-                                                      #f
-                                                      #f
-                                                      1
-                                                      #f
-                                                      arg_0
-                                                      prim-knowns_0
-                                                      knowns_0
-                                                      imports_0
-                                                      mutated_0
-                                                      simples_0
-                                                      unsafe-mode?_0)))
-                                                (values result_1))))
-                                         (if (if (not
-                                                  (let ((x_0 (list arg_0)))
-                                                    (not result_1)))
-                                               #t
-                                               #f)
-                                           (for-loop_0 result_1 rest_0)
-                                           result_1))))
-                                   result_0)))))
-                            (for-loop_0 #t args_0))
-                         (list
-                          'let
-                          (reverse$1
-                           (letrec*
-                            ((for-loop_0
-                              (|#%name|
-                               for-loop
-                               (lambda (fold-var_0 lst_0 lst_1)
-                                 (if (if (pair? lst_0) (pair? lst_1) #f)
-                                   (let ((id_0 (unsafe-car lst_0)))
-                                     (let ((rest_0 (unsafe-cdr lst_0)))
-                                       (let ((arg_0 (unsafe-car lst_1)))
-                                         (let ((rest_1 (unsafe-cdr lst_1)))
-                                           (let ((fold-var_1
-                                                  (cons
-                                                   (list id_0 arg_0)
-                                                   fold-var_0)))
-                                             (let ((fold-var_2
-                                                    (values fold-var_1)))
-                                               (for-loop_0
-                                                fold-var_2
-                                                rest_0
-                                                rest_1)))))))
-                                   fold-var_0)))))
-                            (for-loop_0 null ids_0 args_0)))
-                          body_0)
-                         #f)
+                       (list
+                        'let
+                        (reverse$1
+                         (letrec*
+                          ((for-loop_0
+                            (|#%name|
+                             for-loop
+                             (lambda (fold-var_0 lst_0 lst_1)
+                               (if (if (pair? lst_0) (pair? lst_1) #f)
+                                 (let ((id_0 (unsafe-car lst_0)))
+                                   (let ((rest_0 (unsafe-cdr lst_0)))
+                                     (let ((arg_0 (unsafe-car lst_1)))
+                                       (let ((rest_1 (unsafe-cdr lst_1)))
+                                         (let ((fold-var_1
+                                                (cons
+                                                 (list id_0 arg_0)
+                                                 fold-var_0)))
+                                           (let ((fold-var_2
+                                                  (values fold-var_1)))
+                                             (for-loop_0
+                                              fold-var_2
+                                              rest_0
+                                              rest_1)))))))
+                                 fold-var_0)))))
+                          (for-loop_0 null ids_0 args_0)))
+                        body_0)
                        #f))
                    #f)))))
         (if or-part_0
@@ -29574,7 +29548,7 @@
           #f)
         #f)
       #f)))
-(define convert-simple-let-values-bindings
+(define convert-let-values-bindings
   (lambda (idss_0
            rhss_0
            prim-knowns_0
@@ -29608,52 +29582,8 @@
                                                  (let ((d_0
                                                         (cdr (unwrap rhs_0))))
                                                    (unwrap-list d_0))))
-                                            (if (let ((app_0 (length ids_0)))
-                                                  (= app_0 (length args_0)))
-                                              (letrec*
-                                               ((for-loop_1
-                                                 (|#%name|
-                                                  for-loop
-                                                  (lambda (result_1 lst_2)
-                                                    (if (pair? lst_2)
-                                                      (let ((arg_0
-                                                             (unsafe-car
-                                                              lst_2)))
-                                                        (let ((rest_2
-                                                               (unsafe-cdr
-                                                                lst_2)))
-                                                          (let ((result_2
-                                                                 (let ((result_2
-                                                                        (simple?.1
-                                                                         #f
-                                                                         #f
-                                                                         #f
-                                                                         1
-                                                                         #f
-                                                                         arg_0
-                                                                         prim-knowns_0
-                                                                         knowns_0
-                                                                         imports_0
-                                                                         mutated_0
-                                                                         simples_0
-                                                                         unsafe-mode?_0)))
-                                                                   (values
-                                                                    result_2))))
-                                                            (if (if (not
-                                                                     (let ((x_0
-                                                                            (list
-                                                                             arg_0)))
-                                                                       (not
-                                                                        result_2)))
-                                                                  #t
-                                                                  #f)
-                                                              (for-loop_1
-                                                               result_2
-                                                               rest_2)
-                                                              result_2))))
-                                                      result_1)))))
-                                               (for-loop_1 #t args_0))
-                                              #f))
+                                            (let ((app_0 (length ids_0)))
+                                              (= app_0 (length args_0))))
                                           #f))))
                                  (values result_1))))
                           (if (if (not
@@ -34570,7 +34500,7 @@
                                                                    (if or-part_0
                                                                      or-part_0
                                                                      (let ((cond-val_0
-                                                                            (convert-simple-let-values-bindings
+                                                                            (convert-let-values-bindings
                                                                              idss_0
                                                                              rhss_0
                                                                              prim-knowns_0
@@ -38939,21 +38869,16 @@
                                             (let ((rest_0 (unsafe-cdr lst_0)))
                                               (let ((table_3
                                                      (let ((table_3
-                                                            (call-with-values
-                                                             (lambda ()
-                                                               (values
-                                                                (extract-id_0
-                                                                 (hash-ref
-                                                                  env_0
-                                                                  id_0)
-                                                                 id_0)
-                                                                #t))
-                                                             (lambda (key_0
-                                                                      val_0)
-                                                               (hash-set
-                                                                table_2
-                                                                key_0
-                                                                val_0)))))
+                                                            (let ((key_0
+                                                                   (extract-id_0
+                                                                    (hash-ref
+                                                                     env_0
+                                                                     id_0)
+                                                                    id_0)))
+                                                              (hash-set
+                                                               table_2
+                                                               key_0
+                                                               #t))))
                                                        (values table_3))))
                                                 (for-loop_0 table_3 rest_0))))
                                           table_2)))))
@@ -47858,7 +47783,7 @@
                                                                                                    null)))
                                                                                             (let ((id_1
                                                                                                    id_0))
-                                                                                              (let ((app_0
+                                                                                              (let ((env_4
                                                                                                      (let ((app_0
                                                                                                             (unwrap
                                                                                                              id_1)))
@@ -47869,19 +47794,19 @@
                                                                                                          (+
                                                                                                           body-vars-index_0
                                                                                                           num-body-vars_2))))))
-                                                                                                (let ((env_4
-                                                                                                       app_0)
-                                                                                                      (num-body-vars_3
+                                                                                                (let ((num-body-vars_3
                                                                                                        (add1
                                                                                                         num-body-vars_2)))
                                                                                                   (let ((env_5
-                                                                                                         env_4)
-                                                                                                        (num-body-vars_4
-                                                                                                         num-body-vars_3))
-                                                                                                    (for-loop_1
-                                                                                                     env_5
-                                                                                                     num-body-vars_4
-                                                                                                     rest_1)))))))
+                                                                                                         env_4))
+                                                                                                    (let ((env_6
+                                                                                                           env_5)
+                                                                                                          (num-body-vars_4
+                                                                                                           num-body-vars_3))
+                                                                                                      (for-loop_1
+                                                                                                       env_6
+                                                                                                       num-body-vars_4
+                                                                                                       rest_1))))))))
                                                                                         (values
                                                                                          env_3
                                                                                          num-body-vars_2))))))

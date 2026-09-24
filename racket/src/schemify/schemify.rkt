@@ -640,7 +640,7 @@
                                            #:target target))
                 (cond
                   ;; split immediate `values` pattern early to improve constant and copy propagation
-                  [(convert-simple-let-values-bindings idss rhss prim-knowns knowns imports mutated simples unsafe-mode?)
+                  [(convert-let-values-bindings idss rhss prim-knowns knowns imports mutated simples unsafe-mode?)
                    => (lambda (binds)
                         (schemify `(let-values ,binds
                                      . ,bodys)

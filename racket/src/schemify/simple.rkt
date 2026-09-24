@@ -9,18 +9,30 @@
 (provide simple?
          simple/can-copy?)
 
-;; Check whether an expression is simple in the sense that its order
-;; of evaluation isn't detectable (`pure?` = #t) or at least it won't
-;; try to capture a continuation (`pure?` = #f). In `pure?` mode, if
-;; `no-alloc?` is true, then allocation counts as detectable (for
-;; ordering with respect to functions that might capture a continuation).
-;; If `ordered?` is true with `pure?` as true, then things that always
-;; succeed with the same value are allowed, even if they may depend
-;; on an earlier action not raising an exception.
-;; If `succeeds?` is true with `pure?` and `ordered?` as true, then
-;; things that always succeed are allowed, even if they aren't pure
-;; (i.e., a later call might produce a different result).
+;; Check whether an expression is simple:
+;;
+;;   `pure?` = #t: its order of evaluation isn't detectable
+;;
+;;   `pure?` = #f: it won't try to capture a continuation or
+;;                 reference a variable too early
+;;
+;; In `pure?` mode:
+;;
+;;   `no-alloc?` = #t: allocation counts as detectable (for
+;;                     ordering with respect to functions that
+;;                     might capture a continuation)
+;;
+;;   `ordered?` = #t: things that always succeed with the same
+;;                    value are allowed, even if they may depend
+;;                    on an earlier action not raising an exception
+;;
+;;   `succeeds?` = #t and `ordered?` = #t: things that always
+;;                    succeed are allowed, even if they aren't pure
+;;                    (i.e., a later call might produce a different
+;;                    result)
+;;
 ;; This function receives both schemified and non-schemified expressions.
+;;
 (define (simple? e prim-knowns knowns imports mutated simples unsafe-mode?
                  #:pure? [pure? #t]
                  #:no-alloc? [no-alloc? #f]
@@ -143,10 +155,11 @@
         (and (simple? e0 result-arity)
              (for/and ([e (in-list es)])
                (simple? e #f))))]
-      [`(set! ,_ ,e)
-       #:guard (not pure?)
-       (simple? e 1)
-       (returns 1)]
+      [`(set! ,x ,e)
+       (and (not pure?)
+            (simple? x 1)
+            (simple? e 1)
+            (returns 1))]
       [`(if ,tst ,thn ,els)
        (and (simple? tst 1)
             (simple? thn result-arity)
@@ -191,7 +204,9 @@
        (let ([e (unwrap e)])
          (and (returns 1)
               (or (and (symbol? e)
-                       (simple-mutated-state? (hash-ref mutated e #f)))
+                       (if pure?
+                           (simple-mutated-state? (hash-ref mutated e #f))
+                           (not (too-early-mutated-state? (hash-ref mutated e #f)))))
                   (integer? e)
                   (boolean? e)
                   (string? e)

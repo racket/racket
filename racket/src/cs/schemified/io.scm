@@ -31722,26 +31722,23 @@
                                                             (let ((app_0
                                                                    (normalize-key
                                                                     case-k_0)))
-                                                              (call-with-values
-                                                               (lambda ()
-                                                                 (values
-                                                                  app_0
-                                                                  (cons
-                                                                   case-k_0
-                                                                   (begin0
-                                                                     (bytes->immutable-bytes
-                                                                      (|#%app|
-                                                                       rktio_to_bytes
-                                                                       v_0))
-                                                                     (|#%app|
-                                                                      rktio_free
-                                                                      v_0)))))
-                                                               (lambda (key_0
-                                                                        val_0)
-                                                                 (hash-set
-                                                                  table_2
-                                                                  key_0
-                                                                  val_0)))))))))
+                                                              (let ((key_0
+                                                                     app_0)
+                                                                    (val_0
+                                                                     (cons
+                                                                      case-k_0
+                                                                      (begin0
+                                                                        (bytes->immutable-bytes
+                                                                         (|#%app|
+                                                                          rktio_to_bytes
+                                                                          v_0))
+                                                                        (|#%app|
+                                                                         rktio_free
+                                                                         v_0)))))
+                                                                (hash-set
+                                                                 table_2
+                                                                 key_0
+                                                                 val_0))))))))
                                                  (values table_3))))
                                           (for-loop_0 table_3 (+ pos_0 1)))
                                         table_2)))))
@@ -34390,31 +34387,28 @@
                                             (level->value ceiling-level_0)))))
                                      #f)
                                  (values max-level_0 topic-max-level_0)
-                                 (let ((app_0
+                                 (let ((max-level_1
                                         (level-max
                                          max-level_0
                                          (level-min
                                           (filters-max-level
                                            (log-receiver-filters r_0))
                                           ceiling-level_0))))
-                                   (call-with-values
-                                    (lambda ()
-                                      (values
-                                       app_0
-                                       (if topic_0
-                                         (level-max
-                                          topic-max-level_0
-                                          (level-min
-                                           (filters-level-for-topic
-                                            (log-receiver-filters r_0)
-                                            topic_0)
-                                           topic-ceiling-level_0))
-                                         #f)))
-                                    (lambda (max-level_1 topic-max-level_1)
-                                      (for-loop_0
-                                       max-level_1
-                                       topic-max-level_1
-                                       rest_0))))))))
+                                   (let ((topic-max-level_1
+                                          (if topic_0
+                                            (level-max
+                                             topic-max-level_0
+                                             (level-min
+                                              (filters-level-for-topic
+                                               (log-receiver-filters r_0)
+                                               topic_0)
+                                              topic-ceiling-level_0))
+                                            #f)))
+                                     (let ((max-level_2 max-level_1))
+                                       (for-loop_0
+                                        max-level_2
+                                        topic-max-level_1
+                                        rest_0))))))))
                          (values max-level_0 topic-max-level_0))))))
                   (for-loop_0 old-max-level_0 old-topic-max-level_0 lst_0)))
                (lambda (max-level_0 topic-max-level_0)

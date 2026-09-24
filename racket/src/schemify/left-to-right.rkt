@@ -163,8 +163,6 @@
                                           unsafe-mode?))]
           [`(values ,args ...)
            (and (= (length ids) (length args))
-                (for/and ([arg (in-list args)])
-                  (simple? #:pure? #f arg prim-knowns knowns imports mutated simples unsafe-mode?))
                 `(let ,(for/list ([id (in-list ids)]
                                   [arg (in-list args)])
                          `[,id ,arg])
