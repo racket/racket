@@ -227,7 +227,10 @@ expressions are duplicated, and may be evaluated in different scopes.
                 (define prop-val (stxclass-prop-ref val))
                 (define prop-id (if (identifier? prop-val) prop-val (prop-val val)))
                 (loop prop-id (cons id prev-ids)))]
-          [(assoc id (unbox alt-stxclass-mapping) free-identifier=?) => cdr]
+          [(assoc id (unbox alt-stxclass-mapping) free-identifier=?)
+           => (lambda (p)
+                (record-disappeared-uses (list id))
+                (cdr p))]
           [allow-undef? #f]
           [else (wrong-syntax id #:extra prev-ids "not defined as syntax class")])))
 
