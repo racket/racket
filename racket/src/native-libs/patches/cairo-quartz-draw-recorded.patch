@@ -1,0 +1,28 @@
+diff -u -r old/cairo-1.18.2/src/cairo-quartz-surface.c new/cairo-1.18.2/src/cairo-quartz-surface.c
+--- old/cairo-1.18.2/src/cairo-quartz-surface.c	2024-09-01 07:09:23
++++ new/cairo-1.18.2/src/cairo-quartz-surface.c	2026-09-25 09:42:43
+@@ -690,6 +690,7 @@
+ {
+     cairo_status_t status;
+     cairo_quartz_image_surface_t *image_surface;
++    cairo_surface_t *wrapped_surface = NULL;
+     void *image_extra;
+     cairo_bool_t acquired = FALSE;
+ 
+@@ -731,6 +732,7 @@
+ 	image_surface =
+ 	    (cairo_quartz_image_surface_t*)cairo_quartz_image_surface_create (&surface->base);
+ 	cairo_matrix_init_identity (matrix);
++	wrapped_surface = &surface->base;
+     }
+     else {
+ 	cairo_image_surface_t *surface;
+@@ -758,6 +760,8 @@
+ 	image_surface->imageSurface = NULL;
+     }
+     cairo_surface_destroy (&image_surface->base);
++    if (wrapped_surface)
++	cairo_surface_destroy (wrapped_surface);
+ 
+     /* TODO: differentiate memory error and unsupported surface type */
+     if (unlikely (*image_out == NULL))

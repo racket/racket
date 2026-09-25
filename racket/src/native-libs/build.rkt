@@ -134,6 +134,9 @@
 ;; Drop a glyph-advance hack that interferes with italic output to PDF
 (define-patch-path cairo-quartz-advance-patch "patches/cairo-quartz-advance.patch")
 
+;; Repair a leak when drawing a recorded surface to a Quartz surface
+(define-patch-path cairo-quartz-draw-recorded-patch "patches/cairo-quartz-draw-recorded.patch")
+
 ;; When substitutions are handled by Pango/Cairo and a substition ends up
 ;; empty, then carry on with PDF writing anyway; that can happen when writing
 ;; "算法名称" with "Lucida Grande" on macOS Monterey, for example
@@ -835,6 +838,7 @@
                         (list courier-new-patch
                               cairo-cg-surface-patch
                               cairo-quartz-advance-patch
+                              cairo-quartz-draw-recorded-patch
                               cairo-empty-font-subset-patch
                               cairo-emptyglyph-patch)
                         (if win?
