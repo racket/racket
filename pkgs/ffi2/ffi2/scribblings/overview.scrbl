@@ -128,7 +128,10 @@ list of versions to try (where @racket[#f] tries omitting the version):
  #:no-prompt
  (require ffi2)
 
- (define cairo-lib (ffi2-lib "libcairo" '("2" #f)))
+ (eval:alts
+  (code:line (define cairo-lib
+               (ffi2-lib "libcairo" '("2" #f))) (code:comment @#,elem{use @racket["cairo"] on Windows}))
+  (require racket/draw/unsafe/cairo-lib))
 ]
 
 Knowing the library's name and/or path is often the trickiest part of
@@ -138,7 +141,7 @@ especially on Unix.
 
 In the case of Cairo, the problem is simplified by the fact that the
 library is included with a Racket distribution for Windows or Mac OS.
-Using the base file name @filepath{libcairo} with version @filepath{2}
+Using the base file name @filepath{libcairo} or @filepath{cairo} with version @filepath{2}
 is likely to find the library as bundled with Racket or as supplied by
 the operating system---usually something like
 @filepath{/usr/lib/libcairo.2.so} on a Unix installation.
@@ -376,7 +379,9 @@ code and the result that DrRacket shows:
           racket/draw
           pict)
  (eval:alts #,(hspace 1) (void))
- (define cairo-lib (ffi2-lib "libcairo" '("2" #f)))
+ (eval:alts
+  (define cairo-lib (ffi2-lib "libcairo" '("2" #f)))
+  (require racket/draw/unsafe/cairo-lib))
  (define-ffi2-definer define-cairo #:lib cairo-lib)
  (eval:alts #,(hspace 1) (void))
  (define-ffi2-type cairo_t* void_t*)
