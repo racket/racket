@@ -233,7 +233,7 @@
   (define embed+boot-deps (list petite-v.boot scheme-v.boot racket-v.boot
                                 (at-source "embed-boot.rkt")))
   
-  (define windows-libs '("WS2_32.lib" "Shell32.lib" "User32.lib" "Winmm.lib"
+  (define windows-libs '("WS2_32.lib" "Shell32.lib" "User32.lib" "Winmm.lib" "Psapi.lib"
                                       "RpCrt4.lib" "Ole32.lib" "Advapi32.lib"))
 
   (define racket.manifest (at-source "../../worksp/racket/racket.manifest"))
@@ -650,14 +650,17 @@
                                   (config-merge config
                                                 'CFLAGS
                                                 "/LD")
-                                  (config-merge (config-merge config
-                                                              'CFLAGS
-                                                              "--shared")
-                                                'LDFLAGS
-                                                (build-shell "-Wl,--output-def"
-                                                             (string->shell
-                                                              (~a "-Wl," (path-replace-extension libracketcsxxxxxxx.dll ".def")))
-                                                             "-static-libgcc")))))]
+                                  (config-merge
+                                   (config-merge (config-merge config
+                                                               'CFLAGS
+                                                               "--shared")
+                                                 'LDFLAGS
+                                                 (build-shell "-Wl,--output-def"
+                                                              (string->shell
+                                                               (~a "-Wl," (path-replace-extension libracketcsxxxxxxx.dll ".def")))
+                                                              "-static-libgcc"))
+                                   'LIBS
+                                   "-lpsapi"))))]
 
        [:target ,main.o (,@main-deps)
                 ,(lambda (main.o token)

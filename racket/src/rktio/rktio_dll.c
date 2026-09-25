@@ -2,6 +2,9 @@
 #include "rktio_private.h"
 #include <stdlib.h>
 #include <string.h>
+#ifdef RKTIO_SYSTEM_WINDOWS
+# include "psapi.h"
+#endif
 
 typedef struct rktio_dll_object_t rktio_dll_object_t;
 
@@ -201,74 +204,6 @@ rktio_ok_t rktio_dll_close(rktio_t *rktio, rktio_dll_t *dll)
 }
 
 /*========================================================================*/
-/* Searching all DLLs on Windows                                          */
-/*========================================================================*/
-
-#ifdef RKTIO_SYSTEM_WINDOWS
-
-/* We'd like to use EnumProcessModules to find all loaded DLLs, but it's
-   only available in NT 4.0 and later. The alternative, Module32{First,Next},
-   is available *except* for NT 4.0! So we try EnumProcessModules first. */
-
-int epm_tried = 0;
-typedef BOOL (WINAPI *EnumProcessModules_t)(HANDLE hProcess,
-                                            HMODULE* lphModule,
-                                            DWORD cb,
-                                            LPDWORD lpcbNeeded);
-EnumProcessModules_t _EnumProcessModules;
-#include <tlhelp32.h>
-
-static BOOL do_EnumProcessModules(HANDLE hProcess, HMODULE* lphModule,
-                                  DWORD cb, LPDWORD lpcbNeeded)
-{
-  if (!epm_tried) {
-    HMODULE hm;
-    hm = LoadLibraryW(L"psapi.dll");
-    if (hm)
-      _EnumProcessModules = (EnumProcessModules_t)GetProcAddress(hm, "EnumProcessModules");
-    if (!_EnumProcessModules) {
-      hm = LoadLibraryW(L"kernel32.dll");
-      if (hm)
-        _EnumProcessModules = (EnumProcessModules_t)GetProcAddress(hm, "EnumProcessModules");
-    }
-    epm_tried = 1;
-  }
-
-  if (_EnumProcessModules)
-    return _EnumProcessModules(hProcess, lphModule, cb, lpcbNeeded);
-  else {
-    HANDLE snapshot;
-    MODULEENTRY32 mod;
-    int i, ok;
-
-    snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE,
-                                        GetCurrentProcessId());
-    if (snapshot == INVALID_HANDLE_VALUE)
-      return FALSE;
-
-    for (i = 0; 1; i++) {
-      mod.dwSize = sizeof(mod);
-      if (!i)
-        ok = Module32First(snapshot, &mod);
-      else
-        ok = Module32Next(snapshot, &mod);
-      if (!ok)
-        break;
-      if (cb >= sizeof(HMODULE)) {
-        lphModule[i] = mod.hModule;
-        cb -= sizeof(HMODULE);
-      }
-    }
-
-    CloseHandle(snapshot);
-    *lpcbNeeded = i * sizeof(HMODULE);
-    return GetLastError() == ERROR_NO_MORE_FILES;
-  }
-}
-
-#endif
-
-/*========================================================================*/
 /* Searching for an object in a DLL                                       */
 /*========================================================================*/
 
@@ -344,11 +279,11 @@ void *rktio_dll_find_object(rktio_t *rktio, rktio_dll_t *dll, rktio_const_string
     DWORD cnt = NUM_QUICK_MODS * sizeof(HMODULE), actual_cnt, i;
     me = GetCurrentProcess();
     mods = quick_mods;
-    if (do_EnumProcessModules(me, mods, cnt, &actual_cnt)) {
+    if (EnumProcessModules(me, mods, cnt, &actual_cnt)) {
       if (actual_cnt > cnt) {
         cnt = actual_cnt;
         mods = malloc(cnt);
-        if (!do_EnumProcessModules(me, mods, cnt, &actual_cnt))
+        if (!EnumProcessModules(me, mods, cnt, &actual_cnt))
           mods = NULL;
       } else
         cnt = actual_cnt;
@@ -440,7 +375,14 @@ void rktio_set_dll_procs(dll_open_proc dll_open,
 #ifdef RKTIO_SYSTEM_WINDOWS
 HANDLE rktio_load_library(rktio_const_string_t name)
 {
-  if (!LoadLibraryHook) return NULL;
+  // Check if this loaded already and just return if it is.
+  HANDLE m = GetModuleHandleA((const char*) name);
+  if (m != NULL)
+    return m;
+
+  if (!LoadLibraryHook) 
+    return NULL;
+  
   return (HANDLE)LoadLibraryHook(name, 1);
 }
 

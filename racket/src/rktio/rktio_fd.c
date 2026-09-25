@@ -143,7 +143,7 @@ static CSI_proc get_csi(void)
   
   if (!tried_csi) {
     HMODULE hm;
-    hm = LoadLibraryW(L"kernel32.dll");
+    hm = GetModuleHandleW(L"kernel32.dll");
     if (hm)
       csi = (CSI_proc)GetProcAddress(hm, "CancelSynchronousIo");
     else
@@ -1988,7 +1988,7 @@ void rktio_std_write_in_best_effort(rktio_t *rktio, int which, char *buffer, int
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
   HANDLE h;
-  int ok, to_console, can_leftover = 0, keep_leftover = 0;
+  int ok, can_leftover = 0, keep_leftover = 0;
   intptr_t towrite = end - start, amt;
   wchar_t *w_buffer;
   DWORD winwrote;

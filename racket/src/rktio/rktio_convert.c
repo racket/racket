@@ -107,10 +107,13 @@ static void init_iconv()
   wchar_t *p;
   int hook_handle = 0;
 
-  WaitForSingleObject(rktio_global_lock, INFINITE);
+  if (iconv_is_ready)
+    return;
+
+  EnterCriticalSection(&rktio_global_cs);
 
   if (iconv_is_ready) {
-    ReleaseSemaphore(rktio_global_lock, 1, NULL);
+    LeaveCriticalSection(&rktio_global_cs);
     return;
   }
 
@@ -226,7 +229,7 @@ static void init_iconv()
   }
 
   iconv_is_ready = 1;
-  ReleaseSemaphore(rktio_global_lock, 1, NULL);
+  LeaveCriticalSection(&rktio_global_cs);
 }
 
 rktio_char16_t *rktio_get_dll_path(rktio_char16_t *s)
