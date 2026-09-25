@@ -8,7 +8,10 @@
 #endif
 
 #ifdef RKTIO_SYSTEM_WINDOWS
-HANDLE rktio_global_lock;
+#include <winnt.h>
+#define CS_SPINCOUNT 4000
+static BOOL global_cs_created = FALSE;
+CRITICAL_SECTION rktio_global_cs;
 #endif
 
 rktio_t *rktio_init(void)
@@ -19,8 +22,10 @@ rktio_t *rktio_init(void)
   memset(rktio, 0, sizeof(rktio_t));
 
 #ifdef RKTIO_SYSTEM_WINDOWS
-  if (!rktio_global_lock)
-    rktio_global_lock = CreateSemaphore(NULL, 1, 1, NULL);
+  if (!global_cs_created) {
+    InitializeCriticalSectionEx(&rktio_global_cs, CS_SPINCOUNT, CRITICAL_SECTION_NO_DEBUG_INFO);
+    global_cs_created = TRUE;
+  }
 #endif
 
   if (!rktio_environ_init(rktio)) {

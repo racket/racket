@@ -5514,7 +5514,11 @@ static void save_errno_values(int kind)
      `errno`. */
   if (!get_errno_ptr) {
     HMODULE hm;
+#   if defined(_WIN64)
+    hm = LoadLibrary("ucrtbase.dll");
+#   else /* defined(_WIN64)  */
     hm = LoadLibrary("msvcrt.dll");
+#   endif /* defined(_WIN64) */
     if (hm) {
       get_errno_ptr = (get_errno_ptr_t)GetProcAddress(hm, "_errno");
     }
