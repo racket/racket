@@ -2912,6 +2912,17 @@ case of module-leve bindings; it doesn't cover local bindings.
     (test #f same-mod? (cadr b) (caddr b))
     (test #f same-mod? (car b) (caddr b))))
 
+(test '#%flfxnum
+      (let ()
+        (local-require '#%flfxnum)
+        (resolved-module-path-name
+         (variable-reference->resolved-module-path (#%variable-reference fx+)))))
+(test '#%terminal
+      (let ()
+        (local-require '#%terminal)
+        (resolved-module-path-name
+         (variable-reference->resolved-module-path (#%variable-reference terminal-pause)))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 

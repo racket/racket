@@ -122,6 +122,7 @@
                                      (cons '|#%place| place-table)
                                      (cons '|#%foreign| foreign-table)
                                      (cons '|#%linklet| linklet-table)
+                                     (cons '|#%terminal| terminal-table)
                                      (cons 'internal internal-table)
                                      (cons 'schemify schemify-table))
 
