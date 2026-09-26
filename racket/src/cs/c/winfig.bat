@@ -8,8 +8,8 @@ REM `nmake` is used in the root of a checkout of the Git repository for
 REM Racket, or by "../../build.zuo" after "../../winfig.bat" is used
 
 set PLT_CS_SLSP_SUFFIX=
-set MORE_CFLAGS=
-set MORE_LDFLAGS=
+set MORE_CFLAGS=-DPSAPI_VERSION=2
+set MORE_LDFLAGS=-DPSAPI_VERSION=2
 
 :argloop
 shift

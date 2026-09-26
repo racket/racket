@@ -575,13 +575,11 @@ ptr S_realtime(void) {
 void S_stats_init(void) {
 #ifdef WIN32
   /* Use GetSystemTimePreciseAsFileTime when available (Windows 8 and later). */
-  HMODULE h = LoadLibraryW(L"kernel32.dll");
+  HMODULE h = GetModuleHandle(L"kernel32.dll");
   if (h != NULL) {
     GetSystemTimeAsFileTime_t proc = (void *)GetProcAddress(h, "GetSystemTimePreciseAsFileTime");
     if (proc != NULL)
       s_GetSystemTimeAsFileTime = proc;
-    else
-      FreeLibrary(h);
   }
 #endif
   S_gettime(time_monotonic, &starting_mono_tp);

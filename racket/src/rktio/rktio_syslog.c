@@ -39,6 +39,7 @@ void rktio_syslog_clean(rktio_t *rktio)
 #ifdef RKTIO_SYSTEM_WINDOWS
   if (rktio->hEventLog != INVALID_HANDLE_VALUE)
     CloseHandle(rktio->hEventLog);
+    FreeLibrary("advapi32.dll");
 #endif
 }
 
@@ -78,30 +79,30 @@ static rktio_ok_t do_syslog(rktio_t *rktio, int level, const char *name, const c
     char *naya = NULL;
     int ok;
 
-    WaitForSingleObject(rktio_global_lock, INFINITE);
+    EnterCriticalSection(&rktio_global_cs);
     if (rktio->hEventLog == INVALID_HANDLE_VALUE) {
       int ok = 1;
       rktio_err_t err;
       wchar_t *wp = WIDE_PATH_copy(exec_name, &err);
       if (wp) {
-	rktio->hEventLog = do_RegisterEventSource(NULL, wp);
-	if (rktio->hEventLog == INVALID_HANDLE_VALUE) {
-	  if (record_err)
-	    get_windows_error();
-	  ok = 0;
-	}
-	free(wp);
+	      rktio->hEventLog = do_RegisterEventSource(NULL, wp);
+	      if (rktio->hEventLog == INVALID_HANDLE_VALUE) {
+	        if (record_err)
+	          get_windows_error();
+	        ok = 0;
+	        }
+	      free(wp);
       } else {
-	if (record_err)
-	  memcpy(&rktio->err, &err, sizeof(rktio_err_t));
-	ok = 0;
+	      if (record_err)
+	        memcpy(&rktio->err, &err, sizeof(rktio_err_t));
+	      ok = 0;
       }
       if (!ok) {
-	ReleaseSemaphore(rktio_global_lock, 1, NULL);
-	return 0;
+	      LeaveCriticalSection(&rktio_global_cs);
+	      return 0;
       }
     }
-    ReleaseSemaphore(rktio_global_lock, 1, NULL);
+    LeaveCriticalSection(&rktio_global_cs);
     
     switch (level) {
     case RKTIO_LOG_FATAL:
