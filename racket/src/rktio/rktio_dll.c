@@ -99,7 +99,9 @@ rktio_dll_t *rktio_dll_open(rktio_t *rktio, rktio_const_string_t name, rktio_boo
     if (handle) {
       hook_handle = 1;
     } else {
-      handle = LoadLibraryW(WIDE_PATH_temp(name));
+      handle = LoadLibraryExW(WIDE_PATH_temp(name),
+                              NULL,
+                              LOAD_WITH_ALTERED_SEARCH_PATH);
       if (!handle)
 	get_windows_error();
     }
