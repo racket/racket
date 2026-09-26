@@ -4,6 +4,7 @@
  terminal-read-char
  terminal-pending-winch?
  terminal-write-char
+ terminal-write-chars
  terminal-char-width
  terminal-set-color
  terminal-flush
@@ -99,3 +100,18 @@
 (define terminal-bell (foreign-procedure "(cs)ee_bell" () void))
 (define terminal-carriage-return (foreign-procedure "(cs)ee_carriage_return" () void))
 (define terminal-line-feed (foreign-procedure "(cs)ee_line_feed" () void))
+
+(define terminal-write-chars
+  (cond
+    [(foreign-entry? "(cs)ee_write_chars")
+     (let ([write-chars (foreign-procedure "(cs)ee_write_chars" (u8* uptr) void)])
+       (lambda (str)
+         (let ([bv (string->utf16 str (native-endianness))])
+           (write-chars bv (quotient (bytevector-length bv) 2)))))]
+    [else
+     (lambda (str)
+       (let ([len (string-length str)])
+         (let loop ([i 0])
+           (unless (fx= i len)
+             (terminal-write-char (string-ref str i))
+             (loop (fx+ i 1))))))]))

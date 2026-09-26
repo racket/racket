@@ -7252,6 +7252,42 @@ static Scheme_Object *terminal_write_char(int argc, Scheme_Object **argv) {
   return scheme_make_integer(width);
 }
 
+static Scheme_Object *terminal_write_chars(int argc, Scheme_Object **argv) {
+  Scheme_Object *s = argv[0];
+  intptr_t len = SCHEME_CHAR_STRLEN_VAL(s), i;
+#ifdef WIN32
+  HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+  if (h != INVALID_HANDLE_VALUE) {
+    intptr_t surrogate_pairs = 0, j;
+    wchar_t *utf_16;
+    DWORD n;
+
+    for (i = 0; i < len; i++) {
+      if ((SCHEME_CHAR_STR_VAL(s)[i]) >= 0x10000)
+        surrogate_pairs++;
+    }
+    utf_16 = scheme_malloc_atomic((len + surrogate_pairs) * sizeof(wchar_t));
+    for (i = 0, j = 0; i < len; i++) {
+      int ch = SCHEME_CHAR_STR_VAL(s)[i];
+      if (ch >= 0x10000) {
+        ch -= 0x10000;
+        utf_16[j++] = (0xD800 + (ch >> 10));
+        utf_16[j++] = (0xDC00 + (ch & 0x3FF));
+      } else
+        utf_16[j++] = ch;
+    }
+    WriteConsoleW(h, utf_16, j, &n, NULL);
+  }
+#else
+  for (i = 0; i < len; i++) {
+# if MZ_EXPR_EDIT
+    s_ee_write_char((SCHEME_CHAR_STR_VAL(s)[i]));
+# endif
+  }
+#endif
+  return scheme_void;
+}
+
 static Scheme_Object *terminal_char_width(int argc, Scheme_Object **argv) {
   int width = 1;
 #if MZ_EXPR_EDIT
@@ -7439,6 +7475,7 @@ void scheme_init_terminal(Scheme_Startup_Env *env) {
   ADDTO_EE("terminal-read-char", terminal_read_char, 1);
   ADDTO_EE("terminal-pending-winch?", terminal_pending_winch, 0);
   ADDTO_EE("terminal-write-char", terminal_write_char, 1);
+  ADDTO_EE("terminal-write-chars", terminal_write_chars, 1);
   ADDTO_EE("terminal-char-width", terminal_char_width, 1);
   ADDTO_EE("terminal-set-color", terminal_set_color, 2);
   ADDTO_EE("terminal-flush", terminal_flush, 0);

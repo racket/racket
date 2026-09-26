@@ -123,9 +123,25 @@ static void run_cross_server(char **argv)
   (void)Scall1(c, a);
 }
 
+#ifdef WIN32
+static void ee_write_chars(wchar_t *str, uptr len) {
+  if (len) {
+    HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+    
+    if (h != INVALID_HANDLE_VALUE) {
+      DWORD n;
+      WriteConsoleW(h, str, len, &n, NULL);
+    }
+  }
+}
+#endif
+
 static void init_foreign(void)
 {
 # include "rktio.inc"
+#ifdef WIN32
+  Sforeign_symbol("(cs)ee_write_chars", ee_write_chars);
+#endif
 }
 
 void racket_boot(racket_boot_arguments_t *ba)

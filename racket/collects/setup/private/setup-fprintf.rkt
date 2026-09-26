@@ -115,54 +115,66 @@
              [(<= w 50) 1]
              [(<= w 100) 2]
              [else 3]))
-         (for ([i (in-range w)])
-           (define fg-color
-             (if (< (modulo i (* color-band-width 2)) color-band-width)
-                 fg-color1
-                 fg-color2))
-           (terminal-set-color fg-color #f)
-           (cond
-             [(and (<= i chars-width) (< chars-width (+ i 1)))
-              (define remainder-width
-                (floor (* (string-length chars)
-                          (- chars-width (floor chars-width)))))
-              (terminal-write-char (string-ref chars remainder-width))]
-             [(for/or ([j (in-inclusive-range 1 9)])
-                (define tenth (* (/ j 10) w))
-                ;; the dark background light line bars are one
-                ;; side of the character and the light background
-                ;; dark line bars are on the other side of the character
-                ;; so we print them off by one from each other to make
-                ;; them look as close together as possible.
-                (if (> i chars-width)
-                    (and (<= i (+ tenth 1)) (< (+ tenth 1) (+ i 1)))
-                    (and (<= i tenth) (< tenth (+ i 1)))))
+         (define (terminal-write-pending pending)
+           (unless (null? pending)
+             (terminal-write-chars (list->string (reverse pending)))))
+         (terminal-write-pending
+          (for/fold ([pending null] [prev-color #f] #:result pending)
+                    ([i (in-range w)])
+            (define fg-color
+              (if (< (modulo i (* color-band-width 2)) color-band-width)
+                  fg-color1
+                  fg-color2))
+            (define now-pending
               (cond
-                [(> i chars-width)
-                 (terminal-set-color -1 #f)
-                 (terminal-write-char (string-ref chars 1))
-                 (terminal-set-color fg-color #f)]
+                [(eqv? fg-color prev-color)
+                 pending]
                 [else
-                 (terminal-write-char (string-ref chars (- (string-length chars) 3)))])]
-             [(< i chars-width) (terminal-write-char (string-ref chars (- (string-length chars) 1)))]
-             [else (terminal-write-char (string-ref chars 0))]))
-         (terminal-set-color -1 #f)))
+                 (terminal-write-pending pending)
+                 (terminal-set-color fg-color #f)
+                 null]))
+            (values
+             (cond
+               [(and (<= i chars-width) (< chars-width (+ i 1)))
+                (define remainder-width
+                  (floor (* (string-length chars)
+                            (- chars-width (floor chars-width)))))
+                (cons (string-ref chars remainder-width) now-pending)]
+               [(for/or ([j (in-inclusive-range 1 9)])
+                  (define tenth (* (/ j 10) w))
+                  ;; the dark background light line bars are one
+                  ;; side of the character and the light background
+                  ;; dark line bars are on the other side of the character
+                  ;; so we print them off by one from each other to make
+                  ;; them look as close together as possible.
+                  (if (> i chars-width)
+                      (and (<= i (+ tenth 1)) (< (+ tenth 1) (+ i 1)))
+                      (and (<= i tenth) (< tenth (+ i 1)))))
+                (cond
+                  [(> i chars-width)
+                   (terminal-write-pending now-pending)
+                   (terminal-set-color -1 #f)
+                   (terminal-write-char (string-ref chars 1))
+                   (terminal-set-color fg-color #f)
+                   null]
+                  [else
+                   (cons (string-ref chars (- (string-length chars) 3)) now-pending)])]
+               [(< i chars-width) (cons (string-ref chars (- (string-length chars) 1)) now-pending)]
+               [else (cons (string-ref chars 0) now-pending)])
+             fg-color)))))
+      (terminal-set-color -1 #f)
 
       (cond
         [(= %age 1)
-         (terminal-write-char #\space)
-         (terminal-write-char #\1)
-         (terminal-write-char #\0)
-         (terminal-write-char #\0)
-         (terminal-write-char #\%)]
+         (terminal-write-chars " 100%")]
         [else
          (define %age-str (number->string (floor (* %age 100))))
          (define one-digit? (= 1 (string-length %age-str)))
-         (terminal-write-char #\space)
-         (terminal-write-char #\space)
-         (terminal-write-char (if one-digit? #\space (string-ref %age-str 0)))
-         (terminal-write-char (if one-digit? (string-ref %age-str 0) (string-ref %age-str 1)))
-         (terminal-write-char #\%)])
+         (terminal-write-chars (string #\space
+                                       #\space
+                                       (if one-digit? #\space (string-ref %age-str 0))
+                                       (if one-digit? (string-ref %age-str 0) (string-ref %age-str 1))
+                                       #\%))])
 
       (terminal-move-cursor 'left (+ w 5))
       (terminal-move-cursor 'down 1)))
@@ -277,20 +289,32 @@
 (define (write-something-at-line-i-from-bottom i str)
   (terminal-move-cursor 'up i)
   (define terminal-w (terminal-get-screen-width))
+  (define all-single-width?
+    ;; writing individual chars is so slow on Windows that it's
+    ;; worth special-casing the common case of (ast most) single-width letters
+    (for ([i (in-range 0 (min terminal-w (string-length str)))])
+      ((char->integer (string-ref str i)) . < . 256)))
   (define written-width
-    (let loop ([w 0]
-               [i 0])
-      (cond
-        ;; this won't work right if we're right at the
-        ;; edge and we write a character that takes
-        ;; more than one space. What to do then?
-        [(>= w terminal-w) w]
-        [(< i (string-length str))
-         (define c (string-ref str i))
-         (define char-w (terminal-write-char c))
-         (loop (+ (if (= char-w -128) 1 char-w) w)
-               (+ i 1))]
-        [else w])))
+    (cond
+      [all-single-width?
+       (terminal-write-chars (if ((string-length str) . > . terminal-w)
+                                 (substring str 0 terminal-w)
+                                 str))
+       (min terminal-w (string-length str))]
+      [else
+       (let loop ([w 0]
+                  [i 0])
+         (cond
+           ;; this won't work right if we're right at the
+           ;; edge and we write a character that takes
+           ;; more than one space. What to do then?
+           [(>= w terminal-w) w]
+           [(< i (string-length str))
+            (define c (string-ref str i))
+            (define char-w (terminal-write-char c))
+            (loop (+ (if (= char-w -128) 1 char-w) w)
+                  (+ i 1))]
+           [else w]))]))
   (terminal-clear 'eol)
   (terminal-move-cursor 'left written-width)
   (terminal-move-cursor 'down i))
