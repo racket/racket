@@ -18,8 +18,7 @@ typedef HWND (WINAPI* gcw_proc)();
 
 void rktio_console_ctl_c()
 {
-  if (waiting_sema)
-    ReleaseSemaphore(waiting_sema, 1, NULL);
+
 }
 
 static void WaitOnConsole()
@@ -29,56 +28,27 @@ static void WaitOnConsole()
   if (!has_console)
     return;
 
-  waiting_sema = CreateSemaphore(NULL, 0, 1, NULL);
-
-  if (console_hwnd) {
-    AppendMenu(GetSystemMenu(console_hwnd, FALSE),
-	       MF_STRING,
-	       SC_CLOSE,
-	       "Close");
-    /* Un-gray the close box: */
-    RedrawWindow(console_hwnd, NULL, NULL,
-		 RDW_FRAME | RDW_INVALIDATE | RDW_UPDATENOW);
-  }
-
-  WriteConsoleW(GetStdHandle(STD_OUTPUT_HANDLE),
-		L"\n[Exited. Close box or Ctrl-C closes the console.]\n",
-		51,
-		&wrote,
-		NULL);
-
-  WaitForSingleObject(waiting_sema, INFINITE);
-
+  FreeConsole();
   has_console = 0;
 }
 
 void rktio_create_console()
 {
   if (!has_console) {
-    HMODULE hm;
-    gcw_proc gcw;
-
+    
     AllocConsole();
-
     rktio_set_console_handler();
+    HANDLE console_input = GetStdHandle(STD_INPUT_HANDLE);
+    SetConsoleMode(console_input, ENABLE_PROCESSED_INPUT | ENABLE_VIRTUAL_TERMINAL_INPUT);
 
-    hm = LoadLibraryW(L"kernel32.dll");
-    if (hm)
-      gcw = (gcw_proc)GetProcAddress(hm, "GetConsoleWindow");
-    else
-      gcw = NULL;
-
-    if (gcw)
-      console_hwnd = gcw();
-
-    if (console_hwnd) {
-      EnableMenuItem(GetSystemMenu(console_hwnd, FALSE), SC_CLOSE,
-		     MF_BYCOMMAND | MF_GRAYED);
-      RemoveMenu(GetSystemMenu(console_hwnd, FALSE), SC_CLOSE, MF_BYCOMMAND);
-    }
-
+    HANDLE console_output = GetStdHandle(STD_OUTPUT_HANDLE);
+    SetConsoleMode(console_output, ENABLE_PROCESSED_OUTPUT | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+  
     has_console = 1;
 
+    HANDLE console_wnd = GetConsoleWindow();
+    ShowWindow(console_wnd, SW_HIDE);
+    
     atexit(WaitOnConsole);
   }
 }
