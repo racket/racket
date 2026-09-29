@@ -801,6 +801,14 @@
     (test 'hello ptr-ref b/non-gcable _racket)
     (free-immobile-cell (if free-via-non-gcable? b/non-gcable b))))
 
+(let ([b (malloc-immobile-cell #f)])
+  (test #f ptr-ref b _racket)
+  (ptr-set! b _racket #f)
+  (test #f ptr-ref b _racket)
+  (ptr-set! b _racket 'a)
+  (test 'a ptr-ref b _racket)
+  (free-immobile-cell b))
+
 ;; test 'interior allocation mode
 (let ()
   ;; Example by Ron Garcia

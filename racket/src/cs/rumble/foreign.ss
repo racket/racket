@@ -395,9 +395,11 @@
                    (ftype-any-ref ftype-scheme-object-pointer () (cptr->fptr who c) offset)))
                 (lambda (for-whom dest-c offset s)
                   (let ([m (cptr->fptr for-whom dest-c)])
-                    (if (and (ftype-scheme-object-pointer? m)
+                    (if (and s
+                             (ftype-scheme-object-pointer? m)
                              (reference-bytevector? (ftype-scheme-object-pointer-object m)))
-                        ;; use `bytevector-reference-set!` to get write barrier
+                        ;; use `bytevector-reference-set!` to get write barrier; it's
+                        ;; important that `s` is not `#f`, since that turns into NULL
                         (let ([offset (+ offset (ftype-scheme-object-pointer-offset m))])
                           (bytevector-reference-set! (ftype-scheme-object-pointer-object m) offset s))
                         ;; only sensible if `s` is immobile
@@ -1338,7 +1340,10 @@
 
 (define (malloc-immobile-cell v)
   (let ([vec (make-immobile-reference-bytevector (foreign-sizeof 'ptr))])
-    (bytevector-reference-set! vec 0 v)
+    (if v
+        (bytevector-reference-set! vec 0 v) ; note: would map `v` as `#f` to NULL
+        (ftype-any-set! ftype-scheme-object-pointer () (make-ftype-scheme-object-pointer vec) 0
+                        (make-ftype-scheme-object-pointer #f)))
     (with-global-lock
      (eq-hashtable-set! immobile-cells vec #t))
     (fptr->cptr (make-ftype-scheme-object-pointer vec))))
