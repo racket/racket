@@ -403,7 +403,7 @@
                         (let ([offset (+ offset (ftype-scheme-object-pointer-offset m))])
                           (bytevector-reference-set! (ftype-scheme-object-pointer-object m) offset s))
                         ;; only sensible if `s` is immobile
-                        (ftype-any-set! ftype-scheme-object-pointer () (cptr->fptr for-whom dest-c) offset
+                        (ftype-any-set! ftype-scheme-object-pointer () m offset
                                         (make-ftype-scheme-object-pointer s)))))))
 
 (define (bad-ctype-value who type-name v)

@@ -5,7 +5,8 @@
                   ffi2-sizeof
                   ffi2-set!
                   ffi2-ref
-                  ptr_t))
+                  ptr_t
+                  gcable_t))
 
 (provide ffi2-malloc-manual-box
          ffi2-free-manual-box
@@ -32,4 +33,8 @@
 (define (ffi2-manual-box-set! p v)
   (unless (ffi2-ptr? p)
     (raise-argument-error 'ffi2-manual-box-ref "ptr_t?" p))
-  (ptr-set! (ffi2-ptr->cpointer p) _scheme v))
+  ;; remember GCable, so that assignment uses a write barrier
+  (define pp (ffi2-malloc (ffi2-sizeof ptr_t)))
+  (ffi2-set! pp ptr_t p)
+  (define p/gc (ffi2-ref pp (gcable_t ptr_t)))
+  (ptr-set! (ffi2-ptr->cpointer p/gc) _scheme v))
