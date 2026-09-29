@@ -11,7 +11,6 @@
 # endif
 # include <winsock2.h>
 # include <windows.h>
-# include <VersionHelpers.h>
 #endif
 
 #ifdef RKTIO_USE_PTHREADS
