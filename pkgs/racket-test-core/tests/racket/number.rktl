@@ -656,6 +656,15 @@
 (test 0 expt 0 (expt 2 80))
 (test 0 expt 0 (add1 (expt 2 80)))
 (test 0.0 expt 0.5 (expt 2 80))
+(when (eq? 'chez-scheme (system-type 'vm))
+  ;; BC tries to compute these and aborts
+  (err/rt-test (eval '(expt 2 (most-negative-fixnum))) exn:fail:out-of-memory?)
+  (err/rt-test (eval '(expt 1/2 (most-negative-fixnum))) exn:fail:out-of-memory?))
+(test 1 expt 1 (most-negative-fixnum))
+(test 1 expt -1 (most-negative-fixnum))
+(test 0.0 expt 2.0 (most-negative-fixnum))
+(test +inf.0 expt 0.5 (most-negative-fixnum))
+(test 0.0 'expt (let ([n (most-negative-fixnum)]) (expt 2.0 n)))
 
 (let ()
   (define nrs (list -inf.0 -2.0 -1.0 -0.5 -0.0 0.0 0.5 1.0 2.0 +inf.0))
