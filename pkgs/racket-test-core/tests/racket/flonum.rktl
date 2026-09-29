@@ -421,6 +421,15 @@
 (test -0.0 flsqrt -0.0)
 (test +nan.0 log (flsqrt -1.0))
 
+(test 5.0 flhypot 3.0 4.0)
+(test 4.9999999999999995e+200 flhypot 3e+200 4e+200)
+(test 5e-200 flhypot 3e-200 4e-200)
+(test +inf.0 flhypot +inf.0 +nan.0)
+(test +inf.0 flhypot +nan.0 +inf.0)
+(test +nan.0 flhypot +nan.0 1.0)
+(err/rt-test (flhypot 3 4.0) exn:fail:contract?)
+(err/rt-test (flhypot 3.0 4) exn:fail:contract?)
+
 ;; ----------------------------------------
 ;; `flbit-field`, based on tests in the Chez Scheme test suite
 

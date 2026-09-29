@@ -2629,6 +2629,7 @@ XFORM_NONGCING double scheme_double_atan2(double v, double v2);
 XFORM_NONGCING double scheme_double_log(double x);
 XFORM_NONGCING double scheme_double_exp(double x);
 XFORM_NONGCING double scheme_double_expt(double x, double y);
+XFORM_NONGCING double scheme_double_hypot(double x, double y);
 
 /***** extflonums *****/
 #ifdef MZ_LONG_DOUBLE
