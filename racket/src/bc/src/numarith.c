@@ -42,6 +42,7 @@ static Scheme_Object *fl_mult (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_div (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_abs (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_sqrt (int argc, Scheme_Object *argv[]);
+static Scheme_Object *fl_hypot (int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *unsafe_fl_plus (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_fl_minus (int argc, Scheme_Object *argv[]);
@@ -292,6 +293,12 @@ void scheme_init_flfxnum_numarith(Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_WANTS_FLONUM_FIRST);
   scheme_addto_prim_instance("flsqrt", p, env);
 
+  p = scheme_make_folding_prim(fl_hypot, "flhypot", 2, 2, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_SOMETIMES_INLINED
+                                                            | SCHEME_PRIM_PRODUCES_FLONUM
+                                                            | SCHEME_PRIM_WANTS_FLONUM_BOTH);
+  scheme_addto_prim_instance("flhypot", p, env);
+
 }
 
 void scheme_init_extfl_numarith(Scheme_Startup_Env *env)
@@ -505,6 +512,13 @@ void scheme_init_unsafe_numarith(Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_PRODUCES_FLONUM
                                                             | SCHEME_PRIM_WANTS_FLONUM_FIRST);
   scheme_addto_prim_instance("unsafe-flsqrt", p, env);
+
+  p = scheme_make_folding_prim(fl_hypot, "unsafe-flhypot", 2, 2, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_SOMETIMES_INLINED
+                                                            | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
+                                                            | SCHEME_PRIM_PRODUCES_FLONUM
+                                                            | SCHEME_PRIM_WANTS_FLONUM_BOTH);
+  scheme_addto_prim_instance("unsafe-flhypot", p, env);
 }
 
 void scheme_init_extfl_unsafe_numarith(Scheme_Startup_Env *env)
@@ -1471,6 +1485,16 @@ SAFE_FL(fl_div, "fl/", /, scheme_false, if (argc == 1) v = 1.0 / v;)
 
 SAFE_FL1(fl_abs, "flabs", fabs)
 SAFE_FL1(fl_sqrt, "flsqrt", sqrt)
+
+static Scheme_Object *fl_hypot(int argc, Scheme_Object *argv[])
+{
+  if (!SCHEME_DBLP(argv[0]))
+    scheme_wrong_contract("flhypot", "flonum?", 0, argc, argv);
+  if (!SCHEME_DBLP(argv[1]))
+    scheme_wrong_contract("flhypot", "flonum?", 1, argc, argv);
+  return scheme_make_double(scheme_double_hypot(SCHEME_DBL_VAL(argv[0]),
+                                                SCHEME_DBL_VAL(argv[1])));
+}
 
 #ifdef MZ_LONG_DOUBLE
 # define UNSAFE_EXTFL(name, op)                                          \

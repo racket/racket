@@ -493,7 +493,7 @@
           make-flrectangular
           gcd
           lcm
-          fllog flatan
+          fllog flatan flhypot
           fxquotient
 
           random
@@ -668,6 +668,7 @@
           unsafe-flatan
           unsafe-fllog
           unsafe-flexp
+          unsafe-flhypot
           unsafe-flsqrt
           unsafe-flexpt
 

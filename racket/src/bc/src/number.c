@@ -3960,6 +3960,14 @@ double scheme_double_expt(double x, double y) {
   return sch_pow(x, y);
 }
 
+double scheme_double_hypot(double x, double y) XFORM_SKIP_PROC {
+#ifdef _MSC_VER
+  return _hypot(x, y);
+#else
+  return hypot(x, y);
+#endif
+}
+
 #ifdef MZ_LONG_DOUBLE
 long_double scheme_long_double_expt(long_double x, long_double y) {
   return sch_powl(x, y);
@@ -4095,12 +4103,32 @@ static Scheme_Object *magnitude(int argc, Scheme_Object *argv[])
   if (SCHEME_COMPLEXP(o)) {
     Scheme_Object *r = _scheme_complex_real_part(o);
     Scheme_Object *i = _scheme_complex_imaginary_part(o);
-    Scheme_Object *a[1], *q;
+    Scheme_Object *a[1], *q, *rsq, *isq;
+    double d;
+
+    if (SCHEME_FLOATP(r) && SCHEME_FLOATP(i)) {
+      d = scheme_double_hypot(SCHEME_FLOAT_VAL(r), SCHEME_FLOAT_VAL(i));
+#ifdef MZ_USE_SINGLE_FLOATS
+      if (SCHEME_FLTP(r) && SCHEME_FLTP(i))
+        return scheme_make_float((float)d);
+#endif
+      return scheme_make_double(d);
+    }
+
+    if (scheme_is_exact(r) && scheme_is_exact(i)) {
+      rsq = scheme_bin_mult(r, r);
+      isq = scheme_bin_mult(i, i);
+      q = scheme_bin_plus(rsq, isq);
+      a[0] = q;
+      return scheme_sqrt(1, a);
+    }
+
+    /* Preserve the overflow-safe path for extended and mixed representations. */
     a[0] = r;
     r = scheme_abs(1, a);
     a[0] = i;
     i = scheme_abs(1, a);
-    
+
     if (SAME_OBJ(r, scheme_make_integer(0)))
       return i;
 
@@ -4114,37 +4142,9 @@ static Scheme_Object *magnitude(int argc, Scheme_Object *argv[])
       a[0] = i;
       return scheme_exact_to_inexact(1, a);
     }
-#ifdef MZ_USE_SINGLE_FLOATS
-    if (SCHEME_FLTP(i)) {
-      float f;
-      f = SCHEME_FLT_VAL(i);
-      if (MZ_IS_INFINITY((double) f))
-        return scheme_single_inf_object;
-      else if (MZ_IS_NAN((double) f)) {
-        if (SCHEME_FLTP(r)) { /* `r` is either a single-precision float or exact 0 */
-          f = SCHEME_FLT_VAL(r);
-          if (MZ_IS_INFINITY((double) f))
-            return scheme_single_inf_object;
-        }
-      }
-    }
-#endif
-    if (SCHEME_FLOATP(i)) {
-      double d;
-      d = SCHEME_FLOAT_VAL(i);
-      if (MZ_IS_INFINITY(d))
-        return scheme_inf_object;
-      else if (MZ_IS_NAN(d)) {
-        if (SCHEME_FLOATP(r)) {
-          d = SCHEME_FLOAT_VAL(r);
-          if (MZ_IS_INFINITY(d))
-            return scheme_inf_object;
-        }
-      }
-    }
     q = scheme_bin_div(r, i);
     q = scheme_bin_plus(scheme_make_integer(1),
-			scheme_bin_mult(q, q));
+                        scheme_bin_mult(q, q));
     a[0] = q;
     return scheme_bin_mult(i, scheme_sqrt(1, a));
   } else

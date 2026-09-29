@@ -194,6 +194,7 @@ For @tech{flonums}: Unchecked version of @racket[flbit-field].
 @defproc[(unsafe-flatan [a flonum?]) flonum?]
 @defproc[(unsafe-fllog [a flonum?]) flonum?]
 @defproc[(unsafe-flexp [a flonum?]) flonum?]
+@defproc[(unsafe-flhypot [a flonum?] [b flonum?]) flonum?]
 @defproc[(unsafe-flsqrt [a flonum?]) flonum?]
 @defproc[(unsafe-flexpt [a flonum?] [b flonum?]) flonum?]
 )]{
@@ -201,7 +202,7 @@ For @tech{flonums}: Unchecked version of @racket[flbit-field].
 For @tech{flonums}: Unchecked (potentially) versions of
 @racket[flsin], @racket[flcos], @racket[fltan], @racket[flasin],
 @racket[flacos], @racket[flatan], @racket[fllog], @racket[flexp],
-@racket[flsqrt], and @racket[flexpt]. Currently, some of these
+@racket[flhypot], @racket[flsqrt], and @racket[flexpt]. Currently, some of these
 bindings are simply aliases for the corresponding safe bindings.}
 
 
@@ -1067,4 +1068,3 @@ referenced too early.
 @; ------------------------------------------------------------------------
 
 @include-section["unsafe-undefined.scrbl"]
-

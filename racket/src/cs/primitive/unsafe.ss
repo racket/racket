@@ -80,6 +80,7 @@
   [unsafe-flrandom (known-procedure/no-prompt 2)]
   [unsafe-flreal-part (known-procedure/then-pure/folding-unsafe 2 'flreal-part)]
   [unsafe-flsingle (known-procedure/then-pure/folding-unsafe 2 'flsingle)]
+  [unsafe-flhypot (known-procedure/then-pure/folding-unsafe 4 'flhypot)]
   [unsafe-flsqrt (known-procedure/then-pure/folding-unsafe 2 'flsqrt)]
   [unsafe-flvector-length (known-procedure/then-pure/folding-unsafe 2 'flvector-length)]
   [unsafe-flvector-ref (known-procedure/succeeds 4)]

@@ -22,6 +22,7 @@
   [flexp (known-procedure/folding 2)]
   [flexpt (known-procedure/folding 4)]
   [flfloor (known-procedure/folding 2)]
+  [flhypot (known-procedure/has-unsafe/folding 4 'unsafe-flhypot)]
   [flimag-part (known-procedure/has-unsafe/folding 2 'unsafe-flimag-part)]
   [fllog (known-procedure/folding 2)]
   [flmax (known-procedure/folding -2)]

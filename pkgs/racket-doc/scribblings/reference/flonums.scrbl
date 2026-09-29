@@ -118,6 +118,19 @@ the range @racket[-1.0] to @racket[1.0] is given to @racket[flasin] or
 @racket[flacos], or when a negative number is given to @racket[fllog]
 or @racket[flsqrt].}
 
+@defproc[(flhypot [a flonum?] [b flonum?]) flonum?]{
+
+Computes the square root of the sum of the squares of @racket[a] and
+@racket[b] without undue overflow or underflow during the intermediate
+calculation. The result is equivalent to
+@racket[(magnitude (make-rectangular a b))].
+
+If either argument is an infinity, the result is @racket[+inf.0], even
+when the other argument is @racket[+nan.0]. Otherwise, if either argument
+is @racket[+nan.0], the result is @racket[+nan.0].
+
+@history[#:added "9.3.0.10"]}
+
 @defproc[(flexpt  [a flonum?] [b flonum?])
          flonum?]{
 

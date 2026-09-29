@@ -79,6 +79,7 @@
 (define unsafe-flatan (unsafe-primitive flatan))
 (define unsafe-fllog (unsafe-primitive fllog))
 (define unsafe-flexp (unsafe-primitive flexp))
+(define unsafe-flhypot hypot-foreign)
 (define unsafe-flsqrt (unsafe-primitive flsqrt))
 (define unsafe-flexpt (unsafe-primitive flexpt))
 

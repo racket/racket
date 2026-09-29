@@ -49,6 +49,7 @@ jobs:
       shell: cmd
       run: |
         racket\racket.exe -l- pkg/dirs-catalog --immediate %cd%\rktcat %cd%\pkgs\
+        racket\raco.exe pkg config -i --set catalogs %cd%\rktcat\ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
         racket\raco.exe pkg config --set catalogs %cd%\rktcat\ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
     - name: Install racket-lib package
       shell: cmd

@@ -370,6 +370,9 @@
   (test-un 5.0 unsafe-flsqrt 25.0)
   (test-un 0.5 unsafe-flsqrt 0.25)
   (test-un +nan.0 unsafe-flsqrt -1.0)
+  (test 5.0 unsafe-flhypot 3.0 4.0)
+  (test 4.9999999999999995e+200 unsafe-flhypot 3e+200 4e+200)
+  (test 5e-200 unsafe-flhypot 3e-200 4e-200)
 
   (test-un 1.0 unsafe-flsingle 1.0)
   (test-un -1.0 unsafe-flsingle -1.0)
