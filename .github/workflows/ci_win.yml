@@ -53,7 +53,7 @@ jobs:
     - name: Install racket-lib package
       shell: cmd
       run: |
-        call racket\raco.exe pkg install -i racket-lib
+        call racket\raco.exe pkg install -i --auto racket-lib
     - name: Install testing deps
       shell: cmd
       run: |
