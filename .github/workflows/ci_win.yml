@@ -50,7 +50,11 @@ jobs:
       run: |
         racket\racket.exe -l- pkg/dirs-catalog --immediate %cd%\rktcat %cd%\pkgs\
         racket\raco.exe pkg config --set catalogs %cd%\rktcat\ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
-    - name: Install Testing Deps
+    - name: Install racket-lib package
+      shell: cmd
+      run: |
+        call racket\raco.exe pkg install -i racket-lib
+    - name: Install testing deps
       shell: cmd
       run: |
         call racket\raco.exe pkg install --auto --no-docs racket-test unstable-flonum-lib net-test

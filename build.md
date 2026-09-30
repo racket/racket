@@ -121,8 +121,8 @@ want the first one:
   install` steps (or similar for Windows). After installation, you can
   install packages from the catalog server with `raco pkg`; if you do
   not use `make base`, you should install at least the `"racket-lib"`
-  package. See [Building Minimal Racket](#171-building-minimal-racket)
-  for more information.
+  package in `installation` scope. See [Building Minimal
+  Racket](#171-building-minimal-racket) for more information.
 
 * **Installers** — ​_This mode is for creating new distributions of
   Racket, not for developing or installing Racket locally._​ This mode
@@ -322,11 +322,16 @@ options.
 If you don’t want any special configuration and you just want the base
 build, you can use `make base` with the top-level makefile.
 
-Minimal Racket does not require additional native libraries to run.
-Under Windows, encoding-conversion, extflonum, and SSL functionality is
+Minimal Racket requires additional native libraries via the
+`"racket-lib"` package to run correctly on Windows and Mac OS. On
+Windows, encoding-conversion, extflonum (BC), and SSL functionality is
 hobbled until native libraries from the `"racket-lib"` package’s
-dependencies are installed; that package is installed as part of `nmake
-install`.
+dependencies are installed. On Mac OS, SSL functionality is similarly
+hobbled without `"racket-lib"` dependencies. In a source distribution,
+the `install` target of the makefile includes the installation of
+`"racket-lib"`, but that step is not part of the top-level makefile’s
+`base` target. The `"racket-lib"` package must be installed in
+`installation` scope.
 
 On all platforms, from the top-level makefile, the `PLT_SETUP_OPTIONS`
 makefile variable is passed on to the `raco setup` that is used to build

@@ -917,15 +917,17 @@
   (test 7 (lambda () errno-from-thread)))
 
 (when (eq? (system-type) 'windows)
-  ;; Use functions from msvcrt.dll that are documented to affect errno.
+  ;; Use functions from msvcrt.dll or ucrtbase.dll that are documented to affect errno.
   ;; (See note in /racket/src/foreign/foreign.rktc about Windows.)
-  (define msvcrt (ffi-lib "msvcrt.dll"))
+  (define crt-lib (if (= 64 (system-type 'word))
+                      (ffi-lib "ucrtbase.dll")
+                      (ffi-lib "msvcrt.dll")))
   (define ENOENT 2)
   (define ERANGE 34)
   (define _getcwd   ;; sets errno = ERANGE if path longer than buffer
-    (get-ffi-obj '_getcwd msvcrt (_fun #:save-errno 'posix _bytes/nul-terminated _int -> _void)))
+    (get-ffi-obj '_getcwd crt-lib (_fun #:save-errno 'posix _bytes/nul-terminated _int -> _void)))
   (define _chdir    ;; sets errno = ENOENT if path doesn't exist
-    (get-ffi-obj '_chdir  msvcrt (_fun #:save-errno 'posix _string -> _int)))
+    (get-ffi-obj '_chdir  crt-lib (_fun #:save-errno 'posix _string -> _int)))
   (define (bad/ERANGE) (_getcwd (make-bytes 1) 1))
   (define (bad/ENOENT) (_chdir "no-such-directory"))
   (bad/ERANGE)

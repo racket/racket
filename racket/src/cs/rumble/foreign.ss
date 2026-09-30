@@ -2506,9 +2506,9 @@
 
 (define (init-errno!)
   (case (machine-type)
-    [(a6nt ta6nt i3nt ti3nt)
+    [(i3nt ti3nt)
      (current-errno-source 'msvcrt)]
-    [(arm64nt tarm64nt)
+    [(arm64nt tarm64nt a6nt ta6nt)
      (current-errno-source 'ucrt)]
     [else
      (void)]))
