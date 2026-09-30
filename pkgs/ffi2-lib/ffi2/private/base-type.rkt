@@ -5,8 +5,11 @@
                   ffi2-ptr?
                   ffi2-ptr/gcable?
                   ffi2-uintptr->ptr
-                  ffi2-ptr->uintptr)
+                  ffi2-ptr->uintptr
+                  flvector->cpointer
+                  cpointer->ffi2-ptr)
          racket/fixnum
+         racket/flonum
          "string-convert.rkt"
          "base-pred.rkt"
          "type.rkt")
@@ -67,12 +70,22 @@
 (define-ffi2-base-type bytes_t 'pointer #'bytes-or-false? #:release #'black-box
   #:racket->c #'maybe-bytes->pointer/add-terminator
   #:c->racket #'maybe-pointer->bytes)
-(define-ffi2-base-type bytes_ptr_t'pointer #'bytes-or-false? #:release #'black-box
+(define-ffi2-base-type bytes_ptr_t 'pointer #'bytes-or-false? #:release #'black-box
   #:racket->c #'maybe-bytes->pointer
   #:c->racket #'maybe-pointer->bytes)
 (define-ffi2-base-type path_t 'pointer #'path-or-false? #:release #'black-box
   #:racket->c #'maybe-path->pointer
   #:c->racket #'maybe-pointer->path)
+(define-ffi2-base-type flvector_ptr_t 'pointer #'flvector? #:release #'black-box
+  #:racket->c #'flvector->pointer
+  #:c->racket #'pointer->flvector)
+
+(define (flvector->pointer fl)
+  (cpointer->ffi2-ptr #f (flvector->cpointer fl)))
+
+(define (pointer->flvector p)
+  (raise-arguments-error 'flvector_ptr_t "cannot convert a pointer object to an flvector"
+                         "pointer" p))
 
 (define (ptr_t? v) (ffi2-ptr? v))
 (define (ptr_t/gcable? v) (ffi2-ptr/gcable? v))

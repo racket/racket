@@ -57,6 +57,8 @@
          ptr_t->uintptr_t
          ptr_t->cpointer
          cpointer->ptr_t
+         ptr_t->ptr_t/gcable
+         ptr_t/gcable->ptr_t
          make-not-available
          (all-from-out "base-type.rkt"))
 
@@ -1220,7 +1222,9 @@
             (raise-syntax-error #f "source type is not a pointer type" stx #'from)))
         (when t
           (unless (ffi2-type-pointer? t)
-            (raise-syntax-error #f "target type is not a pointer type" stx #'to)))
+            (raise-syntax-error #f "target type is not a pointer type" stx #'to))
+          (when (ffi2-type-pointer/gcable? t)
+            (raise-syntax-error #f "target type must not be a gcable pointer type" stx #'to)))
         (define vm-type (if t (ffi2-type-vm-type t) 'pointer))
         (define gcable-vm-type (pointer-vm-type->gcable vm-type))
         #`(let ([ptr expr]
@@ -1326,3 +1330,21 @@
                           (lambda (rhs-a) rhs-a)
                           (lambda (key vals left right)
                             (list '__select key vals left right))))
+
+(define (ptr_t->ptr_t/gcable p)
+  (cond
+    [(ptr_t/gcable? p) p]
+    [else
+     (unless (ffi2-ptr? p) (raise-argument-error 'ptr_t->ptr_t/gcable "ptr_t?" p))
+     (define pp (ffi2-malloc (ffi2-sizeof ptr_t)))
+     (ffi2-set! pp ptr_t p)
+     (ffi2-ref pp (gcable_t ptr_t))]))
+
+(define (ptr_t/gcable->ptr_t p)
+  (unless (ffi2-ptr? p) (raise-argument-error 'ptr_t/gcable->ptr_t "ptr_t?" p))
+  (cond
+    [(ptr_t/gcable? p)
+     (define pp (ffi2-malloc (ffi2-sizeof ptr_t)))
+     (ffi2-set! pp ptr_t p)
+     (ffi2-ref pp ptr_t)]
+    [else p]))

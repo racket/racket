@@ -170,6 +170,22 @@ convert that byte string to a string or path. A
 }
 
 @deftogether[(
+@deftypeform[flvector_ptr_t]
+)]{
+
+For Racket-to-C conversion, @racket[flvector_ptr_t] converts a
+@tech[#:doc ref-doc]{flvector} to a pointer that refers to the vector
+content like @racket[(array_t double_t *)] and where mutation of
+pointer content on the C side is reflected as changes to the flvector
+content.
+
+The @racket[flvector_ptr_t] type does not support C-to-Racket
+conversion. Attempting a conversion in that direction raises an
+exception.
+
+}
+
+@deftogether[(
 @deftypeform[racket_t]
 )]{
 

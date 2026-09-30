@@ -76,3 +76,7 @@ EXPORT void sleep_seconds(int n) {
 EXPORT void *ptr_to_ptr(void *p) {
   return p;
 }
+
+EXPORT double sum_doubles(double *dbls) {
+  return dbls[0] + dbls[1];
+}

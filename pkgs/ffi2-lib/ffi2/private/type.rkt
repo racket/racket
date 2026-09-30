@@ -26,6 +26,7 @@
            remake-ffi2-type
            ffi2-type-compound?
            ffi2-type-pointer?
+           ffi2-type-pointer/gcable?
            ffi2-type-pointer-vm-type
            pointer-vm-type->gcable
            ffi2-type-immediate-pointer?
@@ -91,6 +92,13 @@
              (memq (car vm-type) '(pointer pointer/gc))
              #t)
         (eq? vm-type 'pointer)
+        (eq? vm-type 'pointer/gc)))
+
+  (define (ffi2-type-pointer/gcable? t)
+    (define vm-type (ffi2-type-vm-type t))
+    (or (and (pair? vm-type)
+             (memq (car vm-type) '(pointer/gc))
+             #t)
         (eq? vm-type 'pointer/gc)))
 
   (define (ffi2-type-pointer-vm-type t)

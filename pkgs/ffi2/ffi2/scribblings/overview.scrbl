@@ -347,7 +347,7 @@ whether checks are improved. Checks are omitted with a module that
 declares @racket[(#%declare #:unsafe)], for example.
 
 Mapping between symbols and integers is common enough that
-@racketmodname[ffi2] provides @racket[define-ffi-enum], which achieves
+@racketmodname[ffi2] provides @racket[define-ffi2-enum], which achieves
 the same result for defining @racket[cairo_line_cap_t]:
 
 @ffi2-examples[
@@ -819,13 +819,16 @@ two challenges for a Racket binding to C functions:
   be freed by a matching call to another foreign function.}
 
  @item{When a foreign function is given Racket-allocated arguments, and
-  when the Racket memory manager runs later, then Racket-allocated objects
+  when the Racket memory manager's garbage collector runs later, then Racket-allocated objects
   might get freed or moved in memory. In that case, references held by
   foreign code become invalid. This is a problem only when a foreign code
   retains a reference across calls or when it invokes a callback that
   returns to Racket.}
 
 ]
+
+See @secref["gcable-pointers"] for detailed rules about working with
+pointers to garbage-object objects.
 
 @; --------------------------------------------------
 

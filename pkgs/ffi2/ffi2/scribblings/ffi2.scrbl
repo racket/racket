@@ -16,5 +16,6 @@ interface}, abbreviated @deftech{FFI}.}
 @table-of-contents[]
 
 @include-section["overview.scrbl"]
+@include-section["memory.scrbl"]
 @include-section["api.scrbl"]
 @include-section["interop.scrbl"]

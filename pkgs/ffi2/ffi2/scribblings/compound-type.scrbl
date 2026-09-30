@@ -240,6 +240,7 @@ p
 
 Describes a type that is the same as @racket[ptr-type], which must
 describe a pointer type, except that conversion from C to Scheme creates
+a @tech{gcable pointer} that represents
 a reference to an address that is managed by the Racket garbage collector.
 A @racket[gcable_t] adjustment has no effect on conversion from Scheme to C
 or on predicates formed with @racket[ffi2-is-a?].

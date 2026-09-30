@@ -20,8 +20,14 @@
   (check-true (ffi2-is-a? p void_t*))
   (check-true (ffi2-is-a? p (gcable_t void_t*))) ; does not check gcableness
   (check-true (ffi2-is-a? p void_t*/gcable)) ; does not check gcableness
+  (check-true (ptr_t? p))
+  (check-false (ptr_t/gcable? p))
   (check-false (ffi2-is-a? p ours_t*))
   (check-false (ffi2-is-a? p mine_t*))
+  (check-true (ptr_t? (ptr_t/gcable->ptr_t p)))
+  (check-false (ptr_t/gcable? (ptr_t/gcable->ptr_t p)))
+  (check-true (ptr_t? (ptr_t->ptr_t/gcable p)))
+  (check-true (ptr_t/gcable? (ptr_t->ptr_t/gcable p)))
   (ffi2-free p))
 
 (let ()
