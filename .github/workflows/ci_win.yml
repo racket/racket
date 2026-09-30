@@ -56,6 +56,11 @@ jobs:
         call racket\raco.exe pkg install --auto --no-docs racket-test unstable-flonum-lib net-test
     - name: Run tests/racket/test
       shell: cmd
+      # In case the 3600s timeout built into `tests/racket/test` did not work, set workflow-level
+      # timeout. Note that this should be slightly shorter than the 3600s built-in timeout since
+      # `tests/racket/quiet.rktl` calls `custodian-shutdown-all` to terminate Racket as a fallback
+      # which would incorrectly exit with 0.
+      timeout-minutes: 60
       run: |
         call .\racket\src\worksp\msvcprep.bat x86_amd64
         racket\raco.exe test -l tests/racket/test

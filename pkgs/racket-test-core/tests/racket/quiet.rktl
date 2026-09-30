@@ -32,6 +32,21 @@
              (lambda ()
                (sleep 3600)
                (fprintf errp "\n\n~aTIMEOUT -- ABORTING!\n" Section-prefix)
+               (thread
+                (lambda ()
+                  ;; in case `(exit 3)` below didn't work for some reason
+                  ;;
+                  ;; this can happen when the plumber is stuck, causing
+                  ;; the exit handler to hang
+                  ;;
+                  ;; see, e.g., buildtest-win (3m), CI Win #5756 through
+                  ;; CI Win #5872 and beyond
+                  ;;
+                  ;; after "TIMEOUT -- ABORTING!" was printed in ~1hr, Racket
+                  ;; ran for another 5hr until Github cancelled the workflow
+                  (sleep 60)
+                  (fprintf errp "\n(exit 3) failed; shutting down the custodian\n")
+                  (custodian-shutdown-all cust)))
                (exit 3)
                ;; in case the above didn't work for some reason
                (sleep 60)
