@@ -71,7 +71,7 @@ allocated object remains referenced (e.g., through a retained gcable
 pointer) so that it is not deallocated. A non-gcable pointer can be
 safely converted to a gcable pointer when it is known to refer to an
 immobile object managed by the garbage collector. A reference to
-memory not managed by Racket also be converted to a gcable pointer,
+memory not managed by Racket also can be converted to a gcable pointer,
 but with care: as long as the gcable pointer object itself is
 allocated, the referenced memory must remain allocated outside of
 Racket's management (so that the reference memory is not taken over by

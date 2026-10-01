@@ -211,7 +211,7 @@ Both @racket[from-type] and @racket[to-type] must be pointer types,
 or they must both be @tech{scalar} types.
 
 The @racket[to-type] must not be a @racket[gcable_t] type, because
-conversion of a @tech{gcable pointer} managed automatically. The
+conversion of a @tech{gcable pointer} is managed automatically. The
 result of @racket[ffi2-cast] is a gcable pointer if and only if the
 result of @racket[expr] is a gcable pointer.
 

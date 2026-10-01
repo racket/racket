@@ -84,7 +84,7 @@
   (cpointer->ffi2-ptr #f (flvector->cpointer fl)))
 
 (define (pointer->flvector p)
-  (raise-arguments-error 'flvector_ptr_t "cannot convert a pointer object to an flvector"
+  (raise-arguments-error 'flvector_ptr_t "cannot convert a pointer object to a flvector"
                          "pointer" p))
 
 (define (ptr_t? v) (ffi2-ptr? v))
