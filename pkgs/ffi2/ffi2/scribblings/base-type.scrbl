@@ -183,6 +183,8 @@ The @racket[flvector_ptr_t] type does not support C-to-Racket
 conversion. Attempting a conversion in that direction raises an
 exception.
 
+@history[#:added "1.2"]
+
 }
 
 @deftogether[(

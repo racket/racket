@@ -290,6 +290,8 @@ with @racket[ffi2-manual-box-ref] or changed with
 Converts a @tech{gcable pointer} to a non-gcable pointer or vice
 versa. See also @secref["gcable-pointers"].
 
+@history[#:added "1.2"]
+
 }
 
 @deftogether[(
