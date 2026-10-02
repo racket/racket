@@ -1370,12 +1370,8 @@
 
 ;; --------------------------------------------------
 ;; check that string and byte-string evts can be reused
-;; This socket/alarm stress test intermittently duplicates a block on CGC:
-;; https://github.com/racket/racket/issues/3004
-;; Keep the coverage on CS and 3m while avoiding the CGC CI flake.
 
-(for ([thread (in-list thread-procs)]
-      #:unless (eq? (system-type 'gc) 'cgc))
+(for ([thread (in-list thread-procs)])
   (define (check-can-reuse read-bytes-evt read-bytes write-bytes integer->byte list->bytes bytes?)
     (define N 10)
     (define M 160)
