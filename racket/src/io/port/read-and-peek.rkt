@@ -207,6 +207,12 @@
                  [(semaphore? v)
                   (cond
                     [zero-ok? 0]
+                    [progress-evt
+                     ;; stop waiting if there's progress
+                     (if enable-break?
+                         (sync/enable-break v progress-evt)
+                         (sync v progress-evt))
+                     (loop in)]
                     [else
                      (if enable-break?
                          (semaphore-wait/enable-break v)
@@ -221,6 +227,13 @@
                      (if r
                          (result-loop r)
                          0)]
+                    [progress-evt
+                     ;; stop waiting if there's progress, where a 0
+                     ;; result leads to a check of `progress-evt`
+                     (let ([p-evt (wrap-evt progress-evt (lambda (v) 0))])
+                       (result-loop (if enable-break?
+                                        (sync/enable-break v p-evt)
+                                        (sync v p-evt))))]
                     [else (result-loop (if enable-break?
                                            (sync/enable-break v)
                                            (sync v)))])]

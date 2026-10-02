@@ -382,6 +382,11 @@ static intptr_t tcp_get_string(Scheme_Input_Port *port,
 
     if (data->b.bufmax) {
       /* got data, error, or EOF */
+      if (data->b.bufmax != RKTIO_READ_ERROR) {
+        /* Since we took input, the socket might not become ready for
+           other threads that are waiting on it */
+        scheme_wake_fd_readers(data->tcp);
+      }
       break;
     } else {
       /* no data/error is immediately avaulable */

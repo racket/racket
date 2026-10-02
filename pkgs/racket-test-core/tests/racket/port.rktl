@@ -1511,6 +1511,45 @@
          (test #t byte? (read-byte i))
          (test progress-evt sync/timeout 0 progress-evt)))))
 
+  ;; a thread that is blocked on a read or peek must notice when a
+  ;; non-blocking peek in another thread gets newly arrived bytes
+  ;; first, since the socket itself has nothing more to deliver
+  (for ([get (in-list (list (lambda (i) (peek-bytes 1 0 i))
+                            (lambda (i) (read-bytes 1 i))
+                            (lambda (i) (bytes (read-byte i)))
+                            (lambda (i) (bytes (peek-byte i)))
+                            (lambda (i) (string->bytes/utf-8 (string (read-char i))))))])
+    (call-with-tcp-input
+     (lambda (i co)
+       (define got #f)
+       (define t (thread (lambda () (set! got (get i)))))
+       (sync (system-idle-evt))
+       (write-bytes #"x" co)
+       (flush-output co)
+       ;; try to get the byte here before `t` is woken up
+       (let loop ()
+         (unless (or (thread-dead? t)
+                     (eqv? 1 (peek-bytes-avail!* (make-bytes 1) 0 #f i)))
+           (loop)))
+       (test t sync t)
+       (test #"x" values got))))
+
+  ;; a peek that is blocked with a progress evt must notice progress
+  ;; that is made by reading previously peeked bytes
+  (call-with-tcp-input
+   (lambda (i co)
+     (send #"ab" co)
+     (test #"ab" peek-bytes 2 0 i)
+     (define progress-evt (port-progress-evt i))
+     (define n #f)
+     (define t (thread (lambda ()
+                         (set! n (peek-bytes-avail! (make-bytes 1) 2 progress-evt i)))))
+     (sync (system-idle-evt))
+     (test 97 read-byte i)
+     (test t sync t)
+     (test 0 values n)
+     (test progress-evt sync/timeout 0 progress-evt)))
+
   ;; when multiple threads try to commit, one thread (in BC) can be
   ;; responsible for completing a commit for another thread, and
   ;; breaking or killing the former must not lose the latter's commit
@@ -1550,6 +1589,72 @@
        (test #t values committed?)
        (test a sync a)
        (test #"4567" peek-bytes 4 0 i)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Concurrent reads and peeks on an OS-level pipe, where threads
+;; may have to wait in a different way than for a TCP port
+
+(when (and (memq (system-type) '(unix macosx))
+           (file-exists? "/bin/cat"))
+  (define-values (sp stdout-in stdin-out stderr-in) (subprocess #f #f #f "/bin/cat"))
+  (define i stdout-in)
+
+  ;; multiple threads blocked on a peek of the same byte
+  (let ()
+    (define (peeker get)
+      (define got #f)
+      (define t (thread (lambda () (set! got (get)))))
+      (lambda () (and (sync t) got)))
+    (define a (peeker (lambda () (peek-bytes 1 0 i))))
+    (define b (peeker (lambda () (peek-bytes 1 0 i))))
+    (define c (peeker (lambda () (bytes (peek-byte i)))))
+    (sync (system-idle-evt))
+    (write-bytes #"x" stdin-out)
+    (flush-output stdin-out)
+    (test #"x" a)
+    (test #"x" b)
+    (test #"x" c)
+    (test #"x" read-bytes 1 i))
+
+  ;; a blocked thread versus a non-blocking peek in another thread
+  (for ([get (in-list (list (lambda () (peek-bytes 1 0 i))
+                            (lambda () (read-bytes 1 i))
+                            (lambda () (bytes (read-byte i)))))])
+    (define got #f)
+    (define t (thread (lambda () (set! got (get)))))
+    (sync (system-idle-evt))
+    (write-bytes #"y" stdin-out)
+    (flush-output stdin-out)
+    (let loop ()
+      (unless (or (thread-dead? t)
+                  (eqv? 1 (peek-bytes-avail!* (make-bytes 1) 0 #f i)))
+        (loop)))
+    (test t sync t)
+    (test #"y" values got)
+    ;; consume the byte if it was only peeked
+    (when (eqv? 1 (peek-bytes-avail!* (make-bytes 1) 0 #f i))
+      (test #"y" read-bytes 1 i)))
+
+  ;; progress via previously peeked bytes
+  (let ()
+    (write-bytes #"ab" stdin-out)
+    (flush-output stdin-out)
+    (test #"ab" peek-bytes 2 0 i)
+    (define progress-evt (port-progress-evt i))
+    (define n #f)
+    (define t (thread (lambda ()
+                        (set! n (peek-bytes-avail! (make-bytes 1) 2 progress-evt i)))))
+    (sync (system-idle-evt))
+    (test 97 read-byte i)
+    (test t sync t)
+    (test 0 values n))
+
+  (close-output-port stdin-out)
+  (test #"b" read-bytes 1 i)
+  (test eof read-bytes 1 i)
+  (close-input-port stdout-in)
+  (close-input-port stderr-in)
+  (subprocess-wait sp))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

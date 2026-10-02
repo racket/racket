@@ -3798,6 +3798,7 @@ void scheme_release_fd_semaphores(void);
 
 void scheme_check_fd_semaphores(void);
 Scheme_Object *scheme_rktio_fd_to_semaphore(struct rktio_fd_t *fd, int mode);
+void scheme_wake_fd_readers(struct rktio_fd_t *fd);
 
 struct rktio_envvars_t;
 struct rktio_envvars_t *scheme_environment_variables_to_envvars(Scheme_Object *ev);

@@ -4193,27 +4193,13 @@ Scheme_Object *scheme_rktio_fd_to_semaphore(rktio_fd_t *fd, int mode)
   return *(Scheme_Object **)ib;
 }
 
-static int check_fd_semaphores()
+static int post_signaled_fd_semaphores()
 {
   rktio_ltps_handle_t *h;
   int did = 0;
   void *p;
   Scheme_Object *sema;
-  double now_msecs;
 
-  if (!scheme_semaphore_fd_set)
-    return 0;
-
-#ifdef LIMIT_POLL_FREQUENCY_BY_MONOTONIC_TIME
-  /* limit how frequently we poll */
-  now_msecs = rktio_get_inexact_monotonic_milliseconds(scheme_rktio);
-  if (now_msecs <= ceil(last_sema_poll_msecs))
-    return 0;
-  last_sema_poll_msecs = now_msecs;
-#endif
-
-  rktio_ltps_poll(scheme_rktio, scheme_semaphore_fd_set);
-  
   while (1) {
     h = rktio_ltps_get_signaled_handle(scheme_rktio, scheme_semaphore_fd_set);
     if (h) {
@@ -4233,9 +4219,49 @@ static int check_fd_semaphores()
   return did;
 }
 
+static int check_fd_semaphores()
+{
+  double now_msecs;
+
+  if (!scheme_semaphore_fd_set)
+    return 0;
+
+#ifdef LIMIT_POLL_FREQUENCY_BY_MONOTONIC_TIME
+  /* limit how frequently we poll */
+  now_msecs = rktio_get_inexact_monotonic_milliseconds(scheme_rktio);
+  if (now_msecs <= ceil(last_sema_poll_msecs))
+    return 0;
+  last_sema_poll_msecs = now_msecs;
+#endif
+
+  rktio_ltps_poll(scheme_rktio, scheme_semaphore_fd_set);
+
+  return post_signaled_fd_semaphores();
+}
+
 void scheme_check_fd_semaphores(void)
 {
   (void)check_fd_semaphores();
+}
+
+void scheme_wake_fd_readers(rktio_fd_t *fd)
+/* Wakes any thread that is blocked on a semaphore from
+   `scheme_rktio_fd_to_semaphore` to read from `fd`. A thread that
+   takes input from `fd` must use this function, because the file
+   descriptor will not become ready for the input that the thread
+   took, but other blocked threads may need to check the port's state.
+   Waking readers also wakes any thread that is waiting to write,
+   which is ok as a spurious wakeup. Beware that this function can
+   change the rktio error state. */
+{
+  if (!scheme_semaphore_fd_set)
+    return;
+
+  if (rktio_ltps_add(scheme_rktio, scheme_semaphore_fd_set, fd, RKTIO_LTPS_CHECK_READ)) {
+    /* a semaphore is registered and not yet posted */
+    (void)rktio_ltps_add(scheme_rktio, scheme_semaphore_fd_set, fd, RKTIO_LTPS_REMOVE);
+    (void)post_signaled_fd_semaphores();
+  }
 }
 
 typedef struct {
@@ -5345,6 +5371,10 @@ static int ready_unless(Scheme_Object *o)
 
   data = (Scheme_Object *)((void **)o)[0];
   f = (Scheme_Ready_Fun)((void **)o)[2];
+
+  /* ready if another thread made progress or got something: */
+  if (scheme_unless_ready((Scheme_Object *)((void **)o)[1]))
+    return 1;
 
   return f(data);
 }

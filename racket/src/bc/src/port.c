@@ -975,6 +975,18 @@ static void post_progress(Scheme_Input_Port *ip)
        or peek needs to start over */
     SCHEME_CAR(ip->unless) = scheme_true;
     ip->unless = NULL;
+
+    /* A blocked thread may be waiting on a semaphore for a file
+       descriptor, instead of polling its "unless" */
+    if (!ip->closed) {
+      rktio_fd_t *fd;
+      if (SAME_OBJ(ip->sub_type, fd_input_port_type))
+        fd = ((Scheme_FD *)ip->port_data)->fd;
+      else
+        fd = scheme_get_port_rktio_socket((Scheme_Object *)ip);
+      if (fd)
+        scheme_wake_fd_readers(fd);
+    }
   }
 }
 
@@ -2309,10 +2321,13 @@ static intptr_t get_one_byte_slow(const char *who,
       if (!ip->progress_evt && !ip->p.count_lines)
         ip->slow = 0;
 
-      /* Call port's get function. */
+      /* Call port's get function. If other threads can peek via the
+         port's get function, then don't block here, because blocking
+         needs to go through the general function to find out when
+         another thread moves bytes into the peek buffer. */
       gs = ip->get_string_fun;
 
-      gc = gs(ip, buffer, offset, 1, 0, NULL);
+      gc = gs(ip, buffer, offset, 1, (ip->unless_cache ? 1 : 0), NULL);
 	
       if (ip->progress_evt && (gc > 0))
         post_progress(ip);
@@ -2367,7 +2382,9 @@ static MZ_INLINE intptr_t get_one_byte(GC_CAN_IGNORE const char *who,
 
       gs = ip->get_string_fun;
 
-      v = gs(ip, buffer, 0, 1, 0, NULL);
+      /* as in get_one_byte_slow(), block only if no other thread can
+         peek via the port's get function: */
+      v = gs(ip, buffer, 0, 1, (ip->unless_cache ? 1 : 0), NULL);
     
       if (v) {
         if (v == SCHEME_SPECIAL) {
@@ -5058,6 +5075,13 @@ static intptr_t fd_get_string_slow(Scheme_Input_Port *port,
       bc = rktio_read_converted(scheme_rktio, fip->fd, fip->buffer, target_size, fip->bufwidths);
     } else {
       bc = rktio_read(scheme_rktio, fip->fd, target + target_offset, target_size);
+    }
+
+    if (bc && (bc != RKTIO_READ_ERROR)
+        && !rktio_fd_is_regular_file(scheme_rktio, fip->fd)) {
+      /* Since we took input, the file descriptor might not become
+         ready for other threads that are waiting on it */
+      scheme_wake_fd_readers(fip->fd);
     }
 
     if (bc == 0)

@@ -56,11 +56,43 @@
   [fd-refcount (box 1)] ; rktio-sleep-relevant mode serves as a lock for a refcount
   [custodian-reference #f]
   [is-converted #f]
+  [wake-box #f] ; #f or a box to set when input is received, because a thread may be waiting
   
   #:public
   [on-close (lambda () (void))] ; lock held, in rktio and rktio-sleep-relevant mode, and with custodian lock
   [raise-read-error (lambda (n)
                       (raise-filesystem-error #f n "error reading from stream port"))]
+
+  #:private
+  ;; with lock held
+  ;; Returns a semaphore or evt for the current thread to block on
+  ;; until `fd` might have input, and records in `wake-box` that some
+  ;; thread may be waiting. If some other thread gets the input first,
+  ;; then `fd` itself will not become ready, so `wake-waiters` must be
+  ;; called whenever input is received
+  [wait-for-input
+   (lambda ()
+     (define b (or wake-box
+                   (let ([b (box #f)])
+                     (set! wake-box b)
+                     b)))
+     (or (fd-semaphore-update! fd 'read)
+         (fd-evt fd RKTIO_POLL_READ fd-refcount b)))]
+
+  ;; with lock held
+  ;; Called after the current thread receives input from `fd`, so that
+  ;; any thread waiting via `wait-for-input` looks at the port again;
+  ;; the current thread may be the only one that was waiting, but we
+  ;; don't keep track of that
+  [wake-waiters
+   (lambda ()
+     (define b wake-box)
+     (when b
+       (set! wake-box #f)
+       ;; makes any `fd-evt` from `wait-for-input` ready:
+       (set-box! b #t)
+       ;; posts any semaphore that was returned for 'read:
+       (fd-semaphore-update! fd 'remove)))]
 
   #:override
   [read-in/inner
@@ -84,18 +116,20 @@
        [(rktio-error? n)
         (port-unlock this)
         (send fd-input-port this raise-read-error n)]
-       [(eqv? n RKTIO_READ_EOF) eof]
-       [(eqv? n 0) (or (fd-semaphore-update! fd 'read)
-                       (fd-evt fd RKTIO_POLL_READ fd-refcount))]
-       [else n]))]
+       [(eqv? n RKTIO_READ_EOF)
+        (wake-waiters)
+        eof]
+       [(eqv? n 0) (wait-for-input)]
+       [else
+        (wake-waiters)
+        n]))]
 
   [byte-ready/inner
    (lambda (work-done!)
      (cond
        [(eqv? (rktio_poll_read_ready_r rktio fd) RKTIO_POLL_READY)
         #t]
-       [else (or (fd-semaphore-update! fd 'read)
-                 (fd-evt fd RKTIO_POLL_READ fd-refcount))]))]
+       [else (wait-for-input)]))]
 
   [close
    (lambda ()
@@ -413,7 +447,7 @@
                                #:custodian [cust (current-custodian)])
   (define fd (fd-output-port-fd p))
   (define fd-refcount (fd-output-port-fd-refcount p))
-  (define evt (fd-evt fd RKTIO_POLL_WRITE fd-refcount))
+  (define evt (fd-evt fd RKTIO_POLL_WRITE fd-refcount #f))
   (define flush-handle (and plumber
                             (plumber-add-flush! plumber
                                                 (lambda (h)
@@ -498,9 +532,12 @@
 ;; ----------------------------------------
 
 ;; The ready value for an `fd-evt` is 0, so it can be used directly
-;; for an input port
+;; for an input port. If `wake-box` is not #f, then it is a box whose
+;; content is changed to #t to make the evt ready independent of the
+;; file descriptor, which is needed when another thread takes the
+;; input that would have made the file descriptor ready.
 
-(struct fd-evt (fd mode fd-refcount)
+(struct fd-evt (fd mode fd-refcount wake-box)
   #:property
   prop:evt
   (poller
@@ -509,7 +546,8 @@
    (lambda (fde ctx)
      (start-rktio) ; so the port can't close concurrently
      (cond
-       [(zero? (unbox (fd-evt-fd-refcount fde)))
+       [(or (zero? (unbox (fd-evt-fd-refcount fde)))
+            (fd-evt-woke? fde))
         (end-rktio)
         (values '(0) #f)]
        [else
@@ -552,10 +590,15 @@
             ;; adds to it:
             ;; in atomic and in rktio-sleep-relevant (not rktio), must not start nested rktio
             (lambda (ps)
-              (if (zero? (unbox (fd-evt-fd-refcount fde)))
+              (if (or (zero? (unbox (fd-evt-fd-refcount fde)))
+                      (fd-evt-woke? fde))
                   (rktio_poll_set_add_nosleep rktio ps)
                   (rktio_poll_add rktio (fd-evt-fd fde) ps mode))))
            (values #f fde)])]))))
+
+(define (fd-evt-woke? fde)
+  (define b (fd-evt-wake-box fde))
+  (and b (unbox b)))
 
 ;; ----------------------------------------
 ;; Wait on rktio-level flushing. At the time of writing, this is
