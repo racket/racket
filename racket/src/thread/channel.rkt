@@ -73,6 +73,7 @@
            [(not pw+v)
             (define gq (channel-get-queue ch))
             (define n (queue-add! gq (cons gw b)))
+            (post-queued-get ch)
             (waiter-suspend! gw
                              ;; On break/kill/suspend:
                              (lambda ()
@@ -114,12 +115,7 @@
     (define gw (channel-select-waiter (poll-ctx-select-proc poll-ctx)
                                       (current-thread/in-racket)))
     (define n (queue-add! gq (cons gw b)))
-    (define (post-queued)
-      (define sema (channel-get-queued-sema ch))
-      (when sema
-        (semaphore-post-all/atomic sema)
-        (set-channel-get-queued-sema! ch #f)))
-    (post-queued)
+    (post-queued-get ch)
     (values #f
             (control-state-evt async-evt
                                (lambda (v) (unbox b))
@@ -135,8 +131,15 @@
                                     (values #t #t)]
                                    [else
                                     (set! n (queue-add! gq (cons gw b)))
-                                    (post-queued)
+                                    (post-queued-get ch)
                                     (values #f #f)]))))]))
+
+;; in atomic mode
+(define (post-queued-get ch)
+  (define sema (channel-get-queued-sema ch))
+  (when sema
+    (semaphore-post-all/atomic sema)
+    (set-channel-get-queued-sema! ch #f)))
 
 ;; ----------------------------------------
 
@@ -153,6 +156,7 @@
          [(not gw+b)
           (define pq (channel-put-queue ch))
           (define n (queue-add! pq (cons pw v)))
+          (post-queued-put ch)
           (waiter-suspend! pw
                            ;; On break/kill/suspend:
                            (lambda ()
@@ -195,12 +199,7 @@
     (define pw (channel-select-waiter (poll-ctx-select-proc poll-ctx)
                                       (current-thread/in-racket)))
     (define n (queue-add! pq (cons pw v)))
-    (define (post-queued)
-      (define sema (channel-put-queued-sema ch))
-      (when sema
-        (semaphore-post-all/atomic sema)
-        (set-channel-put-queued-sema! ch #f)))
-    (post-queued)
+    (post-queued-put ch)
     (values #f
             (control-state-evt async-evt
                                (lambda (v) self)
@@ -216,8 +215,15 @@
                                     (values self #t)]
                                    [else
                                     (set! n (queue-add! pq (cons pw v)))
-                                    (post-queued)
+                                    (post-queued-put ch)
                                     (values #f #f)]))))]))
+
+;; in atomic mode
+(define (post-queued-put ch)
+  (define sema (channel-put-queued-sema ch))
+  (when sema
+    (semaphore-post-all/atomic sema)
+    (set-channel-put-queued-sema! ch #f)))
 
 (define/who (channel-put-evt ch v)
   (check who channel? ch)

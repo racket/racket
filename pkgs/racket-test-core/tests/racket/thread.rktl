@@ -1746,5 +1746,88 @@
   (test #t thread-dead? t))
 
 ; --------------------
+;; regression test for a channel operation that arrives after a
+;; `port-commit-peeked` is already waiting on the other side of the
+;; channel: a get after a commit with a `channel-put-evt`, or a put
+;; after a commit with a channel; neither should get stuck
+
+(for* ([kind (in-list (if (tcp-localhost-available?)
+                          '(pipe tcp)
+                          '(pipe)))]
+       [direction (in-list '(get put))]
+       [mode (in-list '(direct sync sync-timeout))]
+       [where (in-list '(main thread))])
+  (define-values (i o close-all)
+    (case kind
+      [(pipe)
+       (define-values (i o) (make-pipe))
+       (values i o (lambda ()
+                     (close-input-port i)
+                     (close-output-port o)))]
+      [(tcp)
+       (define l (tcp-listen 0 4 #t))
+       (define-values (la lp ra rp) (tcp-addresses l #t))
+       (define-values (ci co) (tcp-connect "localhost" lp))
+       (define-values (i o) (tcp-accept l))
+       (tcp-close l)
+       (values i co (lambda ()
+                      (close-input-port ci)
+                      (close-output-port co)
+                      (close-input-port i)
+                      (close-output-port o)))]))
+  (write-bytes #"0123456789abcdef" o)
+  (flush-output o)
+  (test #"01234567" peek-bytes 8 0 i)
+  (define ch (make-channel))
+  (define committed? #f)
+  (define c (thread (lambda ()
+                      (set! committed?
+                            (port-commit-peeked 4
+                                                (port-progress-evt i)
+                                                (case direction
+                                                  [(get) (channel-put-evt ch 'c)]
+                                                  [(put) ch])
+                                                i)))))
+  (sync (system-idle-evt))
+  ;; the commit is now waiting; returns 'c on success:
+  (define (rendezvous)
+    (case direction
+      [(get)
+       (case mode
+         [(direct) (channel-get ch)]
+         [(sync) (sync ch)]
+         [(sync-timeout) (sync/timeout 3 ch)])]
+      [(put)
+       (and (case mode
+              [(direct) (channel-put ch 'c)]
+              [(sync) (sync (channel-put-evt ch 'c))]
+              [(sync-timeout) (sync/timeout 3 (channel-put-evt ch 'c))])
+            'c)]))
+  (define result
+    (case where
+      [(main)
+       ;; if this thread gets stuck, then break it
+       (define main-thread (current-thread))
+       (define watchdog (thread (lambda ()
+                                  (sleep 5)
+                                  (break-thread main-thread))))
+       (with-handlers ([exn:break? (lambda (exn) 'stuck)])
+         (begin0
+           (rendezvous)
+           (kill-thread watchdog)))]
+      [(thread)
+       (define result 'stuck)
+       (define t (thread (lambda () (set! result (rendezvous)))))
+       (sync/timeout 5 t)
+       (kill-thread t)
+       result]))
+  (test 'c `(rendezvous ,kind ,direction ,mode ,where) result)
+  (test c sync/timeout 5 c)
+  (test #t values committed?)
+  (test #"4567" peek-bytes 4 0 i)
+  (kill-thread c)
+  (close-all))
+
+; --------------------
 
 (report-errs)

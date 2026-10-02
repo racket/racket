@@ -9201,15 +9201,18 @@
                            (if (not pw+v_0)
                              (let ((gq_0 (channel-get-queue ch_0)))
                                (let ((n_0 (queue-add! gq_0 (cons gw_0 b_0))))
-                                 (let ((interrupt-cb_0
-                                        (lambda ()
-                                          (begin
-                                            (queue-remove-node! gq_0 n_0)
-                                            (lambda () (receive_0))))))
-                                   (|#%app|
-                                    (waiter-methods-suspend (waiter-ref gw_0))
-                                    gw_0
-                                    interrupt-cb_0))))
+                                 (begin
+                                   (post-queued-get ch_0)
+                                   (let ((interrupt-cb_0
+                                          (lambda ()
+                                            (begin
+                                              (queue-remove-node! gq_0 n_0)
+                                              (lambda () (receive_0))))))
+                                     (|#%app|
+                                      (waiter-methods-suspend
+                                       (waiter-ref gw_0))
+                                      gw_0
+                                      interrupt-cb_0)))))
                              (begin
                                (set-box! b_0 (cdr pw+v_0))
                                (let ((w_0 (car pw+v_0)))
@@ -9250,44 +9253,41 @@
                           (poll-ctx-select-proc poll-ctx_0)
                           (current-thread/in-racket))))
                     (let ((n_0 (queue-add! gq_0 (cons gw_0 b_0))))
-                      (let ((post-queued_0
-                             (|#%name|
-                              post-queued
-                              (lambda ()
-                                (let ((sema_0 (channel-get-queued-sema ch_0)))
-                                  (if sema_0
-                                    (begin
-                                      (semaphore-post-all/atomic sema_0)
-                                      (set-channel-get-queued-sema! ch_0 #f))
-                                    (void)))))))
-                        (begin
-                          (post-queued_0)
-                          (values
-                           #f
-                           (control-state-evt9.1
-                            the-async-evt
-                            (lambda (v_0) (unbox b_0))
-                            (lambda () (queue-remove-node! gq_0 n_0))
-                            void
-                            (lambda ()
-                              (let ((pw+v_1
-                                     (queue-fremove!
-                                      pq_0
-                                      not-matching-select-waiter)))
-                                (if pw+v_1
-                                  (begin
-                                    (let ((w_0 (car pw+v_1)))
-                                      (|#%app|
-                                       (waiter-methods-resume (waiter-ref w_0))
-                                       w_0
-                                       (void)))
-                                    (set-box! b_0 (cdr pw+v_1))
-                                    (values #t #t))
-                                  (begin
-                                    (set! n_0
-                                      (queue-add! gq_0 (cons gw_0 b_0)))
-                                    (post-queued_0)
-                                    (values #f #f))))))))))))))))))))
+                      (begin
+                        (post-queued-get ch_0)
+                        (values
+                         #f
+                         (control-state-evt9.1
+                          the-async-evt
+                          (lambda (v_0) (unbox b_0))
+                          (lambda () (queue-remove-node! gq_0 n_0))
+                          void
+                          (lambda ()
+                            (let ((pw+v_1
+                                   (queue-fremove!
+                                    pq_0
+                                    not-matching-select-waiter)))
+                              (if pw+v_1
+                                (begin
+                                  (let ((w_0 (car pw+v_1)))
+                                    (|#%app|
+                                     (waiter-methods-resume (waiter-ref w_0))
+                                     w_0
+                                     (void)))
+                                  (set-box! b_0 (cdr pw+v_1))
+                                  (values #t #t))
+                                (begin
+                                  (set! n_0 (queue-add! gq_0 (cons gw_0 b_0)))
+                                  (post-queued-get ch_0)
+                                  (values #f #f)))))))))))))))))))
+(define post-queued-get
+  (lambda (ch_0)
+    (let ((sema_0 (channel-get-queued-sema ch_0)))
+      (if sema_0
+        (begin
+          (semaphore-post-all/atomic sema_0)
+          (set-channel-get-queued-sema! ch_0 #f))
+        (void)))))
 (define channel-put
   (lambda (ch_0 v_0)
     (begin
@@ -9305,15 +9305,17 @@
                  (if (not gw+b_0)
                    (let ((pq_0 (channel-put-queue ch_0)))
                      (let ((n_0 (queue-add! pq_0 (cons pw_0 v_0))))
-                       (let ((interrupt-cb_0
-                              (lambda ()
-                                (begin
-                                  (queue-remove-node! pq_0 n_0)
-                                  (lambda () (channel-put ch_0 v_0))))))
-                         (|#%app|
-                          (waiter-methods-suspend (waiter-ref pw_0))
-                          pw_0
-                          interrupt-cb_0))))
+                       (begin
+                         (post-queued-put ch_0)
+                         (let ((interrupt-cb_0
+                                (lambda ()
+                                  (begin
+                                    (queue-remove-node! pq_0 n_0)
+                                    (lambda () (channel-put ch_0 v_0))))))
+                           (|#%app|
+                            (waiter-methods-suspend (waiter-ref pw_0))
+                            pw_0
+                            interrupt-cb_0)))))
                    (begin
                      (set-box! (cdr gw+b_0) v_0)
                      (let ((w_0 (car gw+b_0)))
@@ -9354,43 +9356,41 @@
                         (poll-ctx-select-proc poll-ctx_0)
                         (current-thread/in-racket))))
                   (let ((n_0 (queue-add! pq_0 (cons pw_0 v_0))))
-                    (let ((post-queued_0
-                           (|#%name|
-                            post-queued
-                            (lambda ()
-                              (let ((sema_0 (channel-put-queued-sema ch_0)))
-                                (if sema_0
-                                  (begin
-                                    (semaphore-post-all/atomic sema_0)
-                                    (set-channel-put-queued-sema! ch_0 #f))
-                                  (void)))))))
-                      (begin
-                        (post-queued_0)
-                        (values
-                         #f
-                         (control-state-evt9.1
-                          the-async-evt
-                          (lambda (v_1) self_0)
-                          (lambda () (queue-remove-node! pq_0 n_0))
-                          void
-                          (lambda ()
-                            (let ((gw+b_1
-                                   (queue-fremove!
-                                    gq_0
-                                    not-matching-select-waiter)))
-                              (if gw+b_1
-                                (begin
-                                  (set-box! (cdr gw+b_1) v_0)
-                                  (let ((w_0 (car gw+b_1)))
-                                    (|#%app|
-                                     (waiter-methods-resume (waiter-ref w_0))
-                                     w_0
-                                     v_0))
-                                  (values self_0 #t))
-                                (begin
-                                  (set! n_0 (queue-add! pq_0 (cons pw_0 v_0)))
-                                  (post-queued_0)
-                                  (values #f #f)))))))))))))))))))
+                    (begin
+                      (post-queued-put ch_0)
+                      (values
+                       #f
+                       (control-state-evt9.1
+                        the-async-evt
+                        (lambda (v_1) self_0)
+                        (lambda () (queue-remove-node! pq_0 n_0))
+                        void
+                        (lambda ()
+                          (let ((gw+b_1
+                                 (queue-fremove!
+                                  gq_0
+                                  not-matching-select-waiter)))
+                            (if gw+b_1
+                              (begin
+                                (set-box! (cdr gw+b_1) v_0)
+                                (let ((w_0 (car gw+b_1)))
+                                  (|#%app|
+                                   (waiter-methods-resume (waiter-ref w_0))
+                                   w_0
+                                   v_0))
+                                (values self_0 #t))
+                              (begin
+                                (set! n_0 (queue-add! pq_0 (cons pw_0 v_0)))
+                                (post-queued-put ch_0)
+                                (values #f #f))))))))))))))))))
+(define post-queued-put
+  (lambda (ch_0)
+    (let ((sema_0 (channel-put-queued-sema ch_0)))
+      (if sema_0
+        (begin
+          (semaphore-post-all/atomic sema_0)
+          (set-channel-put-queued-sema! ch_0 #f))
+        (void)))))
 (define 1/channel-put-evt
   (|#%name|
    channel-put-evt
