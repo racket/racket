@@ -1131,7 +1131,7 @@ intptr_t scheme_get_byte_string_unless(const char *who,
 {
   Scheme_Input_Port *ip;
   intptr_t got = 0, total_got = 0, gc;
-  int special_ok = special_is_ok, check_special, recheck_peeked = 0;
+  int special_ok = special_is_ok, check_special, recheck_peeked = 0, depipe_short;
   Scheme_Get_String_Fun gs;
   Scheme_Peek_String_Fun ps;
   Scheme_Object *orig_peek_skip;
@@ -1163,6 +1163,8 @@ intptr_t scheme_get_byte_string_unless(const char *who,
 
   while (1) {
     SCHEME_USE_FUEL(1);
+
+    depipe_short = 0;
 
     if (ip->input_lock)
       scheme_wait_input_allowed(ip, only_avail);
@@ -1241,14 +1243,30 @@ intptr_t scheme_get_byte_string_unless(const char *who,
 	    l = size;
 
 	  if (l) {
-	    scheme_get_byte_string("depipe", ip->peeked_read,
-				   buffer, offset + got, l,
-				   1, peek, peek_skip);
-	    size -= l;
-	    got += l;
-	    peek_skip = scheme_make_integer(0);
-	    if (!peek && ip->progress_evt)
-	      post_progress(ip);
+            intptr_t n;
+            /* Don't block, and pass along `unless_evt`, since a
+               thread swap is possible in the nested call; that way,
+               we don't copy into `buffer` after a progress evt is
+               ready (which a caller can rely on to share a buffer
+               across threads), and we don't wait on the peek
+               pipe after another thread drains it */
+	    n = scheme_get_byte_string_unless("depipe", ip->peeked_read,
+                                              buffer, offset + got, l,
+                                              2, peek, peek_skip,
+                                              unless_evt);
+            if (n < l) {
+              /* Progress evt became ready or another thread took
+                 peeked bytes; try again */
+              depipe_short = 1;
+              l = (n > 0) ? n : 0;
+            }
+	    if (l) {
+              size -= l;
+              got += l;
+              peek_skip = scheme_make_integer(0);
+              if (!peek && ip->progress_evt)
+                post_progress(ip);
+            }
 	  }
 	} else
 	  peek_skip = scheme_bin_minus(peek_skip, scheme_make_integer(l));
@@ -1345,9 +1363,11 @@ intptr_t scheme_get_byte_string_unless(const char *who,
       }
     }
 
-    recheck_peeked = 0;
+    /* If the peek pipe had fewer bytes than expected, start over
+       to look at the peek pipe again: */
+    recheck_peeked = depipe_short;
 
-    if (size) {
+    if (size && !depipe_short) {
       int nonblock;
 
       if (only_avail == 2) {

@@ -2571,9 +2571,13 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
       /* Seed the fuel generator from PLT_FUEL_SEED, if set, so that
          different runs can explore different thread schedules while
          still allowing a run to be reproduced from its seed */
-      char *seed = getenv("PLT_FUEL_SEED");
-      if (seed)
-        srandom((unsigned int)strtoul(seed, NULL, 10));
+      char *seed;
+      seed = getenv("PLT_FUEL_SEED");
+      if (seed) {
+        unsigned long v;
+        v = strtoul(seed, NULL, 10);
+        srandom((unsigned int)v);
+      }
     }
 #endif
 
