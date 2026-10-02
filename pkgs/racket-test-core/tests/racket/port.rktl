@@ -1509,7 +1509,47 @@
        (let ([progress-evt (port-progress-evt i)])
          (test #f sync/timeout 0 progress-evt)
          (test #t byte? (read-byte i))
-         (test progress-evt sync/timeout 0 progress-evt))))))
+         (test progress-evt sync/timeout 0 progress-evt)))))
+
+  ;; when multiple threads try to commit, one thread (in BC) can be
+  ;; responsible for completing a commit for another thread, and
+  ;; breaking or killing the former must not lose the latter's commit
+  ;; after its evt is selected; thread `A` is stuck trying to commit
+  ;; when thread `C` starts its commit
+  (for* ([stop-thread (in-list (list void break-thread kill-thread))]
+         [mode (in-list '(channel semaphore))])
+    (call-with-tcp-input
+     (lambda (i co)
+       (send #"0123456789" co)
+       (test #"01234567" peek-bytes 8 0 i)
+       (define a
+         (thread (lambda ()
+                   (with-handlers ([exn:break? void])
+                     (port-commit-peeked 4 (port-progress-evt i) (make-semaphore) i)))))
+       (sync (system-idle-evt))
+       (define ch (make-channel))
+       (define sema (make-semaphore))
+       (define committed? #f)
+       (define c
+         (thread (lambda ()
+                   (set! committed?
+                         (port-commit-peeked 4 (port-progress-evt i)
+                                             (case mode
+                                               [(channel) (channel-put-evt ch 'c)]
+                                               [(semaphore) sema])
+                                             i)))))
+       (sync (system-idle-evt))
+       ;; select `C`'s evt, and then stop `A` before it can run again
+       (define got
+         (case mode
+           [(channel) (sync/timeout 5 ch)]
+           [(semaphore) (semaphore-post sema) 'c]))
+       (stop-thread a)
+       (test 'c values got)
+       (test c sync/timeout 5 c)
+       (test #t values committed?)
+       (test a sync/timeout 5 a)
+       (test #"4567" peek-bytes 4 0 i)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

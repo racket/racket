@@ -1604,15 +1604,6 @@ static void release_input_lock_and_elect_new_leader(Scheme_Input_Port *ip)
   }
 }
 
-static void do_release_input_lock_and_elect_new_leader(void *_ip)
-{
-  Scheme_Input_Port *ip;
-
-  ip = scheme_input_port_record(_ip);
-
-  release_input_lock_and_elect_new_leader(ip);
-}
-
 static void check_suspended()
 {
   if (scheme_current_thread->running & MZTHREAD_USER_SUSPENDED)
@@ -1753,16 +1744,89 @@ static Scheme_Object *return_data(void *data, int argc, Scheme_Object **argv)
   return (Scheme_Object *)data;
 }
 
+typedef struct {
+  /* All pointer content, so it cal be allocated with `scheme_malloc` */
+  Scheme_Input_Port *ip;
+  Syncing *syncing; /* Syncing for the leader's and other threads' targets,
+                       or NULL after an escape has been handled */
+  Scheme_Object *commit_size; /* size of leader's commit as a fixnum */
+  Scheme_Object **other_commits; /* array of records for other threads' commits, in
+                                    the same order as the Syncing's evts after the
+                                    first three */
+} Leader_Sync_State;
+
+static int complete_selected_commit(Leader_Sync_State *cd)
+/* Returns -1 if the sync has not selected a commit's target.
+   Otherwise, releases the input lock, completes the commit, and
+   returns 1 if the commit was the leader's own or 0 if it was
+   another thread's. */
+{
+  Scheme_Input_Port *ip = cd->ip;
+  Syncing *syncing = cd->syncing;
+  Scheme_Object *v;
+  intptr_t size;
+  int i;
+
+  i = syncing->result - 1;
+
+  if (i == 0) {
+    size = SCHEME_INT_VAL(cd->commit_size);
+    release_input_lock_and_elect_new_leader(ip);
+    return complete_peeked_read_via_get(ip, size);
+  } else if (i >= 3) {
+    /* Clear the cdr to tell the relevant thread that it was
+       selected, and reset the extras. */
+    v = cd->other_commits[i - 3];
+    SCHEME_CDR(v) = NULL;
+    size = SCHEME_INT_VAL(SCHEME_CAR(v));
+    release_input_lock_and_elect_new_leader(ip);
+    if (complete_peeked_read_via_get(ip, size))
+      SCHEME_CAR(v) = scheme_true;
+    else
+      SCHEME_CAR(v) = scheme_false;
+    return 0;
+  } else
+    return -1;
+}
+
+static void escape_during_commit(void *_cd)
+/* The leader is escaping (due to a break, for example) or being
+   killed. If a target was selected already, then the selection is
+   visible to other threads, so the commit must be completed. */
+{
+  Leader_Sync_State *cd = (Leader_Sync_State *)_cd;
+  Syncing *syncing = cd->syncing;
+
+  if (syncing) {
+    if (!syncing->result)
+      scheme_escape_during_sync(syncing);
+
+    if (complete_selected_commit(cd) < 0)
+      release_input_lock_and_elect_new_leader(cd->ip);
+
+    cd->syncing = NULL;
+  }
+}
+
+static int commit_syncing_ready(Syncing *syncing, Scheme_Schedule_Info *sinfo)
+{
+  return scheme_syncing_ready(syncing, sinfo, 1);
+}
+
 int scheme_peeked_read_via_get(Scheme_Input_Port *ip,
 			       intptr_t _size,
 			       Scheme_Object *unless_evt,
 			       Scheme_Object *_target_evt)
 {
   Scheme_Object * volatile v, *sema, *a[3], ** volatile aa, * volatile l;
+  Scheme_Object ** volatile vs;
   volatile intptr_t size = _size;
   volatile int n, current_leader = 0;
   volatile Scheme_Type t;
   Scheme_Object * volatile target_evt = _target_evt;
+  Syncing * volatile syncing;
+  Leader_Sync_State * volatile cd;
+  intptr_t *sizep;
 
   /* Check whether t's event value is known to be always itself: */
   t = SCHEME_TYPE(target_evt);
@@ -1867,14 +1931,17 @@ int scheme_peeked_read_via_get(Scheme_Input_Port *ip,
 	  n++;
 	}
 	aa = MALLOC_N(Scheme_Object *, n);
+	vs = MALLOC_N(Scheme_Object *, n - 3);
 	n = 3;
 	for (l = ip->input_extras; l; l = SCHEME_CDR(l)) {
+	  vs[n - 3] = SCHEME_CAR(l);
 	  aa[n++] = SCHEME_CDR(SCHEME_CAR(l));
 	}
       } else {
 	/* This is the only thread trying to commit */
 	n = 3;
 	aa = a;
+	vs = NULL;
       }
 
       /* Suspend here is a problem if another thread
@@ -1887,42 +1954,49 @@ int scheme_peeked_read_via_get(Scheme_Input_Port *ip,
       v = scheme_get_thread_suspend(scheme_current_thread);
       aa[2] = v;
 
+      /* Sync in a way that's similar to scheme_sync(), but keep the
+         Syncing record so that a selected commit can be completed
+         even if this thread is killed or it escapes (due to a break,
+         for example) after the selection but before it is swapped
+         back in. A selection can be made by another thread, such as
+         one that receives on a channel for a channel-put target, and
+         the commit and selection must be atomic. */
+      syncing = scheme_make_syncing(n, aa);
+      cd = (Leader_Sync_State *)scheme_malloc(sizeof(Leader_Sync_State));
+      cd->ip = ip;
+      cd->syncing = syncing;
+      cd->commit_size = scheme_make_integer(size);
+      cd->other_commits = vs;
+
       scheme_current_thread->running |= MZTHREAD_NEED_SUSPEND_CLEANUP;
-      BEGIN_ESCAPEABLE(do_release_input_lock_and_elect_new_leader, ip);
-      v = scheme_sync(n, aa);
+      BEGIN_ESCAPEABLE(escape_during_commit, cd);
+      scheme_block_until((Scheme_Ready_Fun)commit_syncing_ready,
+                         (Scheme_Needs_Wakeup_Fun)scheme_syncing_needs_wakeup,
+                         (Scheme_Object *)syncing, 0.0);
       END_ESCAPEABLE();
 
       if (scheme_current_thread->running & MZTHREAD_NEED_SUSPEND_CLEANUP)
         scheme_current_thread->running -= MZTHREAD_NEED_SUSPEND_CLEANUP;
 
-      if (SAME_OBJ(v, target_evt)) {
+      if (!syncing->result) {
+        scheme_conclude_sync(syncing, -1);
+        scheme_post_syncing_nacks(syncing);
+      }
+
+      {
+        /* Check whether our target or another thread's was selected: */
 	int r;
-        release_input_lock_and_elect_new_leader(ip);
-	r = complete_peeked_read_via_get(ip, size);
-	check_suspended();
-	return r;
-      } else if (SAME_OBJ(v, ip->input_giveup)) {
+	r = complete_selected_commit(cd);
+	if (r >= 0) {
+	  check_suspended();
+	  return r;
+	}
+      }
+
+      if (syncing->result == 2) {
         /* need to reset give-up semaphore so we can be woken again */
         sema = scheme_make_sema(0);
         ip->input_giveup = sema;
-      } else if (n > 3) {
-	/* Check whether one of the others was selected: */
-	for (l = ip->input_extras; l; l = SCHEME_CDR(l)) {
-	  if (SAME_OBJ(v, SCHEME_CDR(SCHEME_CAR(l)))) {
-	    /* Yep. Clear the cdr to tell the relevant thread
-	       that it was selected, and reset the extras. */
-	    v = SCHEME_CAR(l);
-	    SCHEME_CDR(v) = NULL;
-	    size = SCHEME_INT_VAL(SCHEME_CAR(v));
-	    release_input_lock_and_elect_new_leader(ip);
-	    if (complete_peeked_read_via_get(ip, size))
-	      SCHEME_CAR(v) = scheme_true;
-	    else
-	      SCHEME_CAR(v) = scheme_false;
-	    check_suspended();
-	    return 0;
-	  }
-	}
       }
 
       if (scheme_current_thread->running & MZTHREAD_USER_SUSPENDED) {
