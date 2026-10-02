@@ -1406,5 +1406,111 @@
   (test #t values polled?))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Concurrent peeks and progress evts on a TCP port, where
+;; (in BC) a peek is implemented by reading and saving bytes
+
+(require "net-available.rkt")
+(when (tcp-localhost-available?)
+  (define (call-with-tcp-input proc)
+    (define l (tcp-listen 0 5 #t))
+    (define-values (la lp pa pp) (tcp-addresses l #t))
+    (define-values (ci co) (tcp-connect "localhost" lp))
+    (define-values (i o) (tcp-accept l))
+    (proc i co)
+    (close-input-port ci)
+    (close-output-port co)
+    (close-input-port i)
+    (close-output-port o)
+    (tcp-close l))
+
+  ;; send, and then give the bytes time to arrive and be noticed
+  (define (send bstr co)
+    (write-bytes bstr co)
+    (flush-output co)
+    (sleep 0.05)
+    (sync (system-idle-evt)))
+
+  ;; two threads peek the same bytes while they arrive in pieces
+  (call-with-tcp-input
+   (lambda (i co)
+     (define (peeker)
+       (define buf (make-bytes 2))
+       (define t (thread
+                  (lambda ()
+                    (let loop ([pos 0])
+                      (when (< pos 2)
+                        (loop (+ pos (peek-bytes-avail! buf pos #f i pos))))))))
+       (lambda () (and (sync/timeout 5 t) buf)))
+     (define a (peeker))
+     (define b (peeker))
+     (sync (system-idle-evt))
+     (send #"a" co)
+     (send #"XY" co)
+     (test #"aX" a)
+     (test #"aX" b)
+     (test #"aXY" read-bytes 3 i)))
+
+  ;; same, but each thread's peek spans multiple arrivals
+  (call-with-tcp-input
+   (lambda (i co)
+     (define (peeker)
+       (define got #f)
+       (define t (thread (lambda () (set! got (peek-bytes 3 0 i)))))
+       (lambda () (and (sync/timeout 5 t) got)))
+     (define a (peeker))
+     (define b (peeker))
+     (sync (system-idle-evt))
+     (for ([c (in-bytes #"abcde")])
+       (send (bytes c) co))
+     (test #"abc" a)
+     (test #"abc" b)
+     (test #"abcde" read-bytes 5 i)))
+
+  ;; a peek with a progress evt must not deliver bytes that follow
+  ;; the progress; thread `T` peeks with a progress evt, `V` peeks
+  ;; without one, and `C` consumes bytes, and the order of thread
+  ;; creation can affect which one sees newly arrived bytes first
+  (for ([order (in-list '((T V C) (T C V) (V T C) (V C T) (C T V) (C V T)))])
+    (call-with-tcp-input
+     (lambda (i co)
+       (define progress-evt (port-progress-evt i))
+       (define buf (make-bytes 4))
+       (define n #f)
+       (define ts
+         (for/list ([who (in-list order)])
+           (thread
+            (case who
+              [(T) (lambda ()
+                     (set! n (peek-bytes-avail! buf 0 progress-evt i)))]
+              [(V) (lambda ()
+                     (peek-bytes-avail! (make-bytes 6) 0 #f i))]
+              [(C) (lambda ()
+                     (peek-bytes-avail! (make-bytes 1) 0 #f i)
+                     (read-bytes 2 i))]))))
+       (sync (system-idle-evt))
+       (send #"abcdef" co)
+       (for ([t (in-list ts)])
+         (test t sync/timeout 5 t))
+       (test progress-evt sync/timeout 0 progress-evt)
+       ;; either progress came first, or the peek got bytes from the start
+       (test #t `(peek-vs-progress ,order ,n ,buf)
+             (and n (equal? (subbytes buf 0 n) (subbytes #"abcd" 0 n)))))))
+
+  ;; reading previously peeked bytes is progress
+  (call-with-tcp-input
+   (lambda (i co)
+     (send #"abcdef" co)
+     (for ([n (in-list '(1 2))])
+       (test n bytes-length (peek-bytes n 0 i))
+       (let ([progress-evt (port-progress-evt i)])
+         (test #f sync/timeout 0 progress-evt)
+         (test 1 bytes-length (read-bytes 1 i))
+         (test progress-evt sync/timeout 0 progress-evt))
+       (let ([progress-evt (port-progress-evt i)])
+         (test #f sync/timeout 0 progress-evt)
+         (test #t byte? (read-byte i))
+         (test progress-evt sync/timeout 0 progress-evt))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

@@ -969,6 +969,13 @@ static void post_progress(Scheme_Input_Port *ip)
 {
   scheme_post_sema_all(ip->progress_evt);
   ip->progress_evt = NULL;
+
+  if (ip->unless) {
+    /* Bytes were consumed, so any thread that is blocked in a read
+       or peek needs to start over */
+    SCHEME_CAR(ip->unless) = scheme_true;
+    ip->unless = NULL;
+  }
 }
 
 XFORM_NONGCING static void inc_pos_for_special(Scheme_Port *ip)
@@ -1112,9 +1119,10 @@ intptr_t scheme_get_byte_string_unless(const char *who,
 {
   Scheme_Input_Port *ip;
   intptr_t got = 0, total_got = 0, gc;
-  int special_ok = special_is_ok, check_special;
+  int special_ok = special_is_ok, check_special, recheck_peeked = 0;
   Scheme_Get_String_Fun gs;
   Scheme_Peek_String_Fun ps;
+  Scheme_Object *orig_peek_skip;
 
   /* See also get_one_byte, below. Any change to this function
      may require a change to 1-byte specialization of get_one_byte. */
@@ -1134,6 +1142,7 @@ intptr_t scheme_get_byte_string_unless(const char *who,
   }
   if (!peek_skip)
     peek_skip = scheme_make_integer(0);
+  orig_peek_skip = peek_skip;
 
   ip = scheme_input_port_record(port);
 
@@ -1146,12 +1155,15 @@ intptr_t scheme_get_byte_string_unless(const char *who,
     if (ip->input_lock)
       scheme_wait_input_allowed(ip, only_avail);
 
-    /* check progress evt before checking for closed: */
-    if (unless_evt 
-        && SAME_TYPE(SCHEME_TYPE(unless_evt), scheme_progress_evt_type)
-        && SCHEME_SEMAP(SCHEME_PTR2_VAL(unless_evt))
-        && scheme_try_plain_sema(SCHEME_PTR2_VAL(unless_evt)))
-      return 0;
+    /* check progress evt before checking for closed; `unless_evt` is
+       unwrapped to its semaphore after the first iteration: */
+    if (unless_evt) {
+      Scheme_Object *usema = unless_evt;
+      if (SAME_TYPE(SCHEME_TYPE(usema), scheme_progress_evt_type))
+        usema = SCHEME_PTR2_VAL(usema);
+      if (SCHEME_SEMAP(usema) && scheme_try_plain_sema(usema))
+        return total_got;
+    }
 
     CHECK_PORT_CLOSED(who, "input", port, ip->closed);
 
@@ -1163,8 +1175,16 @@ intptr_t scheme_get_byte_string_unless(const char *who,
       }
     }
 
+    if (recheck_peeked && peek && !ps) {
+      /* Another thread read or peeked while we were blocked, so the
+         bytes that we want next may have been moved to the peek
+         buffer; look there again, counting from the start: */
+      peek_skip = scheme_bin_plus(orig_peek_skip, scheme_make_integer(total_got));
+    } else
+      recheck_peeked = 0;
+
     if ((ip->ungotten_count || pipe_char_count(ip->peeked_read))
-	&& (!total_got || !peek)) {
+	&& (!total_got || !peek || recheck_peeked)) {
       intptr_t l, i;
       unsigned char *s;
 
@@ -1194,6 +1214,8 @@ intptr_t scheme_get_byte_string_unless(const char *who,
       s = NULL;
 
       if (!peek) {
+        if ((i != ip->ungotten_count) && ip->progress_evt)
+          post_progress(ip);
 	ip->ungotten_count = i;
         ip->slow = 1;
       }
@@ -1260,7 +1282,8 @@ intptr_t scheme_get_byte_string_unless(const char *who,
        we haven't gotten anything so far, it means that we need to read before we
        can actually peek. Handle this case with a recursive peek that starts
        from the current position, then set peek_skip to 0 and go on. */
-    while (peek && !ps && (peek_skip != scheme_make_integer(0)) && !total_got && !got
+    while (peek && !ps && (peek_skip != scheme_make_integer(0))
+           && (!total_got || recheck_peeked) && !got
 	   && (ip->pending_eof < 2)) {
       char *tmp;
       int v, pcc;
@@ -1310,6 +1333,8 @@ intptr_t scheme_get_byte_string_unless(const char *who,
       }
     }
 
+    recheck_peeked = 0;
+
     if (size) {
       int nonblock;
 
@@ -1338,12 +1363,13 @@ intptr_t scheme_get_byte_string_unless(const char *who,
 	   an "unless" to detect other accesses of the port
 	   if we block. */
 	Scheme_Object *unless;
-	  
+        int notified = 0;
+
 	if (nonblock > 0) {
-	  if (ip->unless)
-	    unless = ip->unless;
-	  else
-	    unless = NULL;
+          /* We won't block, so there's no need to register. If we
+             get anything, threads that are registered are notified
+             below. */
+          unless = NULL;
 	} else if (ip->unless_cache) {
 	  if (ip->unless) {
 	    unless = ip->unless;
@@ -1376,26 +1402,42 @@ intptr_t scheme_get_byte_string_unless(const char *who,
 
 	/* Let other threads know that something happened,
 	   and/or deregister this thread's request for information. */
-	if (unless && ip->unless_cache) {
-	  if (!SCHEME_CAR(unless)) {
-	    /* Recycle "unless", since we were the only user */
-	    ip->unless_cache = unless;
-	    SCHEME_CDR(unless) = NULL;
-	  } else {
-	    if (SCHEME_TRUEP(SCHEME_CAR(unless))) {
-	      /* gc should be SCHEME_UNLESS_READY; only a user
-		 port without a peek can incorrectly produce something 
-		 else */
-	      if (gc == SCHEME_UNLESS_READY) {
-		gc = 0;
-	      }
-	    } else if (gc) {
-	      /* Notify other threads that something happened */
-	      SCHEME_CAR(unless) = scheme_true;
-	    }
-	  }
-	  ip->unless = NULL;
+	if (ip->unless_cache) {
+          if (unless) {
+            if (SCHEME_CAR(unless) && SCHEME_TRUEP(SCHEME_CAR(unless))) {
+              /* Another thread got something or made progress while
+                 we were blocked, and it removed the registration;
+                 `ip->unless` may now belong to other threads, so
+                 leave it alone. gc should be SCHEME_UNLESS_READY. */
+              notified = 1;
+            } else if (SAME_OBJ(unless, ip->unless)) {
+              if (!SCHEME_CAR(unless)) {
+                /* Recycle "unless", since we were the only user */
+                ip->unless_cache = unless;
+                SCHEME_CDR(unless) = NULL;
+                ip->unless = NULL;
+              } else if (gc) {
+                /* Notify other threads that something happened */
+                SCHEME_CAR(unless) = scheme_true;
+                ip->unless = NULL;
+              }
+            }
+          }
+          if (gc && (gc != SCHEME_UNLESS_READY) && ip->unless) {
+            /* We got something without sharing the registration
+               of threads that are blocked, so notify them */
+            SCHEME_CAR(ip->unless) = scheme_true;
+            ip->unless = NULL;
+          }
 	}
+
+        if ((gc == SCHEME_UNLESS_READY) && notified) {
+          /* Unless our own progress evt is ready, which is checked
+             at the start of the loop, we need to try again --- but
+             the bytes that we want may now be in the peek buffer */
+          gc = 0;
+          recheck_peeked = 1;
+        }
       }
 
       if (gc == SCHEME_SPECIAL) {
@@ -2161,11 +2203,15 @@ static intptr_t get_one_byte_slow(const char *who,
   if (ip->ungotten_count) {
     buffer[offset] = ip->ungotten[--ip->ungotten_count];
     gc = 1;
+    if (ip->progress_evt)
+      post_progress(ip);
   } else if (ip->peeked_read && pipe_char_count(ip->peeked_read)) {
     int ch;
     ch = scheme_get_byte(ip->peeked_read);
     buffer[offset] = ch;
     gc = 1;
+    if (ip->progress_evt)
+      post_progress(ip);
   } else if (ip->ungotten_special) {
     if (ip->progress_evt)
       post_progress(ip);
