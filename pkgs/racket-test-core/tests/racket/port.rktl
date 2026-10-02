@@ -1440,7 +1440,7 @@
                     (let loop ([pos 0])
                       (when (< pos 2)
                         (loop (+ pos (peek-bytes-avail! buf pos #f i pos))))))))
-       (lambda () (and (sync/timeout 5 t) buf)))
+       (lambda () (and (sync t) buf)))
      (define a (peeker))
      (define b (peeker))
      (sync (system-idle-evt))
@@ -1456,7 +1456,7 @@
      (define (peeker)
        (define got #f)
        (define t (thread (lambda () (set! got (peek-bytes 3 0 i)))))
-       (lambda () (and (sync/timeout 5 t) got)))
+       (lambda () (and (sync t) got)))
      (define a (peeker))
      (define b (peeker))
      (sync (system-idle-evt))
@@ -1490,7 +1490,7 @@
        (sync (system-idle-evt))
        (send #"abcdef" co)
        (for ([t (in-list ts)])
-         (test t sync/timeout 5 t))
+         (test t sync t))
        (test progress-evt sync/timeout 0 progress-evt)
        ;; either progress came first, or the peek got bytes from the start
        (test #t `(peek-vs-progress ,order ,n ,buf)
@@ -1542,13 +1542,13 @@
        ;; select `C`'s evt, and then stop `A` before it can run again
        (define got
          (case mode
-           [(channel) (sync/timeout 5 ch)]
+           [(channel) (sync ch)]
            [(semaphore) (semaphore-post sema) 'c]))
        (stop-thread a)
        (test 'c values got)
-       (test c sync/timeout 5 c)
+       (test c sync c)
        (test #t values committed?)
-       (test a sync/timeout 5 a)
+       (test a sync a)
        (test #"4567" peek-bytes 4 0 i)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
