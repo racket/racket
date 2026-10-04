@@ -2384,20 +2384,37 @@
     (lambda (x) x)
     #f)
 
-  (define-for-variants (for/sum for*/sum)
+  (define-for-syntax (with-number-check name op result x)
+    #`(#,op #,result (let ([t #,x])
+                       ;(unless-unsafe
+                          (unless (number? t)
+                            (raise-argument-error #,name "number?" t));)
+                       t)))
+
+  (define-syntax-via-derived for/sum for/fold/derived for/fold/derived
     ([result 0])
     (lambda (x) x)
     (lambda (rhs) rhs)
-    (lambda (x) #`(+ result #,x))
+    (lambda (x) (with-number-check #''for/sum #'+ #'result x))
     #f)
-
-  (define-for-variants (for/product for*/product)
-    ([result 1])
+  (define-syntax-via-derived for*/sum for*/fold/derived for/fold/derived
+    ([result 0])
     (lambda (x) x)
     (lambda (rhs) rhs)
-    (lambda (x) #`(* result #,x))
+    (lambda (x) (with-number-check #''for*/sum #'+ #'result x))
     #f)
-
+  (define-syntax-via-derived for/product for/fold/derived for/fold/derived
+    ([result 0])
+    (lambda (x) x)
+    (lambda (rhs) rhs)
+    (lambda (x) (with-number-check #''for/product #'* #'result x))
+    #f)
+  (define-syntax-via-derived for*/product for*/fold/derived for/fold/derived
+    ([result 0])
+    (lambda (x) x)
+    (lambda (rhs) rhs)
+    (lambda (x) (with-number-check #''for*/product #'* #'result x))
+    #f)
   (define-for-variants (for/hash for*/hash)
     ([table #hash()])
     (lambda (x) x)
