@@ -311,6 +311,14 @@
    '((contract (->i () (values))
                values
                'pos 'neg)))
+
+  (test/neg-blame
+   '->i32
+   '((contract (-> (->i () (#:x [x any/c]) #:rest [r any/c] any) any)
+               (λ (x) x)
+               'pos
+               'neg)
+     (λ (x) x)))
   
   (test/spec-passed
    '->i-any1

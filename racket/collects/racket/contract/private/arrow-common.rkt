@@ -334,6 +334,7 @@
      (unless passes?
        (raise-blame-error
         blame
+        #:missing-party neg-party
         val
         '(expected " a ~a that accepts ~a argument~a and arbitrarily more~a" given: "~e")
         (if mtd? "method" "procedure")
