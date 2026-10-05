@@ -161,7 +161,7 @@
                  chk #,mctc?))))))]))
 
 (define (put-it-together the-case-lam f blame neg-party blame+neg-party blame-party-info wrapper ctc chk mtd?)
-  (chk f mtd?)
+  (chk f mtd? neg-party)
   (define rng-ctcs (base-case->-rng-ctcs ctc))
   (define checker
     (make-keyword-procedure
@@ -249,20 +249,21 @@
              projs))))
 
 
-(define ((case->-first-order-check specs rst-ctcs blame) val mtd?)
+(define ((case->-first-order-check specs rst-ctcs blame) val mtd? neg-party)
   (cond
     [(null? specs)
      (if (procedure? val)
          #t
          (if blame
-             (raise-blame-error blame val "expected a procedure")
+             (raise-blame-error blame val "expected a procedure"
+                                #:missing-party neg-party)
              #f))]
     [else
      (for/and ([dom-length (in-list specs)]
                [has-rest? (in-list rst-ctcs)])
        (if has-rest?
-           (check-procedure/more val mtd? dom-length '() '() blame #f)
-           (check-procedure val mtd? dom-length 0 '() '() blame #f)))]))
+           (check-procedure/more val mtd? dom-length '() '() blame neg-party)
+           (check-procedure val mtd? dom-length 0 '() '() blame neg-party)))]))
 
 ;; Re `print-as-method-if-method?`: See comment before `base->-name` in arrow-val-first.rkt
 (define ((case->-name print-as-method-if-method?) ctc)
@@ -294,7 +295,7 @@
                               #f))
   (define mtd? (base-case->-mctc? ctc))
   (λ (val)
-    (proc val mtd?)))
+    (proc val mtd? #f)))
 
 (define (make-case->-stronger/equiv? this that stronger?)
   (define recur (if stronger? contract-struct-stronger? contract-struct-equivalent?))

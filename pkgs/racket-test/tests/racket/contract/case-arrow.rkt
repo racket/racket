@@ -195,6 +195,15 @@
       'neg)
      #f)
    #f)
+
+  (test/neg-blame
+   'contract->case->17
+   '((contract (-> (case-> (-> any/c) (-> any/c any))
+                   any/c)
+               void
+               'pos 'neg)
+     (case-lambda [(x) x]
+                  [(x n) x])))
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;                                                        ;;
