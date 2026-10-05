@@ -226,7 +226,7 @@
                         (if (null? (url-path url))
                             (values #t (list (make-path/param "" '())))
                             (values (url-path-absolute? url) (url-path url)))])
-            (make-url #f #f #f #f abs? path (url-query url) (url-fragment url)))))))
+            (make-url #f #f #f #f abs? path (url-query url) #f))))))
 
   (hc:http-conn-send! hc access-string
                       #:method (if get? #"GET" #"POST")
@@ -475,7 +475,7 @@
                           (url-path-absolute? url)
                           (url-path url)
                           (url-query url)
-                          (url-fragment url)))))])
+                          #f))))])
     (hc:http-conn-send! hc access-string
                         #:method method
                         #:headers strings
@@ -558,7 +558,7 @@
                (url-path-absolute? u)
                (url-path u)
                (url-query u)
-               (url-fragment u))))
+               #f)))
    #:ssl?
    (if (equal? "https" (url-scheme u))
      (current-https-protocol)
