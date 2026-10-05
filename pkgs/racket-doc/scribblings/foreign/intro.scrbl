@@ -13,8 +13,6 @@
                                  (lambda (stx) #'@schemeidfont{_WINDOW-pointer})))
 @(define-syntax _mmask_t (make-element-id-transformer
                           (lambda (stx) #'@schemeidfont{_mmask_t})))
-@(define-syntax _string/immobile (make-element-id-transformer
-                                  (lambda (stx) #'@schemeidfont{_string/immobile})))
    
 
 @title[#:tag "intro"]{Overview}
@@ -554,23 +552,12 @@ problem with
 is that the string argument to @racket[waddstr] might move in the
 calling place before the @racket[waddstr] call completes in the
 original place. To safely call @racket[waddstr], we can use a
-@racket[_string/immobile] type that allocates bytes for the string
+@racket[_string/utf-8/immobile] type that allocates bytes for the string
 argument with @racket['atomic-interior]:
 
 @racketblock[
-(define _string/immobile
-  (make-ctype _pointer
-              (lambda (s)
-                (define bstr (cast s _string _bytes))
-                (define len (bytes-length bstr))
-                (define p (malloc 'atomic-interior len))
-                (memcpy p bstr len)
-                p)
-              (lambda (p)
-                (cast p _pointer _string))))
- 
 (define-curses waddstr
-  (_fun #:in-original-place? #t _WINDOW-pointer _string/immobile -> _int))
+  (_fun #:in-original-place? #t _WINDOW-pointer _string/utf-8/immobile -> _int))
 ]
 
 Beware that passing memory allocated with @racket['interior] (as

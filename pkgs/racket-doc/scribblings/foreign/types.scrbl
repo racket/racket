@@ -370,6 +370,14 @@ Types that correspond to (character) strings on the Racket side and
 a transformation on the content of the string.  As usual, the types
 treat @racket[#f] as @cpp{NULL} and vice versa.}
 
+@defthing[_string/utf-8/immobile ctype?]{
+
+Like @racket[_string/utf-8], but the Racket-to-C conversion allocates
+the UTF-8 bytes and a nul terminator with @racket[malloc] using
+@racket['atomic-interior].
+
+@history[#:added "9.4.0.2"]}
+
 @defthing*[([_string*/utf-8 ctype?]
             [_string*/latin-1 ctype?]
             [_string*/locale ctype?])]{
