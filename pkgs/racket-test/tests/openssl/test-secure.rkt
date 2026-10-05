@@ -30,7 +30,7 @@
     mirror.racket-lang.org
     pkgs.racket-lang.org
     planet.racket-lang.org
-    pre-release.racket-lang.org
+    ; pre-release.racket-lang.org
     htdp.org
     ))
 
