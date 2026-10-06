@@ -365,6 +365,13 @@ static Scheme_Object *thread_cell_get(int argc, Scheme_Object *args[]);
 static Scheme_Object *thread_cell_set(int argc, Scheme_Object *args[]);
 static Scheme_Object *thread_cell_values(int argc, Scheme_Object *args[]);
 static Scheme_Object *is_thread_cell_values(int argc, Scheme_Object *args[]);
+static Scheme_Object *thread_w_details_x(Scheme_Object *thunk,
+                                         Scheme_Config *config,
+                                         Scheme_Thread_Cell_Table *cells,
+                                         Scheme_Object *break_cell,
+                                         Scheme_Custodian *mgr,
+                                         int suspend_to_kill,
+                                         Scheme_Object *results);
 
 static Scheme_Object *make_security_guard(int argc, Scheme_Object *argv[]);
 static Scheme_Object *security_guard_p(int argc, Scheme_Object *argv[]);
@@ -3493,7 +3500,8 @@ static Scheme_Object *make_subprocess(Scheme_Object *child_thunk,
 				      Scheme_Thread_Cell_Table *cells,
 				      Scheme_Object *break_cell,
 				      Scheme_Custodian *mgr,
-				      int normal_kill)
+				      int normal_kill,
+                                      Scheme_Object *init_results)
 {
   Scheme_Thread *child;
   int turn_on_multi;
@@ -3530,6 +3538,7 @@ static Scheme_Object *make_subprocess(Scheme_Object *child_thunk,
   child = make_thread(config, cells, break_cell, mgr, child_start);
   if (name_sym)
     child->name = name_sym;
+  child->results = init_results;
 
   {
     Scheme_Object *v;
@@ -3557,7 +3566,12 @@ static Scheme_Object *make_subprocess(Scheme_Object *child_thunk,
 
 Scheme_Object *scheme_thread(Scheme_Object *thunk)
 {
-  return scheme_thread_w_details(thunk, NULL, NULL, NULL, NULL, 0);
+  return thread_w_details_x(thunk, NULL, NULL, NULL, NULL, 0, NULL);
+}
+
+static Scheme_Object *thread_w_results(Scheme_Object *thunk, Scheme_Object *results)
+{
+  return thread_w_details_x(thunk, NULL, NULL, NULL, NULL, 0, results);
 }
 
 static int extract_keep_results(const char *who, int i, int argc, Scheme_Object *args[])
@@ -3581,10 +3595,7 @@ static Scheme_Object *sch_thread(int argc, Scheme_Object *args[])
   scheme_custodian_check_available(NULL, who, "thread");
   keep_results = extract_keep_results(who, 1, argc, args);
 
-  p = scheme_thread(args[0]);
-
-  if (keep_results)
-    ((Scheme_Thread *)p)->results = scheme_true;
+  p = thread_w_results(args[0], keep_results ? scheme_true : NULL);
 
   return p;
 }
@@ -3593,12 +3604,13 @@ static Scheme_Object *unsafe_thread_at_root(int argc, Scheme_Object *args[])
 {
   scheme_check_proc_arity("unsafe-thread-at-root", 0, 0, argc, args);
 
-  return scheme_thread_w_details(args[0],
-                                 scheme_minimal_config(),
-                                 scheme_empty_cell_table(),
-                                 NULL, /* default break cell */
-                                 main_custodian,
-                                 0);
+  return thread_w_details_x(args[0],
+                            scheme_minimal_config(),
+                            scheme_empty_cell_table(),
+                            NULL, /* default break cell */
+                            main_custodian,
+                            0,
+                            NULL);
 }
 
 static Scheme_Object *sch_thread_nokill(int argc, Scheme_Object *args[])
@@ -3606,7 +3618,7 @@ static Scheme_Object *sch_thread_nokill(int argc, Scheme_Object *args[])
   scheme_check_proc_arity("thread/suspend-to-kill", 0, 0, argc, args);
   scheme_custodian_check_available(NULL, "thread/suspend-to-kill", "thread");
 
-  return scheme_thread_w_details(args[0], NULL, NULL, NULL, NULL, 1);
+  return thread_w_details_x(args[0], NULL, NULL, NULL, NULL, 1, NULL);
 }
 
 Scheme_Object *scheme_thread_parallel(int argc, Scheme_Object *args[])
@@ -3631,10 +3643,7 @@ Scheme_Object *scheme_thread_parallel(int argc, Scheme_Object *args[])
   }
   keep_results = extract_keep_results(who, 2, argc, args);
 
-  p = scheme_thread(args[0]);
-
-  if (keep_results)
-    ((Scheme_Thread *)p)->results = scheme_true;
+  p = thread_w_results(args[0], keep_results ? scheme_true : NULL);
 
   return p;
 }
@@ -3777,7 +3786,7 @@ int scheme_is_stack_too_shallow()
 static Scheme_Object *thread_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
-  Scheme_Object *thunk, *result, *break_cell;
+  Scheme_Object *thunk, *result, *break_cell, *init_results;
   Scheme_Config *config;
   Scheme_Custodian *mgr;
   Scheme_Thread_Cell_Table *cells;
@@ -3788,6 +3797,8 @@ static Scheme_Object *thread_k(void)
   mgr = (Scheme_Custodian *)p->ku.k.p3;
   cells = (Scheme_Thread_Cell_Table *)SCHEME_CAR((Scheme_Object *)p->ku.k.p4);
   break_cell = SCHEME_CDR((Scheme_Object *)p->ku.k.p4);
+  init_results = SCHEME_CDR(break_cell);
+  break_cell = SCHEME_CAR(break_cell);
 
   p->ku.k.p1 = NULL;
   p->ku.k.p2 = NULL;
@@ -3795,7 +3806,8 @@ static Scheme_Object *thread_k(void)
   p->ku.k.p4 = NULL;
   
   result = make_subprocess(thunk, PROMPT_STACK(result),
-			   config, cells, break_cell, mgr, !suspend_to_kill);
+			   config, cells, break_cell, mgr, !suspend_to_kill,
+                           init_results);
 
   /* Don't get rid of `result'; it keeps the
      Precise GC xformer from "optimizing" away
@@ -3805,12 +3817,13 @@ static Scheme_Object *thread_k(void)
 
 #endif /* DO_STACK_CHECK */
 
-Scheme_Object *scheme_thread_w_details(Scheme_Object *thunk, 
-				       Scheme_Config *config, 
-				       Scheme_Thread_Cell_Table *cells,
-				       Scheme_Object *break_cell,
-				       Scheme_Custodian *mgr, 
-				       int suspend_to_kill)
+static Scheme_Object *thread_w_details_x(Scheme_Object *thunk,
+                                         Scheme_Config *config,
+                                         Scheme_Thread_Cell_Table *cells,
+                                         Scheme_Object *break_cell,
+                                         Scheme_Custodian *mgr,
+                                         int suspend_to_kill,
+                                         Scheme_Object *init_results)
 {
   Scheme_Object *result;
 #ifndef MZ_PRECISE_GC
@@ -3826,7 +3839,9 @@ Scheme_Object *scheme_thread_w_details(Scheme_Object *thunk,
     p->ku.k.p1 = thunk;
     p->ku.k.p2 = config;
     p->ku.k.p3 = mgr;
-    result = scheme_make_pair((Scheme_Object *)cells, break_cell);
+    result = scheme_make_pair((Scheme_Object *)cells,
+                              scheme_make_pair(break_cell,
+                                               init_results));
     p->ku.k.p4 = result;
     p->ku.k.i1 = suspend_to_kill;
 
@@ -3835,12 +3850,29 @@ Scheme_Object *scheme_thread_w_details(Scheme_Object *thunk,
 #endif
 
   result = make_subprocess(thunk, PROMPT_STACK(stack_marker),
-			   config, cells, break_cell, mgr, !suspend_to_kill);
+			   config, cells, break_cell, mgr, !suspend_to_kill,
+                           init_results);
 
   /* Don't get rid of `result'; it keeps the
      Precise GC xformer from "optimizing" away
      the __gc_var_stack__ frame. */
   return result;
+}
+
+Scheme_Object *scheme_thread_w_details(Scheme_Object *thunk,
+				       Scheme_Config *config,
+				       Scheme_Thread_Cell_Table *cells,
+				       Scheme_Object *break_cell,
+				       Scheme_Custodian *mgr,
+				       int suspend_to_kill)
+{
+  return thread_w_details_x(thunk,
+                            config,
+                            cells,
+                            break_cell,
+                            mgr,
+                            suspend_to_kill,
+                            NULL);
 }
 
 /**************************************************************************/
