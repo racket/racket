@@ -4279,32 +4279,50 @@
                     (set-lock-was-atomic?! lock_0 #f)))
                 (internal-error "tried to take port lock reentrantly")))))))))
 (define port-unlock-slow
-  (lambda (p_0)
-    (let ((lock_0 (core-port-lock p_0)))
-      (if (eq? lock_0 #t)
-        (if (unsafe-struct*-cas! p_0 2 #t #f) (void) (port-unlock-slow p_0))
-        (if (eq? lock_0 'to-atomic)
-          (if (unsafe-struct*-cas! p_0 2 'to-atomic 'atomic)
-            (void)
-            (port-unlock-slow p_0))
-          (if (eq? lock_0 'in-atomic)
-            (if (unsafe-struct*-cas! p_0 2 'in-atomic 'atomic)
-              (begin
-                (assert-pop-lock-level! 'port)
-                (unsafe-end-atomic)
-                (unsafe-start-uninterruptible)
-                (assert-push-lock-level! 'port))
-              (port-unlock-slow p_0))
-            (if (lock-was-atomic? lock_0)
-              (begin
-                (lock-release lock_0)
-                (assert-pop-lock-level! 'port)
-                (unsafe-end-atomic)
-                (unsafe-start-uninterruptible)
-                (assert-push-lock-level! 'port))
-              (if (lock? lock_0)
-                (lock-release lock_0)
-                (internal-error "tried to release port lock not held")))))))))
+  (let ((port-unlock-slow_0
+         (|#%name|
+          port-unlock-slow
+          (lambda (p3_0 keep-atomic?2_0)
+            (letrec*
+             ((retry_0
+               (|#%name|
+                retry
+                (lambda ()
+                  (let ((lock_0 (core-port-lock p3_0)))
+                    (if (eq? lock_0 #t)
+                      (if (unsafe-struct*-cas! p3_0 2 #t #f) (void) (retry_0))
+                      (if (eq? lock_0 'to-atomic)
+                        (if (unsafe-struct*-cas! p3_0 2 'to-atomic 'atomic)
+                          (void)
+                          (retry_0))
+                        (if (eq? lock_0 'in-atomic)
+                          (if (unsafe-struct*-cas! p3_0 2 'in-atomic 'atomic)
+                            (if keep-atomic?2_0
+                              (void)
+                              (begin
+                                (assert-pop-lock-level! 'port)
+                                (unsafe-end-atomic)
+                                (unsafe-start-uninterruptible)
+                                (assert-push-lock-level! 'port)))
+                            (retry_0))
+                          (if (lock-was-atomic? lock_0)
+                            (begin
+                              (lock-release lock_0)
+                              (if keep-atomic?2_0
+                                (void)
+                                (begin
+                                  (assert-pop-lock-level! 'port)
+                                  (unsafe-end-atomic)
+                                  (unsafe-start-uninterruptible)
+                                  (assert-push-lock-level! 'port))))
+                            (if (lock? lock_0)
+                              (lock-release lock_0)
+                              (internal-error
+                               "tried to release port lock not held")))))))))))
+             (retry_0))))))
+    (case-lambda
+     ((p_0) (port-unlock-slow_0 p_0 #f))
+     ((p_0 keep-atomic?2_0) (port-unlock-slow_0 p_0 keep-atomic?2_0)))))
 (define port-lock-require-atomic!
   (lambda (p_0 atomic?_0)
     (let ((lock_0 (core-port-lock p_0)))
@@ -6929,7 +6947,7 @@
    (lambda (this-id_0)
      (if (commit-input-port-commit-manager this-id_0)
        (begin
-         (port-unlock-slow this-id_0)
+         (port-unlock-slow this-id_0 #t)
          (assert-pop-lock-level! 'port)
          (begin0
            (commit-manager-pause (commit-input-port-commit-manager this-id_0))
@@ -6947,7 +6965,7 @@
            #f)
        (begin
          (begin
-           (port-unlock-slow this-id_0)
+           (port-unlock-slow this-id_0 #t)
            (assert-pop-lock-level! 'port)
            (begin0
              (|#%app| finish58_0)
@@ -6961,7 +6979,7 @@
             this-id_0
             (make-commit-manager)))
          (begin
-           (port-unlock-slow this-id_0)
+           (port-unlock-slow this-id_0 #t)
            (assert-pop-lock-level! 'port)
            (begin0
              (commit-manager-wait

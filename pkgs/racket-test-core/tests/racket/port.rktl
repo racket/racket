@@ -1657,5 +1657,20 @@
   (subprocess-wait sp))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Regression check for commit peeked in a parallel thread
+;; in a simple case that takes a shortcut
+
+(for ([thread (in-list thread-procs)])
+  (let ([done? #f])
+    (define (work)
+      (define-values (r w) (make-pipe))
+      (write-bytes #"hello" w)
+      (peek-bytes 5 0 r)
+      (port-commit-peeked 5 (port-progress-evt r) always-evt r)
+      (set! done? #t))
+    (thread-wait (thread work))
+    (test #t values done?)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

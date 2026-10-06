@@ -79,7 +79,7 @@
     (assert-pop-lock-level! 'port)
     ;; The intent of ending uninterruptible mode with
     ;; `end-atomic` is to include a future barrier exit, in
-    ;; case `also-aotmically` was used
+    ;; case `also-atomically` was used
     (end-atomic)))
 
 (define-syntax-rule (with-lock p-expr e ...)
@@ -101,7 +101,7 @@
 ;; merely uninterruptible mode)
 (define-syntax-rule (merely-atomically p-expr e ...)
   (let ([p p-expr])
-    (port-unlock-slow p)
+    (port-unlock-slow p #t)
     (assert-pop-lock-level! 'port)
     (begin0
       (let () e ...)
@@ -164,36 +164,40 @@
     [else
      (internal-error "tried to take port lock reentrantly")]))
 
-;; in uninterrutable mode, possibly atomic; returns as uninterrutable
-(define (port-unlock-slow p)
-  (define lock (core-port-lock p))
-  (cond
-    [(eq? lock #t)
-     ;; try fast path again
-     (unless (core-port-lock-cas! p #t #f)
-       (port-unlock-slow p))]
-    [(eq? lock 'to-atomic)
-     (unless (core-port-lock-cas! p 'to-atomic 'atomic)
-       (port-unlock-slow p))]
-    [(eq? lock 'in-atomic)
-     (cond
-       [(core-port-lock-cas! p 'in-atomic 'atomic)
-        (assert-pop-lock-level! 'port)
-        (end-atomic)
-        (start-uninterruptible)
-        (assert-push-lock-level! 'port)]
-       [else
-        (port-unlock-slow p)])]
-    [(lock-was-atomic? lock)
-     (lock-release lock)
-     (assert-pop-lock-level! 'port)
-     (end-atomic)
-     (start-uninterruptible)
-     (assert-push-lock-level! 'port)]
-    [(lock? lock)
-     (lock-release lock)]
-    [else
-     (internal-error "tried to release port lock not held")]))
+;; in uninterrutable mode, possibly atomic;
+;; returns as uninterrutable unless `keep-atomic?`
+(define (port-unlock-slow p [keep-atomic? #f])
+  (let retry ()
+    (define lock (core-port-lock p))
+    (cond
+      [(eq? lock #t)
+       ;; try fast path again
+       (unless (core-port-lock-cas! p #t #f)
+         (retry))]
+      [(eq? lock 'to-atomic)
+       (unless (core-port-lock-cas! p 'to-atomic 'atomic)
+         (retry))]
+      [(eq? lock 'in-atomic)
+       (cond
+         [(core-port-lock-cas! p 'in-atomic 'atomic)
+          (unless keep-atomic?
+            (assert-pop-lock-level! 'port)
+            (end-atomic)
+            (start-uninterruptible)
+            (assert-push-lock-level! 'port))]
+         [else
+          (retry)])]
+      [(lock-was-atomic? lock)
+       (lock-release lock)
+       (unless keep-atomic?
+         (assert-pop-lock-level! 'port)
+         (end-atomic)
+         (start-uninterruptible)
+         (assert-push-lock-level! 'port))]
+      [(lock? lock)
+       (lock-release lock)]
+      [else
+       (internal-error "tried to release port lock not held")])))
 
 ;; change lock requirement for future takers
 (define (port-lock-require-atomic! p atomic?)
