@@ -275,13 +275,18 @@ flags:
         result of
         @racket[(make-compilation-manager-load/use-compiled-handler)]
         is installed as the @tech{compiled-load handler} before other
-        module-loading actions. @bold{Caution:} This flag is intended
+        module-loading actions.
+        Setting the @as-index{@envvar{PLT_YES_MAKE}} environment variable
+        (to any value) is equivalent to providing @Flag{y}/@DFlag{make} as long
+        as @Flag{N}/@DFlag{name} and @Flag{E}/@DFlag{exe} are not provided to set the program name
+        and as long as @Flag{k} and @Flag{Y} are not provided to load embedded code.
+        @bold{Caution:} This flag is intended
         for use in interactive settings; using it in a script is
         probably a bad idea, because concurrent invocations of the
         script may collide attempting to update compiled files, or
         there may be filesystem-permission issues. Using
-        @FlagFirst{c}/@DFlagFirst{no-compiled} cancels the effect of
-        @FlagFirst{y}/@DFlagFirst{make}.}
+        @Flag{c}/@DFlag{no-compiled} cancels the effect of
+        @Flag{y}/@DFlag{make}.}
 
   @item{@FlagFirst{c} or @DFlagFirst{no-compiled} : Disables loading
         of compiled @filepath{.zo} files, by initializing
@@ -508,7 +513,8 @@ Extra arguments following the last option are available from the
          #:changed "7.8.0.6" @elem{Added @Flag{Z}.}
          #:changed "8.0.0.10" @elem{Added @Flag{E}.}
          #:changed "8.0.0.11" @elem{Added @Flag{Y}.}
-         #:changed "8.4.0.1" @elem{Added @Flag{y}/@DFlag{make}.}]
+         #:changed "8.4.0.1" @elem{Added @Flag{y}/@DFlag{make}.}
+         #:changed "8.4.0.1" @elem{Added @envvar{PLT_YES_MAKE}.}]
 
 @; ----------------------------------------------------------------------
 

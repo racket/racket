@@ -744,7 +744,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 #endif
   char *init_lib = INITIAL_NAMESPACE_MODULE;
   int was_config_flag = 0, saw_nc_flag = 0;
-  int make = 0, no_compiled = 0;
+  int make = 0, no_compiled = 0, can_make_by_envvar = 1;
   int init_ns = 0, no_init_ns = 0;
   int cross_compile = 0;
   Scheme_Object *syslog_level = NULL, *stderr_level = NULL, *stdout_level = NULL;
@@ -1064,6 +1064,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	  argv++;
 	  --argc;
 	  eval_kind[num_enl++] = mzcmd_EMBEDDED;
+          can_make_by_envvar = 0;
 	  break;
 	case 'N':
 	case 'E':
@@ -1086,7 +1087,8 @@ static int run_from_cmd_line(int argc, char *_argv[],
           else
             prog = argv[0];
           was_config_flag = 1;
-	  break;
+          can_make_by_envvar = 0;
+          break;
 	case 'q':
 	  no_init_file = 1;
           was_config_flag = 1;
@@ -1291,6 +1293,10 @@ static int run_from_cmd_line(int argc, char *_argv[],
 
   if (getenv("PLT_COMPILE_ANY")) {
     scheme_set_startup_compile_machine_independent(1);
+  }
+
+  if (!make && can_make_by_envvar && getenv("PLT_YES_MAKE")) {
+     make = 1;
   }
 
   scheme_set_logging2_spec(syslog_level, stderr_level, stdout_level);

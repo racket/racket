@@ -161,6 +161,7 @@
                              [else (symbol->string (machine-type))])))]
              [else "compiled"])))
    (define make? #f)
+   (define make-by-envvar? #t)
    (define user-specific-search-paths? #t)
    (define load-on-demand? #t)
    (define compile-target-machine (if (getenv "PLT_COMPILE_ANY")
@@ -439,6 +440,7 @@
                            (embedded-load m p #f #f f))
                          loads)))
                 (no-init! saw)
+                (set! make-by-envvar? #f)
                 (flags-loop rest-args (see saw 'non-config)))]
              [("-m" "--main")
               (set! loads (cons (lambda () (call-main))
@@ -531,11 +533,13 @@
               (let-values ([(name rest-args) (next-arg "name" arg within-arg args)])
                 (check-path-arg name "name" arg within-arg)
                 (set-run-file! (string->path name))
+                (set! make-by-envvar? #f)
                 (loop rest-args))]
              [("-E" "--exec")
               (let-values ([(name rest-args) (next-arg "name" arg within-arg args)])
                 (check-path-arg name "name" arg within-arg)
                 (set-exec-file! (string->path name))
+                (set! make-by-envvar? #f)
                 (loop rest-args))]
              [("-J")
               (cond
@@ -950,7 +954,10 @@
          (initialize-exit-handler!)
          (initialize-place!)
 
-         (when (and make? (not (null? compiled-file-paths)))
+         (when (and (or make?
+                        (and make-by-envvar?
+                             (getenv "PLT_YES_MAKE")))
+                    (not (null? compiled-file-paths)))
            (|#%app|
             current-load/use-compiled
             (|#%app| (dynamic-require 'compiler/private/cm-minimal
