@@ -20,6 +20,7 @@
                #:avoid-main? [avoid-main? #f]
                #:force-user-docs? [force-user-docs? #f]
                #:jobs [parallel #f]
+               #:quiet? [quiet? #f]
                #:recompile-only? [recompile-only? #f]
                #:recompile-cache [recompile-cache #f]
                #:fail-fast? [fail-fast? #f]
@@ -71,6 +72,7 @@
                                    always-check-dependencies?)]
     
     [setup-program-name "raco setup"]
+    [quiet quiet?]
 
     [recompile-only recompile-only?]
     [managed-recompile-only recompile-only?]

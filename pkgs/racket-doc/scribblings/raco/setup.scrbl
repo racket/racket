@@ -278,6 +278,11 @@ flags:
  @item{@DFlag{processes} --- use separate processes for parallel jobs;
    this mode is the default if Racket places cannot run in parallel.}
 
+ @item{@DFlag{quiet} or @Flag{q} --- suppress status and progress
+   output, including verbose output that is otherwise requested. This
+   flags is implied if the @as-index{@envvar{PLT_SETUP_QUIET}}
+   environment variable is set (to anything).}
+
  @item{@DFlag{verbose} or @Flag{v} --- more verbose output about
    @exec{raco setup} actions.}
 
@@ -413,7 +418,9 @@ debugging:
          #:changed "9.2.0.4" @elem{Added the @DFlag{doc-markdown} and
                                    @DFlag{only-extra-docs} flags.}
          #:changed "9.3.0.1" @elem{Added the @DFlag{doc-xelatex} and
-                                   @DFlag{doc-typst-pdf} flags.}]
+                                   @DFlag{doc-typst-pdf} flags.}
+         #:changed "9.3.0.10" @elem{Added the @DFlag{quiet}/@Flag{q} flag and
+                                    @envvar{PLT_SETUP_QUIET} environment variable.}]
 
 @; ------------------------------------------------------------------------
 
@@ -546,6 +553,7 @@ normal dependency counts as a build-time dependency, too).
                 [#:recompile-only? recompile-only? any/c #f]
                 [#:recompile-cache recompile-cache (or/c path-string? #f) #f]
                 [#:jobs jobs exact-nonnegative-integer? #f]
+                [#:quiet? quiet any/c #f]
                 [#:fail-fast? fail-fast? any/c #f]
                 [#:get-target-dir get-target-dir (or/c #f (-> path-string?)) #f])
           boolean?]{
@@ -613,6 +621,8 @@ Runs @exec{raco setup} with various options:
  @item{@racket[jobs] --- if not @racket[#f], determines the maximum number of parallel
        tasks used for setup}
 
+ @item{@racket[quiet?] --- if true, suppresses status and progress output}
+
  @item{@racket[fail-fast?] --- if true, breaks the current thread as soon as an
        error is discovered}
 
@@ -633,7 +643,8 @@ sensitive to the @racket[use-compiled-file-check] parameter.
                                    @racket[fix-pkg-deps?] , and @racket[unused-pkg-deps?]
                                    arguments.}
          #:changed "7.2.0.8" @elem{Added the @racket[recompile-only?] argument.}
-         #:changed "8.17.0.2" @elem{Added the @racket[recompile-cache] argument.}]}
+         #:changed "8.17.0.2" @elem{Added the @racket[recompile-cache] argument.}
+         #:changed "9.3.0.10" @elem{Added the @racket[quiet?] argument.}]}
 
 
 @subsection{@exec{raco setup} Unit}

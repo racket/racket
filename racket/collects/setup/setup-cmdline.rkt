@@ -150,6 +150,8 @@
      [("--processes") "Use processes for parallel jobs"
       (add-flags `((parallel-use-places #f)))]
      #:once-each
+     [("-q" "--quiet") "Suppress status and progress output"
+      (add-flags '((quiet #t)))]
      [("-v" "--verbose") "See names of compiled files and info printfs"
       (add-flags '((verbose #t)))]
      [("-m" "--make-verbose") "See make and compiler usual messages"

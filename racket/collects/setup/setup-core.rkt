@@ -171,7 +171,15 @@
     (define r (get-info-domain-root))
     (if r (reroot-path p r) p))
 
-  (define setup-fprintf (mk-setup-fprintf name-str timestamp-output?))
+  (define quiet? (or (quiet) (getenv "PLT_SETUP_QUIET")))
+  (define verbose? (and (not quiet?) (verbose)))
+
+  (define setup-fprintf (if quiet?
+                            (lambda (#:n [n #f] #:%age [%age #f]
+                                     #:only-if-terminal? [only-if-terminal? #f]
+                                     p task s . args)
+                              (void))
+                            (mk-setup-fprintf name-str timestamp-output?)))
 
   (define (setup-printf #:n [n #f] #:%age [%age #f]
                         #:only-if-terminal? [only-if-terminal? #f] task s . args)
@@ -1035,17 +1043,17 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define (control-io print-verbose thunk)
-    (if (make-verbose)
+    (if (and (not quiet?) (make-verbose))
       (thunk)
       (let* ([oop (current-output-port)]
              [dir-table (make-hash)]
              [doing-path (lambda (path)
-                           (unless (verbose)
+                           (unless verbose?
                              (let ([path (path-only path)])
                                (unless (hash-ref dir-table path #f)
                                  (hash-set! dir-table path #t)
                                  (print-verbose oop path)))))])
-        (parameterize ([current-output-port (if (verbose) (current-output-port) (open-output-nowhere))]
+        (parameterize ([current-output-port (if verbose? (current-output-port) (open-output-nowhere))]
                        [compile-notify-handler doing-path])
           (thunk)))))
 
@@ -1151,7 +1159,7 @@
            (define dir  (cc-path cc))
            (define info (cc-info cc))
            (compile-directory-zos dir info
-                                  #:verbose (verbose)
+                                  #:verbose verbose?
                                   #:has-module-suffix? has-module-suffix?
                                   #:omit-root (cc-omit-root cc)
                                   #:managed-compile-zo (or caching-managed-compile-zo
@@ -1351,9 +1359,9 @@
                                   (or (file-exists? (build-path dir "info.rkt"))
                                       (file-exists? (build-path dir "info.ss"))))
                              (hash-set! t (normalize-relative-encoding a p) (list b c d e))
-                             (begin (when (verbose) (printf " drop entry: ~s\n" i))
+                             (begin (when verbose? (printf " drop entry: ~s\n" i))
                                     (set! all-ok? #f)))]
-                        [_ (when (verbose) (printf " bad entry: ~s\n" i))
+                        [_ (when verbose? (printf " bad entry: ~s\n" i))
                            (set! all-ok? #f)])))
                   ;; Record the table loaded for this collection root in the
                   ;; all-roots table:
@@ -1438,7 +1446,7 @@
           (setup-printf "updating" "~a" (path->relative-string/setup
                                          p
                                          #:cache pkg-path-cache))
-          (when (verbose)
+          (when verbose?
             (define ht0 (hash-ref ht-orig info-path))
             (when ht0
               (for ([(k v) (in-hash ht)])
@@ -1466,7 +1474,7 @@
       (apply (dynamic-require 'setup/scribble name) xs)))
 
   (define (set-doc:verbose)
-    (scr:call 'verbose (verbose)))
+    (scr:call 'verbose verbose?))
 
   (define (doc:setup-scribblings latex-dest auto-start-doc?)
     (scr:call 'setup-scribblings
@@ -2196,7 +2204,7 @@
                                           (setup-printf #f "check failure: ~a" (exn->string exn)))
                                         (check-unused-dependencies)
                                         (fix-dependencies)
-                                        (verbose)
+                                        verbose?
                                         (not no-specific-collections?)
                                         (always-check-dependencies))
       (set! exit-code 1)))
@@ -2244,7 +2252,7 @@
 
   (when (clean) (clean-step))
   (when (make-zo)
-    (compiler:option:verbose (compiler-verbose))
+    (compiler:option:verbose (and (not quiet?) (compiler-verbose)))
     (compiler:option:compile-subcollections #f))
 
   (do-install-part 'pre)

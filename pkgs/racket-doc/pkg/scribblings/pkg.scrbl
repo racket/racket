@@ -679,6 +679,9 @@ sub-commands.
     ]}
 
 
+  @item{@DFlag{quiet} or @Flag{q} --- suppress status and progress output, including for @exec{raco setup}.
+        This flags is implied if the @as-index{@envvar{PLT_SETUP_QUIET}} environment variable is set (to anything).}
+
   @item{@DFlag{dry-run} --- Prevents changes to the current installation. All installation and update work is
                             staged and checked, but the final installation step is skipped.}
 
@@ -727,7 +730,8 @@ sub-commands.
          #:changed "9.2.0.6" @elem{Added the @DFlag{destdir}, @DFlag{attach}, @DFlag{no-promote}
                                    and @DFlag{adjacent-deps} flags,
                                    and adjusted @DFlag{skip-installed} to not complain about
-                                   a package installed from a different source when promoting.}]}
+                                   a package installed from a different source when promoting.}
+         #:changed "9.3.0.10" @elem{Added the @DFlag{quiet} flag.}]}
 
 
 @subcommand{@command/toc{update} @nonterm{option} ... @nonterm{pkg-source} ...
@@ -841,6 +845,7 @@ the given @nonterm{pkg-source}s.
 
  @item{@DFlag{pull} @nonterm{mode} --- Same as for @command-ref{install}}
 
+ @item{@DFlag{quiet} or @Flag{q} --- Same as for @command-ref{install}.}
  @item{@DFlag{dry-run} --- Same as for @command-ref{install}.}
  @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
  @item{@DFlag{no-docs} or @Flag{D} --- Same as for @command-ref{install}.}
@@ -864,7 +869,8 @@ the given @nonterm{pkg-source}s.
          #:changed "7.4.0.4" @elem{Added the @DFlag{no-docs}, @Flag{D} flags.}
          #:changed "7.6.0.14" @elem{Allowed multiple @DFlag{catalog} flags.}
          #:changed "8.17.0.2" @elem{Added the @DFlag{recompile-cache} flag.}
-         #:changed "8.18.0.7" @elem{Added the @DFlag{force-strip} flag.}]}
+         #:changed "8.18.0.7" @elem{Added the @DFlag{force-strip} flag.}
+         #:changed "9.3.0.10" @elem{Added the @DFlag{quiet} flag.}]}
 
 @subcommand{@command/toc{uninstall} @nonterm{option} ... @nonterm{pkg} ...
 --- Attempts to uninstall the given packages. By default, if a package is the dependency
@@ -890,6 +896,7 @@ the given @nonterm{pkg}s.
  @item{@Flag{i} or @DFlag{installation} --- Shorthand for @exec{--scope installation}.}
  @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
  @item{@DFlag{scope-dir} @nonterm{dir} --- Selects @nonterm{dir} as the @tech{package scope}, the same as for @command-ref{install}.}
+ @item{@DFlag{quiet} or @Flag{q} --- Same as for @command-ref{install}.}
  @item{@DFlag{dry-run} --- Same as for @command-ref{install}.}
  @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
  @item{@DFlag{no-docs} or @Flag{D} --- Same as for @command-ref{install}.}
@@ -906,7 +913,8 @@ the given @nonterm{pkg}s.
          #:changed "7.2.0.8" @elem{Added the @DFlag{recompile-only} flag.}
          #:changed "7.4.0.4" @elem{Added the @DFlag{no-docs}, @Flag{D} flags.}
          #:changed "8.14.0.2" @elem{Renamed from @command-ref{remove} to @command-ref{uninstall}.}
-         #:changed "8.17.0.2" @elem{Added the @litchar{recompile-cache} flag.}]}
+         #:changed "8.17.0.2" @elem{Added the @litchar{recompile-cache} flag.}
+         #:changed "9.3.0.10" @elem{Added the @DFlag{quiet} flag.}]}
 
 @subcommand{@command/toc{remove} --- A synonym for @command-ref{uninstall}.
 
@@ -993,6 +1001,7 @@ package is created.
   @item{@DFlag{ignore-checksums} --- Same as for @command-ref{install}.}
   @item{@DFlag{strict-doc-conflicts} --- Same as for @command-ref{install}.}
   @item{@DFlag{no-cache} --- Same as for @command-ref{install}.}
+  @item{@DFlag{quiet} or @Flag{q} --- Same as for @command-ref{install}.}
   @item{@DFlag{dry-run} --- Same as for @command-ref{install}.}
   @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
   @item{@DFlag{no-docs} or @Flag{D} --- Same as for @command-ref{install}.}
@@ -1006,7 +1015,8 @@ package is created.
          #:changed "7.4.0.4" @elem{Added the @DFlag{no-docs}, @Flag{D} flags.}
          #:changed "7.6.0.14" @elem{Allowed multiple @DFlag{catalog} flags.}
          #:changed "8.17.0.2" @elem{Added the @DFlag{recompile-cache} flag.}
-         #:changed "8.18.0.7" @elem{Added the @DFlag{force-strip} flag.}]}
+         #:changed "8.18.0.7" @elem{Added the @DFlag{force-strip} flag.}
+         #:changed "9.3.0.10" @elem{Added the @DFlag{quiet} flag.}]}
 
 @subcommand{@command/toc{create} @nonterm{option} ... @nonterm{directory-or-package}
 --- Bundles a package into an archive. Bundling
@@ -1044,11 +1054,13 @@ package is created.
  @item{@DFlag{dest} @nonterm{dest-dir} --- Writes generated bundles to @nonterm{dest-dir}.}
  @item{@DFlag{adjacent-deps} --- Also write bundles of @tech{adjacent} dependencies of
        @nonterm{directory-or-package}.}
+ @item{@DFlag{quiet} or @Flag{q} --- Same as for @command-ref{install}.}
 
  ]
 
 @history[#:changed "8.14.0.2" @elem{Added the @DFlag{original} flag.}
-         #:changed "9.6.0.6" @elem{Added the @exec{dir} format and the @DFlag{adjacent-deps} flag.}]
+         #:changed "9.6.0.6" @elem{Added the @exec{dir} format and the @DFlag{adjacent-deps} flag.}
+         #:changed "9.3.0.10" @elem{Added the @DFlag{quiet} flag.}]
 }
 
 @subcommand{@command/toc{config} @nonterm{option} ... @optional[@nonterm{key}] @nonterm{val} ... ---
@@ -1246,13 +1258,15 @@ for @nonterm{key}.
  @item{@DFlag{fast-file-copy} --- Directly copies package files from the @nonterm{src-catalog}s
        when available on the local filesystem, instead of extracting and re-bundling.
        This flag must be used only with @DFlag{as-is} mode.}
+ @item{@DFlag{quiet} or @Flag{q} --- Same as for @command-ref{install}.}
  ]
 
  @history[#:added "6.0.17"
           #:changed "7.7.0.1" @elem{Added @DFlag{include}, @DFlag{include-deps}, @DFlag{include-deps-platform},
                                     @DFlag{exclude}, and @DFlag{fast-file-copy}.}
           #:changed "9.2.0.5" @elem{Added @DFlag{as-is}, @DFlag{source}, @DFlag{binary},
-                                    @DFlag{binary-lib}, and @DFlag{built}.}]
+                                    @DFlag{binary-lib}, and @DFlag{built}.}
+          #:changed "9.3.0.10" @elem{Added the @DFlag{quiet} flag.}]
 }
 
 @subcommand{@command/toc{archive} @nonterm{option} ... @nonterm{dest-dir} @nonterm{pkg} ...
@@ -1275,9 +1289,11 @@ for @nonterm{key}.
         resulting catalog. This also causes the dependencies of @nonterm{pkg} to be
         omitted if @DFlag{include-deps} is specified. This flag can be provided multiple times.}
  @item{@DFlag{relative} --- Writes package sources to @nonterm{dest-catalog} in relative-path form.}
+ @item{@DFlag{quiet} or @Flag{q} --- Same as for @command-ref{install}.}
  ]
 
- @history[#:added "6.1.0.8"]
+ @history[#:added "6.1.0.8"
+          #:changed "9.3.0.10" @elem{Added the @DFlag{quiet} flag.}]
 }
 
 @subcommand{@command/toc{empty-trash} @nonterm{option} ...
@@ -1298,9 +1314,11 @@ for @nonterm{key}.
 
  @item{@DFlag{list} or @Flag{l} --- Shows the trash directory path and its content, instead of
                                     removing the current content.}
+ @item{@DFlag{quiet} or @Flag{q} --- Same as for @command-ref{install}.}
  ]
 
- @history[#:added "6.1.1.6"]
+ @history[#:added "6.1.1.6"
+          #:changed "9.3.0.10" @elem{Added the @DFlag{quiet} flag.}]
 }
 
 @; ----------------------------------------

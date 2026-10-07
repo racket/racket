@@ -63,6 +63,7 @@
 (define-flag-param parallel-use-places (place-enabled?))
 (define-flag-param verbose #f)
 (define-flag-param make-verbose #f)
+(define-flag-param quiet #f)
 (define-flag-param compiler-verbose #f)
 (define-flag-param clean #f)
 (define-flag-param compile-mode #f)

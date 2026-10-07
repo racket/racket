@@ -18,7 +18,7 @@
          (for-syntax racket/base
                      syntax/strip-context))
 
-(define (setup what no-setup? no-docs? recompile-only? recompile-cache fail-fast? setup-collects jobs)
+(define (setup what no-setup? no-docs? recompile-only? recompile-cache fail-fast? setup-collects jobs quiet?)
   (unless (or (eq? setup-collects 'skip)
               no-setup?
               (not (member (getenv "PLT_PKG_NOSETUP") '(#f ""))))
@@ -33,6 +33,7 @@
                                      setup-collects))
              #:tidy? #t
              #:make-doc-index? #t
+             #:quiet? quiet?
              #:jobs jobs
              #:recompile-only? recompile-only?
              #:recompile-cache recompile-cache
@@ -40,6 +41,9 @@
       ((current-pkg-error)
        "packages ~a, although setup reported errors"
        what))))
+
+(define (is-quiet? quiet)
+  (or quiet (and (getenv "PLT_SETUP_QUIET") #t)))
 
 (define ((pkg-error cmd) . args)
   (apply raise-user-error
@@ -163,6 +167,7 @@
     [(_ #:scope-flags (scope-flags ...)
         #:dry-run-flags (dry-run-flags ...)
         #:job-flags (job-flags ...)
+        #:quiet-flags (quiet-flags ...)
         #:trash-flags (trash-flags ...)
         #:catalog-flags (catalog-flags ...)
         #:install-type-flags (install-type-flags ...)
@@ -216,6 +221,7 @@
            dry-run-flags ...
            [(#:str dir #f) destdir () ("Stage into <dir> instead of installing")]
            job-flags ...
+           quiet-flags ...
            trash-flags ...
            [#:bool fail-fast () ("Break `raco setup' when it discovers an error")]
            #:args pkg-source
@@ -248,6 +254,7 @@
                         (values (list (path->string (current-directory)))
                                 'link))
                       (values pkg-source a-type)))
+                (define quiet? (is-quiet? quiet))
                 (define setup-collects
                   (with-pkg-lock
                     (with-catalogs catalog
@@ -277,6 +284,7 @@
                                      #:pull-behavior pull
                                      #:link-dirs? link-dirs?
                                      #:dry-run? dry-run
+                                     #:quiet? quiet?
                                      #:destdir destdir
                                      #:use-trash? (not no-trash)
                                      (for/list ([p (in-list sources)])
@@ -284,7 +292,7 @@
                                                  #:path (and (eq? a-type* 'clone)
                                                              (path->complete-path clone))
                                                  #:adjacent-deps? adjacent-deps))))))
-                (setup "installed" no-setup no-docs recompile-only recompile-cache fail-fast setup-collects jobs))))]
+                (setup "installed" no-setup no-docs recompile-only recompile-cache fail-fast setup-collects jobs quiet?))))]
           ;; ----------------------------------------
           [update
            "Update packages"
@@ -316,6 +324,7 @@
            install-clone-flags ...
            dry-run-flags ...
            job-flags ...
+           quiet-flags ...
            trash-flags ...
            #:args pkg-source
            (define attach #f)
@@ -346,6 +355,7 @@
                 (define clone-path (and (eq? a-type 'clone)
                                         (path->complete-path clone)))
                 (define lookup? (or lookup unclone))
+                (define quiet? (is-quiet? quiet))
                 (define setup-collects
                   (with-pkg-lock
                     (with-catalogs catalog
@@ -389,8 +399,9 @@
                                     #:link-dirs? link-dirs?
                                     #:infer-clone-from-dir? (not (or link static-link copy attach))
                                     #:dry-run? dry-run
+                                    #:quiet? quiet?
                                     #:use-trash? (not no-trash)))))
-                (setup "updated" no-setup no-docs recompile-only recompile-cache #f setup-collects jobs))))]
+                (setup "updated" no-setup no-docs recompile-only recompile-cache #f setup-collects jobs quiet?))))]
           ;; ----------------------------------------
           [uninstall
            "Uninstall packages"
@@ -403,8 +414,10 @@
            #:once-each
            dry-run-flags ...
            job-flags ...
+           quiet-flags ...
            trash-flags ...
            #:args pkg
+           (define quiet? (is-quiet? quiet))
            (call-with-package-scope
             'uninstall
             scope scope-dir installation user pkg 'name #f #f
@@ -417,8 +430,9 @@
                              #:auto? auto
                              #:force? force
                              #:dry-run? dry-run
+                             #:quiet? quiet?
                              #:use-trash? (not no-trash))))
-              (setup "uninstalled" no-setup no-docs recompile-only recompile-cache #f setup-collects jobs)))]
+              (setup "uninstalled" no-setup no-docs recompile-only recompile-cache #f setup-collects jobs quiet?)))]
           [#:alias remove uninstall]
           ;; ----------------------------------------
           [new
@@ -498,6 +512,7 @@
            install-force-flags ...
            dry-run-flags ...
            job-flags ...
+           quiet-flags ...
            #:args ([from-version #f])
            (unless from-version
              (define versions (pkg-migrate-available-versions))
@@ -510,6 +525,7 @@
                                                      "\n  available versions:"
                                                      versions)
                                                     "\n   ")]))))
+           (define quiet? (is-quiet? quiet))
            (call-with-package-scope
             'migrate
             scope scope-dir installation user #f #f #f #f
@@ -529,8 +545,9 @@
                                             (and binary 'binary)
                                             (and binary-lib 'binary-lib))
                                 #:force-strip? (or force force-strip)
-                                #:dry-run? dry-run))))
-              (setup "migrated" no-setup no-docs recompile-only recompile-cache #f setup-collects jobs)))]
+                                #:dry-run? dry-run
+                                #:quiet? quiet?))))
+              (setup "migrated" no-setup no-docs recompile-only recompile-cache #f setup-collects jobs quiet?)))]
           ;; ----------------------------------------
           [create
            "Bundle package from a directory or installed package"
@@ -548,11 +565,13 @@
            [(#:str package #f) original () "Record <package> as original package source"]
            [(#:str dest-dir #f) dest () "Create output files in <dest-dir>"]
            [#:bool adjacent-deps () "Also bundle adjacent dependencies"]
+           quiet-flags ...
            #:args directory-or-package
            (define pkg-source
              (cond
                [from-install 'name]
                [else 'dir]))
+           (define quiet? (is-quiet? quiet))
            (parameterize ([current-pkg-error (pkg-error 'create)])
              (for ([directory-or-package (in-list (if adjacent-deps
                                                       (close-over-adjacent directory-or-package pkg-source
@@ -565,7 +584,8 @@
                                        (path->complete-path dest))
                            #:source pkg-source
                            #:mode bundle-mode-flag-to-mode
-                           #:original original)))]
+                           #:original original
+                           #:quiet? quiet?)))]
           ;; ----------------------------------------
           [config
            "View and modify the package manager's configuration"
@@ -664,7 +684,9 @@
            bundle-mode-flags ...
            #:once-each
            [#:bool fast-file-copy () "Copy a local file package as-is"]
+           quiet-flags ...
            #:args (dest-dir . src-catalog)
+           (define quiet? (is-quiet? quiet))
            (parameterize ([current-pkg-error (pkg-error 'catalog-archive)]
                           [current-pkg-lookup-version (or version
                                                           (current-pkg-lookup-version))])
@@ -706,7 +728,8 @@
                                                                                            (exn-message exn)
                                                                                            "   "))
                                                                (when (eq? pkg-fail 'continue)
-                                                                 (set! fail-at-end? #t)))]))
+                                                                 (set! fail-at-end? #t)))])
+                                    #:quiet? quiet?)
                (when fail-at-end?
                  (exit 5)))]
           ;; ----------------------------------------
@@ -718,13 +741,16 @@
            [(#:str pkg '()) exclude () "Exclude <pkg> from new catalog"]
            #:once-each
            [#:bool relative () "Make source paths relative when possible"]
+           quiet-flags ...
            #:args (dest-dir pkg . pkgs)
+           (define quiet? (is-quiet? quiet))
            (parameterize ([current-pkg-error (pkg-error 'pkgs-archive)])
              (pkg-archive-pkgs dest-dir
                                (cons pkg pkgs)
                                #:include-deps? include-deps
                                #:exclude (as-list exclude)
-                               #:relative-sources? relative))]
+                               #:relative-sources? relative
+                               #:quiet? quiet?))]
           ;; ----------------------------------------
           [empty-trash
            "Delete old package installations from the trash directory"
@@ -732,13 +758,15 @@
            scope-flags ...
            #:once-each
            [#:bool list ("-l") "Show trash content without emptying"]
+           quiet-flags ...
            #:args ()
+           (define quiet? (is-quiet? quiet))
            (call-with-package-scope
             'empty-trash
             scope scope-dir installation user #f #f #f #f
             (lambda ()
               (pkg-empty-trash #:list? list
-                               #:quiet? #f)))]))]))
+                               #:quiet? quiet?)))]))]))
 
 (make-commands
  #:scope-flags
@@ -758,6 +786,8 @@
   [(#:str dir #f) recompile-cache () ("Cache recompiled modules in <dir>")]
   [(#:num n #f) jobs ("-j") "Setup with <n> parallel jobs"]
   [#:bool batch () ("Disable interactive mode and all prompts")])
+ #:quiet-flags
+ ([#:bool quiet ("-q") ("Suppress status and progress output")])
  #:trash-flags
  ([#:bool no-trash () ("Delete uninstalled/updated, instead of moving to a trash folder")])
  #:catalog-flags
