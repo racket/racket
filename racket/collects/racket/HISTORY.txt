@@ -1,3 +1,21 @@
+Version 9.4, October 2026
+Add `make-struct-metatype`
+Add the `PLT_YES_MAKE` and `PLT_SETUP_QUIET` environment variables
+Change Windows DLL loading to the "altered" search path, which
+ checks for dependencies in a DLL's own directory instead of
+ checking the executable's directory
+racket/flonum: Add `flhypot`
+Change `lcm` to consistently produce exact `0` for an exact `0`
+ argument and inexact arguments
+Improve precision and performance of some inexact operations
+Upgrade native libraries, especially on Windows where libraries may
+ depend on "vcruntime140.dll" and "vcruntime140_1.dll" as bundled
+ with Racket
+Change embedded-DLL strategy on Windows to write DLLs to a
+ temporary file, instead of instantiating an in-memory form
+Change `syntax-case` and `syntax-parse` to track disappeared
+ uses of literals
+
 Version 9.3, July 2026
 raco pkg install: Add `--adjacent-deps`, `--destdir`, and `--attach`,
   refine `--skip-installed`
