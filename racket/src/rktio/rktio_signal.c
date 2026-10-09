@@ -26,9 +26,18 @@ static void signal_received(int i)
 #if defined(RKTIO_SYSTEM_WINDOWS)
 static BOOL WINAPI ConsoleBreakHandler(DWORD op)
 {
-  rktio_console_ctl_c();
-  signal_received(RKTIO_OS_SIGNAL_INT);
-  return TRUE;
+  switch (op)
+  {
+    case CTRL_C_EVENT:
+      rktio_console_ctl_c();
+      signal_received(RKTIO_OS_SIGNAL_INT);
+      return TRUE;
+    case CTRL_BREAK_EVENT:
+      signal_received(RKTIO_OS_SIGNAL_TERM);
+      return TRUE;
+  }
+  
+  return FALSE;
 }
 
 void rktio_set_console_handler(void)
