@@ -292,14 +292,14 @@
    ;; Extra inspectorsss, in parallel to imports
    (for/list ([mu (in-list link-mod-uses)])
      (define extra-inspectorss
-       (for*/hash ([vu (in-list (header-require-vars-in-order header))]
-                   #:when (equal? mu (variable-use-module-use vu))
-                   [var-sym (in-value (hash-ref (header-require-var-to-import-sym header) vu))]
-                   [extra-inspectors (in-value (hash-ref (header-import-sym-to-extra-inspectors header) var-sym #f))]
-                   #:when (or extra-inspectors
-                              ;; For inlining purposes, keep track of all referenced,
-                              ;; since formerly unreferenced will mean inlined
-                              cross-linklet-inlining?))
+       (for*/hasheq ([vu (in-list (header-require-vars-in-order header))]
+                     #:when (equal? mu (variable-use-module-use vu))
+                     [var-sym (in-value (hash-ref (header-require-var-to-import-sym header) vu))]
+                     [extra-inspectors (in-value (hash-ref (header-import-sym-to-extra-inspectors header) var-sym #f))]
+                     #:when (or extra-inspectors
+                                ;; For inlining purposes, keep track of all referenced,
+                                ;; since formerly unreferenced will mean inlined
+                                cross-linklet-inlining?))
          (values var-sym extra-inspectors)))
      (and (hash-count extra-inspectorss)
           extra-inspectorss))

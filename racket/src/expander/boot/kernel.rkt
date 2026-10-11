@@ -72,7 +72,7 @@
                                      (null? protected-syms))
                 #:self mpi
                 #:provides
-                (hasheqv 0 (for/hash ([sym (in-hash-keys ht)])
+                (hasheqv 0 (for/hasheq ([sym (in-hash-keys ht)])
                              (when register-builtin?
                                (register-built-in-symbol! sym))
                              (define binding (make-module-binding mpi 0 sym))
@@ -103,17 +103,17 @@
                 #:provides
                 (if reexport?
                     (hasheqv 0
-                             (for*/hash ([require-mpi (in-list require-mpis)]
-                                         [m (in-value (namespace->module
-                                                       ns
-                                                       (module-path-index-resolve require-mpi)))]
-                                         [(sym binding) (in-hash
-                                                         (hash-ref
-                                                          (shift-provides-module-path-index
-                                                           (module-provides m)
-                                                           (module-self m)
-                                                           require-mpi)
-                                                          0))])
+                             (for*/hasheq ([require-mpi (in-list require-mpis)]
+                                           [m (in-value (namespace->module
+                                                         ns
+                                                         (module-path-index-resolve require-mpi)))]
+                                           [(sym binding) (in-hash
+                                                           (hash-ref
+                                                            (shift-provides-module-path-index
+                                                             (module-provides m)
+                                                             (module-self m)
+                                                             require-mpi)
+                                                            0))])
                                (values sym binding)))
                     #hasheqv())
                 #:instantiate-phase-callback void)

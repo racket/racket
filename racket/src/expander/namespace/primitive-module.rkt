@@ -20,7 +20,7 @@
                 #:no-protected? (zero? (hash-count protected))
                 #:self mpi
                 #:provides
-                (hasheqv 0 (for/hash ([sym (in-list (instance-variable-names inst))])
+                (hasheqv 0 (for/hasheq ([sym (in-list (instance-variable-names inst))])
                              (define binding (make-module-binding mpi 0 sym))
                              (values sym
                                      (if (hash-ref protected sym #f)

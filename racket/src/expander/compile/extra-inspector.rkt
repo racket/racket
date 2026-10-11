@@ -112,7 +112,7 @@
   (define new-extra-inspectorss
     (cond
       [(or add-insp? add-extra-insp?)
-       (for/hash ([import (in-list imports)])
+       (for/hasheq ([import (in-list imports)])
          (values import
                  (let ([extra-inspectors (and extra-inspectorss
                                               (hash-ref extra-inspectorss import #f))])
@@ -123,7 +123,7 @@
       [else
        ;; Make sure every import is mapped, because w may need to distinguish
        ;; between "not accessed" and "accessed without extra inspectors"
-       (for/fold ([extra-inspectorss (or extra-inspectorss (seteq))]) ([import (in-list imports)])
+       (for/fold ([extra-inspectorss (or extra-inspectorss (hasheq))]) ([import (in-list imports)])
          (if (hash-ref extra-inspectorss import #f)
              extra-inspectorss
              (hash-set extra-inspectorss import #f)))]))

@@ -180,10 +180,10 @@
   (bulk-binding provides prefix excepts self mpi (intern-phase+space provide-phase+space) phase-level bulk-binding-registry))
 
 (define (bulk-provides-add-prefix-remove-exceptions provides prefix excepts)
-  (for/hash ([(sym val) (in-hash provides)]
-             #:unless (hash-ref excepts sym #f)
-             ;; Don't `require` non-interned
-             #:when (symbol-interned? sym))
+  (for/hasheq ([(sym val) (in-hash provides)]
+               #:unless (hash-ref excepts sym #f)
+               ;; Don't `require` non-interned
+               #:when (symbol-interned? sym))
     (values (if prefix
                 (string->symbol (format "~a~a" prefix sym))
                 sym)

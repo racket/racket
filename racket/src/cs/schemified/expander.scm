@@ -14719,7 +14719,7 @@
      bulk-binding-registry_0)))
 (define bulk-provides-add-prefix-remove-exceptions
   (lambda (provides_0 prefix_0 excepts_0)
-    (let ((table_0 hash2725))
+    (let ((table_0 hash2610))
       (let ((table_1 table_0))
         (letrec*
          ((for-loop_0
@@ -37363,7 +37363,7 @@
                                    (let ((fold-var_1
                                           (let ((fold-var_1
                                                  (cons
-                                                  (let ((table_0 hash2725))
+                                                  (let ((table_0 hash2610))
                                                     (let ((extra-inspectorss_0
                                                            (let ((table_1
                                                                   table_0))
@@ -37969,7 +37969,7 @@
                  #f)))
           (let ((new-extra-inspectorss_0
                  (if (if add-insp?_0 add-insp?_0 add-extra-insp?_0)
-                   (let ((table_0 hash2725))
+                   (let ((table_0 hash2610))
                      (let ((table_1 table_0))
                        (letrec*
                         ((for-loop_0
@@ -38018,34 +38018,33 @@
                                table_2)))))
                         (for-loop_0 table_1 imports_0))))
                    (let ((extra-inspectorss_1
-                          (let ((extra-inspectorss_1
-                                 (if extra-inspectorss_0
-                                   extra-inspectorss_0
-                                   (seteq))))
-                            extra-inspectorss_1)))
-                     (letrec*
-                      ((for-loop_0
-                        (|#%name|
-                         for-loop
-                         (lambda (extra-inspectorss_2 lst_0)
-                           (if (pair? lst_0)
-                             (let ((import_0 (unsafe-car lst_0)))
-                               (let ((rest_0 (unsafe-cdr lst_0)))
-                                 (let ((extra-inspectorss_3
-                                        (let ((extra-inspectorss_3
-                                               (if (hash-ref
-                                                    extra-inspectorss_2
+                          (if extra-inspectorss_0
+                            extra-inspectorss_0
+                            (hasheq))))
+                     (let ((extra-inspectorss_2 extra-inspectorss_1))
+                       (letrec*
+                        ((for-loop_0
+                          (|#%name|
+                           for-loop
+                           (lambda (extra-inspectorss_3 lst_0)
+                             (if (pair? lst_0)
+                               (let ((import_0 (unsafe-car lst_0)))
+                                 (let ((rest_0 (unsafe-cdr lst_0)))
+                                   (let ((extra-inspectorss_4
+                                          (let ((extra-inspectorss_4
+                                                 (if (hash-ref
+                                                      extra-inspectorss_3
+                                                      import_0
+                                                      #f)
+                                                   extra-inspectorss_3
+                                                   (hash-set
+                                                    extra-inspectorss_3
                                                     import_0
-                                                    #f)
-                                                 extra-inspectorss_2
-                                                 (hash-set
-                                                  extra-inspectorss_2
-                                                  import_0
-                                                  #f))))
-                                          (values extra-inspectorss_3))))
-                                   (for-loop_0 extra-inspectorss_3 rest_0))))
-                             extra-inspectorss_2)))))
-                      (for-loop_0 extra-inspectorss_1 imports_0))))))
+                                                    #f))))
+                                            (values extra-inspectorss_4))))
+                                     (for-loop_0 extra-inspectorss_4 rest_0))))
+                               extra-inspectorss_3)))))
+                        (for-loop_0 extra-inspectorss_2 imports_0)))))))
             (module-use*1.1 mpi_0 phase_0 new-extra-inspectorss_0 #f)))))))
 (define module-use-merge-extra-inspectorss!
   (lambda (existing-mu*_0 mu*_0)
@@ -72559,7 +72558,7 @@
                  (let ((temp8_0
                         (hasheqv
                          0
-                         (let ((table_0 hash2725))
+                         (let ((table_0 hash2610))
                            (let ((table_1 table_0))
                              (let ((lst_0 (instance-variable-names inst_0)))
                                (letrec*
@@ -75215,7 +75214,7 @@
                 (let ((temp64_0
                        (hasheqv
                         0
-                        (let ((table_0 hash2725))
+                        (let ((table_0 hash2610))
                           (let ((table_1 table_0))
                             (letrec*
                              ((for-loop_0
@@ -75366,7 +75365,7 @@
                          (if reexport?36_0
                            (hasheqv
                             0
-                            (let ((table_0 hash2725))
+                            (let ((table_0 hash2610))
                               (let ((table_1 table_0))
                                 (letrec*
                                  ((for-loop_0
