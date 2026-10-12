@@ -63,6 +63,7 @@
    [else
     (define merged-l (merge-adjacent l))
     (cond
+     [(null? merged-l) rx:empty]
      [(null? (cdr merged-l)) (car merged-l)]
      [else (rx:sequence merged-l (ormap needs-backtrack? merged-l))])]))
 

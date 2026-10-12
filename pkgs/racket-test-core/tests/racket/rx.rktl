@@ -2228,6 +2228,8 @@
 (test #f regexp-match? #"(?<=(?:ab|a))x" #"acx")
 (test #f regexp-match? #"(?<=(?:a|ab))x" #"acx")
 
+(test #t regexp-match? "(?:)(?:)" "")
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

@@ -1390,11 +1390,13 @@
       (if (null? (cdr l_0))
         (car l_0)
         (let ((merged-l_0 (merge-adjacent l_0)))
-          (if (null? (cdr merged-l_0))
-            (car merged-l_0)
-            (rx:sequence2.1
-             merged-l_0
-             (ormap_2207 needs-backtrack? merged-l_0))))))))
+          (if (null? merged-l_0)
+            'empty
+            (if (null? (cdr merged-l_0))
+              (car merged-l_0)
+              (rx:sequence2.1
+               merged-l_0
+               (ormap_2207 needs-backtrack? merged-l_0)))))))))
 (define merge-adjacent
   (lambda (l_0)
     (letrec*
