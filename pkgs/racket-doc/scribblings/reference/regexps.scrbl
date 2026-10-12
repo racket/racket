@@ -40,7 +40,8 @@ strings, using the same pattern language as either the Unix utility
 regexp matcher, and a byte-string pattern produces a byte regexp
 matcher. If a character regexp is used with a byte string or input
 port, it matches UTF-8 encodings (see @secref["encodings"]) of
-matching character streams; if a byte regexp is used with a character
+matching character streams, only on character boundaries;
+if a byte regexp is used with a character
 string, it matches bytes in the UTF-8 encoding of the string.
 
 A regular expression that is represented as a string or byte string

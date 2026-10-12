@@ -140,6 +140,11 @@
 (test (rx:regexp-replace* (rx:byte-regexp #"(?<=(..))") #"abc" #"[\\1]" #"x")
       #"a[xa]b[ab]c[bc]")
 
+(test (rx:regexp-match-positions (rx:pregexp "(?!é)(?!$)") "éé")
+      #f)
+(test (rx:regexp-match-positions (rx:pregexp "(?!é)(?!$)") (open-input-string "éé"))
+      #f)
+
 ;; Don't get stuck waiting for an unneeded byte:
 (let ()
   (define-values (i o) (make-pipe))

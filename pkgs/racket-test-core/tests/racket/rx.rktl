@@ -2200,4 +2200,9 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(test #f regexp-match-positions #px"(?!é)(?!$)" "éé")
+(test #f regexp-match-positions #px"(?!é)(?!$)" (open-input-string "éé"))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)

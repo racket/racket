@@ -2446,7 +2446,7 @@ static int regtry_port(regexp *, Scheme_Object *, Scheme_Object *, int nonblock,
 		       rxpos *, rxpos *, rxpos *, rxpos *, int *,
 		       char **, rxpos *, rxpos *, rxpos, Scheme_Object*, Scheme_Object*, rxpos, 
                        char*, rxpos, rxpos,
-		       int, int *);
+		       int, int *, rxpos *);
 static int regmatch(Regwork *rw, rxpos);
 static int regrepeat(Regwork *rw, rxpos, int);
 
@@ -2706,7 +2706,7 @@ regexec(const char *who,
       if (regtry_port(prog, port, unless_evt, nonblock, 
 		      startp, maybep, endp, match_stack, counters, stringp, &len, &space, 0, 
 		      portend, peekskip, 0, prefix, prefix_len, prefix_offset, 0, 
-                      &aborted)) {
+                      &aborted, NULL)) {
 	if (!peek) {
 	  /* Need to consume matched chars: */
 	  char *drain;
@@ -2771,6 +2771,7 @@ regexec(const char *who,
     do {
       int discard = skip - prog->maxlookback;
       int aborted = 0;
+      rxpos adv_len = 1;
 
       if (discard > skip - save_prior)
         discard = skip - save_prior;
@@ -2801,7 +2802,7 @@ regexec(const char *who,
       if (regtry_port(prog, port, unless_evt, nonblock,
 		      startp, maybep, endp, match_stack, counters, stringp, &len, &space, skip, 
 		      portend, peekskip, 0, prefix, prefix_len, prefix_offset, 1,
-                      &aborted)) {
+                      &aborted, &adv_len)) {
 	if (!peek) {
 	  char *drain;
 
@@ -2822,7 +2823,7 @@ regexec(const char *who,
 	return 1;
       } else if (aborted)
         return 0;
-      skip++;
+      skip += adv_len;
     } while (len >= skip);
 
     if (!peek) {
@@ -2847,6 +2848,36 @@ regexec(const char *who,
 
 #define NEED_INPUT(rw, v, n) if (rw->port && (((v) + (n)) > rw->input_end)) read_more_from_regport(rw, (v) + (n))
 static void read_more_from_regport(Regwork *rw, rxpos need_total);
+
+static rxpos utf8_advance_len(Regwork *rw, rxpos pos)
+/* Returns the length of a UTF-8 encoding starting at `pos`, or 1 if
+   the bytes at `pos` are not a UTF-8 encoding. Assumes that at least
+   one byte is available at `pos`. */
+{
+  int c, want, i;
+
+  c = UCHAR(rw->instr[pos]);
+  if (c < 128)
+    return 1;
+  else if ((c & 0xE0) == 0xC0)
+    want = 1;
+  else if ((c & 0xF0) == 0xE0)
+    want = 2;
+  else if ((c & 0xF8) == 0xF0)
+    want = 3;
+  else
+    return 1;
+
+  for (i = 1; i <= want; i++) {
+    NEED_INPUT(rw, pos, i + 1);
+    if (pos + i >= rw->input_end)
+      return 1;
+    if ((UCHAR(rw->instr[pos + i]) & 0xC0) != 0x80)
+      return 1;
+  }
+
+  return want + 1;
+}
 
 /*
    - regtry - try match at specific point
@@ -2907,6 +2938,7 @@ regtry(regexp *prog, char *string, int stringpos, int stringlen, rx_lazy_str_t *
 
   while (1) {
     int found;
+    rxpos adv_len;
 
     found = regmatch(rw, N_ITO_DELTA(prog->program, 1, (char *)prog));
 
@@ -2921,8 +2953,13 @@ regtry(regexp *prog, char *string, int stringpos, int stringlen, rx_lazy_str_t *
       }
       if (!stringlen)
 	return 0;
-      stringpos++;
-      --stringlen;
+      if (prog->flags & REGEXP_IS_UTF8) {
+        adv_len = utf8_advance_len(rw, stringpos);
+        string = rw->instr;
+      } else
+        adv_len = 1;
+      stringpos += adv_len;
+      stringlen = rw->input_end - stringpos;
       if (prog->regstart) {
 	unsigned char *rs = prog->regstart;
 	int c;
@@ -2939,8 +2976,13 @@ regtry(regexp *prog, char *string, int stringpos, int stringlen, rx_lazy_str_t *
           c = UCHAR(string[stringpos]);
 	  if (rs[c >> 3] & (1 << (c & 0x7)))
 	    break;
-	  stringpos++;
-	  --stringlen;
+          if (prog->flags & REGEXP_IS_UTF8) {
+            adv_len = utf8_advance_len(rw, stringpos);
+            string = rw->instr;
+          } else
+            adv_len = 1;
+	  stringpos += adv_len;
+	  stringlen = rw->input_end - stringpos;
 	}
       }
       rw->input = stringpos;      
@@ -3105,7 +3147,7 @@ regtry_port(regexp *prog, Scheme_Object *port, Scheme_Object *unless_evt, int no
 	    char **work_string, rxpos *len, rxpos *size, rxpos skip, 
 	    Scheme_Object *maxlen, Scheme_Object *peekskip, 
 	    rxpos origin, char *prefix, rxpos prefix_len, rxpos prefix_offset,
-	    int read_at_least_one, int *_aborted)
+	    int read_at_least_one, int *_aborted, rxpos *_adv_len)
 {
   int m;
   Regwork rw;
@@ -3130,6 +3172,17 @@ regtry_port(regexp *prog, Scheme_Object *port, Scheme_Object *unless_evt, int no
       && (rw.input_end == skip)
       && rw.port) {
     read_more_from_regport(&rw, rw.input_end + 1);
+  }
+
+  if (!m
+      && _adv_len
+      && !rw.aborted
+      && (prog->flags & REGEXP_IS_UTF8)
+      && (rw.input_end > skip)) {
+    /* Advance by a UTF-8 encoding, so a match starts at a character boundary */
+    rxpos adv_len;
+    adv_len = utf8_advance_len(&rw, skip);
+    *_adv_len = adv_len;
   }
   
   *work_string = rw.instr;

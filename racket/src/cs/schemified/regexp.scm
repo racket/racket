@@ -6461,57 +6461,83 @@
         (let ((matcher_0 (rx:regexp-matcher rx_0)))
           (let ((anchored?_0 (rx:regexp-anchored? rx_0)))
             (let ((start-range_0 (rx:regexp-start-range rx_0)))
-              (letrec*
-               ((loop_0
-                 (|#%name|
-                  loop
-                  (lambda (pos_1)
-                    (if (if anchored?_0 (not (= pos_1 start-pos_0)) #f)
-                      (values #f #f)
-                      (if (if start-range_0
+              (let ((increment-by-byte?_0 (rx:regexp-bytes? rx_0)))
+                (let ((next_0
+                       (|#%name|
+                        next
+                        (lambda (pos_1)
+                          (if increment-by-byte?_0
+                            (add1 pos_1)
                             (if (bytes? in_0)
-                              (= pos_1 end-pos_0)
-                              (not
-                               (lazy-bytes-before-end? in_0 pos_1 end-pos_0)))
-                            #f)
-                        (values #f #f)
-                        (if (if start-range_0
-                              (not
-                               (check-start-range
-                                start-range_0
-                                in_0
-                                pos_1
-                                end-pos_0))
-                              #f)
-                          (loop_0 (add1 pos_1))
-                          (let ((pos2_0
-                                 (|#%app|
-                                  matcher_0
-                                  in_0
-                                  pos_1
-                                  start-pos_0
-                                  end-pos_0
-                                  end-pos_0
-                                  state_0
-                                  null)))
-                            (if pos2_0
-                              (values pos_1 pos2_0)
-                              (if start-range_0
-                                (loop_0 (add1 pos_1))
-                                (if (if (bytes? in_0)
-                                      (< pos_1 end-pos_0)
-                                      (lazy-bytes-before-end?
-                                       in_0
-                                       pos_1
-                                       end-pos_0))
-                                  (let ((pos2_1 (add1 pos_1)))
-                                    (begin
-                                      (if (bytes? in_0)
-                                        (void)
-                                        (lazy-bytes-advance! in_0 pos2_1 #f))
-                                      (loop_0 pos2_1)))
-                                  (values #f #f))))))))))))
-               (loop_0 pos_0)))))))))
+                              (let ((or-part_0
+                                     (bytes-utf-8-index
+                                      in_0
+                                      1
+                                      '#\x3f
+                                      pos_1
+                                      end-pos_0)))
+                                (if or-part_0 or-part_0 end-pos_0))
+                              (lazy-bytes-utf-8-next
+                               in_0
+                               pos_1
+                               end-pos_0)))))))
+                  (letrec*
+                   ((loop_0
+                     (|#%name|
+                      loop
+                      (lambda (pos_1)
+                        (if (if anchored?_0 (not (= pos_1 start-pos_0)) #f)
+                          (values #f #f)
+                          (if (if start-range_0
+                                (if (bytes? in_0)
+                                  (= pos_1 end-pos_0)
+                                  (not
+                                   (lazy-bytes-before-end?
+                                    in_0
+                                    pos_1
+                                    end-pos_0)))
+                                #f)
+                            (values #f #f)
+                            (if (if start-range_0
+                                  (not
+                                   (check-start-range
+                                    start-range_0
+                                    in_0
+                                    pos_1
+                                    end-pos_0))
+                                  #f)
+                              (loop_0 (next_0 pos_1))
+                              (let ((pos2_0
+                                     (|#%app|
+                                      matcher_0
+                                      in_0
+                                      pos_1
+                                      start-pos_0
+                                      end-pos_0
+                                      end-pos_0
+                                      state_0
+                                      null)))
+                                (if pos2_0
+                                  (values pos_1 pos2_0)
+                                  (if start-range_0
+                                    (loop_0 (next_0 pos_1))
+                                    (if (if (bytes? in_0)
+                                          (< pos_1 end-pos_0)
+                                          (lazy-bytes-before-end?
+                                           in_0
+                                           pos_1
+                                           end-pos_0))
+                                      (let ((pos2_1 (next_0 pos_1)))
+                                        (begin
+                                          (if (bytes? in_0)
+                                            (void)
+                                            (lazy-bytes-advance!
+                                             in_0
+                                             pos2_1
+                                             #f))
+                                          (loop_0 pos2_1)))
+                                      (values #f #f))))))))))))
+                   (loop_0 pos_0)))))))))))
 (define check-must-string
   (lambda (must-string_0 in_0 pos_0 end-pos_0)
     (if (not must-string_0)
@@ -6698,6 +6724,33 @@
              (unsafe-bytes-ref in_0 pos_0)
              (lazy-bytes-ref in_0 pos_0))))
       (eq? 1 (unsafe-bytes-ref start-range_0 v_0)))))
+(define lazy-bytes-utf-8-next
+  (lambda (in_0 pos_0 end-pos_0)
+    (let ((b_0 (lazy-bytes-ref in_0 pos_0)))
+      (if (< b_0 128)
+        (add1 pos_0)
+        (let ((want_0
+               (if (= 192 (bitwise-and b_0 224))
+                 1
+                 (if (= 224 (bitwise-and b_0 240))
+                   2
+                   (if (= 240 (bitwise-and b_0 248)) 3 0)))))
+          (let ((orig-pos_0 (add1 pos_0)))
+            (letrec*
+             ((loop_0
+               (|#%name|
+                loop
+                (lambda (pos_1 want_1)
+                  (if (zero? want_1)
+                    pos_1
+                    (if (not (lazy-bytes-before-end? in_0 pos_1 end-pos_0))
+                      orig-pos_0
+                      (let ((b_1 (lazy-bytes-ref in_0 pos_1)))
+                        (if (= 128 (bitwise-and b_1 192))
+                          (let ((app_0 (add1 pos_1)))
+                            (loop_0 app_0 (sub1 want_1)))
+                          orig-pos_0))))))))
+             (loop_0 orig-pos_0 want_0))))))))
 (define FAST-STRING-LEN 64)
 (define fast-drive-regexp-match?/bytes
   (lambda (rx_0 in_0 start-pos_0 end-pos_0)

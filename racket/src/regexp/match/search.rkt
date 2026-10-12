@@ -20,6 +20,14 @@
     (define matcher (rx:regexp-matcher rx))
     (define anchored? (rx:regexp-anchored? rx))
     (define start-range (rx:regexp-start-range rx))
+    (define increment-by-byte? (rx:regexp-bytes? rx))
+    (define (next pos) (cond
+                         [increment-by-byte? (add1 pos)]
+                         [(bytes? in)
+                          (or (bytes-utf-8-index in 1 #\? pos end-pos)
+                              end-pos)]
+                         [else
+                          (lazy-bytes-utf-8-next in pos end-pos)]))
     (let loop ([pos pos])
       (cond
        [(and anchored? (not (= pos start-pos)))
@@ -31,16 +39,16 @@
         (values #f #f)]
        [(and start-range
              (not (check-start-range start-range in pos end-pos)))
-        (loop (add1 pos))]
+        (loop (next pos))]
        [else
         (define pos2 (interp matcher in pos start-pos end-pos state))
         (cond
          [pos2 (values pos pos2)]
-         [start-range (loop (add1 pos))]
+         [start-range (loop (next pos))]
          [(if (bytes? in)
               (pos . < . end-pos)
               (lazy-bytes-before-end? in pos end-pos))
-          (define pos2 (add1 pos))
+          (define pos2 (next pos))
           (unless (bytes? in)
             (lazy-bytes-advance! in pos2 #f))
           (loop pos2)]
@@ -89,3 +97,30 @@
            (if (bytes? in)
                (bytes-ref in pos)
                (lazy-bytes-ref in pos))))
+
+;; ------------------------------------------------------------------
+;; Skip over a UTF-8-encoded character:
+
+(define (lazy-bytes-utf-8-next in pos end-pos)
+  (define b (lazy-bytes-ref in pos))
+  (cond
+    [(b . < . 128) (add1 pos)]
+    [else
+     (define want
+       (cond
+         [(= #b11000000 (bitwise-and b #b11100000)) 1]
+         [(= #b11100000 (bitwise-and b #b11110000)) 2]
+         [(= #b11110000 (bitwise-and b #b11111000)) 3]
+         [else 0]))
+     (define orig-pos (add1 pos))
+     (let loop ([pos orig-pos] [want want])
+       (cond
+         [(zero? want) pos]
+         [(not (lazy-bytes-before-end? in pos end-pos))
+          orig-pos]
+         [else
+          (define b (lazy-bytes-ref in pos))
+          (cond
+            [(= #b10000000 (bitwise-and b #b11000000))
+             (loop (add1 pos) (sub1 want))]
+            [else orig-pos])]))]))
