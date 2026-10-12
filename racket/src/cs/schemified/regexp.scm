@@ -5460,15 +5460,7 @@
                             (vector-copy! state_0 n-start_0 old-state_0)
                             (void))
                           #f)
-                        (|#%app|
-                         next-m_0
-                         s_0
-                         pos_0
-                         start_0
-                         limit_0
-                         end_0
-                         state_0
-                         stack_0))))))))))
+                        (loop_0 (sub1 lb-pos_0)))))))))))
          (loop_0 (- pos_0 lb-min_0)))))))
 (define conditional/reference-matcher
   (lambda (n_0 m1_0 m2_0)

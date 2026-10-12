@@ -521,7 +521,7 @@
          [pos2
           (restore-groups state old-state n-start num-n)]
          [else
-          (next-m s pos start limit end state stack)])]))))
+          (loop (sub1 lb-pos))])]))))
 
 (define (conditional/reference-matcher n m1 m2)
   (lambda (s pos start limit end state stack)

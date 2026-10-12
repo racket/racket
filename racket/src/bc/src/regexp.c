@@ -2905,6 +2905,7 @@ regtry(regexp *prog, char *string, int stringpos, int stringlen, rx_lazy_str_t *
   rw->input_end = stringpos + stringlen;
   rw->input_start = stringorigin;
   rw->input_min = stringorigin - prefix_len;
+  rw->look_end = -1;
   rw->startp = startp;
   rw->maybep = maybep;
   rw->endp = endp;
@@ -3595,8 +3596,13 @@ regmatch(Regwork *rw, rxpos prog)
 	return(0);
       }
       break;
-    case END:
     case LOOKE:
+      if ((rw->look_end >= 0) && (is != rw->look_end))
+        return 0; /* lookbehind must end at the starting position */
+      rw->input = is;
+      return(1);		/* Success! */
+      break;
+    case END:
       rw->input = is;
       return(1);		/* Success! */
       break;
@@ -3683,7 +3689,7 @@ regmatch(Regwork *rw, rxpos prog)
     case LOOKBF:
       {
 	int t, no, no_start, no_end;
-	rxpos save, next;
+	rxpos save, next, save_look_end;
         int stack_pos, ok;
 	next = NEXT_OP(scan);
 	t = ((the_op != LOOKF) && (the_op != LOOKBF));
@@ -3693,22 +3699,23 @@ regmatch(Regwork *rw, rxpos prog)
 	} else
 	  no_start = no_end = 0;
 	save = is;
+        save_look_end = rw->look_end;
 	if (no_end) {
           /* lookbehind */
           int found = 0;
 	  for (no = no_start; no <= no_end; no++) {
 	    if (is - rw->input_min >= no) {
 	      rw->input = save - no;
+              rw->look_end = save;
               stack_pos = match_push(rw);
               ok = regmatch(rw, next);
               match_pop(rw, stack_pos, ok);
+              rw->look_end = save_look_end;
 	      if (ok) {
-		if (rw->input == save) {
-		  /* Match */
-		  if (!t) return 0;
-                  found = 1;
-		  break;
-		}
+                /* Match */
+                if (!t) return 0;
+                found = 1;
+                break;
 	      }
 	    } else
 	      break;
@@ -3720,9 +3727,11 @@ regmatch(Regwork *rw, rxpos prog)
 	} else {
           /* lookahead */
 	  rw->input = is;
+          rw->look_end = -1;
           stack_pos = match_push(rw);
           ok = regmatch(rw, next);
           match_pop(rw, stack_pos, ok);
+          rw->look_end = save_look_end;
 	  if (ok) {
 	    if (!t) return 0;
 	  } else {

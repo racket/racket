@@ -223,6 +223,7 @@ typedef struct Regwork {
   rxpos input, input_end, input_start; /* String-input pointer. */
   rxpos input_min;        /* input_start minus prefix_size */
   rxpos boi;	          /* Beginning of input, for ^ check. */
+  rxpos look_end;         /* Required end for lookbehind, or -1 */
   rxpos *startp;	  /* Pointer to startp array. */
   rxpos *maybep;	  /* Pointer to tentative startp array. */
   rxpos *endp;		  /* Ditto for endp. */

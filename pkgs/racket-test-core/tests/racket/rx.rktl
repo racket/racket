@@ -2214,6 +2214,20 @@
 (test #t regexp-match? #px"[\u0406-\u04F0]" "\u04F0")
 (test #f regexp-match? #px"[\u0406-\u04F0]" "\u04F1")
 
+(test #f regexp-match? "(?<!.)x" "éx")
+(test #f regexp-match? #"(?<!(?:ab|a))x" #"abx")
+(test #f regexp-match? #"(?<!(?:a|ab))x" #"abx")
+(test #f regexp-match? #"(?<!(?:ab|a))x" #"ax")
+(test #f regexp-match? #"(?<!(?:a|ab))x" #"ax")
+(test #t regexp-match? #"(?<!(?:ab|a))x" #"acx")
+(test #t regexp-match? #"(?<!(?:a|ab))x" #"acx")
+(test #t regexp-match? #"(?<=(?:ab|a))x" #"abx")
+(test #t regexp-match? #"(?<=(?:a|ab))x" #"ax")
+(test #t regexp-match? #"(?<=(?:ab|a))x" #"ax")
+(test #t regexp-match? #"(?<=(?:a|ab))x" #"abx")
+(test #f regexp-match? #"(?<=(?:ab|a))x" #"acx")
+(test #f regexp-match? #"(?<=(?:a|ab))x" #"acx")
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
