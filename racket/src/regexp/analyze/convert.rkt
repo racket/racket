@@ -68,8 +68,10 @@
     (cond
      [(null? l) rx:never]
      [else
-      (let ([start (caar l)]
-            [end (cdar l)])
+      ;; Surrogates are not characters, so move an endpoint
+      ;; that is a surrogate to the nearest character
+      (let ([start (if (<= #xD800 (caar l) #xDFFF) #xE000 (caar l))]
+            [end (if (<= #xD800 (cdar l) #xDFFF) #xD7FF (cdar l))])
         ;; If this range spans different-sized encodings, split it up
         (define seg-end
           (cond
@@ -78,6 +80,9 @@
            [(start . <= . #xFFFF) #xFFFF]
            [(start . <= . #x1FFFFF) #x1FFFFF]))
         (cond
+         [(start . > . end)
+          ;; Range was only surrogates
+          (loop (cdr l))]
          [(end . > . seg-end)
           (loop (cons (cons start seg-end)
                       (cons (cons (add1 seg-end) end)
@@ -163,7 +168,7 @@
     
     ;; Fill out [p0000,qFFFF]
     (define p-through-q
-      (if (= (add1 p) q)
+      (if (p . > . q)
           rx:never
           (rx-sequence (cons
                         (rx-range (range-add-span empty-range p q) 255)

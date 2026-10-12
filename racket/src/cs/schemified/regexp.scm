@@ -3328,8 +3328,8 @@
         (lambda (l_0)
           (if (null? l_0)
             'never
-            (let ((start_0 (caar l_0)))
-              (let ((end_0 (cdar l_0)))
+            (let ((start_0 (if (<= 55296 (caar l_0) 57343) 57344 (caar l_0))))
+              (let ((end_0 (if (<= 55296 (cdar l_0) 57343) 55295 (cdar l_0))))
                 (let ((start_1 start_0))
                   (let ((seg-end_0
                          (if (<= start_1 127)
@@ -3339,28 +3339,32 @@
                              (if (<= start_1 65535)
                                65535
                                (if (<= start_1 2097151) 2097151 (void)))))))
-                    (if (> end_0 seg-end_0)
-                      (loop_0
-                       (let ((app_0 (cons start_1 seg-end_0)))
-                         (cons
-                          app_0
-                          (let ((app_1 (cons (add1 seg-end_0) end_0)))
-                            (cons app_1 (cdr l_0))))))
-                      (if (<= end_0 127)
-                        (let ((app_0
-                               (rx-range
-                                (range-union null (list (cons start_1 end_0)))
-                                255)))
-                          (rx-alts app_0 (loop_0 (cdr l_0)) 255))
-                        (let ((app_0
-                               (let ((app_0
-                                      (string->bytes/utf-8
-                                       (string (integer->char start_1)))))
-                                 (bytes-range
-                                  app_0
-                                  (string->bytes/utf-8
-                                   (string (integer->char end_0)))))))
-                          (rx-alts app_0 (loop_0 (cdr l_0)) 255)))))))))))))
+                    (if (> start_1 end_0)
+                      (loop_0 (cdr l_0))
+                      (if (> end_0 seg-end_0)
+                        (loop_0
+                         (let ((app_0 (cons start_1 seg-end_0)))
+                           (cons
+                            app_0
+                            (let ((app_1 (cons (add1 seg-end_0) end_0)))
+                              (cons app_1 (cdr l_0))))))
+                        (if (<= end_0 127)
+                          (let ((app_0
+                                 (rx-range
+                                  (range-union
+                                   null
+                                   (list (cons start_1 end_0)))
+                                  255)))
+                            (rx-alts app_0 (loop_0 (cdr l_0)) 255))
+                          (let ((app_0
+                                 (let ((app_0
+                                        (string->bytes/utf-8
+                                         (string (integer->char start_1)))))
+                                   (bytes-range
+                                    app_0
+                                    (string->bytes/utf-8
+                                     (string (integer->char end_0)))))))
+                            (rx-alts app_0 (loop_0 (cdr l_0)) 255))))))))))))))
      (loop_0 args_0))))
 (define bytes-range
   (lambda (start-str_0 end-str_0)
@@ -3418,7 +3422,7 @@
                                     app_0
                                     (subbytes end-str_0 (add1 common_0))))))))
                           (let ((p-through-q_0
-                                 (if (= (add1 p_0) q_0)
+                                 (if (> p_0 q_0)
                                    'never
                                    (rx-sequence
                                     (let ((app_0
