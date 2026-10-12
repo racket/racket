@@ -2230,6 +2230,11 @@
 
 (test #t regexp-match? "(?:)(?:)" "")
 
+(test #t regexp-match? "(?<=b(?=a))a$" "ba")
+(test #t regexp-match? "(?<=b)(?=a)a$" "ba")
+(test #t regexp-match? "(?<=b(?(?=a)|c))a$" "ba")
+(test #t regexp-match? "(?<=b(?(?=a)|c))a$" "bca")
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

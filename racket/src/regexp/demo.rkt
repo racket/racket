@@ -6,7 +6,6 @@
     (unless (equal? b v)
       (error 'test "failed: ~s => ~s" 'expr b))))
 
-
 (test (rx:regexp-match "" (open-input-string "123") 4)
       #f)
 (test (rx:regexp-match-peek "" (open-input-string "123") 4)
