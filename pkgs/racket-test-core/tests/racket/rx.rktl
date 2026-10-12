@@ -2235,6 +2235,10 @@
 (test #t regexp-match? "(?<=b(?(?=a)|c))a$" "ba")
 (test #t regexp-match? "(?<=b(?(?=a)|c))a$" "bca")
 
+(test #f regexp-match? #px"^\\p{C}$" "\U1F600")
+(test #t regexp-match? #px"^\\p{C}$" "\uE000")
+(test #t regexp-match? #px"^\\p{Co}$" "\uE000")
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

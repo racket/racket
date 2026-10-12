@@ -1915,7 +1915,7 @@
                                        (if (unsafe-fx< index_0 38)
                                          'co
                                          (if (unsafe-fx< index_0 39)
-                                           '(cc cf cs cn so)
+                                           '(cc cf cs cn co)
                                            #t)))))))))))
                     (let ((prop-negated?_0 (= p-c_0 80)))
                       (values

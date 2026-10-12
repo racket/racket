@@ -67,7 +67,7 @@
         [(#"Cs") 'cs]
         [(#"Cn") 'cn]
         [(#"Co") 'co]
-        [(#"C") '(cc cf cs cn so)]
+        [(#"C") '(cc cf cs cn co)]
         [(#".") #t]
         [else (parse-error s pos2 config
                            "unrecognized property name in `\\~a{}`: `~a`"
