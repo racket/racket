@@ -22,6 +22,18 @@
   $ "racket -l racket/base -l tests/pkg/test-catalogs-api -e '(test-api)'"
   =stderr> ""
 
+  $ "raco pkg search pkg-test1"
+  =stdout> #rx"pkg-test1"
+
+  $ "raco pkg search pkg-test"
+  =stdout> #px"pkg-test1.*pkg-test2"
+
+  $ "raco pkg search nosuchthinghere"
+  =stdout> "No packages found\n"
+
+  $ "raco pkg search"
+  =stderr> #rx"no search terms"
+
   (define d (make-temporary-file "pkg-~a" 'directory))
   (define db (build-path d "catalog.sqlite"))
   (define dir (build-path d "catalog"))
@@ -49,6 +61,9 @@
   $ "raco pkg catalog-show fish" =stdout> #rx"crash-helmet on platform 'windows"
   $ "raco pkg catalog-show fish" =stdout> #rx"Ring: 2"
   $ "raco pkg catalog-show --modules fish" =stdout> #rx"fish/food"
+
+  $ "raco pkg search whale"
+  =stdout> #rx"fish"
 
   $ (~a "raco pkg catalog-copy " (path->string db) " " (path->string dir))
   $ (~a "raco pkg config --set catalogs file://" (path->string dir))
