@@ -178,8 +178,8 @@
     (λ (o) (display "#lang info\n(define collection \"doctortest\")\n" o)))
 
   $ (~a "raco pkg doctor " (path->string doctor-d))
-  =stdout> #rx"missing +author"
   =exit> 1
+  =stdout> #rx"missing +author"
 
   (call-with-output-file (build-path doctor-d "info.rkt")
     (λ (o)
@@ -198,6 +198,7 @@
   =stdout> #rx"No problems found"
 
   $ "raco pkg doctor /no/such/dir-xyz"
+  =exit> 1
   =stderr> #rx"no usable info.rkt"
 
   $ (~a "raco pkg archive " archive-d " pkg-test1")
