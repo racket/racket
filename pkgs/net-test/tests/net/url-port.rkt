@@ -218,7 +218,7 @@
         (custodian-shutdown-all server-cust)))
   (define request-line
     (match (sync/timeout 30 request-ch)
-      [#f (error 'test-fragment-stripped "timed out waiting for request line])
+      [#f (error 'test-fragment-stripped "timed out waiting for request line")]
       [line line]))
   (test
    (regexp-match? #rx"^GET /index\.html HTTP" request-line)
