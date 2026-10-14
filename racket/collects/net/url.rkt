@@ -218,15 +218,8 @@
     (ensure-non-empty
      (url->string
       (if (and proxy (not (proxy-tunneled? url)))
-          url
-          ;; RFCs 1945 and 2616 say:
-          ;;   Note that the absolute path cannot be empty; if none is present in
-          ;;   the original URI, it must be given as "/" (the server root).
-          (let-values ([(abs? path)
-                        (if (null? (url-path url))
-                            (values #t (list (make-path/param "" '())))
-                            (values (url-path-absolute? url) (url-path url)))])
-            (make-url #f #f #f #f abs? path (url-query url) #f))))))
+          (struct-copy url url [fragment #f])
+          (url->http-path-url url)))))
 
   (hc:http-conn-send! hc access-string
                       #:method (if get? #"GET" #"POST")
@@ -470,12 +463,8 @@
           (ensure-non-empty
            (url->string
             (if (and proxy (not (proxy-tunneled? url)))
-                url
-                (make-url #f #f #f #f
-                          (url-path-absolute? url)
-                          (url-path url)
-                          (url-query url)
-                          #f))))])
+                (struct-copy url url [fragment #f])
+                (url->http-path-url url))))])
     (hc:http-conn-send! hc access-string
                         #:method method
                         #:headers strings
@@ -488,6 +477,15 @@
   (if (string=? "" s)
       "/"
       s))
+
+;; Path/query only, no fragment; empty path -> "/" (RFCs 1945/2616).
+;; Fragment is omitted per RFC 3986 §3.5 (not sent on the wire).
+(define (url->http-path-url url)
+  (define-values (abs? path)
+    (if (null? (url-path url))
+        (values #t (list (make-path/param "" '())))
+        (values (url-path-absolute? url) (url-path url))))
+  (make-url #f #f #f #f abs? path (url-query url) #f))
 
 (provide (all-from-out "url-string.rkt"))
 
@@ -554,11 +552,7 @@
    (url-host u)
    (ensure-non-empty
     (url->string
-     (make-url #f #f #f #f
-               (url-path-absolute? u)
-               (url-path u)
-               (url-query u)
-               #f)))
+     (url->http-path-url u)))
    #:ssl?
    (if (equal? "https" (url-scheme u))
      (current-https-protocol)
