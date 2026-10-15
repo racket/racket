@@ -158,17 +158,15 @@
            (eq-hashtable-ref props prop default)]))
       default))
 
-(define (struct-procedure-property-ref rtd default)
-  (if (racket-rtd? rtd)
-      (let ([v (racket-rtd-procedure rtd)])
-        (if (pair? v) (car v) v))
-      default))
+(define (struct-procedure-property-ref rtd)
+  (and (racket-rtd? rtd)
+       (let ([v (racket-rtd-procedure rtd)])
+         (if (pair? v) (car v) v))))
 
-(define (struct-procedure-arity-property-ref rtd default)
-  (if (racket-rtd? rtd)
-      (let ([v (racket-rtd-arity rtd)])
-        (if (pair? v) (car v) v))
-      default))
+(define (struct-procedure-arity-property-ref rtd)
+  (and (racket-rtd? rtd)
+       (let ([v (racket-rtd-arity rtd)])
+         (if (pair? v) (car v) v))))
 
 (define (struct-property-set! prop rtd val)
   (let ([props (racket-rtd-props rtd)])
@@ -345,10 +343,10 @@
                                                         (+ v (struct-type-total*-field-count parent-rtd*))
                                                         v)))
                                              (and parent-rtd*
-                                                  (struct-procedure-property-ref parent-rtd* #f)))]
+                                                  (struct-procedure-property-ref parent-rtd*)))]
                [(eq? rtd-or-query 'arity) (or arity-val
                                               (and parent-rtd*
-                                                   (struct-procedure-arity-property-ref parent-rtd* #f)))]
+                                                   (struct-procedure-arity-property-ref parent-rtd*)))]
                [(eq? rtd-or-query 'props) (if install-table?
                                               props-table
                                               #f)]

@@ -1002,4 +1002,10 @@
 
 ;; ----------------------------------------
 
+(let ()
+  (struct foo ())
+  (err/rt-test ((foo) 1) exn:fail:contract? #rx"not a procedure"))
+
+;; ----------------------------------------
+
 (report-errs)

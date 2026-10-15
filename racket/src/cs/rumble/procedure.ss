@@ -114,11 +114,11 @@
            (wrong-arity-wrapper orig-f))]
       [(#%$record? f)
        (let* ([rtd (record-rtd f)]
-              [v (struct-procedure-property-ref rtd none)])
+              [v (struct-procedure-property-ref rtd)])
          (cond
-           [(eq? v none) (fail-k orig-f)]
+           [(not v) (fail-k orig-f)]
            [(fixnum? v)
-            (let ([a (struct-procedure-arity-property-ref rtd #f)])
+            (let ([a (struct-procedure-arity-property-ref rtd)])
               (cond
                 [(and a n-args (not (bitwise-bit-set? (unsafe-struct*-ref f a) n-args)))
                  (wrong-arity-wrapper orig-f)]
@@ -160,7 +160,7 @@
                     success-k
                     wrong-arity-wrapper))]
            [else
-            (let ([a (struct-procedure-arity-property-ref rtd #f)])
+            (let ([a (struct-procedure-arity-property-ref rtd)])
               (cond
                 [(and a n-args (not (bitwise-bit-set? (unsafe-struct*-ref f a) n-args)))
                  (wrong-arity-wrapper orig-f)]
@@ -200,7 +200,7 @@
      [(position-based-mutator? f)
       (position-based-mutator-name f)]
      [else
-      (let* ([v (struct-procedure-property-ref (record-rtd f) #f)])
+      (let* ([v (struct-procedure-property-ref (record-rtd f))])
         (cond
          [(fixnum? v)
           (let ([v (unsafe-struct-ref f v)])
@@ -240,7 +240,7 @@
        [(position-based-mutator? f)
         default-realm]
        [else
-        (let* ([v (struct-procedure-property-ref (record-rtd f) #f)])
+        (let* ([v (struct-procedure-property-ref (record-rtd f))])
           (cond
             [(fixnum? v)
              (let ([v (unsafe-struct-ref f v)])
@@ -295,11 +295,11 @@
                  (struct-property-ref prop:incomplete-arity rtd #f))
             0]
            [else
-            (let* ([a (struct-procedure-arity-property-ref rtd #f)])
+            (let* ([a (struct-procedure-arity-property-ref rtd)])
               (cond
                [a (bitwise-arithmetic-shift-right (unsafe-struct*-ref f a) shift)]
                [else
-                (let ([v (struct-procedure-property-ref rtd #f)])
+                (let ([v (struct-procedure-property-ref rtd)])
                   (cond
                    [(fixnum? v)
                     (proc-arity-mask (unsafe-struct-ref f v) shift 0)]
@@ -323,12 +323,12 @@
       (cond
        [(struct-property-ref prop:incomplete-arity rtd #f)
         #t]
-       [(struct-procedure-arity-property-ref rtd #f)
+       [(struct-procedure-arity-property-ref rtd)
         ;; Anything with `prop:procedure-arity` has to have `prop:incomplete-arity`
         ;; if the procedure's arity is not complete
         #f]
        [else
-        (let ([v (struct-procedure-property-ref rtd #f)])
+        (let ([v (struct-procedure-property-ref rtd)])
           (cond
            [(fixnum? v)
             (procedure-incomplete-arity? (unsafe-struct-ref f v))]
@@ -352,7 +352,7 @@
       #f]
      [else
       (let* ([rtd (record-rtd f)]
-             [v (struct-procedure-property-ref rtd #f)])
+             [v (struct-procedure-property-ref rtd)])
         (cond
          [(fixnum? v)
           (let ([v (unsafe-struct-ref f v)])
@@ -407,9 +407,9 @@
     (procedure-result-arity (strip-impersonator p))]
    [(record? p)
     (let* ([rtd (record-rtd p)]
-           [v (struct-procedure-property-ref rtd none)])
+           [v (struct-procedure-property-ref rtd)])
       (cond
-       [(eq? v none) #f]
+       [(not v) #f]
        [(fixnum? v)
         (procedure-result-arity (unsafe-struct-ref p v))]
        [(eq? v 'unsafe)
@@ -483,7 +483,7 @@
         (procedure-is-method-by-name? f))]
    [(record? f)
     (or (method-arity-error? f)
-        (let ([v (struct-procedure-property-ref (record-rtd f) #f)])
+        (let ([v (struct-procedure-property-ref (record-rtd f))])
           (cond
            [(fixnum? v)
             (procedure-is-method? (unsafe-struct-ref f v))]
@@ -549,7 +549,7 @@
      [(method-arity-error? f) #f]
      [(reduced-arity-procedure? f) #f]
      [else
-      (let ([v (struct-procedure-property-ref (record-rtd f) #f)])
+      (let ([v (struct-procedure-property-ref (record-rtd f))])
         (cond
          [(fixnum? v)
           (arity-string-maker (unsafe-struct-ref f v))]
@@ -947,7 +947,7 @@
           ;; `i` from `self-p`, not from `p`, so that any interpositions
           ;; on that access are performed.
           (let ([v (and (record? p)
-                        (struct-procedure-property-ref (record-rtd p) #f))])
+                        (struct-procedure-property-ref (record-rtd p)))])
             (cond
              [(integer? v)
               (apply (unsafe-struct-ref self-p v) args)]
