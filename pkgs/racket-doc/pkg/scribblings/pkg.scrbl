@@ -1135,6 +1135,22 @@ for @nonterm{key}.
          #:changed "9.0.0.2" @elem{Added @exec{network-timeout}.}]}
 
 
+@subcommand{@command/toc{search} @nonterm{term} ...
+--- Searches @tech{package catalogs} for packages whose name or
+    description matches any of the @nonterm{term}s, listing the best
+    matches first.
+
+    A package is ranked by its best term match: a match of the term as
+    a prefix of the package name counts most, a match anywhere in the
+    name counts less, and a match in the description counts least.
+    Packages with the same rank are listed alphabetically.
+
+ @itemlist[
+ @item{@DFlag{catalog} @nonterm{catalog} --- Searches @nonterm{catalog}s instead of the currently configured
+       @tech{package catalogs}. This flag can be provided multiple times. The catalogs are tried in the order provided.}
+ ]
+}
+
 @subcommand{@command/toc{catalog-show} @nonterm{option} ... @nonterm{package-name} ...
 --- Consults @tech{package catalogs} for a package (that is not necessarily installed)
     and displays the catalog's information for the package, such as its source URL and
