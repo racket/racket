@@ -786,6 +786,22 @@
 (define* _string/utf-8
   (make-ctype _bytes+nul
     (false-or-op string->bytes/utf-8) (false-or-op bytes->string/utf-8)))
+(define (string->immobile-utf-8 s)
+  (and s
+       (let* ([bstr (string->bytes/utf-8 s)]
+              [len (bytes-length bstr)]
+              [p (malloc (add1 len) 'atomic-interior)])
+         (memcpy p bstr len)
+         (ptr-set! p _byte len 0)
+         p)))
+(provide _string/utf-8/immobile)
+(define-fun-syntax _string/utf-8/immobile
+  (syntax-id-rules ()
+    [_ (type: _pointer
+        ;; Keep the converted pointer as an argument to the underlying call,
+        ;; so the allocation stays live through callbacks and collections.
+        pre: (s => (string->immobile-utf-8 s))
+        post: (p => (cast p _pointer _string/utf-8)))]))
 (define* _string/locale
   (make-ctype _bytes+nul
     (false-or-op string->bytes/locale) (false-or-op bytes->string/locale)))

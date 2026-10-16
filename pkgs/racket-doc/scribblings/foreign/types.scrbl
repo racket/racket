@@ -370,6 +370,27 @@ Types that correspond to (character) strings on the Racket side and
 a transformation on the content of the string.  As usual, the types
 treat @racket[#f] as @cpp{NULL} and vice versa.}
 
+@defthing[_string/utf-8/immobile ctype?]{
+
+Like @racket[_string/utf-8], but the Racket-to-C conversion allocates
+the UTF-8 bytes and a nul terminator with @racket[malloc] using
+@racket['atomic-interior]. The resulting memory is managed by the
+garbage collector, but its address does not change during a garbage
+collection. This type is useful when a foreign call can trigger a
+garbage collection, including through a callback or
+@racket[#:in-original-place?].
+
+When used in @racket[_fun], the allocation is kept reachable during
+the foreign call. If foreign code retains the pointer after the call, the allocation must be kept
+reachable separately; retaining the original Racket string does not
+retain the converted copy. The C-to-Racket conversion is the same as
+for @racket[_string/utf-8]. When using @racket[_cprocedure] directly,
+use @racket[_pointer] as the argument type, convert the string to a pointer
+with @racket[cast], and keep that pointer reachable for the duration of
+the call.
+
+@history[#:added "9.4.0.2"]}
+
 @defthing*[([_string*/utf-8 ctype?]
             [_string*/latin-1 ctype?]
             [_string*/locale ctype?])]{

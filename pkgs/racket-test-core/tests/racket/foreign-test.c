@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 #include <stdarg.h>
 #include <errno.h>
 #ifdef USE_THREAD_TEST
@@ -14,6 +15,11 @@ typedef unsigned char byte;
 #endif
 
 X void* return_null() { return NULL; }
+
+X int strings_equal_after_callback(const char *a, const char *b, void (*cb)()) {
+  cb();
+  return ((!a || !b) ? a == b : strcmp(a, b) == 0);
+}
 
 X int  add1_int_int   (int  x) { return x + 1; }
 X int  add1_byte_int  (byte x) { return x + 1; }
