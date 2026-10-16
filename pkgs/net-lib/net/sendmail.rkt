@@ -32,8 +32,9 @@
   (when (null? all-recipients)
     (error who "no mail recipients were specified"))
   (define-values [p pout pin perr]
-    ;; use -i, so "." lines are not a problem
-    (apply subprocess #f #f #f (force sendmail-program-file) "-i" all-recipients))
+    ;; use -i, so "." lines are not a problem, and "--", so recipients
+    ;; that start with "-" are not parsed as options
+    (apply subprocess #f #f #f (force sendmail-program-file) "-i" "--" all-recipients))
   (close-input-port pout)
   (close-input-port perr)
   (port-count-lines! pin)
