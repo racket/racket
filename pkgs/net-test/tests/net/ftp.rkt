@@ -11,6 +11,7 @@
     (flush-output out))
   (define (feeder)
     (define-values [ip op] (tcp-accept listener))
+    (tcp-close listener)
     (for-each thread-wait
               (list (thread (λ () (feed text op) (close-output-port op)))
                     (thread (λ () (feed ip dest) (close-input-port ip))))))
@@ -87,7 +88,14 @@
         (test (for ([immediate-failure? '(#t #f)])
                 (define bad-custodian (make-custodian))
                 (parameterize ([current-custodian bad-custodian])
-                  (define bad-listener (tcp-listen 0))
+                  (define bad-listener (let loop ([tries 3])
+                                         (with-handlers ([exn:fail?
+                                                          (lambda (e)
+                                                            (if (zero? tries)
+                                                                (raise e)
+                                                                (begin (sleep 0.1)
+                                                                       (loop (sub1 tries)))))])
+                                           (tcp-listen 0))))
                   (define bad-port (let-values ([(_1 p _2 _3) (tcp-addresses bad-listener #t)]) p))
                   (thread (lambda ()
                             (let loop ()
