@@ -3,11 +3,13 @@
          racket/format
          racket/string
          racket/file
+         racket/path
          racket/runtime-path
          "cmdline.rkt")
 
 (define skip-unpack? #f)
 (define skip-config? #f)
+(define parallel-spec (make-parameter ""))
 
 (define package-name
   (build-command-line
@@ -16,6 +18,7 @@
     (set! skip-unpack? #t)]
    [("--skip-config") "Skip `configure` step"
     (set! skip-config? #t)]
+   [("-j") N "Run make with `-j N`" (parallel-spec (~a " -j " N))]
    #:args (package-name)
    package-name))
 
@@ -93,9 +96,11 @@
                          (find-package package-name #f)))
      (define dir (find-package package-name #t #t))
      (when dir
-       (printf "Removing ~a" dir)
+       (printf "Removing ~a\n" dir)
        (delete-directory/files dir))
-     (system/show (~a "tar zxf " archive))]))
+     (define zip-flag (cond [(equal? #".xz" (path-get-extension archive)) "J"]
+                            [else "z"]))
+     (system/show (format "tar ~axf ~a" zip-flag archive))]))
 
 (define package-dir (find-package package-name #t))
 
@@ -477,7 +482,7 @@
                 #:env [env null]
                 #:configure-exe [exe #f]
                 #:configure [args null]
-                #:make [make "make"]
+                #:make [make (~a "make" (parallel-spec))]
                 #:make-install [make-install (~a make " install")]
                 #:setup [setup null]
                 #:patches [patches null]
