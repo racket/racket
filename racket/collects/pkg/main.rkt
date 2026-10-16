@@ -587,6 +587,20 @@
                            #:original original
                            #:quiet? quiet?)))]
           ;; ----------------------------------------
+          [doctor
+           "Check a package directory for metadata problems"
+           #:usage-help "Checks the metadata of the package in <dir>,"
+                        "which defaults to the current directory; the"
+                        "fields checked are the ones the package catalog"
+                        "surfaces on a package's page"
+           #:args pkg-dir
+           (when (pair? (cdr pkg-dir))
+             ((current-pkg-error) "expected at most one <dir>"))
+           (parameterize ([current-pkg-error (pkg-error 'doctor)])
+             (pkg-doctor
+              (path->complete-path
+               (if (null? pkg-dir) (current-directory) (car pkg-dir)))))]
+          ;; ----------------------------------------
           [config
            "View and modify the package manager's configuration"
            #:usage-help "Shows value for <key>, shows values for all <key>s if"
