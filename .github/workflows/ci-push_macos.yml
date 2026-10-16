@@ -20,7 +20,7 @@ jobs:
       matrix:
         cify: [nocify]
 
-    runs-on: macos-14
+    runs-on: macos-15
     env:
       RACKET_EXTRA_CONFIGURE_ARGS: ""
 
@@ -71,7 +71,7 @@ jobs:
       matrix:
         cify: [nocify]
 
-    runs-on: macos-14
+    runs-on: macos-15
 
     needs: build-racketcgc
 
@@ -130,7 +130,7 @@ jobs:
         path: ${{ github.workspace }}/racket3m-macos-${{ matrix.cify }}-aarch64_git${{ github.sha }}.tar.bz2
 
   build-racketcs:
-    runs-on: macos-14
+    runs-on: macos-15
     needs: build-racketcgc
 
     steps:
@@ -177,7 +177,7 @@ jobs:
         path: ${{ github.workspace }}/racketcs-macos-aarch64_git${{ github.sha }}.tar.bz2
 
   build-ios:
-    runs-on: macos-14
+    runs-on: macos-15
     needs: build-racketcs
     steps:
       - uses: actions/checkout@v7
@@ -211,7 +211,7 @@ jobs:
       matrix:
         cify: [nocify]
 
-    runs-on: macos-14
+    runs-on: macos-15
 
     needs: build-racketcgc
 
@@ -242,7 +242,7 @@ jobs:
       matrix:
         cify: [nocify]
 
-    runs-on: macos-14
+    runs-on: macos-15
 
     needs: build-racket3m
 
@@ -268,7 +268,7 @@ jobs:
         run: bash .github/scripts/run-racket-tests.sh
 
   test-cs:
-    runs-on: macos-14
+    runs-on: macos-15
 
     needs: build-racketcs
 
