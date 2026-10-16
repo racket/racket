@@ -493,6 +493,21 @@
                             #:full-checksum? full-checksum
                             #:directory? dir)))))]
           ;; ----------------------------------------
+          [outdated
+           "Report installed packages that are not up to date"
+           #:once-any
+           scope-flags ...
+           #:multi
+           catalog-flags ...
+           #:args pkg
+           (call-with-package-scope
+            'outdated scope scope-dir installation user #f #f #f #f
+            (lambda ()
+              (with-pkg-lock/read-only
+               (with-catalogs catalog
+                 (parameterize ([current-pkg-error (pkg-error 'outdated)])
+                   (pkg-outdated pkg))))))]
+          ;; ----------------------------------------
           [migrate
            "Install packages installed for other version/name"
            #:once-any
