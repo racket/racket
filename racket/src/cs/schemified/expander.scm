@@ -16453,7 +16453,8 @@
        (lambda (e_0)
          (filter
           values
-          (map_2353 syntax-srcloc$1 (|#%app| 1/exn:fail:syntax-exprs e_0))))))
+          (let ((app_0 (error-syntax->srcloc-handler)))
+            (map_2353 app_0 (|#%app| 1/exn:fail:syntax-exprs e_0)))))))
      #f
      #f
      '(0)
@@ -19397,7 +19398,7 @@
                   (lambda (s_0) (error "bad syntax:" s_0)))))
             (lambda (t_0) v_0))))))))
 (define 1/make-set!-transformer
-  (let ((finish915
+  (let ((finish916
          (make-struct-type-install-properties
           '(set!-transformer)
           1
@@ -19419,11 +19420,11 @@
             #f
             '(1 . 0)
             'make-struct-type
-            (finish915 'proc)
-            (finish915 'arity)
+            (finish916 'proc)
+            (finish916 'arity)
             #f
             |#%system-inspector|)))
-      (let ((effect916 (finish915 struct:set!-transformer_0)))
+      (let ((effect917 (finish916 struct:set!-transformer_0)))
         (let ((set!-transformer1_0
                (|#%name|
                 set!-transformer
