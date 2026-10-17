@@ -853,11 +853,18 @@
                                          "-Dtests=disabled"))
                           #:make (meson-make)
                           #:make-install (meson-install)
-                          #:env cxx-env)]
+                          #:env (if linux?
+                                    (add-flag cxx-env
+                                              "LDFLAGS"
+                                              (~a "-Wl,-rpath," dest "/lib"))
+                                    cxx-env))]
     [("fribidi") (config #:configure '("--disable-docs"))]
     [("pango") (config #:depends '("cairo" "harfbuzz" "fribidi")
                        #:env (cond
                                [win? path-flags]
+                               [linux? (add-flag null
+                                                 "LDFLAGS"
+                                                 (~a "-Wl,-rpath," dest "/lib"))]
                                [else '()])
                        #:configure-exe (meson-exe)
                        #:use-cross-file (meson-cross-file)
