@@ -272,7 +272,9 @@
 	[out (open-output-bytes)])
     (copy-port in out)
     (test #t 'copy-same? (bytes=? s (get-output-bytes out))))
-  (let* ([a (subbytes s 0 (max 1 (random (bytes-length s))))]
+  ;; leave at least two bytes after `a`, so that `c` is not empty; reading
+  ;; an empty `c` from a pipe that is not closed would block forever
+  (let* ([a (subbytes s 0 (max 1 (random (sub1 (bytes-length s)))))]
 	 [b (subbytes s (bytes-length a) (+ (bytes-length a)
 					    (max 1 (random (- (bytes-length s) (bytes-length a))))))]
 	 [c (subbytes s (+ (bytes-length a) (bytes-length b)))])
