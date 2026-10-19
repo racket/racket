@@ -34,6 +34,7 @@ Bug fixes and new features should include tests.
 <!-- For completed items, change [ ] to [x]. -->
 
 - [ ] I have reviewed the diff and understand the change being proposed.
+- [ ] I have disclosed any use of generative AI responsibly, if applicable.
 - [ ] I have run the relevant tests, or included new tests where they are needed.
 - [ ] I have added to or updated the documentation where relevant.
 - [ ] I have added comments to the code to help explain my thinking.
