@@ -16,8 +16,9 @@
          ftp-rename-file
          ftp-current-directory)
 
-;; opqaue record to represent an FTP connection:
-(define-struct ftp-connection (in out))
+;; opqaue record to represent an FTP connection;
+;; `host` is the control connection's peer address, or #f if unknown
+(define-struct ftp-connection (in out host))
 
 (define re:multi-response-start #rx#"^[0-9][0-9][0-9]-")
 (define re:response-end #rx#"^[0-9][0-9][0-9] ")
@@ -114,12 +115,16 @@
            [pn2 (bytes->number (list-ref reg-list 6))])
       (unless (and reg-list pn1 pn2)
         (error 'ftp "can't understand PASV response: ~e" response))
+      ;; Connect to the same host as the control connection, so that
+      ;; the server cannot direct data to or from some other host;
+      ;; the host in the PASV response is used only as a fallback
       (let-values ([(tcp-data-in tcp-data-out)
-                    (tcp-connect (format "~a.~a.~a.~a"
-                                         (list-ref reg-list 1)
-                                         (list-ref reg-list 2)
-                                         (list-ref reg-list 3)
-                                         (list-ref reg-list 4))
+                    (tcp-connect (or (ftp-connection-host ftp-ports)
+                                     (format "~a.~a.~a.~a"
+                                             (list-ref reg-list 1)
+                                             (list-ref reg-list 2)
+                                             (list-ref reg-list 3)
+                                             (list-ref reg-list 4)))
                                  (+ (* 256 pn1) pn2))])
         (fprintf (ftp-connection-out ftp-ports) "TYPE I\r\n")
         (ftp-check-response (ftp-connection-in ftp-ports)
@@ -144,6 +149,11 @@
                                (close-input-port in)
                                (close-output-port out)
                                (raise e))])
+    (define host
+      (and (tcp-port? in)
+           (let-values ([(local-host local-port remote-host remote-port)
+                         (tcp-addresses in #t)])
+             remote-host)))
     (ftp-check-response in out #"220" void (void))
     (let-values ([(in out)
                   (cond
@@ -161,7 +171,7 @@
         (unless no-password?
           (fprintf out "PASS ~a\r\n" password)
           (ftp-check-response in out #"230" void (void))))
-      (make-ftp-connection in out))))
+      (make-ftp-connection in out host))))
 
 (define (ftp-establish-connection server-address server-port username password
                                   #:ports->ssl-ports [ports->ssl-ports #f])
