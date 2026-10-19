@@ -10,7 +10,7 @@ Bug fixes and new features should include tests.
 
 ## Summary
 
-<!-- Remove items that do not apply. For completed items, change [ ] to [x]. -->
+<!-- Choose the applicable type of the change. For completed items, change [ ] to [x]. -->
 
 - [ ] Bugfix
 - [ ] Feature
