@@ -2740,6 +2740,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	el = read_compact_number(port);
 	l = read_compact_number(port);
 	RANGE_CHECK_GETS(el);
+        RANGE_CHECK(l, <= el); /* ensures that `l` is sane (not `(unsigned)-1`, for example) */
 	s = read_compact_chars(port, buffer, BLK_BUF_SIZE, el);
         if (l < 4096)
           us = (mzchar *)scheme_malloc_atomic((l + 1) * sizeof(mzchar));
