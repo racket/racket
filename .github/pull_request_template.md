@@ -14,6 +14,8 @@ Bug fixes and new features should include tests.
 
 - [ ] Bugfix
 - [ ] Feature
+- [ ] Tests
+- [ ] Documentation
 
 <!-- Please provide a description of the change here. -->
 
