@@ -10,7 +10,7 @@ Bug fixes and new features should include tests.
 
 ## Summary
 
-<!-- Choose the applicable type of the change. For completed items, change [ ] to [x]. -->
+<!-- Select the type of the PR, and change [ ] to [x]. -->
 
 - [ ] Bugfix
 - [ ] Feature
@@ -35,7 +35,7 @@ Bug fixes and new features should include tests.
 
 - [ ] I have reviewed the diff and understand the change being proposed.
 - [ ] I have run the relevant tests, or included new tests where they are needed.
-- [ ] I have added or updated the documentation where relevant.
+- [ ] I have added to or updated the documentation where relevant.
 - [ ] I have added comments to the code to help explain my thinking.
 - [ ] This PR addresses the stated problem without unrelated changes.
 
