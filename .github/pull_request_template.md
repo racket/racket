@@ -6,6 +6,15 @@ For more information about how to contribute please see
 * https://docs.racket-lang.org/racket-build-guide/contribute.html
 
 Bug fixes and new features should include tests.
+
+IMPORTANT:
+
+Please mention a reviewer explicitly by using an @-mention in the body of the PR.
+Mentioning someone who has not committed at least once will cause the PR to be dropped automatically.
+
+If you are unsure about who to mention, feel free to ask on:
+* the Racket Discourse: https://racket.discourse.group/, or
+* the Racket Discord: https://discord.gg/6Zq8sH5
 -->
 
 ## Description
