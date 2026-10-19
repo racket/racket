@@ -36,7 +36,13 @@ If @racket[ports->ssl-ports] is not @racket[#f], the connection is
 negotiated to an FTPS connection, and @racket[ports->ssl-ports] is
 responsible for converting ports to an SSL channel.
 
-@history[#:changed "1.1" @elem{Added the @racket[#:ports->ssl-ports] option.}]}
+A passive-mode data connection is made to the same host as the
+control connection; only the port number reported by the server is
+used.
+
+@history[#:changed "1.1" @elem{Added the @racket[#:ports->ssl-ports] option.}
+         #:changed "1.3.2" @elem{Changed passive-mode data connections to use
+                                 the control connection's host.}]}
 
 @defproc[(ftp-establish-connection* [in input-port?]
                                     [out output-port?]
@@ -49,7 +55,12 @@ responsible for converting ports to an SSL channel.
           ftp-connection?]{
 
 Like @racket[ftp-establish-connection], but accepts input and output
-ports instead of a server address and port number.}
+ports instead of a server address and port number. If @racket[in] is
+not a TCP port, then a passive-mode data connection is made to the
+host reported by the server.
+
+@history[#:changed "1.3.2" @elem{Changed passive-mode data connections to use
+                                 the control connection's host.}]}
 
 @defproc[(ftp-close-connection [ftp-conn ftp-connection?]) void?]{
 

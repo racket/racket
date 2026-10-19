@@ -82,6 +82,19 @@
                 (thread-wait main-thd)
                 (get-output-string cop) => EXPECTED-USER-OUTPUT
                 ))
+        ;; the host in a PASV response is ignored; the data connection
+        ;; goes to the control connection's host
+        (test (let ()
+                (define-values [pasv-thd pasv-port] (tcp-serve* (open-output-nowhere) TEXT-FILE))
+                (define-values [ctl-thd ctl-port]
+                  (tcp-serve (open-output-nowhere) (PASV-HOST-SERVER-OUTPUT pasv-port)))
+                (define tmp-dir (make-temporary-file "racket-ftp-test-~a" 'directory))
+                (define conn (ftp-establish-connection server ctl-port user passwd))
+                (ftp-download-file conn tmp-dir pth)
+                (ftp-close-connection conn)
+                (begin0 (file-size (build-path tmp-dir pth))
+                  (delete-directory/files tmp-dir)))
+              => (string-length TEXT-FILE))
         ;; make sure that TCP connections don't leak when attempting to open
         ;; an FTP session fails
         (test (for ([immediate-failure? '(#t #f)])
@@ -297,6 +310,16 @@
      250 Remove directory operation successful.
      350 Ready for RNTO.
      250 Rename successful.
+     221 Goodbye.
+     @||})
+
+(define (PASV-HOST-SERVER-OUTPUT pasv-port)
+  @S{220 FTP server ready.
+     230 Login successful.
+     227 Entering Passive Mode (255,255,255,255,@pasv-port)
+     200 Switching to Binary mode.
+     150 Opening BINARY mode data connection for =README-about-.diff-files (745 bytes).
+     226 File send OK.
      221 Goodbye.
      @||})
 
