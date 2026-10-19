@@ -8,7 +8,7 @@ For more information about how to contribute please see
 Bug fixes and new features should include tests.
 -->
 
-## Summary
+## Description
 
 <!-- Select the type of the PR, and change [ ] to [x]. -->
 
