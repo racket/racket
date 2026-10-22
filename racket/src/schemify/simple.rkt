@@ -3,6 +3,7 @@
          "wrap.rkt"
          "match.rkt"
          "known.rkt"
+         "lambda.rkt"
          "import.rkt"
          "mutated-state.rkt")
 
@@ -32,6 +33,10 @@
 ;;                    result)
 ;;
 ;; This function receives both schemified and non-schemified expressions.
+;;
+;; The `mutated` table is generally expected to be in its stable state, but
+;; we want to use `simple?` also in the pass that computes `mutated`. We rely
+;; on all `set!`s having been found, at least.
 ;;
 (define (simple? e prim-knowns knowns imports mutated simples unsafe-mode?
                  #:pure? [pure? #t]

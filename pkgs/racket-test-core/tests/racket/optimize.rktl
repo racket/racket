@@ -7907,6 +7907,21 @@
                     (values prop prop? prop-ref))
                   exn:fail:contract:variable?)
 
+(module struct-accessor-mutated-in-constructor racket/kernel
+  (define-values (struct:s make-s s? s-a)
+    (let-values (((struct: make- ? -ref -set!)
+                  (make-struct-type 's #f 1 0 #f (list (cons prop:authentic #t)) #f #f '(0))))
+      (values struct: make- ? (make-struct-field-accessor -ref 0 'a))))
+  (define-values (k) (lambda (v) (y v)))
+  (define-values (x)
+    (cons (begin (set! s-a k) 1)
+          (s-a 'anything)))
+  (define-values (y) (lambda (i) i)))
+
+(err/rt-test/once (dynamic-require ''struct-accessor-mutated-in-constructor #f)
+                  exn:fail:contract:variable?)
+
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

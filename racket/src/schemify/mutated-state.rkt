@@ -28,6 +28,12 @@
 ;;              first use, since anything referenced by the thunk
 ;;              might be first used at that point
 ;;
+;;  * (eventually-set!ed v) - the identifier is eventually `set!`ed,
+;;                            but the pass for determing mutation state
+;;                            hasn't reached the `set!`, yet; this
+;;                            distinction is useful for determining whether
+;;                            a variable might be mutated too early
+;;
 ;;  * #f (not mapped) - defined and never `set!`ed
 ;;
 ;; By the end of the `mutated-in-body` pass, only 'set!ed,
@@ -36,6 +42,11 @@
 ;; are possible for identifiers that are reachable by evaluation.
 
 (provide too-early
+         hash-ref-mutated
+         hash-set-mutated!
+         eventually-set!ed?
+         eventually-set!ed-inner
+         eventually-set!ed-init
          delayed-mutated-state?
          simple-mutated-state?
          not-ready-mutated-state?
@@ -49,7 +60,33 @@
 ;; Used for `letrec` bindings to record a name:
 (struct too-early (name set!ed?) #:authentic)
 
-(define (delayed-mutated-state? v) (procedure? v))
+;; Should appear only during the "mutated.rkt" pass, communicates
+;; "`set!`ed" to most analyses but does not interfere with the
+;; mutation-detection pass itself
+(struct eventually-set!ed (inner) #:authentic #:transparent)
+
+;; For use in  "mutated.rkt" to build mutated table
+(define (hash-ref-mutated mutated key default)
+  (define v (hash-ref mutated key default))
+  (if (eventually-set!ed? v)
+      (eventually-set!ed-inner v)
+      v))
+
+;; For use in "mutated.rkt" when building mutated table
+(define (hash-set-mutated! mutated key val)
+  (define v (hash-ref mutated key #f))
+  (cond
+    [(eventually-set!ed? v)
+     (hash-set! mutated key (eventually-set!ed val))]
+    [(not val)
+     (hash-remove! mutated key)]
+    [else
+     (hash-set! mutated key val)]))
+
+(define eventually-set!ed-init (eventually-set!ed #f))
+
+(define (delayed-mutated-state? v)
+  (procedure? v))
 
 (define (simple-mutated-state? v)
   (or (not v)
@@ -64,7 +101,9 @@
       (eq? v 'too-early)
       (eq? v 'set!ed-too-early)
       (eq? v 'undefined)
-      (too-early? v)))
+      (too-early? v)
+      (and (eventually-set!ed? v)
+           (too-early-mutated-state? (eventually-set!ed-inner v)))))
 
 (define (too-early-mutated-state-name v default-sym)
   (if (too-early? v)
@@ -93,7 +132,8 @@
   (or (eq? v 'set!ed)
       (eq? v 'set!ed-too-early)
       (and (too-early? v)
-           (too-early-set!ed? v))))
+           (too-early-set!ed? v))
+      (eventually-set!ed? v)))
 
 (define (state->set!ed-state v)
   (cond

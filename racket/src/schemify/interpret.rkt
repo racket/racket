@@ -38,7 +38,7 @@
 (define variable-ref (lambda (var) (unbox var)))
 (define variable-ref/no-check (lambda (var) (unbox var)))
 (define variable-set! (lambda (var v) (set-box! var v)))
-(define variable-set!/define (lambda (var v) (set-box! var v)))
+(define variable-set!/define (lambda (var v c) (set-box! var v)))
 (define make-interp-procedure* (lambda (proc mask name+realm) proc))
 (define decode-procedure-name (lambda (name) name))
 (define foreign-inline-eval (lambda (e) e))

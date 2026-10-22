@@ -29,7 +29,7 @@
          [(procedure? v)
           (define a (procedure-arity-mask v))
           (values s (case s
-                      [(+ - * / integer->char char->integer void add1 sub1)
+                      [(+ - * / integer->char char->integer void add1 sub1 zero?)
                        (known-procedure/folding a)]
                       [(cons)
                        (known-procedure/allocates a)]
@@ -68,7 +68,7 @@
     [else p]))
 
 (define-values (schemified importss exports import-keys imports-abis exports-info)
-  (schemify-linklet `(linklet 
+  (schemify-linklet `(linklet
                       ()
                       (x y [z ext-z] w c1 c2 class2-struct-type-ref)
                        .
