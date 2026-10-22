@@ -113,10 +113,11 @@ set in its (semi-infinite) two's complement representation.
 Like @racket[sin], @racket[cos], @racket[tan], @racket[asin],
 @racket[acos], @racket[atan], @racket[log], @racket[exp], and
 @racket[sqrt], but constrained to consume and produce
-@tech{flonums}. The result is @racket[+nan.0] when a number outside
-the range @racket[-1.0] to @racket[1.0] is given to @racket[flasin] or
-@racket[flacos], or when a negative number is given to @racket[fllog]
-or @racket[flsqrt].}
+@tech{flonums}. Unlike @racket[atan] and @racket[log], @racket[flatan]
+and @racket[fllog] accept only a single argument. The result is
+@racket[+nan.0] when a number outside the range @racket[-1.0] to
+@racket[1.0] is given to @racket[flasin] or @racket[flacos], or when a
+negative number is given to @racket[fllog] or @racket[flsqrt].}
 
 @defproc[(flhypot [a flonum?] [b flonum?]) flonum?]{
 
