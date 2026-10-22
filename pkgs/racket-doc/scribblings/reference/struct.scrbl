@@ -101,7 +101,7 @@ override the default @racket[equal?] definition through the
                                        null]
                            [guard (or/c procedure? #f) #f]
                            [constructor-name (or/c symbol? #f) #f])
-          (values (and/c struct-type? struct-metatype?)
+          (values struct-type?
                   struct-constructor-procedure?
                   struct-predicate-procedure?
                   (and/c struct-accessor-procedure?
@@ -298,7 +298,7 @@ For examples, see @racket[make-struct-type].
                                                      (symbol->string (format "field~a" field-pos))]
                                     [arg-contract-str (or/c string? symbol? #f) #f]
                                     [realm symbol? 'racket])
-         struct-mutator-accessor-procedure?]{
+         struct-mutator-procedure?]{
 
 Returns a field mutator that is equivalent to @racket[(lambda (s v)
 (mutator-proc s field-pos v))].  The @racket[mutator-proc] must be
@@ -335,7 +335,7 @@ instance of a structure type that might have subtypes.
                                [init-field-cnt exact-nonnegative-integer?]
                                [authenticity (or/c #f 'metaauthentic 'authentic) 'metaauthentic])
          (values
-          struct-type?
+          (and/c struct-type? struct-metatype?)
           (procedure-arity-includes/c (+ 11 init-field-cnt))
           struct-predicate-procedure?
           (and/c struct-metaaccessor-procedure?
