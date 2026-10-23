@@ -8008,5 +8008,31 @@
     5))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; regression test
+
+(let ([o (open-output-bytes)])
+  (parameterize ([current-output-port o])
+    (eval '(module m racket/base
+             (require (for-syntax racket/base))
+             (begin-for-syntax
+               (struct a-struct (x))
+               (define (f) 1)
+               (define a
+                 (let-values
+                     ([(a b)
+                       (let-values
+                           ([(a b)
+                             (let-values ()
+                               (values
+                                0
+                                (begin (a-struct
+                                        (begin (f) 2))
+                                       3)))])
+                         (values a b))])
+                   a))
+               (displayln a)))))
+  (test #"0\n" get-output-bytes o))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

@@ -814,7 +814,7 @@
                  [else
                   (let-interp-values
                    ([(new-stack val) (interpret (vector*-ref rhss i) stack)])
-                   (loop (fx+ i 1) (stack-set new-stack (fx+ i pos) val)))]))))
+                   (stack-set (loop (fx+ i 1) new-stack) (fx+ i pos) val))]))))
          (interpret b body-stack return-mode)]
         [#(letrec ,pos ,rhss ,b)
          (define len (vector*-length rhss))
@@ -1107,7 +1107,8 @@
                            'gensym gensym
                            'apply apply
                            'make-weak-box make-weak-box
-                           'void void))
+                           'void void
+                           'ref-variable/checked unbox))
   (struct var ([val #:mutable]) #:transparent)
   (interpreter-link! primitives
                      values
@@ -1115,7 +1116,8 @@
                      var-val var-val
                      (lambda (b v) (set-var-val! b v)) (lambda (b v c) (set-var-val! b v))
                      (lambda (proc mask name) proc)
-                     (lambda (name) name))
+                     (lambda (name) name)
+                     (lambda (e) (error "no foreign")))
   (define b
     (interpretable-jitified-linklet '(lambda (x two-box)
                                        (define other 5)

@@ -54140,17 +54140,17 @@
                                                                                                ((new-stack_0
                                                                                                  val_0)
                                                                                                 (let ((app_0
-                                                                                                       (fx+
-                                                                                                        i_0
-                                                                                                        1)))
-                                                                                                  (loop_0
+                                                                                                       (loop_0
+                                                                                                        (fx+
+                                                                                                         i_0
+                                                                                                         1)
+                                                                                                        new-stack_0)))
+                                                                                                  (stack-set
                                                                                                    app_0
-                                                                                                   (stack-set
-                                                                                                    new-stack_0
-                                                                                                    (fx+
-                                                                                                     i_0
-                                                                                                     pos_0)
-                                                                                                    val_0))))
+                                                                                                   (fx+
+                                                                                                    i_0
+                                                                                                    pos_0)
+                                                                                                   val_0)))
                                                                                                ((new-stack_0
                                                                                                  .
                                                                                                  vals_0)
