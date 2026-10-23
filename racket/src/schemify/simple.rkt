@@ -32,6 +32,8 @@
 ;;                    (i.e., a later call might produce a different
 ;;                    result)
 ;;
+;;   `parameter-ok?` = #t: ok to look up a parameter value
+;;
 ;; This function receives both schemified and non-schemified expressions.
 ;;
 ;; The `mutated` table is generally expected to be in its stable state, but
@@ -43,6 +45,7 @@
                  #:no-alloc? [no-alloc? #f]
                  #:ordered? [ordered? #f] ; weakens `pure?` to allow some reordering
                  #:succeeds? [succeeds? #f] ; weakens `ordered?` to allow more reordering
+                 #:parameter-ok? [parameter-ok? #f] ; weakens `pure?` to allow parameter lookup
                  #:result-arity [result-arity 1])
   (let simple? ([e e] [result-arity result-arity])
     (define-syntax-rule (cached expr)
@@ -100,7 +103,11 @@
                             (and unsafe-mode?
                                  (known-field-accessor? v)
                                  (known-field-accessor-authentic? v)
-                                 (known-field-accessor-known-immutable? v)))))
+                                 (known-field-accessor-known-immutable? v))))
+                   (and parameter-ok?
+                        (eqv? n-args 0)
+                        (known-procedure/parameter? v)
+                        (returns 1)))
                (returns 1))
           (or (and (known-procedure/no-prompt? v)
                    (returns 1))

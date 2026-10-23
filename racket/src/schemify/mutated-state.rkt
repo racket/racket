@@ -34,6 +34,9 @@
 ;;                            distinction is useful for determining whether
 ;;                            a variable might be mutated too early
 ;;
+;;  * 'unused - binding is never referenced, and RHS does not
+;;              call any functions that are produced within that RHS
+;;
 ;;  * #f (not mapped) - defined and never `set!`ed
 ;;
 ;; By the end of the `mutated-in-body` pass, only 'set!ed,
@@ -53,6 +56,7 @@
          too-early-mutated-state?
          too-early-mutated-state-name
          needs-letrec-convert-mutated-state?
+         unused-mutated-state?
          via-variable-mutated-state?
          set!ed-mutated-state?
          state->set!ed-state)
@@ -115,6 +119,9 @@
       (eq? v 'too-early)
       (eq? v 'too-early/ready)
       (eq? v 'implicitly-set!ed)))
+
+(define (unused-mutated-state? v)
+  (eq? v 'unused))
 
 ;; When referencing an exported identifier, we need to consistently go
 ;; through a `variable` record when it can be `set!`ed or is not yet

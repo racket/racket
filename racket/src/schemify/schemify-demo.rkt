@@ -69,6 +69,11 @@
 
 (define-values (schemified importss exports import-keys imports-abis exports-info)
   (schemify-linklet `(linklet
+                         ()
+                         ()
+                       (letrec-values (((x y) (values (lambda () z) (lambda () z))) ((z) (y))) z))
+                    #;
+                    `(linklet
                       ()
                       (x y [z ext-z] w c1 c2 class2-struct-type-ref)
                        .

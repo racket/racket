@@ -523,8 +523,9 @@
   ;; `wcm-state` is one of: 'tail (= unknown), 'fresh (= no marks), or 'marked (= some marks)
   (let schemify/knowns ([knowns knowns] [inline-fuel init-inline-fuel] [wcm-state wcm-state] [unsafe-mode? unsafe-mode?] [v v])
     (define (schemify* v wcm-state unsafe-mode?)
-      (define (schemify v wcm-state [unsafe-mode? unsafe-mode?]) (schemify* v wcm-state unsafe-mode?))
-      (define (schemify-body body wcm-state [unsafe-mode? unsafe-mode?]) (schemify-body* body wcm-state unsafe-mode?))
+      (define (next-state new-wcm-state) (if (eq? wcm-state 'unused) 'unused new-wcm-state))
+      (define (schemify v wcm-state [unsafe-mode? unsafe-mode?]) (schemify* v (next-state wcm-state) unsafe-mode?))
+      (define (schemify-body body wcm-state [unsafe-mode? unsafe-mode?]) (schemify-body* body (next-state wcm-state) unsafe-mode?))
       (define s-v
         (reannotate
          v 
@@ -532,14 +533,18 @@
            [`(lambda ,formals ,body ...)
             (infer-procedure-name
              v
-             `(lambda ,formals ,@(schemify-body (maybe-unsafe v body) 'tail))
-              explicit-unnamed?)]
+             `(lambda ,formals ,@(if (eq? wcm-state 'unused)
+                                     '(#f) ; function is never called and `mutated` pass never inspected
+                                     (schemify-body (maybe-unsafe v body) 'tail)))
+             explicit-unnamed?)]
            [`(case-lambda [,formalss ,bodys ...] ...)
             (infer-procedure-name
              v
              `(case-lambda ,@(for/list ([formals (in-list formalss)]
                                         [body (in-list bodys)])
-                               `[,formals ,@(schemify-body (maybe-unsafe v body) 'tail)]))
+                               `[,formals ,@(if (eq? wcm-state 'unused)
+                                                '(#f) ; function is never called and `mutated` pass never inspected
+                                                (schemify-body (maybe-unsafe v body) 'tail))]))
              explicit-unnamed?)]
            [`(define-values (,struct:s ,make-s ,s? ,acc/muts ...)
                (let-values (((,struct: ,make ,?1 ,-ref . ,_) ,mk))
@@ -550,7 +555,7 @@
             #:guard (not (or (aim? target 'interp) (aim? target 'cify)))
             (define new-seq
               (struct-convert v prim-knowns knowns imports exports mutated
-                              (lambda (v knowns) (schemify/knowns knowns inline-fuel 'fresh unsafe-mode? v))
+                              (lambda (v knowns) (schemify/knowns knowns inline-fuel (next-state 'fresh) unsafe-mode? v))
                               (lambda (k im) (inline-type-id k im add-import! mutated imports))
                               target no-prompt? #t))
             (or new-seq
@@ -596,7 +601,10 @@
                               (cons copy-rhs
                                     rev-s-rhss))]
                      [else
-                      (define s-rhs (schemify rhs 'fresh))
+                      (define s-rhs (schemify rhs
+                                              (if (unused-mutated-state? (hash-ref mutated (unwrap id) #f))
+                                                  'unused
+                                                  'fresh)))
                       (cond
                         [(known-procedure/can-inline? k)
                          (values (hash-set knowns (unwrap id) k)
@@ -626,7 +634,7 @@
                                               #:unless (eq? copy-rhs rhs))
                                      rhs)
                                    (for/list ([body (in-list bodys)])
-                                     (schemify/knowns new-knowns inline-fuel wcm-state unsafe-mode? body))
+                                     (schemify/knowns new-knowns inline-fuel (next-state wcm-state) unsafe-mode? body))
                                    prim-knowns knowns imports mutated simples unsafe-mode?)
                 prim-knowns knowns imports mutated simples unsafe-mode?)])]
            [`(let-values ([() (begin ,rhs (values))]) ,bodys ...)
@@ -634,7 +642,7 @@
            [`(let-values ([,idss ,rhss] ...) ,bodys ...)
             (or (and (not (or (aim? target 'interp) (aim? target 'cify)))
                      (struct-convert-local v prim-knowns knowns imports mutated simples
-                                           (lambda (v knowns) (schemify/knowns knowns inline-fuel 'fresh unsafe-mode? v))
+                                           (lambda (v knowns) (schemify/knowns knowns inline-fuel (next-state 'fresh) unsafe-mode? v))
                                            (lambda (k im) (inline-type-id k im add-import! mutated imports))
                                            #:unsafe-mode? unsafe-mode?
                                            #:target target))
@@ -648,8 +656,13 @@
                   [else
                    (unnest-let
                     (left-to-right/let-values idss
-                                              (for/list ([rhs (in-list rhss)])
-                                                (schemify rhs 'fresh))
+                                              (for/list ([ids (in-list idss)]
+                                                         [rhs (in-list rhss)])
+                                                (schemify rhs (if (and (pair? ids)
+                                                                       (for/and ([id (in-list ids)])
+                                                                         (unused-mutated-state? (hash-ref mutated (unwrap id) #f))))
+                                                                  'unused
+                                                                  'fresh)))
                                               (schemify-body bodys wcm-state)
                                               target
                                               prim-knowns knowns imports mutated simples unsafe-mode?)
@@ -677,14 +690,17 @@
               ids mutated target
               `(letrec* ,(for/list ([id (in-list ids)]
                                     [rhs (in-list rhss)])
-                           `[,id ,(schemify/knowns rhs-knowns inline-fuel 'fresh unsafe-mode? rhs)])
+                           (define wcm-state (if (unused-mutated-state? (hash-ref mutated (unwrap id) #f))
+                                                 'unused
+                                                 'fresh))
+                           `[,id ,(schemify/knowns rhs-knowns inline-fuel (next-state wcm-state) unsafe-mode? rhs)])
                  ,@(for/list ([body (in-list bodys)])
-                     (schemify/knowns body-knowns inline-fuel wcm-state unsafe-mode? body))))
+                     (schemify/knowns body-knowns inline-fuel (next-state wcm-state) unsafe-mode? body))))
              prim-knowns knowns imports mutated simples unsafe-mode?)]
            [`(letrec-values ([,idss ,rhss] ...) ,bodys ...)
             (cond
               [(struct-convert-local v #:letrec? #t prim-knowns knowns imports mutated simples
-                                     (lambda (v knowns) (schemify/knowns knowns inline-fuel 'fresh unsafe-mode? v))
+                                     (lambda (v knowns) (schemify/knowns knowns inline-fuel (next-state 'fresh) unsafe-mode? v))
                                      (lambda (k im) (inline-type-id k im add-import! mutated imports))
                                      #:unsafe-mode? unsafe-mode?
                                      #:target target)
@@ -711,7 +727,11 @@
                             append
                             (for/list ([ids (in-list idss)]
                                        [rhs (in-list rhss)])
-                              (let ([rhs (schemify rhs 'fresh)])
+                              (let ([rhs (schemify rhs (if (and (pair? ids)
+                                                                (for/and ([id (in-list ids)])
+                                                                  (unused-mutated-state? (hash-ref mutated (unwrap id) #f))))
+                                                           'unused
+                                                           'fresh))])
                                 (cond
                                   [(null? ids)
                                    `([,(deterministic-gensym "lr")
@@ -906,7 +926,7 @@
                       (and (null? args)
                            (let ([r (schemify/knowns knowns
                                                      inline-fuel
-                                                     wcm-state
+                                                     (next-state wcm-state)
                                                      unsafe-mode?
                                                      `(let-values ,(reverse binds) . ,bodys))])
                              ;; make suure constant-fold to #f counts as success:

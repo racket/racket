@@ -151,13 +151,20 @@
              (state))))]
       [`,_ (void)]))
   ;; If an `eventually-set!ed?` persist, it means that the `set!` is
-  ;; unreachable after all
+  ;; unreachable after all; if a delayed exists, then it means that
+  ;; the identifier is unreachable
   (for ([(k v) (in-hash mutated)])
-    (when (eventually-set!ed? v)
-      (let ([v (eventually-set!ed-inner v)])
-        (if v
-            (hash-set! mutated k v)
-            (hash-remove! mutated k)))))
+    (cond
+      [(eventually-set!ed? v)
+       (let ([v (eventually-set!ed-inner v)])
+         (cond
+           [(not v) (hash-remove! mutated k)]
+           [(delayed-mutated-state? v)
+            (hash-set! mutated k 'unused)]
+           [else
+            (hash-set! mutated k v)]))]
+      [(delayed-mutated-state? v)
+       (hash-set! mutated k 'unused)]))
   ;; Check for unexported variables that need to be implemented like exports:
   (unless (or unsafe-mode?
               (aim? target 'system))
@@ -367,7 +374,8 @@
                              (bitwise-bit-set? (known-procedure-arity-mask v) (length exps))))
                       (for/and ([exp (in-list exps)])
                         (simple? exp prim-knowns knowns imports mutated simples unsafe-mode?
-                                 #:pure? #f)))))
+                                 #:pure? #t
+                                 #:parameter-ok? #t)))))
           ;; Can delay construction
           (delay! ids (lambda () (find-mutated!* exps #f)))]
          [else
