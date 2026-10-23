@@ -345,6 +345,7 @@ handle exceptions, and ignores the optional strings.
                               [header (listof string?) null])
          input-port?]
 )]{
+@history[#:changed "9.3.0.10" @elem{The @racket[get-impure-port], @racket[post-impure-port], and related functions no longer send the fragment identifier in HTTP requests, per RFC 3986 §3.5.}]
 
 Like @racket[get-pure-port], etc., but the resulting @tech{impure
 port} contains both the returned headers and the body. The
