@@ -14,6 +14,7 @@
          (prefix-in cookie:    "cookie.rkt")
          (prefix-in encoders:  "encoders.rkt")
          (prefix-in mime:      "mime.rkt")
+         (prefix-in smtp:      "smtp.rkt")
          (prefix-in url-port:  "url-port.rkt"))
 
 (define (tests)
@@ -27,6 +28,7 @@
         do (cookie:tests)
         do (encoders:tests)
         do (mime:tests)
+        do (smtp:tests)
         do (url-port:tests)))
 
 (tests)

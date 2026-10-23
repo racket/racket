@@ -75,6 +75,13 @@
                           (close-input-port r)
                           (close-output-port w)
                           (raise x))])
+    ;; A CR or LF in an address would end the MAIL or RCPT command
+    ;; early and let the rest of the address be sent as further commands
+    (for ([addr (in-list (cons sender recipients))])
+      (when (regexp-match? #rx"[\r\n]" addr)
+        (raise-arguments-error 'smtp-send-message
+                               "address contains a carriage return or linefeed"
+                               "address" addr)))
     (check-reply r 220 w)
     (log-smtp-debug "hello")
     (fprintf w "EHLO ~a\r\n" (smtp-sending-server))
