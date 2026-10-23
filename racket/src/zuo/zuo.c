@@ -6947,6 +6947,10 @@ static zuo_t *zuo_string_sha256(zuo_t *str) {
 
 #ifndef ZUO_EMBEDDED
 
+#ifdef __OpenBSD__
+# include <sys/param.h>
+#endif
+
 #if defined(__linux__)
 
 # include <errno.h>
@@ -7006,6 +7010,24 @@ static char *zuo_self_path_c(const char *exec_file)
   s = malloc(len);
   r = sysctl(mib, 4, s, &len, NULL, 0);
   if (r < 0)
+    zuo_fail("failed to get self");
+
+  return s;
+}
+
+#elif defined(__OpenBSD__) && OpenBSD >= 202610
+
+static char *zuo_self_path_c(const char *exec_file)
+{
+  char path[PATH_MAX];
+  char *s;
+
+  ZUO_UNUSED(exec_file);
+
+  if (getexecpath(path, sizeof(path)) == -1)
+    zuo_fail("failed to get self");
+  s = strdup(path);
+  if (s == NULL)
     zuo_fail("failed to get self");
 
   return s;
