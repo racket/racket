@@ -542,16 +542,6 @@
 (define (fllog n) (#2%fllog n))
 (define (flatan n) (#2%flatan n))
 
-(define hypot-foreign
-  (foreign-procedure __atomic "(cs)hypot" (double-float double-float) double-float))
-
-(define (flhypot x y)
-  (unless (flonum? x)
-    (raise-argument-error 'flhypot "flonum?" 0 x y))
-  (unless (flonum? y)
-    (raise-argument-error 'flhypot "flonum?" 1 x y))
-  (hypot-foreign x y))
-
 (define (fxquotient n d) (#2%fxquotient n d))
 
 (define (init-flonum-printing!)
