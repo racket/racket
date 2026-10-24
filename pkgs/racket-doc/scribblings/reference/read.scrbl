@@ -245,8 +245,10 @@ A @tech{parameter} that controls parsing @litchar{#&} input. See
 
 @defboolparam[read-accept-compiled on?]{
 
-A @tech{parameter} that controls parsing @litchar{#~} compiled input. See
-@secref["reader"] and @racket[current-compile] for more
+A @tech{parameter} that controls parsing @litchar{#~} compiled input.
+Beware enabling @litchar{#~} input is @tech{unsafe}, except
+in tightly controlled contexts. See
+@secref["print-compiled"] and @racket[current-compile] for more
 information.}
 
 @defboolparam[read-accept-bar-quote on?]{
