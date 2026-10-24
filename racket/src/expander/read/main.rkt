@@ -29,7 +29,8 @@
          "regexp.rkt"
          "extension.rkt"
          "language.rkt"
-         "number.rkt")
+         "number.rkt"
+         "../eval/protect.rkt")
 
 (provide read
          read-language
@@ -395,6 +396,10 @@
        ;; Compiled code
        (cond
         [(check-parameter read-accept-compiled config)
+         (unless (eq? (current-code-inspector) initial-code-inspector)
+           (reader-error in config
+                         "`~a~~` compiled expressions not allowed by code inspector"
+                         dispatch-c))
          (wrap ((read-config-read-compiled config) in) in config c)]
         [else
          (reader-error in config
