@@ -1135,6 +1135,19 @@ for @nonterm{key}.
          #:changed "9.0.0.2" @elem{Added @exec{network-timeout}.}]}
 
 
+@subcommand{@command/toc{outdated} @nonterm{option} ... @nonterm{package-name} ...
+--- Reports installed packages whose checksum differs from the one
+    currently reported by @tech{package catalogs}; that is, packages
+    for which @exec{raco pkg update} would fetch a newer version.
+    Packages installed from a directory or a link have no checksum and
+    are not checked. No package installation is changed.
+
+ @itemlist[
+ @item{@DFlag{catalog} @nonterm{catalog} --- Queries @nonterm{catalog}s instead of the currently configured
+       @tech{package catalogs}. This flag can be provided multiple times. The catalogs are tried in the order provided.}
+ ]
+}
+
 @subcommand{@command/toc{catalog-show} @nonterm{option} ... @nonterm{package-name} ...
 --- Consults @tech{package catalogs} for a package (that is not necessarily installed)
     and displays the catalog's information for the package, such as its source URL and
