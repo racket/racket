@@ -287,8 +287,9 @@
     (close-output-port o)
     (parameterize ([read-accept-compiled #t]
                    [current-code-inspector (get-inspector)])
-      (if read-fail?
-          (err/rt-test (void (read i)) exn:fail:read?)
+      (if (or read-fail?
+              (not (eq? get-inspector current-code-inspector)))
+          (err/rt-test/once (void (read i)) exn:fail:read?)
           (test #t not (not (read i)))))))
 
 ;; - - - - - - - - - - - - - - - - - - - -
