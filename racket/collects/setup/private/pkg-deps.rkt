@@ -773,19 +773,13 @@
                 info-path)])]
      [else
       (define prefix (format "(define ~a '(" deps-id))
-      ;; If the file doesn't end with a newline (e.g., its last line is a
-      ;; comment), start a new line before appending the definition
-      (define bstr (file->bytes info-path))
-      (define needs-newline?
-        (and (positive? (bytes-length bstr))
-             (not (memv (bytes-ref bstr (sub1 (bytes-length bstr)))
-                        '(10 13))))) ; LF or CR
       (call-with-output-file*
        info-path
        #:exists 'append
        (lambda (o)
-         (when needs-newline?
-           (newline o))
+         ;; Start on a new line, in case the file doesn't end with one
+         ;; (e.g., when its last line is a comment)
+         (newline o)
          (display prefix o)
          (for ([pkg (in-list pkgs)]
                [i (in-naturals)])
