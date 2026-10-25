@@ -2472,6 +2472,28 @@
     (fl= (max 1/2 0.5) 0.5)
     (fl= (max 1/2 -0.5) 0.5)
     (eqv? (max 3 5 1 4 6 2) 6)
+    ; signed zeros: -0.0 < 0.0 (IEEE 754-2019), whatever the order of the arguments and whether the call is
+    ; folded, compiled out of line, or inlined
+    (eqv? (max 0.0 -0.0) 0.0)
+    (eqv? (max -0.0 0.0) 0.0)
+    (eqv? (max 0.0 0.0) 0.0)
+    (eqv? (max -0.0 -0.0) -0.0)
+    (eqv? (max -0.0 0.0 -0.0) 0.0)
+    (eqv? ((let ([f max]) f) 0.0 -0.0) 0.0)
+    (eqv? ((let ([f max]) f) -0.0 0.0) 0.0)
+    (eqv? ((eval '(lambda (x y) (max x y))) 0.0 -0.0) 0.0)
+    (eqv? ((eval '(lambda (x y) (max x y))) -0.0 0.0) 0.0)
+    (eqv? (let ([v (vector 0.0 -0.0)]) (max (vector-ref v 0) (vector-ref v 1))) 0.0)
+    (eqv? (let ([v (vector -0.0 0.0)]) (max (vector-ref v 0) (vector-ref v 1))) 0.0)
+    (eqv? ((eval '(lambda (x y) (fl* (max (fl* x 1.0) (fl* y 1.0)) 1.0))) 0.0 -0.0) 0.0)
+    (eqv? ((eval '(lambda (x y) (fl* (max (fl* x 1.0) (fl* y 1.0)) 1.0))) -0.0 0.0) 0.0)
+    (== ((eval '(lambda (x y) (max x y))) 0.0 (nan)) (nan))
+    (== ((eval '(lambda (x y) (max x y))) (nan) -0.0) (nan))
+    ; with an exact number, (inexact 0) is 0.0; generic max of two known flonums is specialized by cptypes
+    (eqv? (max 0 -0.0) 0.0)
+    (eqv? (max -0.0 0) 0.0)
+    (eqv? ((eval '(lambda (x y) (max (fl* x 1.0) (fl* y 1.0)))) 0.0 -0.0) 0.0)
+    (eqv? ((eval '(lambda (x y) (max (fl* x 1.0) (fl* y 1.0)))) -0.0 0.0) 0.0)
  )
 
 (mat min
@@ -2493,6 +2515,28 @@
     (fl= (min 1/2 0.5) 0.5)
     (fl= (min -1/2 0.5) -0.5)
     (eqv? (min 3 5 1 4 6 2) 1)
+    ; signed zeros: -0.0 < 0.0 (IEEE 754-2019), whatever the order of the arguments and whether the call is
+    ; folded, compiled out of line, or inlined
+    (eqv? (min 0.0 -0.0) -0.0)
+    (eqv? (min -0.0 0.0) -0.0)
+    (eqv? (min 0.0 0.0) 0.0)
+    (eqv? (min -0.0 -0.0) -0.0)
+    (eqv? (min -0.0 0.0 -0.0) -0.0)
+    (eqv? ((let ([f min]) f) 0.0 -0.0) -0.0)
+    (eqv? ((let ([f min]) f) -0.0 0.0) -0.0)
+    (eqv? ((eval '(lambda (x y) (min x y))) 0.0 -0.0) -0.0)
+    (eqv? ((eval '(lambda (x y) (min x y))) -0.0 0.0) -0.0)
+    (eqv? (let ([v (vector 0.0 -0.0)]) (min (vector-ref v 0) (vector-ref v 1))) -0.0)
+    (eqv? (let ([v (vector -0.0 0.0)]) (min (vector-ref v 0) (vector-ref v 1))) -0.0)
+    (eqv? ((eval '(lambda (x y) (fl* (min (fl* x 1.0) (fl* y 1.0)) 1.0))) 0.0 -0.0) -0.0)
+    (eqv? ((eval '(lambda (x y) (fl* (min (fl* x 1.0) (fl* y 1.0)) 1.0))) -0.0 0.0) -0.0)
+    (== ((eval '(lambda (x y) (min x y))) 0.0 (nan)) (nan))
+    (== ((eval '(lambda (x y) (min x y))) (nan) -0.0) (nan))
+    ; with an exact number, (inexact 0) is 0.0; generic min of two known flonums is specialized by cptypes
+    (eqv? (min 0 -0.0) -0.0)
+    (eqv? (min -0.0 0) -0.0)
+    (eqv? ((eval '(lambda (x y) (min (fl* x 1.0) (fl* y 1.0)))) 0.0 -0.0) -0.0)
+    (eqv? ((eval '(lambda (x y) (min (fl* x 1.0) (fl* y 1.0)))) -0.0 0.0) -0.0)
  )
 
 (mat gcd

@@ -26,6 +26,25 @@
         (list flmin unsafe-flmin)
         (list flmax unsafe-flmax)))
 
+(when (eq? 'chez-scheme (system-type 'vm))
+  ;; -0.0 is smaller than 0.0 (IEEE 754-2019), whatever the order of the
+  ;; arguments and whether the call is inlined
+  (let ([v (vector 0.0 -0.0)])
+    (for ([op (in-list (list flmax unsafe-flmax))])
+      (test 0.0 op 0.0 -0.0)
+      (test 0.0 op -0.0 0.0))
+    (for ([op (in-list (list flmin unsafe-flmin))])
+      (test -0.0 op 0.0 -0.0)
+      (test -0.0 op -0.0 0.0))
+    (test 0.0 'flmax (flmax (vector-ref v 0) (vector-ref v 1)))
+    (test 0.0 'flmax (flmax (vector-ref v 1) (vector-ref v 0)))
+    (test -0.0 'flmin (flmin (vector-ref v 0) (vector-ref v 1)))
+    (test -0.0 'flmin (flmin (vector-ref v 1) (vector-ref v 0)))
+    (test 0.0 'unsafe-flmax (unsafe-flmax (vector-ref v 0) (vector-ref v 1)))
+    (test 0.0 'unsafe-flmax (unsafe-flmax (vector-ref v 1) (vector-ref v 0)))
+    (test -0.0 'unsafe-flmin (unsafe-flmin (vector-ref v 0) (vector-ref v 1)))
+    (test -0.0 'unsafe-flmin (unsafe-flmin (vector-ref v 1) (vector-ref v 0)))))
+
 (define 0nary-table
   (list (list fl+ unsafe-fl+)
         (list fl* unsafe-fl*)))

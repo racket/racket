@@ -387,18 +387,30 @@ If @racket[m] is exact @racket[0], @racket[0.0], or @racket[-0.0], the
 
 Returns the largest of the @racket[x]s, or @racket[+nan.0] if any
  @racket[x] is @racket[+nan.0].  If any @racket[x] is inexact, the
- result is coerced to inexact.  See also @racket[argmax].
+ result is coerced to inexact.  On Racket CS, @racket[-0.0] is
+ smaller than @racket[0.0], as for the @tt{maximum} operation of
+ IEEE 754-2019, so the result does not depend on the order of the
+ @racket[x]s.  See also @racket[argmax].
 
-@mz-examples[(max 1 3 2) (max 1 3 2.0)]}
+@mz-examples[(max 1 3 2) (max 1 3 2.0) (max -0.0 0.0)]
+
+@history[#:changed "9.4.0.4" @elem{On Racket CS, made @racket[-0.0] smaller than
+                                     @racket[0.0].}]}
 
 
 @defproc[(min [x real?] ...+) real?]{
 
 Returns the smallest of the @racket[x]s, or @racket[+nan.0] if any
  @racket[x] is @racket[+nan.0].  If any @racket[x] is inexact, the
- result is coerced to inexact.  See also @racket[argmin].
+ result is coerced to inexact.  On Racket CS, @racket[-0.0] is
+ smaller than @racket[0.0], as for the @tt{minimum} operation of
+ IEEE 754-2019, so the result does not depend on the order of the
+ @racket[x]s.  See also @racket[argmin].
 
-@mz-examples[(min 1 3 2) (min 1 3 2.0)]}
+@mz-examples[(min 1 3 2) (min 1 3 2.0) (min 0.0 -0.0)]
+
+@history[#:changed "9.4.0.4" @elem{On Racket CS, made @racket[-0.0] smaller than
+                                     @racket[0.0].}]}
 
 
 @defproc[(gcd [n rational?] ...) rational?]{

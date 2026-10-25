@@ -1299,7 +1299,7 @@
        (type-case x
           [(flonum?)
            (type-case y
-              [(flonum?) (if (or (fl< x y) ($nan? x)) x y)]
+              [(flonum?) (#3%flmin x y)] ; IEEE 754-2019: -0.0 is smaller than 0.0
               [(fixnum? bignum? ratnum?) (min x (inexact y))]
               [else (nonreal-error who y)])]
           [(fixnum?)
@@ -1328,7 +1328,7 @@
        (type-case x
           [(flonum?)
            (type-case y
-              [(flonum?) (if (or (fl> x y) ($nan? x)) x y)]
+              [(flonum?) (#3%flmax x y)] ; IEEE 754-2019: -0.0 is smaller than 0.0
               [(fixnum? bignum? ratnum?) (max x (inexact y))]
               [else (nonreal-error who y)])]
           [(fixnum?)
@@ -3475,7 +3475,8 @@
                  0))])]))))
 
 (set-who! flmin
-  (let ([$flmin (lambda (x y) (if (or (fl< x y) ($nan? x)) x y))])
+  ;; the same result as the inlined `flmin` (see `build-flminmax` in "cpprim.ss")
+  (let ([$flmin (lambda (x y) (#3%flmin x y))])
     (case-lambda
        [(x y)
         (unless (flonum? x) ($oops who "~s is not a flonum" x))
@@ -3495,7 +3496,8 @@
                 (loop ($flmin x y) (cdr r)))))])))
 
 (set-who! flmax
-  (let ([$flmax (lambda (x y) (if (or (fl> x y) ($nan? x)) x y))])
+  ;; the same result as the inlined `flmax` (see `build-flminmax` in "cpprim.ss")
+  (let ([$flmax (lambda (x y) (#3%flmax x y))])
     (case-lambda
        [(x y)
         (unless (flonum? x) ($oops who "~s is not a flonum" x))

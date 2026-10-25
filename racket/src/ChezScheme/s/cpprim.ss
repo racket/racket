@@ -4973,16 +4973,42 @@
                                  ,(build-fl-call (lookup-c-entry fltanh) e)))]
                        [else (build-fl-call (lookup-c-entry fltanh) e)])))]
             [else (build-fl-call (lookup-c-entry fltanh) e)])))
+      (define build-fl-combine-bits
+        ;; combines the bits of two flonums that are `fp=`, so that only the sign of
+        ;; a zero can differ: `%logor` gives -0.0 for min, `%logand` gives 0.0 for max
+        (lambda (e1 e2 combine)
+          `(unboxed-fp
+            ,(constant-case ptr-bits
+               [(64)
+                (let ([t1 (make-tmp 'flmm1)]
+                      [t2 (make-tmp 'flmm2)])
+                  `(let ([,t1 (inline ,(make-info-unboxed-args '(#t)) ,%fpcastto ,e1)]
+                         [,t2 (inline ,(make-info-unboxed-args '(#t)) ,%fpcastto ,e2)])
+                     (inline ,null-info ,%fpcastfrom (inline ,null-info ,combine ,t1 ,t2))))]
+               [(32)
+                (let ([thi1 (make-tmp 'flmmh1)]
+                      [thi2 (make-tmp 'flmmh2)]
+                      [tlo (make-tmp 'flmml)])
+                  `(let ([,thi1 (inline ,(make-info-unboxed-args '(#t)) ,%fpcastto/hi ,e1)]
+                         [,thi2 (inline ,(make-info-unboxed-args '(#t)) ,%fpcastto/hi ,e2)]
+                         [,tlo (inline ,(make-info-unboxed-args '(#t)) ,%fpcastto/lo ,e1)])
+                     (inline ,null-info ,%fpcastfrom (inline ,null-info ,combine ,thi1 ,thi2) ,tlo)))]))))
       (define build-flminmax
+        ;; IEEE 754-2019 minimum and maximum: -0.0 is smaller than 0.0, so the result
+        ;; does not depend on the order of the arguments, and a NaN is propagated
         (lambda (min?)
           (lambda (e1 e2)
             (bind 'always fp (e1 e2)
-                  `(if (inline ,(make-info-unboxed-args '(#t #t)) ,%fp< ,e1 ,e2)
-                       (unboxed-fp ,(if min? e1 e2))
-                       (if (inline ,(make-info-unboxed-args '(#t #t)) ,%fp<= ,e2 ,e1)
-                           (unboxed-fp ,(if min? e2 e1))
-                           ;; one of them must be +nan.0, so ensure +nan.0 result
-                           (unboxed-fp (inline ,(make-info-unboxed-args '(#t #t)) ,%fp+ ,e1 ,e2))))))))
+                  (let ([lo (if min? e1 e2)]
+                        [hi (if min? e2 e1)])
+                    `(if (inline ,(make-info-unboxed-args '(#t #t)) ,%fp< ,lo ,hi)
+                         (unboxed-fp ,e1)
+                         (if (inline ,(make-info-unboxed-args '(#t #t)) ,%fp< ,hi ,lo)
+                             (unboxed-fp ,e2)
+                             (if (inline ,(make-info-unboxed-args '(#t #t)) ,%fp= ,e1 ,e2)
+                                 ,(build-fl-combine-bits e1 e2 (if min? %logor %logand))
+                                 ;; one of them must be +nan.0, so ensure +nan.0 result
+                                 (unboxed-fp (inline ,(make-info-unboxed-args '(#t #t)) ,%fp+ ,e1 ,e2))))))))))
 
       (define-inline 3 fl+
         [() `(quote 0.0)]

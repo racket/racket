@@ -1168,6 +1168,23 @@
     (== (flmin 3.0 4.5 (nan) 17.3 -1.5) (nan))
     (fl= (flmin 3.0 4.5 +inf.0 17.3 -1.5) -1.5)
     (fl= (flmin 3.0 4.5 -inf.0 17.3 -1.5) -inf.0)
+    ; signed zeros: -0.0 < 0.0 (IEEE 754-2019), whatever the order of the arguments and whether the call is
+    ; folded, compiled out of line, or inlined
+    (eqv? (flmin 0.0 -0.0) -0.0)
+    (eqv? (flmin -0.0 0.0) -0.0)
+    (eqv? (flmin 0.0 0.0) 0.0)
+    (eqv? (flmin -0.0 -0.0) -0.0)
+    (eqv? (flmin -0.0 0.0 -0.0) -0.0)
+    (eqv? ((let ([f flmin]) f) 0.0 -0.0) -0.0)
+    (eqv? ((let ([f flmin]) f) -0.0 0.0) -0.0)
+    (eqv? ((eval '(lambda (x y) (flmin x y))) 0.0 -0.0) -0.0)
+    (eqv? ((eval '(lambda (x y) (flmin x y))) -0.0 0.0) -0.0)
+    (eqv? (let ([v (vector 0.0 -0.0)]) (flmin (vector-ref v 0) (vector-ref v 1))) -0.0)
+    (eqv? (let ([v (vector -0.0 0.0)]) (flmin (vector-ref v 0) (vector-ref v 1))) -0.0)
+    (eqv? ((eval '(lambda (x y) (fl* (flmin (fl* x 1.0) (fl* y 1.0)) 1.0))) 0.0 -0.0) -0.0)
+    (eqv? ((eval '(lambda (x y) (fl* (flmin (fl* x 1.0) (fl* y 1.0)) 1.0))) -0.0 0.0) -0.0)
+    (== ((eval '(lambda (x y) (flmin x y))) 0.0 (nan)) (nan))
+    (== ((eval '(lambda (x y) (flmin x y))) (nan) -0.0) (nan))
  )
 
 (mat flmax
@@ -1195,6 +1212,23 @@
     (== (flmax 3.0 4.5 (nan) 17.3 -1.5) (nan))
     (fl= (flmax 3.0 4.5 +inf.0 17.3 -1.5) +inf.0)
     (fl= (flmax 3.0 4.5 -inf.0 17.3 -1.5) 17.3)
+    ; signed zeros: -0.0 < 0.0 (IEEE 754-2019), whatever the order of the arguments and whether the call is
+    ; folded, compiled out of line, or inlined
+    (eqv? (flmax 0.0 -0.0) 0.0)
+    (eqv? (flmax -0.0 0.0) 0.0)
+    (eqv? (flmax 0.0 0.0) 0.0)
+    (eqv? (flmax -0.0 -0.0) -0.0)
+    (eqv? (flmax -0.0 0.0 -0.0) 0.0)
+    (eqv? ((let ([f flmax]) f) 0.0 -0.0) 0.0)
+    (eqv? ((let ([f flmax]) f) -0.0 0.0) 0.0)
+    (eqv? ((eval '(lambda (x y) (flmax x y))) 0.0 -0.0) 0.0)
+    (eqv? ((eval '(lambda (x y) (flmax x y))) -0.0 0.0) 0.0)
+    (eqv? (let ([v (vector 0.0 -0.0)]) (flmax (vector-ref v 0) (vector-ref v 1))) 0.0)
+    (eqv? (let ([v (vector -0.0 0.0)]) (flmax (vector-ref v 0) (vector-ref v 1))) 0.0)
+    (eqv? ((eval '(lambda (x y) (fl* (flmax (fl* x 1.0) (fl* y 1.0)) 1.0))) 0.0 -0.0) 0.0)
+    (eqv? ((eval '(lambda (x y) (fl* (flmax (fl* x 1.0) (fl* y 1.0)) 1.0))) -0.0 0.0) 0.0)
+    (== ((eval '(lambda (x y) (flmax x y))) 0.0 (nan)) (nan))
+    (== ((eval '(lambda (x y) (flmax x y))) (nan) -0.0) (nan))
  )
 
 (mat flnumerator
