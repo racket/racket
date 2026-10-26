@@ -8,6 +8,7 @@
          net/base64
          setup/getinfo
          racket/match
+         file/private/check-path
          "dirs.rkt")
 
 (provide unpack
@@ -77,6 +78,7 @@
                     [s (expr->path-descriptor v)])
                (unless (relative-path-descriptor? s)
                  (error "expected a directory name relative path string, got" s))
+               (check-path-descriptor s "directory")
                (let ([next-val (on-directory s val)])
                  (loop next-val)))]
             [(file file-replace)
@@ -84,6 +86,7 @@
                     [s (expr->path-descriptor v)])
                (unless (relative-path-descriptor? s)
                  (error "expected a file name relative path string, got" s))
+               (check-path-descriptor s "file")
                (let ([len (read p)])
                  (unless (and (number? len) (integer? len))
                    (error "expected a file name size, got" len))
@@ -140,6 +143,12 @@
   (or (eq? s 'same) 
       (and (path? s) (relative-path? s))
       (relative-path? (cadr s))))
+
+;; check-path-descriptor : path-descriptor string -> void
+;; rejects a path descriptor whose path has an up-directory element
+(define (check-path-descriptor s kind)
+  (unless (eq? s 'same)
+    (check-unpack-path 'unpack (if (pair? s) (cadr s) s) #:kind kind)))
 
 ;; protected-limited-output-port input-port n -> (values input-port input-port)
 ;; returns two input ports. the first reads from the given input port, and the second
@@ -200,6 +209,7 @@
                                (shuffle-path parent-dir get-dir shuffle? (read p))])
                    (unless (or (eq? s 'same) (relative-path? s))
                      (error "expected a directory name relative path string, got" s))
+                   (check-path-descriptor s "directory")
                    (when (and target-dir
                               (or (eq? s 'same) (filter 'dir s target-dir)))
                      (let ([d (build-path target-dir s)])
@@ -212,6 +222,7 @@
                          (shuffle-path parent-dir get-dir shuffle? (read p))])
              (unless (relative-path? s)
                (error "expected a file name relative path string, got" s))
+             (check-path-descriptor s "file")
              (let ([len (read p)])
                (unless (and (number? len) (integer? len))
                  (error "expected a file name size, got" len))
