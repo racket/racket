@@ -59,7 +59,8 @@
 
 (require (only-in rackunit require/expose) net/private/ip)
 (require/expose net/dns (ip->in-addr.arpa ip->ip6.arpa
-                         parse-reply parse-mx-response))
+                         parse-reply parse-mx-response
+                         random-query-id))
 
 (define-values (_1 _2 mx-ans mx-nss _3 _4)
   (parse-reply '(0 187 129 128) mx-response-with-cname))
@@ -78,7 +79,12 @@
         ;; FIXME: may need to change if SOA handling in net/dns
         ;;        changes (see FIXME there)
   (check-equal? (parse-mx-response mx-ans mx-nss mx-response-with-cname "stat.ethz.ch")
-                "stat.ethz.ch"))
+                "stat.ethz.ch")
+  ;; Query ids must use the full 16-bit space, not just the low byte.
+  (define ids (for/list ([i (in-range 200)]) (random-query-id)))
+  (for ([id (in-list ids)]) (check-true (<= 0 id 65535)))
+  (check-true (for/or ([id (in-list ids)]) (> id 255))
+              "query ids never exceed 255, leaving only 8 bits of entropy"))
 
 ;; Constants for testing. These can go out of sync
 ;; when server setups change, so keep them up-to-date.

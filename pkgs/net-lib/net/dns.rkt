@@ -7,6 +7,7 @@
          "private/rr-srv.rkt"
          racket/contract
          racket/format
+         racket/random
          racket/string
          racket/system
          racket/udp)
@@ -112,6 +113,14 @@
 ;; QR | OPCODE  | AA | TC | RD | RA | Z     | RCODE   |
 ;; 0  | 0 0 0 0 | 0  | 0  | 1  | 0  | 0 0 0 | 0 0 0 0 |
 ;;
+;; -> Int16
+;; A fresh transaction identifier for a query. The reply is matched to
+;; the query by this id and the source port, so the id needs the full
+;; 16 bits of range and should be unpredictable to an off-path attacker
+;; (RFC 5452). Use a cryptographic source rather than `random`.
+(define (random-query-id)
+  (integer-bytes->integer (crypto-random-bytes 2) #f #t))
+
 (define (make-std-query-header id question-count)
   (append (number->octet-pair id)             ; 16-bit random identifier
           (list 1 0)                          ; Opcode & flags
@@ -183,7 +192,7 @@
     (raise-type-error 'dns-query "DNS query class" class))
 
   (define nameserver (ip-address->string nameserver-ip))
-  (define query (make-query (random 256) (string->bytes/latin-1 addr)
+  (define query (make-query (random-query-id) (string->bytes/latin-1 addr)
                             type class))
   (define udp (udp-open-socket nameserver 53))
   (define reply
