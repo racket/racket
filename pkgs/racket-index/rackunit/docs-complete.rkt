@@ -21,6 +21,8 @@
     (cond
       [(regexp? skip)
        (regexp-match skip (symbol->string f))]
+      [(symbol? skip)
+       (eq? skip f)]
       [(procedure? skip)
        (skip f)]
       [(not skip) #f]
@@ -28,7 +30,7 @@
        (for/or ([x (in-list skip)])
          (cond
            [(regexp? x)
-            (regexp-match skip (symbol->string f))]
+            (regexp-match x (symbol->string f))]
            [(symbol? x)
             (eq? x f)]))]))
         
