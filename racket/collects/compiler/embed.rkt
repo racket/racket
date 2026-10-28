@@ -899,7 +899,9 @@
   (let ([extensions (filter (lambda (m) (extension? (mod-code m))) code-l)])
     `(module #%resolver '#%kernel
        (let-values ([(orig) (current-module-name-resolver)]
-                    [(regs) (make-hasheq)]
+                    ;; weak, so that a discarded namespace's registry
+                    ;; can be collected:
+                    [(regs) (make-weak-hasheq)]
                     [(mapping-table) (quote
                                       ,(map
                                         (lambda (m)
