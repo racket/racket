@@ -936,10 +936,12 @@ each element in the sequence.
 @defproc[(sequence-generate [seq sequence?])
          (values (-> boolean?) (-> any))]{
   @tech{Initiates} a sequence and returns two thunks to extract
-  elements from the sequence.  The first returns @racket[#t] if more
-  values are available for the sequence.  The second returns the next
-  element (which may be multiple values) from the sequence; if no more
-  elements are available, the @exnraise[exn:fail:contract].
+  elements from the sequence.  The first checks if more elements are
+  available by reading and caching the next element (which may be multiple
+  values) if none is currently cached, returning @racket[#t] if successful.
+  The second retrieves the cached element if available; otherwise it reads
+  the next element from the sequence directly; if no more elements are
+  available, the @exnraise[exn:fail:contract].
 
   Note that a @elemref["sequence-state"]{sequence itself can have
   state}, so multiple calls to @racket[sequence-generate] on the same
@@ -947,14 +949,26 @@ each element in the sequence.
 
   @examples[
   #:eval sequence-evaluator
-  (define inport (open-input-bytes (bytes 1 2 3 4 5)))
+  (define inport (open-input-bytes (bytes 1 2 3 4 5 6 7 8 9 10)))
   (define-values (more? get) (sequence-generate inport))
   (more?)
   (get)
+  (more?)
+  (sequence-ref inport 0)
+  (get)
+  (more?)
+  (for/first ([i inport]) i)
   (get)
 
   (define-values (more2? get2) (sequence-generate inport))
-  (list (get2) (get2) (get2))
+  (more?)
+  (list (get2) (get))
+  (more2?)
+  (more2?)
+  (list (get) (get2))
+  (more?)
+  (more2?)
+  (more?)
   (more2?)
  ]}
 
