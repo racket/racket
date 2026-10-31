@@ -99,7 +99,8 @@ The following completes the grammar for @racket[pregexp], which uses
 
 In case-insensitive mode, a backreference of the form
 @litchar{\}@nonterm{n} matches case-insensitively only with respect to
-ASCII characters.
+ASCII characters. Similarly, case-insensitive mode for a byte regexp
+applies only to ASCII characters.
 
 The Unicode categories follow.
 
