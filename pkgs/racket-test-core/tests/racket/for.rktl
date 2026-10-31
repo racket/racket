@@ -808,6 +808,24 @@
 (test (void) 'for-2-values (for ([x '(1 2 3)] [y '(a b c)]) (values x y)))
 (test (void) 'for*-2-values (for* ([x '(1 2 3)] [y '(a b c)]) (values x y)))
 
+;; for/sum should raise the error in case the result is not a number
+(test 15 'for/sum (for/sum ([x 5]) (+ x 1)))
+(test 15 'for*/sum (for*/sum ([x 5]) (+ x 1)))
+(test 120 'for/product (for/product ([x 5]) (+ x 1)))
+(test 120 'for*/product (for*/product ([x 5]) (+ x 1)))
+(err/rt-test (for/sum ([x 5]) 'not-a-number)
+             exn:fail:contract?
+             #rx"for/sum: contract violation")
+(err/rt-test (for*/sum ([x 5]) 'not-a-number)
+             exn:fail:contract?
+             #rx"for*/sum: contract violation")
+(err/rt-test (for/product ([x 5]) 'not-a-number)
+             exn:fail:contract?
+             #rx"for/product: contract violation")
+(err/rt-test (for*/product ([x 5]) 'not-a-number)
+             exn:fail:contract?
+             #rx"for*/product: contract violation")
+
 ;; for/fold with no accums
 (test '() 'for/fold-no-accum 
       (call-with-values (λ () (for/fold () ([x '(1 2)]) (values))) (λ x x)))
