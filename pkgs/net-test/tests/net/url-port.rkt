@@ -12,9 +12,9 @@
       (make-channel))
     (define listener-ports
       (make-vector (add1 (length responses))))
-    (define (resolve-response response)
+    (define (resolve-response response request)
       (if (procedure? response)
-          (response listener-ports)
+          (response listener-ports request)
           response))
     (parameterize ([current-custodian server-cust])
       (for ([response (in-list (cons response responses))]
@@ -39,7 +39,7 @@
                                                          (car header)))])
                                (when m
                                  (read-bytes (string->number (bytes->string/utf-8 (cadr m))) ip)))
-                             (display (resolve-response response) op)
+                             (display (resolve-response response (and header (car header))) op)
                              (close-output-port op)
                              (close-input-port ip)))
                          +inf.0
@@ -84,6 +84,20 @@
     (make-tester get-pure-port/headers))
   (define get-pure/headers/redirect
     (make-tester (λ (x) (get-pure-port/headers x #:redirections 1))))
+  (define get-pure/redirect/credentials
+    (make-tester (λ (x) (get-pure-port x
+                                       '("Authorization: Basic dXNlcjpzZWNyZXQ="
+                                         "Cookie: session=abc"
+                                         "X-Other: 1")
+                                       #:redirections 1))))
+  ;; Responds with the request's Authorization, Cookie, and X-Other lines
+  (define (echo-headers request)
+    (string-append
+     "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n"
+     (string-join (map bytes->string/utf-8
+                       (regexp-match* #rx#"(?m:^(?i:authorization|cookie|x-other):[^\r]*)"
+                                      request))
+                  "\n")))
   (define put-pure
     (make-tester (lambda (url) (put-pure-port url #"data"))))
   (define put-impure
@@ -153,7 +167,7 @@
   (unless skip-actual-redirect?
     (test
      (get-pure/redirect
-      (λ (listener-ports)
+      (λ (listener-ports request)
         (format "HTTP/1.1 301 Moved Permanently\r\nLocation: http://localhost:~a/whatever\r\n\r\nstuff"
                 (vector-ref listener-ports 1)))
       (string-append
@@ -164,7 +178,27 @@
       "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\nAnother-Header: ta-daa\r\n\r\n20\r\nThis is the data in the first ch\r\n21\r\nand this is the second oneXXXXXXX\r\n0\r\n")
      =>
      (values "This is the data in the first chand this is the second oneXXXXXXX"
-             "Content-Type: text/plain\r\nTransfer-Encoding: chunked\r\nAnother-Header: ta-daa\r\n\r\n")))
+             "Content-Type: text/plain\r\nTransfer-Encoding: chunked\r\nAnother-Header: ta-daa\r\n\r\n")
+
+     ;; credentials are not passed along to a different server
+     (get-pure/redirect/credentials
+      (λ (listener-ports request)
+        (format "HTTP/1.1 302 Found\r\nLocation: http://localhost:~a/other\r\n\r\n"
+                (vector-ref listener-ports 1)))
+      (λ (listener-ports request)
+        (echo-headers request)))
+     =>
+     "X-Other: 1"
+
+     ;; ... but they are kept for a redirection to the same server
+     (get-pure/redirect/credentials
+      (λ (listener-ports request)
+        (if (regexp-match? #rx#"^GET / " request)
+            (format "HTTP/1.1 302 Found\r\nLocation: http://localhost:~a/other\r\n\r\n"
+                    (vector-ref listener-ports 0))
+            (echo-headers request))))
+     =>
+     "Authorization: Basic dXNlcjpzZWNyZXQ=\nCookie: session=abc\nX-Other: 1"))
 
   (test
    (put-pure
