@@ -288,8 +288,11 @@
 
 (define (create-parallel-thread-pool who n capacity cust own?)
   (or (atomically
-       (define s (start-scheduler n #t))
-       (set-place-schedulers! current-place (hash-set (place-schedulers current-place) s #t))
+       ;; without futures, a pool has no scheduler, and `thread/parallel`
+       ;; makes a plain thread
+       (define s (and (futures-enabled?) (start-scheduler n #t)))
+       (when s
+         (set-place-schedulers! current-place (hash-set (place-schedulers current-place) s #t)))
        (define pool (parallel-thread-pool s capacity 0 #f))
        (cond
          [own?
@@ -313,10 +316,14 @@
 ;; Call in atomic mode or in scheduler thread:
 (define (do-parallel-thread-pool-close pool)
   (define s (parallel-thread-pool-scheduler pool))
-  (host:mutex-acquire (scheduler-mutex s))
-  (set-parallel-thread-pool-capacity! pool 0)
-  (host:mutex-release (scheduler-mutex s))
-  (thread-pool-departure pool 0)
+  (cond
+    [s
+     (host:mutex-acquire (scheduler-mutex s))
+     (set-parallel-thread-pool-capacity! pool 0)
+     (host:mutex-release (scheduler-mutex s))
+     (thread-pool-departure pool 0)]
+    [else
+     (set-parallel-thread-pool-capacity! pool 0)])
   (unsafe-custodian-unregister pool (parallel-thread-pool-custodian-reference pool)))
 
 (define-place-local parallel-thread-will-executor (host:make-late-will-executor void))
@@ -341,7 +348,10 @@
   (check who (lambda (v) (or (not v) (eq? v 'results))) #:contract "(or/c #f 'results)" keep-result?)
   (cond
     [(not (futures-enabled?))
-     (thread thunk)]
+     (when (and (parallel-thread-pool? pool-in)
+                (eqv? 0 (parallel-thread-pool-capacity pool-in)))
+       (raise-arguments-error 'thread "the parallel thread pool has been closed"))
+     (thread thunk keep-result?)]
     [else
      (define cust (current-custodian))
      (define pool (if (eq? pool-in 'own)

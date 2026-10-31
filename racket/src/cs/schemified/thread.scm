@@ -12617,15 +12617,18 @@
            (begin
              (start-atomic)
              (begin0
-               (let ((s_0 (start-scheduler n_0 #t)))
+               (let ((s_0
+                      (if (1/futures-enabled?) (start-scheduler n_0 #t) #f)))
                  (begin
-                   (let ((app_0 (unsafe-place-local-ref cell.1$2)))
-                     (set-place-schedulers!
-                      app_0
-                      (hash-set
-                       (place-schedulers (unsafe-place-local-ref cell.1$2))
-                       s_0
-                       #t)))
+                   (if s_0
+                     (let ((app_0 (unsafe-place-local-ref cell.1$2)))
+                       (set-place-schedulers!
+                        app_0
+                        (hash-set
+                         (place-schedulers (unsafe-place-local-ref cell.1$2))
+                         s_0
+                         #t)))
+                     (void))
                    (let ((pool_0
                           (parallel-thread-pool2.1 s_0 capacity_0 0 #f)))
                      (if own?_0
@@ -12668,10 +12671,13 @@
   (lambda (pool_0)
     (let ((s_0 (parallel-thread-pool-scheduler pool_0)))
       (begin
-        (mutex-acquire (scheduler-mutex s_0))
-        (set-parallel-thread-pool-capacity! pool_0 0)
-        (mutex-release (scheduler-mutex s_0))
-        (thread-pool-departure pool_0 0)
+        (if s_0
+          (begin
+            (mutex-acquire (scheduler-mutex s_0))
+            (set-parallel-thread-pool-capacity! pool_0 0)
+            (mutex-release (scheduler-mutex s_0))
+            (thread-pool-departure pool_0 0))
+          (set-parallel-thread-pool-capacity! pool_0 0))
         (1/unsafe-custodian-unregister
          pool_0
          (parallel-thread-pool-custodian-reference pool_0))))))
@@ -12720,7 +12726,15 @@
                  "(or/c #f 'results)"
                  keep-result?10_0))
               (if (not (1/futures-enabled?))
-                (make-thread thunk11_0)
+                (begin
+                  (if (if (1/parallel-thread-pool? pool-in9_0)
+                        (eqv? 0 (parallel-thread-pool-capacity pool-in9_0))
+                        #f)
+                    (raise-arguments-error
+                     'thread
+                     "the parallel thread pool has been closed")
+                    (void))
+                  (make-thread thunk11_0 keep-result?10_0))
                 (let ((cust_0 (1/current-custodian)))
                   (let ((pool_0
                          (if (eq? pool-in9_0 'own)
