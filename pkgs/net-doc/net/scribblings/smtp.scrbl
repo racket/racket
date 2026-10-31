@@ -47,6 +47,9 @@ Connects to the server at @racket[server-address] and @racket[port-no]
 to send a message. The @racket[from] argument specifies the mail
 address of the sender, and @racket[to] is a list of recipient
 addresses (including ``To:'', ``CC'', and ``BCC'' recipients).
+If @racket[from] or any string in @racket[to] contains a carriage
+return or linefeed character, @racket[exn:fail:contract] is raised
+before any command is sent to the server.
 
 The @racket[header] argument is the complete message header, which
 should already include ``From:'', ``To:'', and ``CC:'' fields
