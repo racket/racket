@@ -39259,8 +39259,15 @@
                                                                                                                 binding-sym_0)))
                                                                                                           (correlate-source-name
                                                                                                            app_0
-                                                                                                           (syntax-e$1
-                                                                                                            id_0)))
+                                                                                                           (let ((name_0
+                                                                                                                  (syntax-property$1
+                                                                                                                   id_0
+                                                                                                                   'undefined-error-name)))
+                                                                                                             (if (symbol?
+                                                                                                                  name_0)
+                                                                                                               name_0
+                                                                                                               (syntax-e$1
+                                                                                                                id_0)))))
                                                                                                         fold-var_0)))
                                                                                                   (values
                                                                                                    fold-var_1))))

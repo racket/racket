@@ -123,7 +123,10 @@
               (correlate-source-name
                (hash-ref (header-binding-sym-to-define-sym header)
                          binding-sym)
-               (syntax-e id)))]
+               (let ([name (syntax-property id 'undefined-error-name)])
+                 (if (symbol? name)
+                     name
+                     (syntax-e id)))))]
            [else
             ;; Outside of a module, look up name to `set!`
             (for/list ([binding-sym (in-list binding-syms)])

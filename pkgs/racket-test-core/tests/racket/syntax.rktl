@@ -143,6 +143,18 @@
                (and (exn:fail:contract:variable? exn)
                     (eq? 'alice (exn:fail:contract:variable-id exn)))))
 
+(module uses-undefined-error-name racket/base
+  (require (for-syntax racket/base))
+  (define-syntax (m stx)
+    #`(begin
+        (x1)
+        (define #,(syntax-property #'x1 'undefined-error-name 'x) 1)))
+  (m))
+
+(err/rt-test/once (dynamic-require ''uses-undefined-error-name #f)
+                  exn:fail:contract:variable?
+                  #rx"x: undefined;")
+
 (let ([f
        (case-lambda
 	[() 'zero]
