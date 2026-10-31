@@ -45,7 +45,7 @@
    [(eos)
     (missing-square-closing-error s pos config)]
    [(#\])
-    (values (range-add* range span-from config) (add1 pos))]
+    (values (range-add* range span-from config (chytes-limit s)) (add1 pos))]
    [(#\-)
     (define pos2 (add1 pos))
     (chyte-case/eos
@@ -55,7 +55,7 @@
      [(#\])
       (cond
        [must-span-from (misplaced-hyphen-error s pos config)]
-       [else (values (range-add (range-add* range span-from config) (chyte #\-))
+       [else (values (range-add (range-add* range span-from config (chytes-limit s)) (chyte #\-))
                      (add1 pos2))])]
      [else
       (cond
@@ -80,7 +80,7 @@
             (define-values (success? range1 pos3) (parse-class s pos2 config))
             (unless success?
               (parse-error s pos3 config "illegal alphabetic escape"))
-            (define range2 (range-union range1 (range-add* range span-from config)))
+            (define range2 (range-union range1 (range-add* range span-from config (chytes-limit s))))
             (parse-range-rest range2 s (add1 pos2) config)])]
          [else
           (parse-range-rest/span c range s (add1 pos2) config
@@ -100,7 +100,7 @@
         (values #f #f #f)]))
     (cond
      [success?
-      (define range2 (range-union range1 (range-add* range span-from config)))
+      (define range2 (range-union range1 (range-add* range span-from config (chytes-limit s))))
       (parse-range-rest range2 s pos2 config)]
      [else
       (parse-range-rest/span (chyte #\[) range s (add1 pos) config
@@ -120,9 +120,9 @@
      [(must-span-from . > . c)
       (parse-error s pos config "invalid range within square brackets in pattern")]
      [else
-      (parse-range-rest (range-add-span* range must-span-from c config) s pos config)])]
+      (parse-range-rest (range-add-span* range must-span-from c config (chytes-limit s)) s pos config)])]
    [else
-    (parse-range-rest (range-add* range span-from config) s pos config
+    (parse-range-rest (range-add* range span-from config (chytes-limit s)) s pos config
                       #:span-from c)]))
 
 (define (missing-square-closing-error s pos config)
