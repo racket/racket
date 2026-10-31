@@ -2182,4 +2182,23 @@
 
 ;; ----------------------------------------
 
+(err/rt-test (let ([s 'fresh]) ; make sure test is not confused by `s` already bound as syntax
+               (let ()
+                 (s)
+                 (struct s () #:transparent)
+                 'ok))
+             exn:fail:contract:variable?
+             #rx"^s: undefined;")
+
+(module uses-constructor-before-defined racket/base
+  (require (for-syntax racket/base))
+  (s)
+  (struct s () #:transparent))
+
+(err/rt-test/once (dynamic-require ''uses-constructor-before-defined #f)
+                  exn:fail:contract:variable?
+                  #rx"s: undefined;")
+
+;; ----------------------------------------
+
 (report-errs)
