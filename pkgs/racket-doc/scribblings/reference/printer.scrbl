@@ -557,10 +557,15 @@ essentially assembly code for Racket, and reading such a form produces
 a compiled form when the @racket[read-accept-compiled] parameter is
 set to @racket[#t].
 
-Compiled code parsed from @litchar{#~} is marked as non-runnable if
+Compiled code can be parsed from @litchar{#~} only when
 the current code inspector (see @racket[current-code-inspector]) is
-not the original code inspector; on attempting to evaluate or reoptimize
-non-runnable bytecode, @exnraise[exn:fail]. Otherwise, compiled
+the original code inspector. Although the reader for compiled code
+attempts to detect malformed input, reading compiled code
+must be considered an @tech{unsafe} operation if the input
+is potentially malformed (i.e., not a form that Racket could have
+printed).
+
+Compiled
 code parsed from @litchar{#~} may contain references to unexported or
 protected bindings from a module. Conceptually, the references in
 bytecode are associated with the current code inspector, where the
@@ -641,4 +646,7 @@ procedure is called.
                                     read time references to unsafe
                                     operations.}
         #:changed "7.0" @elem{Allowed some @racket[srcloc] values
-                              embedded in compiled code.}]
+                              embedded in compiled code.}
+        #:changed "9.4.0.3" @elem{Disallowed reading any compiled code
+                                  when the current code inspector is not
+                                  the original inspector.}]

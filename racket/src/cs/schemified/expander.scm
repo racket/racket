@@ -71494,15 +71494,31 @@
                               (if (check-parameter
                                    1/read-accept-compiled
                                    config_0)
-                                (wrap
-                                 (|#%app|
-                                  (read-config/inner-read-compiled
-                                   (read-config/outer-inner config_0))
-                                  in_0)
-                                 in_0
-                                 config_0
-                                 c_0)
-                                (let ((temp284_0
+                                (begin
+                                  (if (eq?
+                                       (current-code-inspector)
+                                       initial-code-inspector)
+                                    (void)
+                                    (let ((temp284_0
+                                           "`~a~~` compiled expressions not allowed by code inspector"))
+                                      (reader-error.1
+                                       unsafe-undefined
+                                       '#\x78
+                                       #f
+                                       unsafe-undefined
+                                       in_0
+                                       config_0
+                                       temp284_0
+                                       (list dispatch-c_0))))
+                                  (wrap
+                                   (|#%app|
+                                    (read-config/inner-read-compiled
+                                     (read-config/outer-inner config_0))
+                                    in_0)
+                                   in_0
+                                   config_0
+                                   c_0))
+                                (let ((temp288_0
                                        "`~a~~` compiled expressions not enabled"))
                                   (reader-error.1
                                    unsafe-undefined
@@ -71511,7 +71527,7 @@
                                    unsafe-undefined
                                    in_0
                                    config_0
-                                   temp284_0
+                                   temp288_0
                                    (list dispatch-c_0)))))))))))))))))))
 (define retry-special-comment
   (lambda (v_0 in_0 config_0)
