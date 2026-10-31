@@ -565,7 +565,7 @@
                                   (if self-ctor?
                                       (if omit-define-syntaxes?
                                           ctor-name
-                                          (car (generate-temporaries (list id))))
+                                          (datum->syntax #'here (syntax-e id)))
                                       ctor-name)
                                   (build-name id "make-" id))]
                        [? (build-name id id "?")]
