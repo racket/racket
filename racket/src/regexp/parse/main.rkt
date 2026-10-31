@@ -322,7 +322,7 @@
       (values c (add1 pos))]
      [else
       ;; case-insensitive char match
-      (values (rx-range (range-add* empty-range c config) (chytes-limit s))
+      (values (rx-range (range-add* empty-range c config (chytes-limit s)) (chytes-limit s))
               (add1 pos))])]))
 
 (define (parse-backslash-literal s pos2 config)

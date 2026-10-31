@@ -239,6 +239,28 @@
 (test '("app\u03BBe") regexp-match #px"(?i:app[\u039B-\u039C]e)" "app\u03BBe")
 (test '("app\u039Be") regexp-match #px"(?i:app[\u03BB-\u03BC]e)" "app\u039Be")
 
+;; In a byte regexp, case-insensitive mode must not add a character
+;; beyond 255, such as the upcase of byte 181 or 255
+(test '(#"\265") regexp-match #px#"(?i:\265)" #"\265")
+(test '(#"\265") regexp-match #px#"(?i:[\265])" #"\265")
+(test '(#"\377") regexp-match #px#"(?i:[\377])" #"\377")
+(test '(#"\377") regexp-match #px#"(?i:[\376-\377])" #"\377")
+;; Case-insensitive mode for a byte regexp folds only ASCII
+(test #f regexp-match #px#"(?i:[\351\377])" #"\311")
+(test #f regexp-match #px#"(?i:\351)" #"\311")
+(test #f regexp-match #px#"(?i:[\340-\352])" #"\311")
+(test '("\311") regexp-match #px"(?i:\351)" "\311")
+(test '(#"aB") regexp-match #px#"(?i:[a-b]+)" #"aB")
+(test #f regexp-match #px#"(?i:[\265\377])" #"x")
+(test '("\u039C") regexp-match #px"(?i:[\u00B5])" "\u039C")
+(test '("\u0178") regexp-match #px"(?i:[\u00FF])" "\u0178")
+;; This loop used to corrupt memory and crash
+(let ([keep (make-vector 4096 #f)])
+  (for ([i (in-range 100000)])
+    (define pat (bytes-append #"(?i:[\265\377" (bytes (+ 65 (modulo i 26))) #"])"))
+    (test #f regexp-match (byte-pregexp pat) #"0")
+    (vector-set! keep (modulo i 4096) (make-vector (modulo (* i 7) 37) i))))
+
 (let ([sigmas '(#\u03A3 #\u03C2 #\u03C3)]
       [lambdas '(#\u039B #\u039B #\u03BB)])
   (for-each (lambda (s1)

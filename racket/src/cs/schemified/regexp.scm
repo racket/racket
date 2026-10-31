@@ -1927,25 +1927,27 @@
           (let ((args_0 (list (integer->char p-c_0))))
             (let ((fmt_1 fmt_0)) (apply regexp-error fmt_1 args_0))))))))
 (define range-add*
-  (lambda (range_0 c_0 config_0)
+  (lambda (range_0 c_0 config_0 limit-c_0)
     (if (not c_0)
       range_0
       (let ((range2_0 (range-add range_0 c_0)))
         (if (parse-config-case-sensitive? config_0)
           range2_0
-          (let ((range3_0
-                 (range-add
-                  range2_0
-                  (char->integer (char-upcase (integer->char c_0))))))
-            (let ((range4_0
+          (if (if (> c_0 127) (< limit-c_0 256) #f)
+            range2_0
+            (let ((range3_0
                    (range-add
-                    range3_0
-                    (char->integer (char-foldcase (integer->char c_0))))))
-              (range-add
-               range4_0
-               (char->integer (char-downcase (integer->char c_0)))))))))))
+                    range2_0
+                    (char->integer (char-upcase (integer->char c_0))))))
+              (let ((range4_0
+                     (range-add
+                      range3_0
+                      (char->integer (char-foldcase (integer->char c_0))))))
+                (range-add
+                 range4_0
+                 (char->integer (char-downcase (integer->char c_0))))))))))))
 (define range-add-span*
-  (lambda (range_0 from-c_0 to-c_0 config_0)
+  (lambda (range_0 from-c_0 to-c_0 config_0 limit-c_0)
     (if (parse-config-case-sensitive? config_0)
       (range-union range_0 (list (cons from-c_0 to-c_0)))
       (let ((end_0 (add1 to-c_0)))
@@ -1956,7 +1958,8 @@
             (lambda (range_1 pos_0)
               (if (< pos_0 end_0)
                 (let ((range_2
-                       (let ((range_2 (range-add* range_1 pos_0 config_0)))
+                       (let ((range_2
+                              (range-add* range_1 pos_0 config_0 limit-c_0)))
                          (values range_2))))
                   (for-loop_0 range_2 (+ pos_0 1)))
                 range_1)))))
@@ -2017,7 +2020,12 @@
           config8_0
           "missing closing square bracket in pattern")
          (if (eqv? tmp_0 '#\x5d)
-           (let ((app_0 (range-add* range5_0 span-from1_0 config8_0)))
+           (let ((app_0
+                  (range-add*
+                   range5_0
+                   span-from1_0
+                   config8_0
+                   (chytes-limit s6_0))))
              (values app_0 (add1 pos7_0)))
            (if (eqv? tmp_0 '#\x2d)
              (let ((pos2_0 (add1 pos7_0)))
@@ -2041,7 +2049,11 @@
                         "misplaced hyphen within square brackets in pattern")
                        (let ((app_0
                               (range-add
-                               (range-add* range5_0 span-from1_0 config8_0)
+                               (range-add*
+                                range5_0
+                                span-from1_0
+                                config8_0
+                                (chytes-limit s6_0))
                                45)))
                          (values app_0 (add1 pos2_0))))
                      (if span-from1_0
@@ -2094,7 +2106,8 @@
                                         (range-add*
                                          range5_0
                                          span-from1_0
-                                         config8_0))))
+                                         config8_0
+                                         (chytes-limit s6_0)))))
                                   (let ((temp39_0 (add1 pos2_0)))
                                     (parse-range-rest.1
                                      #f
@@ -2134,7 +2147,11 @@
                       (let ((range2_0
                              (range-union
                               range1_0
-                              (range-add* range5_0 span-from1_0 config8_0))))
+                              (range-add*
+                               range5_0
+                               span-from1_0
+                               config8_0
+                               (chytes-limit s6_0)))))
                         (parse-range-rest.1
                          #f
                          #f
@@ -2184,9 +2201,15 @@
                  range15_0
                  must-span-from11_0
                  c14_0
-                 config18_0)))
+                 config18_0
+                 (chytes-limit s16_0))))
            (parse-range-rest.1 #f #f temp73_0 s16_0 pos17_0 config18_0)))
-       (let ((temp77_0 (range-add* range15_0 span-from10_0 config18_0)))
+       (let ((temp77_0
+              (range-add*
+               range15_0
+               span-from10_0
+               config18_0
+               (chytes-limit s16_0))))
          (parse-range-rest.1 #f c14_0 temp77_0 s16_0 pos17_0 config18_0))))))
 (define missing-square-closing-error
   (lambda (s_0 pos_0 config_0)
@@ -2751,7 +2774,12 @@
                   (if (parse-config-case-sensitive? config_0)
                     (values c_0 (add1 pos_0))
                     (let ((app_0
-                           (let ((app_0 (range-add* null c_0 config_0)))
+                           (let ((app_0
+                                  (range-add*
+                                   null
+                                   c_0
+                                   config_0
+                                   (chytes-limit s_0))))
                              (rx-range app_0 (chytes-limit s_0)))))
                       (values app_0 (add1 pos_0)))))))))))))
 (define parse-backslash-literal
