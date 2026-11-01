@@ -84,12 +84,16 @@
     (make-tester get-pure-port/headers))
   (define get-pure/headers/redirect
     (make-tester (λ (x) (get-pure-port/headers x #:redirections 1))))
+  (define credential-headers
+    '("Authorization: Basic dXNlcjpzZWNyZXQ="
+      "Cookie: session=abc"
+      "X-Other: 1"))
   (define get-pure/redirect/credentials
-    (make-tester (λ (x) (get-pure-port x
-                                       '("Authorization: Basic dXNlcjpzZWNyZXQ="
-                                         "Cookie: session=abc"
-                                         "X-Other: 1")
-                                       #:redirections 1))))
+    (make-tester (λ (x) (get-pure-port x credential-headers #:redirections 1))))
+  (define get-pure/headers/redirect/keep-credentials
+    (make-tester (λ (x) (get-pure-port/headers x credential-headers
+                                               #:redirections 1
+                                               #:keep-credentials? #t))))
   ;; Responds with the request's Authorization, Cookie, and X-Other lines
   (define (echo-headers request)
     (string-append
@@ -198,7 +202,18 @@
                     (vector-ref listener-ports 0))
             (echo-headers request))))
      =>
-     "Authorization: Basic dXNlcjpzZWNyZXQ=\nCookie: session=abc\nX-Other: 1"))
+     "Authorization: Basic dXNlcjpzZWNyZXQ=\nCookie: session=abc\nX-Other: 1"
+
+     ;; ... and for a different server when pruning is turned off
+     (get-pure/headers/redirect/keep-credentials
+      (λ (listener-ports request)
+        (format "HTTP/1.1 302 Found\r\nLocation: http://localhost:~a/other\r\n\r\n"
+                (vector-ref listener-ports 1)))
+      (λ (listener-ports request)
+        (echo-headers request)))
+     =>
+     (values "Authorization: Basic dXNlcjpzZWNyZXQ=\nCookie: session=abc\nX-Other: 1"
+             "Content-Type: text/plain\r\n\r\n")))
 
   (test
    (put-pure
