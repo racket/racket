@@ -617,6 +617,15 @@
                                  #:default-scope-scope default-scope-scope))))))
            (list "key" "val")]
           ;; ----------------------------------------
+          [search
+           "Search for packages in catalogs"
+           #:multi
+           catalog-flags ...
+           #:args term
+           (with-catalogs catalog
+             (parameterize ([current-pkg-error (pkg-error 'search)])
+               (pkg-search term)))]
+          ;; ----------------------------------------
           [catalog-show
            "Show package information as reported by catalogs"
            #:multi
