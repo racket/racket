@@ -19,7 +19,7 @@
 (define-logger test)
 
 ;; badssl.com can introduce delays because it's all served from the same host.
-(define TIMEOUT-SEC 10)
+(define TIMEOUT-SEC 30)
 
 ;; Racket sites
 (define racket-hosts
