@@ -176,6 +176,45 @@
    =>
    "HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\n\r\nThis is the data in the first chunk and this is the second one\r\n"))
 
+;; Test that the URL fragment is not sent on the wire (RFC 3986 §3.5).
+;; See https://github.com/racket/racket/issues/5221
+(define (test-fragment-stripped)
+  (define server-cust (make-custodian))
+  (define startup-ch (make-channel))
+  (define request-ch (make-channel))
+  (parameterize ([current-custodian server-cust])
+    (thread
+     (λ ()
+       (with-handlers ([exn:fail?
+                        (λ (e)
+                          (channel-put startup-ch e)
+                          (void))])
+         (define listener (tcp-listen 0 4 #f #f))
+         (define-values (_local-addr port-no _remote-addr _remote-port)
+           (tcp-addresses listener #t))
+         (channel-put startup-ch port-no)
+         (define-values (in out) (tcp-accept listener))
+         (define header (regexp-match #px"(?s:.*?\r\n)\r\n" in))
+         (define request-line
+           (and header
+                (car (regexp-match #rx"[^\r\n]+" (car header)))))
+         (thread (lambda () (channel-put request-ch request-line)))
+         (display "HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\n\r\nok\r\n" out)
+         (close-output-port out)
+         (close-input-port in)
+         (tcp-close listener)))))
+  (define port-no (sync startup-ch))
+  (define u
+    (string->url (format "http://localhost:~a/index.html#fragment-here" port-no)))
+  (port->string (get-impure-port u))
+  (define request-line
+    (match (sync/timeout 30 request-ch)
+      [#f (error 'test-fragment-stripped "timed out waiting for request line")]
+      [line line]))
+  (test
+   (regexp-match? #rx"^GET /index[.]html HTTP" request-line)
+   (not (regexp-match? #rx"fragment-here" request-line))))
+
 (provide tests)
 (module+ main (tests))
 (define (tests)
@@ -188,7 +227,9 @@
                           (ssl-load-private-key! ctx (collection-file-path "test.pem" "openssl"))
                           (lambda (in out)
                             (ports->ssl-ports in out #:mode 'accept #:context ctx)))
-                #t))))
+                #t))
+   ;; Verify that URL fragments are not sent on the wire (issue #5221):
+   (test-fragment-stripped)))
 
 (module+ test
   (module config info

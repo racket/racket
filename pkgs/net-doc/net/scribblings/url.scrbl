@@ -253,6 +253,22 @@ needed. If @racket[path] is syntactically a directory, then the resulting
 URL ends with @litchar{/}.}
 
 
+@defproc[(url->request-path-string [u url?]
+                                   [for-proxy? any/v #f])
+         string?]{
+
+Returns a string for use as an HTTP request for @racket[u]. When
+@racket[for-proxy?] is true, the request string is suitable for a
+tunnel request, which means that it preserves the scheme, user, host,
+and port components of @racket[u]; otherwise, it does not. The request
+string never includes the fragment in @racket[u], if any. If
+@racket[u] has an empty path and the result does not include a scheme,
+port, user, or host, the path is represented by @racket["/"] so that
+the result string is never empty.
+
+@history[#:added "9.3.0.10"]}
+
+
 @defparam[file-url-path-convention-type kind (or/c 'unix 'windows)]{
 
 Determines the default conversion from strings for
@@ -350,7 +366,8 @@ Like @racket[get-pure-port], etc., but the resulting @tech{impure
 port} contains both the returned headers and the body. The
 @racket["file"] URL scheme is not handled by these functions.
 
-@history[#:changed "6.1.1.8" @elem{Added @racket[options-impure-port].}]}
+@history[#:changed "6.1.1.8" @elem{Added @racket[options-impure-port].}
+         #:changed "9.3.0.10" @elem{Strip the fragment, if any, from @racket[URL].}]}
 
 @deftogether[(
 @defproc[(post-pure-port [URL url?]
@@ -369,7 +386,9 @@ contains the body of the response is returned.  The optional list of
 strings can be used to send header lines to the server.
 
 @bold{Beware:} See @racket[get-pure-port] for warnings about
-@racket["https"] certificate validation.}
+@racket["https"] certificate validation.
+
+@history[#:changed "9.3.0.10" @elem{Strip the fragment, if any, from @racket[URL].}]}
 
 
 @deftogether[(
@@ -385,7 +404,9 @@ strings can be used to send header lines to the server.
 
 Like @racket[post-pure-port] and @racket[put-pure-port], but the
 resulting @tech{impure port} contains both the returned headers and
-body.}
+body.
+
+@history[#:changed "9.3.0.10" @elem{Strip the fragment, if any, from @racket[URL].}]}
 
 
 @defproc[(display-pure-port [in input-port?]) void?]{
@@ -441,7 +462,8 @@ empty string, or it will be a string matching the following regexp:
   before making a new request with the same @racket[connection]. (Reusing
   a @racket[connection] without reading all data may or may not work.)
 
-@history[#:changed "7.7.0.1" @elem{Added the @racket[#:method] argument.}]}
+@history[#:changed "7.7.0.1" @elem{Added the @racket[#:method] argument.}
+         #:changed "9.3.0.10" @elem{Strip the fragment, if any, from @racket[URL].}]}
 
 @deftogether[(
 @defproc[(http-connection? [v any/c]) boolean?]
@@ -519,20 +541,20 @@ configured from the following variables:
 @indexed-envvar{HTTP_PROXY}, @indexed-envvar{all_proxy},
 and @indexed-envvar{ALL_PROXY}, configure the HTTP proxy, where the former
 takes precedence over the latter. HTTP requests will be proxied using
-an HTTP proxy server connection}
+an HTTP proxy server connection.}
 
  @item{@indexed-envvar{plt_https_proxy},
 @indexed-envvar{PLT_HTTPS_PROXY}, @indexed-envvar{https_proxy},
 @indexed-envvar{HTTPS_PROXY}, @indexed-envvar{all_proxy},
 @indexed-envvar{ALL_PROXY}, configure the HTTPS proxy, where the
 former takes precedence over the latter. HTTPS connections are proxied
-using an HTTP ``CONNECT'' tunnel}
+using an HTTP ``CONNECT'' tunnel.}
 
  @item{@indexed-envvar{plt_git_proxy}, @indexed-envvar{PLT_GIT_PROXY},
 @indexed-envvar{git_proxy}, @indexed-envvar{GIT_PROXY},
 @indexed-envvar{all_proxy}, @indexed-envvar{ALL_PROXY}, configure the
 GIT proxy, where the former takes precedence over the latter. GIT
-connections are proxied using an HTTP ``CONNECT'' tunnel}
+connections are proxied using an HTTP ``CONNECT'' tunnel.}
 
 ]
 
@@ -616,7 +638,8 @@ Calls @racket[http-sendrecv] using @racket[u] to populate the host, URI, port, a
 
 This function does not support proxies.
                                                       
-@history[#:changed "7.6.0.9" @elem{Added support for @racket['deflate] decoding.}]}
+@history[#:changed "7.6.0.9" @elem{Added support for @racket['deflate] decoding.}
+         #:changed "9.3.0.10" @elem{Strip the fragment, if any, from @racket[URL].}]}
 
 @defproc[(tcp-or-tunnel-connect [scheme string?]
                                 [host string?]

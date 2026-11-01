@@ -154,7 +154,8 @@
 
 ;; proxy-tunneled? : url -> boolean
 (define (proxy-tunneled? url)
-  (not (string=? (url-scheme url) "http")))
+  (not (and (url-scheme url)
+            (string-ci=? (url-scheme url) "http"))))
 
 (define (url-error fmt . args)
   (raise (make-url-exception
@@ -214,19 +215,7 @@
                                     make-ports 1.1?)
   (define proxy (proxy-server-for (url-scheme url) (url-host url)))
   (define hc (make-ports url proxy))
-  (define access-string
-    (ensure-non-empty
-     (url->string
-      (if (and proxy (not (proxy-tunneled? url)))
-          url
-          ;; RFCs 1945 and 2616 say:
-          ;;   Note that the absolute path cannot be empty; if none is present in
-          ;;   the original URI, it must be given as "/" (the server root).
-          (let-values ([(abs? path)
-                        (if (null? (url-path url))
-                            (values #t (list (make-path/param "" '())))
-                            (values (url-path-absolute? url) (url-path url)))])
-            (make-url #f #f #f #f abs? path (url-query url) (url-fragment url)))))))
+  (define access-string (url->request-path-string* url proxy))
 
   (hc:http-conn-send! hc access-string
                       #:method (if get? #"GET" #"POST")
@@ -466,16 +455,7 @@
                    [else (url-error "unsupported method: ~a" method)])]
          [proxy (proxy-server-for (url-scheme url) (url-host url))]
          [hc (make-ports url proxy)]
-         [access-string
-          (ensure-non-empty
-           (url->string
-            (if (and proxy (not (proxy-tunneled? url)))
-                url
-                (make-url #f #f #f #f
-                          (url-path-absolute? url)
-                          (url-path url)
-                          (url-query url)
-                          (url-fragment url)))))])
+         [access-string (url->request-path-string* url proxy)])
     (hc:http-conn-send! hc access-string
                         #:method method
                         #:headers strings
@@ -483,11 +463,6 @@
                         #:data data)
     (http-conn-impure-port hc
                            #:method method)))
-
-(define (ensure-non-empty s)
-  (if (string=? "" s)
-      "/"
-      s))
 
 (provide (all-from-out "url-string.rkt"))
 
@@ -552,13 +527,7 @@
     (error 'http-sendrecv/url "Host required: ~e" u))
   (hc:http-sendrecv
    (url-host u)
-   (ensure-non-empty
-    (url->string
-     (make-url #f #f #f #f
-               (url-path-absolute? u)
-               (url-path u)
-               (url-query u)
-               (url-fragment u))))
+   (url->request-path-string u)
    #:ssl?
    (if (equal? "https" (url-scheme u))
      (current-https-protocol)
@@ -568,6 +537,9 @@
    #:headers headers-bs
    #:data data
    #:content-decode decodes))
+
+(define (url->request-path-string* u proxy)
+  (url->request-path-string u (and proxy (not (proxy-tunneled? u)))))
 
 (provide
  (contract-out

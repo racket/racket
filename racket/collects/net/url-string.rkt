@@ -415,6 +415,19 @@
         (string-append s "/")
         s)))
 
+(define (url->request-path-string u [for-proxy? #f])
+  ;; Path/query only, no fragment; empty path -> "/" (RFCs 1945/2616).
+  ;; Fragment is omitted per RFC 3986 §3.5 (not sent on the wire).
+  (let ([u (if for-proxy?
+               (struct-copy url u [fragment #f])
+               (make-url #f #f #f #f (url-path-absolute? u) (url-path u) (url-query u) #f))])
+    (define-values (abs? path)
+      (if (and (null? (url-path u))
+               (not (or (url-scheme u) (url-user u) (url-host u) (url-port u))))
+          (values #t (list (make-path/param "" '())))
+          (values (url-path-absolute? u) (url-path u))))
+    (url->string (struct-copy url u [path-absolute? abs?] [path path]))))
+
 (define current-url-encode-mode (make-parameter 'recommended))
 
 (define (uri-encode* str)
@@ -438,6 +451,9 @@
                                       . -> . string?))
  (url->string (url? . -> . string?))
  (url->path (->* (url?) ((one-of/c 'unix 'windows)) path-for-some-system?))
+ (url->request-path-string (->* (url?)
+                                (any/c)
+                                string?))
  (file://->path (->* (url?) ((one-of/c 'unix 'windows)) path-for-some-system?))
  (netscape/string->url (string? . -> . url?))
  (combine-url/relative (url? string? . -> . url?))
