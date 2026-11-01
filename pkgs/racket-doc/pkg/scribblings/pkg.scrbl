@@ -1063,6 +1063,17 @@ package is created.
          #:changed "9.3.0.10" @elem{Added the @DFlag{quiet} flag.}]
 }
 
+@subcommand{@command/toc{doctor} @nonterm{dir} ...
+--- Checks the metadata of the package in @nonterm{dir} (the current
+    directory, by default, if no @nonterm{dir} is provided) and
+    reports fields that are missing or empty. The checked fields are
+    the ones that the package catalog surfaces on a package's page:
+    @tt{description}, @tt{author}, @tt{license}, and @tt{scribblings}.
+    The command exits with a nonzero status when any field is missing,
+    so it can be used in scripts and continuous-integration checks
+    before publishing a package.
+}
+
 @subcommand{@command/toc{config} @nonterm{option} ... @optional[@nonterm{key}] @nonterm{val} ... ---
 Views and modifies the configuration of the package manager. If @nonterm{key} is not provided,
 the values for all recognized keys are shown. The @nonterm{val} arguments are allowed
