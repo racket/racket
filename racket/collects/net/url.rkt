@@ -325,14 +325,15 @@
 ;; server that a redirection points to
 (define (remove-credential-headers strings)
   (filter (lambda (s)
-            (not (regexp-match? #rx"^(?i:authorization|cookie)[ \t]*:" s)))
+            (not (regexp-match? #rx"^(?i:authorization|cookie):" s)))
           strings))
 
 (define (get-pure-port/headers url [strings '()]
                                #:method [method #"GET"]
                                #:redirections [redirections 0]
                                #:status? [status? #f]
-                               #:connection [conn #f])
+                               #:connection [conn #f]
+                               #:keep-credentials? [keep-credentials? #f])
   (let redirection-loop ([redirections redirections] [url url] [use-conn conn] [strings strings])
     (define hc
       (http://getpost-impure-port #t url #f strings
@@ -370,7 +371,7 @@
       [(and redirection-status-line? new-url (not (zero? redirections)))
        (log-net/url-info "redirection: ~a" (url->string new-url))
        (redirection-loop (- redirections 1) new-url #f
-                         (if (same-origin? url new-url)
+                         (if (or keep-credentials? (same-origin? url new-url))
                              strings
                              (remove-credential-headers strings)))]
       [else
@@ -529,7 +530,8 @@
                               #:method (or/c #"GET" #"HEAD" #"DELETE" #"OPTIONS")
                               #:redirections exact-nonnegative-integer?
                               #:status? boolean?
-                              #:connection (or/c #f hc:http-conn?))
+                              #:connection (or/c #f hc:http-conn?)
+                              #:keep-credentials? boolean?)
                              (values input-port? string?)))
  (rename hc:http-conn? http-connection? (any/c . -> . boolean?))
  (make-http-connection (-> hc:http-conn?))
