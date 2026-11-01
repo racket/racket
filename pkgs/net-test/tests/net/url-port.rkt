@@ -198,30 +198,21 @@
          (define request-line
            (and header
                 (car (regexp-match #rx"[^\r\n]+" (car header)))))
-         (channel-put request-ch request-line)
+         (thread (lambda () (channel-put request-ch request-line)))
          (display "HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\n\r\nok\r\n" out)
          (close-output-port out)
          (close-input-port in)
          (tcp-close listener)))))
-  (define port-no
-    (match (sync/timeout 30 startup-ch)
-      [#f (error 'test-fragment-stripped "timed out waiting for server startup")]
-      [(? exn:fail? e) (raise e)]
-      [n n]))
+  (define port-no (sync startup-ch))
   (define u
     (string->url (format "http://localhost:~a/index.html#fragment-here" port-no)))
-  (dynamic-wind
-      void
-      (λ ()
-        (port->string (get-impure-port u)))
-      (λ ()
-        (custodian-shutdown-all server-cust)))
+  (port->string (get-impure-port u))
   (define request-line
     (match (sync/timeout 30 request-ch)
       [#f (error 'test-fragment-stripped "timed out waiting for request line")]
       [line line]))
   (test
-   (regexp-match? #rx"^GET /index\.html HTTP" request-line)
+   (regexp-match? #rx"^GET /index[.]html HTTP" request-line)
    (not (regexp-match? #rx"fragment-here" request-line))))
 
 (provide tests)
@@ -243,4 +234,4 @@
 (module+ test
   (module config info
     (define timeout 300))
-  (require (submod ".." main)) ; for raco test & drdr
+  (require (submod ".." main))) ; for raco test & drdr
