@@ -40,6 +40,7 @@
 (define (call-in-another-main-thread c thunk)
   (make-another-initial-thread-group)
   (set-root-custodian! c)
+  (sandman-place-setup!)
   (init-system-idle-evt!)
   (init-future-place!)
   (init-schedule-counters!)

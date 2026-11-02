@@ -61,6 +61,11 @@
  (current-sandman
   (let ([timeout-sandman (current-sandman)])
     (sandman
+     ;; place-setup!
+     (lambda ()
+       (rktio-place-init!)
+       (shared-ltps-place-init!))
+
      ;; sleep
      (lambda (exts)
        (define timeout-at (and exts (exts-timeout-at exts)))

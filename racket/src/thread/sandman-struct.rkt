@@ -11,7 +11,8 @@
 ;; A `sandman` implements several methods, and the sandman implementation
 ;; gets to pick the representation of <ext-evnt-set> and <handle>, except
 ;; that #f is the "empty" external event set and #f cannot be a <handle>.
-(struct sandman (do-sleep           ; <ext-event-set> -> (void), uses <ext-event-set> plus registered threads
+(struct sandman (do-place-setup!    ; -> (void)
+                 do-sleep           ; <ext-event-set> -> (void), uses <ext-event-set> plus registered threads
                  do-poll            ; <mode> (thread -> any) -> (void), calls function on any thread to wake up
                  ;                    where <mode> is 'fast or 'slow
 

@@ -31,7 +31,8 @@
 
 ;; See also "sandman-struct.rkt".
 
-(provide sandman-merge-timeout
+(provide sandman-place-setup!
+         sandman-merge-timeout
          sandman-merge-exts
          sandman-add-sleeping-thread!
          sandman-remove-sleeping-thread!
@@ -43,6 +44,10 @@
          sandman-sleepers-external-events
 
          current-sandman)
+
+;; not yet in a Racket thread
+(define (sandman-place-setup!)
+  ((sandman-do-place-setup! the-sandman)))
 
 ;; in atomic mode
 (define (sandman-merge-timeout exts timeout)
@@ -106,6 +111,10 @@
 ;; it can access place-local state that's declared as such.
 (define the-default-sandman
   (sandman
+   ;; place-setup
+   (lambda ()
+     (void))
+
    ;; sleep
    (lambda (timeout-at)
      (host:sleep (max 0.0 (/ (- (or timeout-at (distant-future)) (current-inexact-monotonic-milliseconds)) 1000.0))))

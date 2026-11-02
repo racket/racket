@@ -1638,16 +1638,16 @@
     (if (not (node-right t_0))
       (let ((app_0 (node-key t_0))) (values app_0 (node-val t_0)))
       (max-key+value (node-right t_0)))))
-(define finish_1970
+(define finish_1801
   (make-struct-type-install-properties
    '(sandman)
-   11
+   12
    0
    #f
    null
    'prefab
    #f
-   '(0 1 2 3 4 5 6 7 8 9 10)
+   '(0 1 2 3 4 5 6 7 8 9 10 11)
    #f
    'sandman))
 (define struct:sandman
@@ -1658,19 +1658,19 @@
    (structure-type-lookup-prefab-uid
     'sandman
     #f
-    11
+    12
     0
     #f
-    '(0 1 2 3 4 5 6 7 8 9 10))
+    '(0 1 2 3 4 5 6 7 8 9 10 11))
    #f
    #f
-   '(11 . 2047)
+   '(12 . 4095)
    'make-struct-type
    #f
    #f
    #f
    'prefab))
-(define effect_2951 (finish_1970 struct:sandman))
+(define effect_2951 (finish_1801 struct:sandman))
 (define sandman1.1
   (|#%name|
    sandman
@@ -1685,168 +1685,183 @@
        #t
        ($value
         (if (impersonator? v) (sandman?_2599 (impersonator-val v)) #f))))))
-(define sandman-do-sleep_2487
-  (|#%name| sandman-do-sleep (record-accessor struct:sandman 0)))
+(define sandman-do-place-setup!_2487
+  (|#%name| sandman-do-place-setup! (record-accessor struct:sandman 0)))
+(define sandman-do-place-setup!
+  (|#%name|
+   sandman-do-place-setup!
+   (lambda (s)
+     (if (sandman?_2599 s)
+       (sandman-do-place-setup!_2487 s)
+       ($value
+        (impersonate-ref
+         sandman-do-place-setup!_2487
+         struct:sandman
+         0
+         s
+         'do-place-setup!))))))
+(define sandman-do-sleep_2411
+  (|#%name| sandman-do-sleep (record-accessor struct:sandman 1)))
 (define sandman-do-sleep
   (|#%name|
    sandman-do-sleep
    (lambda (s)
      (if (sandman?_2599 s)
-       (sandman-do-sleep_2487 s)
+       (sandman-do-sleep_2411 s)
        ($value
         (impersonate-ref
-         sandman-do-sleep_2487
+         sandman-do-sleep_2411
          struct:sandman
-         0
+         1
          s
          'do-sleep))))))
-(define sandman-do-poll_2411
-  (|#%name| sandman-do-poll (record-accessor struct:sandman 1)))
+(define sandman-do-poll_3028
+  (|#%name| sandman-do-poll (record-accessor struct:sandman 2)))
 (define sandman-do-poll
   (|#%name|
    sandman-do-poll
    (lambda (s)
      (if (sandman?_2599 s)
-       (sandman-do-poll_2411 s)
+       (sandman-do-poll_3028 s)
        ($value
-        (impersonate-ref sandman-do-poll_2411 struct:sandman 1 s 'do-poll))))))
-(define sandman-do-get-wakeup_3028
-  (|#%name| sandman-do-get-wakeup (record-accessor struct:sandman 2)))
+        (impersonate-ref sandman-do-poll_3028 struct:sandman 2 s 'do-poll))))))
+(define sandman-do-get-wakeup_2562
+  (|#%name| sandman-do-get-wakeup (record-accessor struct:sandman 3)))
 (define sandman-do-get-wakeup
   (|#%name|
    sandman-do-get-wakeup
    (lambda (s)
      (if (sandman?_2599 s)
-       (sandman-do-get-wakeup_3028 s)
+       (sandman-do-get-wakeup_2562 s)
        ($value
         (impersonate-ref
-         sandman-do-get-wakeup_3028
+         sandman-do-get-wakeup_2562
          struct:sandman
-         2
+         3
          s
          'do-get-wakeup))))))
-(define sandman-do-wakeup_2562
-  (|#%name| sandman-do-wakeup (record-accessor struct:sandman 3)))
+(define sandman-do-wakeup_2376
+  (|#%name| sandman-do-wakeup (record-accessor struct:sandman 4)))
 (define sandman-do-wakeup
   (|#%name|
    sandman-do-wakeup
    (lambda (s)
      (if (sandman?_2599 s)
-       (sandman-do-wakeup_2562 s)
+       (sandman-do-wakeup_2376 s)
        ($value
         (impersonate-ref
-         sandman-do-wakeup_2562
+         sandman-do-wakeup_2376
          struct:sandman
-         3
+         4
          s
          'do-wakeup))))))
-(define sandman-do-any-sleepers?_2376
-  (|#%name| sandman-do-any-sleepers? (record-accessor struct:sandman 4)))
+(define sandman-do-any-sleepers?_2747
+  (|#%name| sandman-do-any-sleepers? (record-accessor struct:sandman 5)))
 (define sandman-do-any-sleepers?
   (|#%name|
    sandman-do-any-sleepers?
    (lambda (s)
      (if (sandman?_2599 s)
-       (sandman-do-any-sleepers?_2376 s)
+       (sandman-do-any-sleepers?_2747 s)
        ($value
         (impersonate-ref
-         sandman-do-any-sleepers?_2376
+         sandman-do-any-sleepers?_2747
          struct:sandman
-         4
+         5
          s
          'do-any-sleepers?))))))
-(define sandman-do-sleepers-external-events_2747
+(define sandman-do-sleepers-external-events_3210
   (|#%name|
    sandman-do-sleepers-external-events
-   (record-accessor struct:sandman 5)))
+   (record-accessor struct:sandman 6)))
 (define sandman-do-sleepers-external-events
   (|#%name|
    sandman-do-sleepers-external-events
    (lambda (s)
      (if (sandman?_2599 s)
-       (sandman-do-sleepers-external-events_2747 s)
+       (sandman-do-sleepers-external-events_3210 s)
        ($value
         (impersonate-ref
-         sandman-do-sleepers-external-events_2747
+         sandman-do-sleepers-external-events_3210
          struct:sandman
-         5
+         6
          s
          'do-sleepers-external-events))))))
-(define sandman-do-add-thread!_3210
-  (|#%name| sandman-do-add-thread! (record-accessor struct:sandman 6)))
+(define sandman-do-add-thread!_2183
+  (|#%name| sandman-do-add-thread! (record-accessor struct:sandman 7)))
 (define sandman-do-add-thread!
   (|#%name|
    sandman-do-add-thread!
    (lambda (s)
      (if (sandman?_2599 s)
-       (sandman-do-add-thread!_3210 s)
+       (sandman-do-add-thread!_2183 s)
        ($value
         (impersonate-ref
-         sandman-do-add-thread!_3210
+         sandman-do-add-thread!_2183
          struct:sandman
-         6
+         7
          s
          'do-add-thread!))))))
-(define sandman-do-remove-thread!_2183
-  (|#%name| sandman-do-remove-thread! (record-accessor struct:sandman 7)))
+(define sandman-do-remove-thread!_2575
+  (|#%name| sandman-do-remove-thread! (record-accessor struct:sandman 8)))
 (define sandman-do-remove-thread!
   (|#%name|
    sandman-do-remove-thread!
    (lambda (s)
      (if (sandman?_2599 s)
-       (sandman-do-remove-thread!_2183 s)
+       (sandman-do-remove-thread!_2575 s)
        ($value
         (impersonate-ref
-         sandman-do-remove-thread!_2183
+         sandman-do-remove-thread!_2575
          struct:sandman
-         7
+         8
          s
          'do-remove-thread!))))))
-(define sandman-do-merge-external-event-sets_2575
+(define sandman-do-merge-external-event-sets_2100
   (|#%name|
    sandman-do-merge-external-event-sets
-   (record-accessor struct:sandman 8)))
+   (record-accessor struct:sandman 9)))
 (define sandman-do-merge-external-event-sets
   (|#%name|
    sandman-do-merge-external-event-sets
    (lambda (s)
      (if (sandman?_2599 s)
-       (sandman-do-merge-external-event-sets_2575 s)
+       (sandman-do-merge-external-event-sets_2100 s)
        ($value
         (impersonate-ref
-         sandman-do-merge-external-event-sets_2575
+         sandman-do-merge-external-event-sets_2100
          struct:sandman
-         8
+         9
          s
          'do-merge-external-event-sets))))))
-(define sandman-do-merge-timeout_2100
-  (|#%name| sandman-do-merge-timeout (record-accessor struct:sandman 9)))
+(define sandman-do-merge-timeout_2311
+  (|#%name| sandman-do-merge-timeout (record-accessor struct:sandman 10)))
 (define sandman-do-merge-timeout
   (|#%name|
    sandman-do-merge-timeout
    (lambda (s)
      (if (sandman?_2599 s)
-       (sandman-do-merge-timeout_2100 s)
+       (sandman-do-merge-timeout_2311 s)
        ($value
         (impersonate-ref
-         sandman-do-merge-timeout_2100
+         sandman-do-merge-timeout_2311
          struct:sandman
-         9
+         10
          s
          'do-merge-timeout))))))
-(define sandman-do-extract-timeout_2311
-  (|#%name| sandman-do-extract-timeout (record-accessor struct:sandman 10)))
+(define sandman-do-extract-timeout_2585
+  (|#%name| sandman-do-extract-timeout (record-accessor struct:sandman 11)))
 (define sandman-do-extract-timeout
   (|#%name|
    sandman-do-extract-timeout
    (lambda (s)
      (if (sandman?_2599 s)
-       (sandman-do-extract-timeout_2311 s)
+       (sandman-do-extract-timeout_2585 s)
        ($value
         (impersonate-ref
-         sandman-do-extract-timeout_2311
+         sandman-do-extract-timeout_2585
          struct:sandman
-         10
+         11
          s
          'do-extract-timeout))))))
 (define the-sandman #f)
@@ -1859,6 +1874,8 @@
         (void)
         (raise-argument-error 'current-sandman "sandman?" sm_0))
       (set! the-sandman sm_0)))))
+(define sandman-place-setup!
+  (lambda () (|#%app| (sandman-do-place-setup! the-sandman))))
 (define sandman-merge-timeout
   (lambda (exts_0 timeout_0)
     (|#%app| (sandman-do-merge-timeout the-sandman) exts_0 timeout_0)))
@@ -1897,6 +1914,7 @@
       (if a-sleep-until_0 a-sleep-until_0 b-sleep-until_0))))
 (define the-default-sandman
   (sandman1.1
+   (lambda () (void))
    (lambda (timeout-at_0)
      (|#%app|
       host:sleep
@@ -14016,6 +14034,7 @@
     (begin
       (make-another-initial-thread-group)
       (set-root-custodian! c_0)
+      (sandman-place-setup!)
       (init-system-idle-evt!)
       (init-future-place!)
       (init-schedule-counters!)
