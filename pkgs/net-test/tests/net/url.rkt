@@ -235,7 +235,7 @@
           (port->string
            (get-pure-port
             (string->url
-             (format "https://localhost:~a/woo/yay"
+             (format "https://localhost:~a/woo/yay#fragment"
                      ss:port)))))
         => "\"/woo/yay\" (but at least it's secure)")
 
