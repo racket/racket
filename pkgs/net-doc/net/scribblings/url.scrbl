@@ -308,7 +308,10 @@ server.
 The GET method is used to retrieve whatever information is identified
 by @racket[URL]. If @racket[redirections] is not @racket[0], then 
 @racket[get-pure-port] will follow redirections from the server, 
-up to the limit given by @racket[redirections].
+up to the limit given by @racket[redirections]. When a redirection
+leads to a different scheme, host, or port, @litchar{Authorization}
+and @litchar{Cookie} lines in @racket[header] are not sent to the new
+location.
 
 The HEAD method is identical to GET, except the server must not return
 a message body. The meta-information returned in a response to a HEAD
@@ -420,7 +423,8 @@ empty string, or it will be a string matching the following regexp:
           [#:method method (or/c #"GET" #"HEAD" #"DELETE" #"OPTIONS") #"GET"]
           [#:redirections redirections exact-nonnegative-integer? 0]
           [#:status? status? boolean? #f]
-          [#:connection connection (or/c #f http-connection?)])
+          [#:connection connection (or/c #f http-connection?)]
+          [#:keep-credentials? keep-credentials? boolean? #f])
          (values input-port? string?)]{
   This function is an alternative to calling @racket[get-impure-port]
   (or @racket[head-impure-port], @racket[delete-impure-port], or @racket[options-impure-port])
@@ -432,7 +436,10 @@ empty string, or it will be a string matching the following regexp:
   @racket[method] (GET by default) on @racket[url], follows up to @racket[redirections] redirections,
   and returns a port containing the data as well as the headers for
   the final connection. If @racket[status?] is true, then the status
-  line is included in the result string.
+  line is included in the result string. As for @racket[get-pure-port],
+  @litchar{Authorization} and @litchar{Cookie} lines in @racket[headers]
+  are dropped when a redirection leads to a different scheme, host, or port,
+  unless @racket[keep-credentials?] is true.
 
   A given @racket[connection] should be used for communication
   with a particular HTTP/1.1 server, unless @racket[connection] is closed
@@ -441,7 +448,11 @@ empty string, or it will be a string matching the following regexp:
   before making a new request with the same @racket[connection]. (Reusing
   a @racket[connection] without reading all data may or may not work.)
 
-@history[#:changed "7.7.0.1" @elem{Added the @racket[#:method] argument.}]}
+@history[#:changed "7.7.0.1" @elem{Added the @racket[#:method] argument.}
+         #:changed "9.4.0.4" @elem{Changed redirections to a different scheme, host,
+                                   or port to drop @litchar{Authorization} and
+                                   @litchar{Cookie} lines, and added the
+                                   @racket[#:keep-credentials?] argument.}]}
 
 @deftogether[(
 @defproc[(http-connection? [v any/c]) boolean?]

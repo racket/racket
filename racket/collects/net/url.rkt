@@ -313,12 +313,28 @@
 (define (http-connection-close hc)
   (hc:http-conn-close! hc))
 
+;; same-origin? : url url -> bool
+(define (same-origin? a b)
+  (define (lower s) (and s (string-downcase s)))
+  (and (equal? (lower (url-scheme a)) (lower (url-scheme b)))
+       (equal? (lower (url-host a)) (lower (url-host b)))
+       (equal? (or (url-port a) (url->default-port a))
+               (or (url-port b) (url->default-port b)))))
+
+;; Credentials given for one server must not be sent to a different
+;; server that a redirection points to
+(define (remove-credential-headers strings)
+  (filter (lambda (s)
+            (not (regexp-match? #rx"^(?i:authorization|cookie):" s)))
+          strings))
+
 (define (get-pure-port/headers url [strings '()]
                                #:method [method #"GET"]
                                #:redirections [redirections 0]
                                #:status? [status? #f]
-                               #:connection [conn #f])
-  (let redirection-loop ([redirections redirections] [url url] [use-conn conn])
+                               #:connection [conn #f]
+                               #:keep-credentials? [keep-credentials? #f])
+  (let redirection-loop ([redirections redirections] [url url] [use-conn conn] [strings strings])
     (define hc
       (http://getpost-impure-port #t url #f strings
                                   (if (and use-conn
@@ -354,7 +370,10 @@
     (cond
       [(and redirection-status-line? new-url (not (zero? redirections)))
        (log-net/url-info "redirection: ~a" (url->string new-url))
-       (redirection-loop (- redirections 1) new-url #f)]
+       (redirection-loop (- redirections 1) new-url #f
+                         (if (or keep-credentials? (same-origin? url new-url))
+                             strings
+                             (remove-credential-headers strings)))]
       [else
        (values response-port
                (string-append (apply string-append
@@ -511,7 +530,8 @@
                               #:method (or/c #"GET" #"HEAD" #"DELETE" #"OPTIONS")
                               #:redirections exact-nonnegative-integer?
                               #:status? boolean?
-                              #:connection (or/c #f hc:http-conn?))
+                              #:connection (or/c #f hc:http-conn?)
+                              #:keep-credentials? boolean?)
                              (values input-port? string?)))
  (rename hc:http-conn? http-connection? (any/c . -> . boolean?))
  (make-http-connection (-> hc:http-conn?))
