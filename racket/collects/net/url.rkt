@@ -279,8 +279,8 @@
 (define (post-impure-port url post-data [strings '()])
   (getpost-impure-port #f url post-data strings))
 
-;; getpost-pure-port : bool x url x list (str) -> in-port
-(define (getpost-pure-port get? url post-data strings redirections)
+;; getpost-pure-port : bool x url x list (str) x nat x bool -> in-port
+(define (getpost-pure-port get? url post-data strings redirections keep-credentials?)
   (let ([scheme (url-scheme url)])
     (cond [(not scheme)
            (schemeless-url url)]
@@ -301,7 +301,9 @@
               response-port]
              [else
               (define-values (port header)
-                (get-pure-port/headers url strings #:redirections redirections))
+                (get-pure-port/headers url strings
+                                       #:redirections redirections
+                                       #:keep-credentials? keep-credentials?))
               port])]
           [(string=? scheme "file")
            (file://get-pure-port url)]
@@ -313,12 +315,28 @@
 (define (http-connection-close hc)
   (hc:http-conn-close! hc))
 
+;; same-origin? : url url -> bool
+(define (same-origin? a b)
+  (define (lower s) (and s (string-downcase s)))
+  (and (equal? (lower (url-scheme a)) (lower (url-scheme b)))
+       (equal? (lower (url-host a)) (lower (url-host b)))
+       (equal? (or (url-port a) (url->default-port a))
+               (or (url-port b) (url->default-port b)))))
+
+;; Credentials given for one server must not be sent to a different
+;; server that a redirection points to
+(define (remove-credential-headers strings)
+  (filter (lambda (s)
+            (not (regexp-match? #rx"^(?i:authorization|cookie):" s)))
+          strings))
+
 (define (get-pure-port/headers url [strings '()]
                                #:method [method #"GET"]
                                #:redirections [redirections 0]
                                #:status? [status? #f]
-                               #:connection [conn #f])
-  (let redirection-loop ([redirections redirections] [url url] [use-conn conn])
+                               #:connection [conn #f]
+                               #:keep-credentials? [keep-credentials? #f])
+  (let redirection-loop ([redirections redirections] [url url] [use-conn conn] [strings strings])
     (define hc
       (http://getpost-impure-port #t url #f strings
                                   (if (and use-conn
@@ -354,7 +372,10 @@
     (cond
       [(and redirection-status-line? new-url (not (zero? redirections)))
        (log-net/url-info "redirection: ~a" (url->string new-url))
-       (redirection-loop (- redirections 1) new-url #f)]
+       (redirection-loop (- redirections 1) new-url #f
+                         (if (or keep-credentials? (same-origin? url new-url))
+                             strings
+                             (remove-credential-headers strings)))]
       [else
        (values response-port
                (string-append (apply string-append
@@ -365,12 +386,14 @@
                               "\r\n"))])))
 
 ;; get-pure-port : url [x list (str)] -> in-port
-(define (get-pure-port url [strings '()] #:redirections [redirections 0])
-  (getpost-pure-port #t url #f strings redirections))
+(define (get-pure-port url [strings '()]
+                       #:redirections [redirections 0]
+                       #:keep-credentials? [keep-credentials? #f])
+  (getpost-pure-port #t url #f strings redirections keep-credentials?))
 
 ;; post-pure-port : url bytes [x list (str)] -> in-port
 (define (post-pure-port url post-data [strings '()])
-  (getpost-pure-port #f url post-data strings 0))
+  (getpost-pure-port #f url post-data strings 0 #f))
 
 ;; display-pure-port : in-port -> ()
 (define (display-pure-port server->client)
@@ -492,7 +515,11 @@
 (provide (all-from-out "url-string.rkt"))
 
 (provide/contract
- (get-pure-port (->* (url?) ((listof string?) #:redirections exact-nonnegative-integer?) input-port?))
+ (get-pure-port (->* (url?)
+                     ((listof string?)
+                      #:redirections exact-nonnegative-integer?
+                      #:keep-credentials? boolean?)
+                     input-port?))
  (get-impure-port (->* (url?) ((listof string?)) input-port?))
  (post-pure-port (->* (url? (or/c false/c bytes?)) ((listof string?)) input-port?))
  (post-impure-port (->* (url? bytes?) ((listof string?)) input-port?))
@@ -511,7 +538,8 @@
                               #:method (or/c #"GET" #"HEAD" #"DELETE" #"OPTIONS")
                               #:redirections exact-nonnegative-integer?
                               #:status? boolean?
-                              #:connection (or/c #f hc:http-conn?))
+                              #:connection (or/c #f hc:http-conn?)
+                              #:keep-credentials? boolean?)
                              (values input-port? string?)))
  (rename hc:http-conn? http-connection? (any/c . -> . boolean?))
  (make-http-connection (-> hc:http-conn?))
