@@ -502,6 +502,7 @@ the ALPN protocols for a server context.
 @defproc[(ssl-load-verify-source!
 	    [context (or/c ssl-client-context? ssl-server-context?)]
             [src (or/c path-string?
+                       (list/c 'os)
                        (list/c 'directory path-string?)
                        (list/c 'win32-store string?)
                        (list/c 'macosx-keychain (or/c #f path-string?)))]
@@ -526,6 +527,12 @@ containing root certificates. The file is loaded immediately.}
 the @tt{openssl c_rehash} utility). The directory contents are not
 loaded immediately; rather, they are searched only when a certificate
 needs verification.}
+
+@item{If @racket[src] is @racket[(list 'os)], then the verification function
+from OpenSSL is completely replaced with for all connections created with
+@racket[context]. Verification is performed by the operating system using its
+own trust stores. Any other sources loaded before or after this are
+ignored. Only supported on Windows and Mac OS.}
 
 @item{If @racket[src] is @racket[(list 'win32-store _store)], then the
 certificates from the store named @racket[_store] are loaded
