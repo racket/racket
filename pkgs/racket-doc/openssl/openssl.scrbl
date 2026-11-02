@@ -426,7 +426,7 @@ current platform for server connections.
 	   [#:context context
                       (or/c ssl-client-context? ssl-server-context?)
                       ((if (eq? mode 'accept)
-                           ssl-make-server-context 
+                           ssl-make-server-context
                            ssl-make-client-context)
                        protocol)]
 	   [#:encrypt protocol ssl-protocol-symbol/c 'auto]
@@ -504,7 +504,8 @@ the ALPN protocols for a server context.
             [src (or/c path-string?
                        (list/c 'directory path-string?)
                        (list/c 'win32-store string?)
-                       (list/c 'macosx-keychain (or/c #f path-string?)))]
+                       (list/c 'macosx-keychain (or/c #f path-string?))
+                       (list/c 'os-verify))]
             [#:try? try? any/c #f])
          void?]{
 
@@ -527,18 +528,32 @@ the @tt{openssl c_rehash} utility). The directory contents are not
 loaded immediately; rather, they are searched only when a certificate
 needs verification.}
 
-@item{If @racket[src] is @racket[(list 'win32-store _store)], then the
-certificates from the store named @racket[_store] are loaded
-immediately. Only supported on Windows.}
+@item{If @racket[src] is @racket[(list 'win32-store _store)], then every
+certificate in the store named @racket[_store] is loaded as a trust anchor. No
+additional trust modifications or policies from the store are loaded.
+Only supported on Windows. Deprecated: use @racket['(os-verify)] instead.}
 
-@item{If @racket[src] is @racket[(list 'macosx-keychain #f)], then the
-certificates from the Mac OS trust anchor (root) certificates (as
-returned by @hyperlink["https://developer.apple.com/documentation/security/1401507-sectrustcopyanchorcertificates"]{@tt{SecTrustCopyAnchorCertificates}})
-are loaded immediately. Only supported on Mac OS.}
+@item{If @racket[src] is @racket[(list 'macosx-keychain #f)], then every
+certificate in the Mac OS trust anchors (as returned by
+@hyperlink["https://developer.apple.com/documentation/security/1401507-sectrustcopyanchorcertificates"]{@tt{SecTrustCopyAnchorCertificates}})
+is loaded as a trust anchor. No additional trust modifications or policies are
+loaded. Only supported on Mac OS. Deprecated: use @racket['(os-verify)] instead.}
 
-@item{If @racket[src] is @racket[(list 'macosx-keychain _path)], then
-the certificates from the keychain stored at @racket[_path] are loaded
-immediately. Only supported on Mac OS.}
+@item{If @racket[src] is @racket[(list 'macosx-keychain _path)], then every
+certificate in the keychain stored at @racket[_path] is loaded as a trust
+anchor. No additional trust modifications or policies are loaded. Only supported
+on Mac OS. Deprecated: use @racket['(os-verify)] instead.}
+
+@item{If @racket[src] is @racket[(list 'os-verify)], then the verification
+function from OpenSSL is completely replaced for all connections created with
+@racket[context]. Verification is performed by the operating system using its
+own trust stores. A context cannot use this OS verification with any other
+verification source; attempting to do so will raise an exception. Only supported
+on Windows, Mac OS, and iOS.
+
+If the verifier rejects a connection, the reasons for the rejection are logged
+on the topic @racket['openssl-verify] at the @racket['warning] level; additional
+details may be logged at lower levels.}
 
 ]
 
@@ -547,20 +562,18 @@ example, because the file or directory does not exist), then an
 exception is raised. If @racket[try?] is a true value, then a load
 failure is ignored.
 
-You can use the file @filepath{test.pem} of the @filepath{openssl}
-collection for testing purposes. Since @filepath{test.pem} is public,
-such a test configuration obviously provides no security.
-
 @history[#:changed "8.4.0.5" @elem{Added @racket[(list 'macosx-keychain #f)]
                              variant.}
          #:changed "9.0.0.4" @elem{Exposed the @racket[#:try?] argument, which
-                             was documented but previously available only internally.}]}
+                             was documented but previously available only internally.}
+         #:changed "9.4.0.5" @elem{Added @racket[(list 'os-verify)] variant.}]}
 
 @defparam[ssl-default-verify-sources srcs
           (let ([source/c (or/c path-string?
                                 (list/c 'directory path-string?)
                                 (list/c 'win32-store string?)
-                                (list/c 'macosx-keychain (or/c #f path-string?)))])
+                                (list/c 'macosx-keychain (or/c #f path-string?))
+                                (list/c 'os-verify))])
             (listof source/c))]{
 
 Holds a list of verification sources, used by
@@ -569,20 +582,19 @@ on the platform:
 
 @itemlist[
 
+@item{On Windows, Mac OS, and iOS, the default sources are
+@racket[(list '(os-verify))].}
+
 @item{On Linux, the default sources are determined by the
 @tt{SSL_CERT_FILE} and @tt{SSL_CERT_DIR} environment variables, if the
 variables are set, or the system-wide default locations otherwise.}
 
-@item{On Mac OS, the default sources consist of the OS trust anchor
-(root) certificates: @racket['(macosx-keychain #f)].}
-
-@item{On Windows, the default sources consist of the system
-certificate store for root certificates: @racket['(win32-store
-"ROOT")].}
-
 ]
 
-@history[#:changed "8.4.0.5" @elem{Changed default source on Mac OS.}]}
+@history[#:changed "8.4.0.5" @elem{Changed default source on Mac OS.}
+         #:changed "9.4.0.5" @elem{Changed the default source on Windows,
+           Mac OS, and iOS. The previous defaults were @racket[(list '(win32-store "ROOT"))],
+           @racket[(list '(macosx-keychain #f))], and @racket[null], respectively.}]}
 
 @defproc[(ssl-load-default-verify-sources!
            [context (or/c ssl-client-context? ssl-server-context?)])
@@ -872,7 +884,7 @@ attacks}.  See also @racket[ssl-set-verify-hostname!].
 
 
 @defproc[(ssl-try-verify! [clp (or/c ssl-client-context? ssl-server-context?
-                                     ssl-listener? ssl-port?)] 
+                                     ssl-listener? ssl-port?)]
                           [on? any/c])
          void?]{
 
