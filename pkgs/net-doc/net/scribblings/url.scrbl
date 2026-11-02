@@ -287,7 +287,8 @@ fragment. An impure port is one that still has its MIME headers.
 @deftogether[(
 @defproc[(get-pure-port [URL url?]
                         [header (listof string?) null]
-                        [#:redirections redirections exact-nonnegative-integer? 0])
+                        [#:redirections redirections exact-nonnegative-integer? 0]
+                        [#:keep-credentials? keep-credentials? boolean? #f])
          input-port?]
 @defproc[(head-pure-port [URL url?]
                          [header (listof string?) null])
@@ -311,7 +312,7 @@ by @racket[URL]. If @racket[redirections] is not @racket[0], then
 up to the limit given by @racket[redirections]. When a redirection
 leads to a different scheme, host, or port, @litchar{Authorization}
 and @litchar{Cookie} lines in @racket[header] are not sent to the new
-location.
+location, unless @racket[keep-credentials?] is true.
 
 The HEAD method is identical to GET, except the server must not return
 a message body. The meta-information returned in a response to a HEAD
@@ -332,7 +333,12 @@ The @racket["file"] scheme for URLs is handled only by
 @racket[get-pure-port], which uses @racket[open-input-file], does not
 handle exceptions, and ignores the optional strings.
 
-@history[#:changed "6.1.1.8" @elem{Added @racket[options-pure-port].}]}
+@history[#:changed "6.1.1.8" @elem{Added @racket[options-pure-port].}
+         #:changed "9.4.0.4" @elem{Changed redirections to a different scheme, host,
+                                   or port to drop @litchar{Authorization} and
+                                   @litchar{Cookie} lines, and added the
+                                   @racket[#:keep-credentials?] argument to
+                                   @racket[get-pure-port].}]}
 
 @deftogether[(
 @defproc[(get-impure-port [URL url?]

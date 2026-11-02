@@ -90,6 +90,10 @@
       "X-Other: 1"))
   (define get-pure/redirect/credentials
     (make-tester (λ (x) (get-pure-port x credential-headers #:redirections 1))))
+  (define get-pure/redirect/keep-credentials
+    (make-tester (λ (x) (get-pure-port x credential-headers
+                                       #:redirections 1
+                                       #:keep-credentials? #t))))
   (define get-pure/headers/redirect/keep-credentials
     (make-tester (λ (x) (get-pure-port/headers x credential-headers
                                                #:redirections 1
@@ -205,6 +209,15 @@
      "Authorization: Basic dXNlcjpzZWNyZXQ=\nCookie: session=abc\nX-Other: 1"
 
      ;; ... and for a different server when pruning is turned off
+     (get-pure/redirect/keep-credentials
+      (λ (listener-ports request)
+        (format "HTTP/1.1 302 Found\r\nLocation: http://localhost:~a/other\r\n\r\n"
+                (vector-ref listener-ports 1)))
+      (λ (listener-ports request)
+        (echo-headers request)))
+     =>
+     "Authorization: Basic dXNlcjpzZWNyZXQ=\nCookie: session=abc\nX-Other: 1"
+
      (get-pure/headers/redirect/keep-credentials
       (λ (listener-ports request)
         (format "HTTP/1.1 302 Found\r\nLocation: http://localhost:~a/other\r\n\r\n"
