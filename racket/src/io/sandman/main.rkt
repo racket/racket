@@ -17,13 +17,23 @@
 ;; events, we don't implement that, and it's probably simpler to
 ;; connect events to semaphores through a long-term poll set...
 
-(provide sandman-add-poll-set-adder
+(provide sandman-io-place-ready!
+         sandman-add-poll-set-adder
          sandman-poll-ctx-add-poll-set-adder!
          sandman-poll-ctx-merge-timeout
          sandman-set-background-sleep!
          sandman-poll-ctx-poll?)
 
 (struct exts (timeout-at fd-adders))
+
+;; True once the place's io layer is initialized, so that `rktio` and
+;; `shared-ltps` refer to the place's own rktio state; the sandman polls
+;; and sleeps with rktio only when this is true
+(define-place-local io-place-ready? #f)
+(define original-io-place-ready
+  (begin (set! io-place-ready? #t) #t))
+(define (sandman-io-place-ready!)
+  (set! io-place-ready? #t))
 
 ;; the `adder` function is in atomic and rktio, must not start nested rktio
 (define (sandman-add-poll-set-adder old-exts adder)
@@ -69,7 +79,8 @@
        ;; we use `(maybe-start-sleep-rktio)` because some parallel threads may be running
        ;; and want to use rktio, and so they're need the rktio mutex, and so they'll need
        ;; to explicitly wake up this sleeper
-       (when (maybe-start-sleep-rktio)
+       (when (and io-place-ready?
+                  (maybe-start-sleep-rktio))
          (define ps (rktio_make_poll_set rktio))
          (let loop ([fd-adders fd-adders])
            (cond
@@ -97,17 +108,18 @@
 
      ;; poll
      (lambda (wakeup)
-       (let check-signals ()
-         (define v (rktioly (rktio_poll_os_signal rktio)))
-         (unless (eqv? v RKTIO_OS_SIGNAL_NONE)
-           ((rktio_get_ctl_c_handler) (cond
-                                        [(eqv? v RKTIO_OS_SIGNAL_HUP) 'hang-up]
-                                        [(eqv? v RKTIO_OS_SIGNAL_TERM) 'terminate]
-                                        [else 'break]))
-           (wakeup #f)
-           (check-signals)))
-       (when (fd-semaphore-poll-ready?)
-         (wakeup #f))
+       (when io-place-ready?
+         (let check-signals ()
+           (define v (rktioly (rktio_poll_os_signal rktio)))
+           (unless (eqv? v RKTIO_OS_SIGNAL_NONE)
+             ((rktio_get_ctl_c_handler) (cond
+                                          [(eqv? v RKTIO_OS_SIGNAL_HUP) 'hang-up]
+                                          [(eqv? v RKTIO_OS_SIGNAL_TERM) 'terminate]
+                                          [else 'break]))
+             (wakeup #f)
+             (check-signals)))
+         (when (fd-semaphore-poll-ready?)
+           (wakeup #f)))
        ((sandman-do-poll timeout-sandman) wakeup))
 
      ;; get-wakeup

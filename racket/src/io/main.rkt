@@ -84,7 +84,8 @@
   (subprocess-init!)
   (address-init!)
   (rktio-filesyste-change-evt-init!)
-  (sync-locale!))
+  (sync-locale!)
+  (sandman-io-place-ready!))
 
 (define (io-place-destroy!)
   ;; We expect everything based on rktio to be destroyed at this point

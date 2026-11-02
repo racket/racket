@@ -27,7 +27,13 @@
       rktio_NULL
       ltps))
 
-(define-place-local shared-ltps (make-ltps))
+;; Each place polls only its own long-term poll set. A place-local
+;; variable's initial value is copied into every new place, so the
+;; initial value is `rktio_NULL`; the original place installs its set
+;; here, and other places install theirs in `shared-ltps-place-init!`
+(define-place-local shared-ltps rktio_NULL)
+(define original-shared-ltps-installed
+  (begin (set! shared-ltps (make-ltps)) #t))
 
 (define (shared-ltps-place-init!)
   (set! shared-ltps (make-ltps)))

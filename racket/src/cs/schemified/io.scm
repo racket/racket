@@ -3357,7 +3357,7 @@
     (let ((app_0 (make-mutex)))
       (let ((app_1 (box #f)))
         (m+s1.1 app_0 app_1 (|#%app| rktio_get_signal_handle rktio_0))))))
-(define cell.3$1
+(define cell.3$2
   (unsafe-make-place-local
    (make-rktio-mutex+sleep (unsafe-place-local-ref cell.1))))
 (define start-rktio-sleep-relevant
@@ -3365,21 +3365,21 @@
     (begin
       (unsafe-start-uninterruptible)
       (assert-push-lock-level! 'rktio-sleep-relevant)
-      (mutex-acquire/wakeup-sleep (unsafe-place-local-ref cell.3$1)))))
+      (mutex-acquire/wakeup-sleep (unsafe-place-local-ref cell.3$2)))))
 (define end-rktio-sleep-relevant
   (lambda ()
     (begin
-      (let ((mutex+sleep_0 (unsafe-place-local-ref cell.3$1)))
+      (let ((mutex+sleep_0 (unsafe-place-local-ref cell.3$2)))
         (mutex-release (m+s-mutex mutex+sleep_0)))
       (assert-pop-lock-level! 'rktio-sleep-relevant)
       (unsafe-end-uninterruptible))))
 (define maybe-start-sleep-rktio
   (lambda ()
-    (maybe-mutex-acquire/start-sleep (unsafe-place-local-ref cell.3$1))))
+    (maybe-mutex-acquire/start-sleep (unsafe-place-local-ref cell.3$2))))
 (define end-sleep-rktio
   (lambda ()
     (begin
-      (mutex-release/end-sleep (unsafe-place-local-ref cell.3$1))
+      (mutex-release/end-sleep (unsafe-place-local-ref cell.3$2))
       (assert-pop-lock-level! 'rktio-sleep-relevant))))
 (define end-rktio+atomic (lambda () (begin (end-rktio) (unsafe-end-atomic))))
 (define end-rktio+uninterruptible
@@ -3466,7 +3466,7 @@
       (unsafe-place-local-set! cell.1 (|#%app| rktio_init))
       (unsafe-place-local-set! cell.2$3 (make-mutex))
       (unsafe-place-local-set!
-       cell.3$1
+       cell.3$2
        (make-rktio-mutex+sleep (unsafe-place-local-ref cell.1))))))
 (define rktio-place-destroy!
   (lambda ()
@@ -3504,7 +3504,9 @@
            #f
            #f))
         (if (vector? ltps_0) rktio_NULL ltps_0)))))
-(define cell.1$5 (unsafe-make-place-local (make-ltps)))
+(define cell.1$5 (unsafe-make-place-local rktio_NULL))
+(define original-shared-ltps-installed
+  (begin (unsafe-place-local-set! cell.1$5 (make-ltps)) #t))
 (define shared-ltps-place-init!
   (lambda () (unsafe-place-local-set! cell.1$5 (make-ltps))))
 (define shared-ltps-reset!
@@ -3649,6 +3651,11 @@
        (exts-fd-adders_2889 s)
        ($value
         (impersonate-ref exts-fd-adders_2889 struct:exts 1 s 'fd-adders))))))
+(define cell.1$12 (unsafe-make-place-local #f))
+(define original-io-place-ready
+  (begin (unsafe-place-local-set! cell.1$12 #t) #t))
+(define sandman-io-place-ready!
+  (lambda () (unsafe-place-local-set! cell.1$12 #t)))
 (define sandman-add-poll-set-adder
   (lambda (old-exts_0 adder_0)
     (let ((app_0 (if old-exts_0 (exts-timeout-at old-exts_0) #f)))
@@ -3681,14 +3688,14 @@
         (void)))))
 (define sandman-poll-ctx-poll?
   (lambda (poll-ctx_0) (|#%app| poll-ctx-poll? poll-ctx_0)))
-(define cell.1$12 (unsafe-make-place-local #f))
 (define cell.2$2 (unsafe-make-place-local #f))
+(define cell.3$1 (unsafe-make-place-local #f))
 (define sandman-set-background-sleep!
   (lambda (sleep_0 fd_0)
     (begin
-      (unsafe-place-local-set! cell.1$12 sleep_0)
-      (unsafe-place-local-set! cell.2$2 fd_0))))
-(define effect_2180
+      (unsafe-place-local-set! cell.2$2 sleep_0)
+      (unsafe-place-local-set! cell.3$1 fd_0))))
+(define effect_2407
   (begin
     (void
      (|#%app|
@@ -3698,7 +3705,9 @@
          (lambda (exts_0)
            (let ((timeout-at_0 (if exts_0 (exts-timeout-at exts_0) #f)))
              (let ((fd-adders_0 (if exts_0 (exts-fd-adders exts_0) #f)))
-               (if (maybe-start-sleep-rktio)
+               (if (if (unsafe-place-local-ref cell.1$12)
+                     (maybe-start-sleep-rktio)
+                     #f)
                  (let ((ps_0
                         (|#%app|
                          rktio_make_poll_set
@@ -3728,7 +3737,7 @@
                        (begin
                          (if (if sleep-secs_0 (<= sleep-secs_0 0.0) #f)
                            (void)
-                           (if (unsafe-place-local-ref cell.1$12)
+                           (if (unsafe-place-local-ref cell.2$2)
                              (begin
                                (let ((app_0 (unsafe-place-local-ref cell.1)))
                                  (let ((app_1
@@ -3739,8 +3748,8 @@
                                     (if sleep-secs_0 sleep-secs_0 0.0)
                                     ps_0
                                     app_1
-                                    (unsafe-place-local-ref cell.2$2))))
-                               (|#%app| (unsafe-place-local-ref cell.1$12))
+                                    (unsafe-place-local-ref cell.3$1))))
+                               (|#%app| (unsafe-place-local-ref cell.2$2))
                                (|#%app|
                                 rktio_end_sleep
                                 (unsafe-place-local-ref cell.1)))
@@ -3759,31 +3768,34 @@
                  (void)))))
          (lambda (wakeup_0)
            (begin
-             (letrec*
-              ((check-signals_0
-                (|#%name|
-                 check-signals
-                 (lambda ()
-                   (let ((v_0
-                          (begin
-                            (start-rktio)
-                            (begin0
-                              (|#%app|
-                               rktio_poll_os_signal
-                               (unsafe-place-local-ref cell.1))
-                              (end-rktio)))))
-                     (if (eqv? v_0 -1)
-                       (void)
-                       (begin
-                         (|#%app|
-                          (|#%app| rktio_get_ctl_c_handler)
-                          (if (eqv? v_0 2)
-                            'hang-up
-                            (if (eqv? v_0 1) 'terminate 'break)))
-                         (|#%app| wakeup_0 #f)
-                         (check-signals_0))))))))
-              (check-signals_0))
-             (if (fd-semaphore-poll-ready?) (|#%app| wakeup_0 #f) (void))
+             (if (unsafe-place-local-ref cell.1$12)
+               (begin
+                 (letrec*
+                  ((check-signals_0
+                    (|#%name|
+                     check-signals
+                     (lambda ()
+                       (let ((v_0
+                              (begin
+                                (start-rktio)
+                                (begin0
+                                  (|#%app|
+                                   rktio_poll_os_signal
+                                   (unsafe-place-local-ref cell.1))
+                                  (end-rktio)))))
+                         (if (eqv? v_0 -1)
+                           (void)
+                           (begin
+                             (|#%app|
+                              (|#%app| rktio_get_ctl_c_handler)
+                              (if (eqv? v_0 2)
+                                'hang-up
+                                (if (eqv? v_0 1) 'terminate 'break)))
+                             (|#%app| wakeup_0 #f)
+                             (check-signals_0))))))))
+                  (check-signals_0))
+                 (if (fd-semaphore-poll-ready?) (|#%app| wakeup_0 #f) (void)))
+               (void))
              (|#%app| (sandman-do-poll timeout-sandman_0) wakeup_0)))
          (lambda ()
            (|#%app| rktio_get_signal_handle (unsafe-place-local-ref cell.1)))
@@ -41484,5 +41496,6 @@
       (subprocess-init!)
       (address-init!)
       (rktio-filesyste-change-evt-init!)
-      (sync-locale!))))
+      (sync-locale!)
+      (sandman-io-place-ready!))))
 (define io-place-destroy! (lambda () (rktio-place-destroy!)))
