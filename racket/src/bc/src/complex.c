@@ -381,10 +381,10 @@ Scheme_Object *scheme_complex_atan(const Scheme_Object *c)
   /* From Chez Scheme, which implements the principal expression from Kahan:
      (log(1+z) - log(1-z))/2
   */
-# define OMEGA   1.7976931348623157e308
-# define THETA   3.351951982485649e+153  /* = sqrt(OMEGA)/4 */
-# define RHO     2.9833362924800834e-154 /* = 1/THETA */
-# define HALF_PI 1.5707963267948966
+# define OMEGA    1.7976931348623157e308
+# define THETA    3.351951982485649e+153  /* = sqrt(OMEGA)/4 */
+# define HALF_PI  1.5707963267948966
+# define SQRT_TWO 1.4142135623730951
 # define IS_NEG(x) (((x) < 0.0) || ((x == 0.0) && scheme_minus_zero_p(x)))
   double x, y, ay, r, i;
   int negate;
@@ -405,24 +405,32 @@ Scheme_Object *scheme_complex_atan(const Scheme_Object *c)
 
   ay = fabs(y);
 
-  if ((x > THETA) || (y > THETA)) {
-    /*  RP(1/z) +/- (pi/2)i */
-    if (x >= ay)
-      r = 1/(x + ((y/x) * y));
-    else {
-      r = x/y;
-      r = r/((x * r)+ y);
+  if ((x > THETA) || (ay > THETA)) {
+    if ((1.0e300 < x) && (1.0e300 < ay) && (9.0e307 < (x + ay))) {
+      r = (1.0 / (x/ay + ay/x)) / ay;
+    } else {
+      /*  RP(1/z) +/- (pi/2)i */
+      if (x >= ay)
+        r = 1/(x + ((y/x) * y));
+      else {
+        r = x/y;
+        r = r/((x * r)+ y);
+      }
     }
 
     i = (IS_NEG(y) ? HALF_PI : (-HALF_PI));
   } else if (x == 1.0) {
-    double k = ay + RHO;
-    r = scheme_double_log(sqrt(sqrt((y * y) + 4.0)) / sqrt(k));
-    i = (HALF_PI + scheme_double_atan(k/2.0)) / (IS_NEG(y) ? 2.0 : -2.0);
+    if (1.0e-8 <= ay) {
+      r = 0.25 * log1p(4.0 * pow(y, -2.0));
+    } else if (1.74e-310 < ay) { /*  ~ (* (expt 2 45) 5e-324) */
+      r = -0.5 * log(0.5 * ay);
+    } else { /* 45 subnormal bits */
+      r = log(SQRT_TWO / sqrt(ay));
+    }
+    i = (HALF_PI + scheme_double_atan(ay/2.0)) / (IS_NEG(y) ? 2.0 : -2.0);
   } else {
     double mx = 1.0 - x;
-    double k = ay + RHO;
-    k = k * k;
+    double k = ay * ay;
 
     r = scheme_double_log(((4.0 * x) / ((mx * mx) + k)) + 1.0) / 4.0;
     i = scheme_double_atan2(2.0 * y, (mx * (1.0 + x)) - k) / -2.0;

@@ -2325,8 +2325,8 @@
   (test -inf.0 atan 0+1.0i)
   (test -inf.0 atan 0-1.0i))
 
-(test 79.0+17710.0i z-round (* 100 (atan 0.0+1.0i)))
-(test 79.0-17710.0i z-round (* 100 (atan 0.0-1.0i)))
+(test 79.0+inf.0i z-round (* 100 (atan 0.0+1.0i)))
+(test 79.0-inf.0i z-round (* 100 (atan 0.0-1.0i)))
 (test 157.0+55.0i z-round (* 100 (atan 0.0+2.0i)))
 (test 157.0-55.0i z-round (* 100 (atan 0.0-2.0i)))
 (test -157.0+55.0i z-round (* 100 (atan -0.0+2.0i)))
@@ -2342,7 +2342,7 @@
 
 #reader "maybe-single.rkt"
 (when has-single-flonum? 
-  (test 79.0f0+17710.0f0i z-round (* 100 (atan 0.0f0+1.0f0i))))
+  (test 79.0f0+inf.fi z-round (* 100 (atan 0.0f0+1.0f0i))))
 
 (test 157.0-inf.0i z-round (* 100 (asin +inf.0)))
 (test -157.0+inf.0i z-round (* 100 (asin -inf.0)))
