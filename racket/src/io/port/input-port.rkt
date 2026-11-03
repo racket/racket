@@ -100,6 +100,13 @@
   ;; this port or some other port.
   [byte-ready (lambda (work-done!) #t)]
 
+  ;; (-> boolean?)
+  ;; Lock *not* necessarily held, and may be called in atomic mode.
+  ;; Returns #t if `byte-ready` might call arbitrary user code, so
+  ;; `byte-ready` must not be called in atomic mode (although it is
+  ;; called with the port lock held).
+  [byte-ready-non-atomic? (lambda () #f)]
+
   ;; #f or (-*> evt?)
   ;; *Not* called with lock held
   ;; Optional support for progress events, and may be called on a
@@ -130,21 +137,54 @@
                                 [(input-port? byte-ready)
                                  byte-ready]
                                 [else
-                                 (poller-evt
-                                  (poller
-                                   (lambda (self poll-ctx)
-                                     ;; atomic mode
-                                     (define v (with-lock i
-                                                 (byte-ready i
-                                                             (lambda ()
-                                                               (schedule-info-did-work! (poll-ctx-sched-info poll-ctx))))))
-                                     (cond
-                                       [(evt? v)
-                                        (values #f v)]
-                                       [(eq? v #t)
-                                        (values (list #t) #f)]
-                                       [else
-                                        (values #f self)]))))])])))])
+                                 (define (call-byte-ready poll-ctx)
+                                   (with-lock i
+                                     (byte-ready i
+                                                 (lambda ()
+                                                   (schedule-info-did-work! (poll-ctx-sched-info poll-ctx))))))
+                                 (cond
+                                   [(send core-input-port i byte-ready-non-atomic?)
+                                    ;; Call `byte-ready` outside of atomic mode via `delayed-poll`
+                                    (define (make-delayed poll-ctx)
+                                      (delayed-poll
+                                       (lambda ()
+                                         ;; not atomic mode
+                                         (define v (call-byte-ready poll-ctx))
+                                         (cond
+                                           [(evt? v) v]
+                                           [(eq? v #t) always-evt]
+                                           [else (retry-poll-evt make-delayed #f)]))))
+                                    (poller-evt
+                                     (poller
+                                      (lambda (self poll-ctx)
+                                        ;; atomic mode
+                                        (values #f (make-delayed poll-ctx)))))]
+                                   [else
+                                    (poller-evt
+                                     (poller
+                                      (lambda (self poll-ctx)
+                                        ;; atomic mode
+                                        (define v (call-byte-ready poll-ctx))
+                                        (cond
+                                          [(evt? v)
+                                           (values #f v)]
+                                          [(eq? v #t)
+                                           (values (list #t) #f)]
+                                          [else
+                                           (values #f self)]))))])])])))])
+
+;; Reports "not ready" on its first poll, so that a synchronization
+;; attempt moves on to other events, and then retries a delayed poll
+;; on a later poll
+(struct retry-poll-evt (make-delayed [polled? #:mutable])
+  #:authentic
+  #:property prop:evt (poller (lambda (self poll-ctx)
+                                (cond
+                                  [(retry-poll-evt-polled? self)
+                                   (values #f ((retry-poll-evt-make-delayed self) poll-ctx))]
+                                  [else
+                                   (set-retry-poll-evt-polled?! self #t)
+                                   (values #f self)]))))
 
 ;; ----------------------------------------
 

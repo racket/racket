@@ -283,6 +283,7 @@
            [name name]
            [offset init-offset]
            #:override
+           [byte-ready-non-atomic? (lambda () #t)]
            [read-in (if (input-port? user-read-in)
                         user-read-in
                         read-in)]
@@ -305,6 +306,7 @@
            [name name]
            [offset init-offset]
            #:override
+           [byte-ready-non-atomic? (lambda () #t)]
            [read-in/inner read-in/inner]
            [close (values
                    (lambda (self)

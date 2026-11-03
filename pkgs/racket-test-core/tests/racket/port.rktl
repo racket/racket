@@ -1671,6 +1671,25 @@
     (thread-wait (thread work))
     (test #t values done?)))
 
+;; ----------------------------------------
+;; Synchronizing on a custom port calls the port's read or peek
+;; procedure, which can raise an exception
+
+(let ()
+  (define (check-boom thunk)
+    (err/rt-test (thunk) (lambda (exn) (regexp-match? #rx"boom" (exn-message exn))))
+    ;; make sure that the exception didn't leave us in atomic mode,
+    ;; in which case the `sleep` would fail
+    (sleep 0.01))
+  (define (make-boom-read-port) (make-input-port 'i (lambda (bstr) (error "boom")) #f void))
+  (define (make-boom-peek-port) (make-input-port 'i (lambda (bstr) 0) (lambda (bstr skip evt) (error "boom")) void))
+  (check-boom (lambda () (sync (make-boom-read-port))))
+  (check-boom (lambda () (sync/timeout 0 (make-boom-read-port))))
+  (check-boom (lambda () (sync (make-boom-peek-port))))
+  (check-boom (lambda () (sync/timeout 0 (make-boom-peek-port))))
+  (test #f sync/timeout 0.01 (make-input-port 'i (lambda (bstr) 0) #f void))
+  (test #f sync/timeout 0.01 (make-input-port 'i (lambda (bstr) 0) (lambda (bstr skip evt) 0) void)))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
