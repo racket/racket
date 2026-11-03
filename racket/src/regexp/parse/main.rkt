@@ -192,11 +192,15 @@
 
 ;; Returns (values rx position)
 (define (parse-look s pos2 config)
-  ;; known that one character is available
+  ;; `parse-parenthesized-atom` guarantees a character here, but
+  ;; `parse-test` reaches this after `(?(?` without that guarantee,
+  ;; so check for the end of the pattern before reading.
   (define pre-num-groups (config-group-number config))
   (define (span-num-groups) (- (config-group-number config) pre-num-groups))
-  (chyte-case
-   (chytes-ref s pos2)
+  (chyte-case/eos
+   s pos2
+   [(eos)
+    (bad-?-sequence-error s pos2 config)]
    [(#\=)
     (define-values (rx pos3) (parse-regexp/maybe-empty s (add1 pos2) config))
     (values (rx:lookahead rx #t pre-num-groups (span-num-groups))
