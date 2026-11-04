@@ -32,7 +32,7 @@
   =stdout> "No packages found\n"
 
   $ "raco pkg search"
-  =stderr> #rx"no search terms"
+  =exit> 1 =stderr> #rx"no search terms"
 
   (define d (make-temporary-file "pkg-~a" 'directory))
   (define db (build-path d "catalog.sqlite"))
