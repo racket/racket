@@ -172,6 +172,35 @@
   (delete-directory/files archive-d)
 
   $ (~a "raco pkg install pkg-test1")
+
+  (define doctor-d (make-temporary-file "pkg-doctor-~a" 'directory))
+  (call-with-output-file (build-path doctor-d "info.rkt")
+    (λ (o) (display "#lang info\n(define collection \"doctortest\")\n" o)))
+
+  $ (~a "raco pkg doctor " (path->string doctor-d))
+  =exit> 1
+  =stdout> #rx"missing +author"
+
+  (call-with-output-file (build-path doctor-d "info.rkt")
+    (λ (o)
+      (display "#lang info\n(define collection \"doctortest\")"
+               o)
+      (display "\n(define description \"A test package\")\n"
+               o)
+      (display "(define author \"tester@example.com\")\n"
+               o)
+      (display "(define license \"MIT\")\n"
+               o)
+      (display "(define scribblings '((\"main.scrbl\")))\n"
+               o)))
+
+  $ (~a "raco pkg doctor " (path->string doctor-d))
+  =stdout> #rx"No problems found"
+
+  $ "raco pkg doctor /no/such/dir-xyz"
+  =exit> 1
+  =stderr> #rx"no usable info.rkt"
+
   $ (~a "raco pkg archive " archive-d " pkg-test1")
   =stdout> #rx"== Archiving pkg-test1 =="
   $ (~a "test -f " archive-d "/pkgs/pkg-test1.zip")
