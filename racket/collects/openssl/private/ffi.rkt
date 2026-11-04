@@ -343,14 +343,14 @@
                   (get-ffi-obj 'EVP_MD_get_size libcrypto (_fun _EVP_MD* -> _int)
                                (make-not-available name)))))
 
-(define-ssl OBJ_find_sigid_algs
+(define-crypto OBJ_find_sigid_algs
   (_fun _int (alg : (_ptr o _int)) (_pointer = #f) -> (r : _int)
         -> (if (> r 0) alg 0)))
 
-(define-ssl X509_get_signature_nid
+(define-crypto X509_get_signature_nid
   (_fun _X509* -> _int))
 
-(define-ssl X509_digest
+(define-crypto X509_digest
   (_fun _X509* _EVP_MD* _pointer (_ptr i _uint) -> _int))
 
 (begin ;; added in v1.0.2
