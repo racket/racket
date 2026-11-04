@@ -22,6 +22,7 @@
          "private/migrate.rkt"
          "private/catalog-copy.rkt"
          "private/catalog-show.rkt"
+         "private/search.rkt"
          "private/content.rkt"
          "private/catalog-update.rkt"
          "private/catalog-archive.rkt"
@@ -191,6 +192,10 @@
         (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]
   [pkg-migrate-available-versions
    (-> (listof string?))]
+  [pkg-search
+   (->* ((listof string?))
+        ()
+        void?)]
   [pkg-catalog-show
    (->* ((listof string?))
         (#:all? boolean?

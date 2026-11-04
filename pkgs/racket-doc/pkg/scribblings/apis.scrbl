@@ -47,6 +47,8 @@ functions explicitly configure parameters based on their arguments.
 @defthing[pkg-migrate-command procedure?]{Implements @command-ref{migrate}.}
 @defthing[pkg-config-command procedure?]{Implements @command-ref{config}.}
 @defthing[pkg-create-command procedure?]{Implements @command-ref{create}.}
+@defthing[pkg-search-command procedure?]{Implements @command-ref{search}.
+                                         @history[#:added "9.4.0.4"]}
 @defthing[pkg-catalog-show-command procedure?]{Implements @command-ref{catalog-show}.}
 @defthing[pkg-catalog-copy-command procedure?]{Implements @command-ref{catalog-copy}.}
 @defthing[pkg-catalog-archive-command procedure?]{Implements @command-ref{catalog-archive}.
