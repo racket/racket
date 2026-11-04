@@ -172,6 +172,25 @@
   (delete-directory/files archive-d)
 
   $ (~a "raco pkg install pkg-test1")
+  $ "raco pkg outdated pkg-test1"
+  =stdout> #rx"up to date"
+
+  (parameterize ([db:current-pkg-catalog-file db])
+    (db:set-pkgs!
+     "local"
+     (for/list ([p (in-list (db:get-pkgs))])
+       (if (equal? (db:pkg-name p) "pkg-test1")
+           (db:pkg "pkg-test1" (db:pkg-catalog p) (db:pkg-author p)
+                   (db:pkg-source p)
+                   "4242424242424242424242424242424242424242"
+                   (db:pkg-desc p))
+           p))))
+
+  $ "raco pkg outdated pkg-test1"
+  =stdout> #rx"pkg-test1.*42424242"
+  $ "raco pkg outdated no-such-pkg-here"
+  =stdout> "no-such-pkg-here is not installed.\n"
+
   $ (~a "raco pkg archive " archive-d " pkg-test1")
   =stdout> #rx"== Archiving pkg-test1 =="
   $ (~a "test -f " archive-d "/pkgs/pkg-test1.zip")
