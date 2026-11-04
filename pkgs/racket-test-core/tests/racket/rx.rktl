@@ -1624,6 +1624,7 @@
        #"(?(?=x)a"
        #"(?(?=x)a|b"
        #"(?(?=x)a|b|"
+       #"(?(?"
        (#"(a)?(?(1)12|b12)" #"a12" (#"a12" #"a"))
        (#"(a)?(?(1)12|b12)" #"b12" (#"b12" #f))
        (#"(a)?(?(1)12|b12)" #"b13" #f)
@@ -1653,6 +1654,10 @@
        (#"^(E)?(?(1)aa|a)*$" #"aaa" (#"aaa" #f))
        (#"^(E)?(?(1)aa|a)*$" #"aaaa" (#"aaaa" #f))))
 
+;; A conditional test `(?(...)` that ends right after an inner `(?`
+;; must report a pattern error, not read past the end of the pattern.
+(err/rt-test (pregexp "(?(?") exn:fail? #rx"after `[(][?]")
+(err/rt-test (byte-pregexp #"(?(?") exn:fail? #rx"after `[(][?]")
 
 (let ()
   (define out (open-output-bytes))

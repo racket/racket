@@ -2544,19 +2544,17 @@
                 (-
                  (unbox (parse-config-group-number-box config_0))
                  pre-num-groups_0)))))
-        (let ((tmp_0 (integer->char (chytes-ref$1 s_0 pos2_0))))
-          (if (eqv? tmp_0 '#\x3d)
-            (call-with-values
-             (lambda () (parse-regexp/maybe-empty s_0 (add1 pos2_0) config_0))
-             (lambda (rx_0 pos3_0)
-               (let ((app_0
-                      (rx:lookahead7.1
-                       rx_0
-                       #t
-                       pre-num-groups_0
-                       (span-num-groups_0))))
-                 (values app_0 (check-close-paren s_0 pos3_0 config_0)))))
-            (if (eqv? tmp_0 '#\x21)
+        (let ((tmp_0
+               (if (= pos2_0 (chytes-length$1 s_0))
+                 'eos
+                 (chytes-ref/char s_0 pos2_0))))
+          (if (eq? tmp_0 'eos)
+            (parse-error
+             s_0
+             pos2_0
+             config_0
+             "expected `:`, `=`, `!`, `<=`, `<!`, `i`, `-i`, `m`, `-m`, `s`, or `-s` after `(?`")
+            (if (eqv? tmp_0 '#\x3d)
               (call-with-values
                (lambda ()
                  (parse-regexp/maybe-empty s_0 (add1 pos2_0) config_0))
@@ -2564,42 +2562,35 @@
                  (let ((app_0
                         (rx:lookahead7.1
                          rx_0
-                         #f
+                         #t
                          pre-num-groups_0
                          (span-num-groups_0))))
                    (values app_0 (check-close-paren s_0 pos3_0 config_0)))))
-              (if (eqv? tmp_0 '#\x3c)
-                (let ((pos2+_0 (add1 pos2_0)))
-                  (let ((tmp_1
-                         (if (= pos2+_0 (chytes-length$1 s_0))
-                           'eos
-                           (chytes-ref/char s_0 pos2+_0))))
-                    (if (eq? tmp_1 'eos)
-                      (parse-error
-                       s_0
-                       pos2+_0
-                       config_0
-                       "expected `:`, `=`, `!`, `<=`, `<!`, `i`, `-i`, `m`, `-m`, `s`, or `-s` after `(?`")
-                      (if (eqv? tmp_1 '#\x3d)
-                        (call-with-values
-                         (lambda ()
-                           (parse-regexp/maybe-empty
-                            s_0
-                            (add1 pos2+_0)
-                            config_0))
-                         (lambda (rx_0 pos3_0)
-                           (let ((app_0
-                                  (rx:lookbehind8.1
-                                   rx_0
-                                   #t
-                                   0
-                                   0
-                                   pre-num-groups_0
-                                   (span-num-groups_0))))
-                             (values
-                              app_0
-                              (check-close-paren s_0 pos3_0 config_0)))))
-                        (if (eqv? tmp_1 '#\x21)
+              (if (eqv? tmp_0 '#\x21)
+                (call-with-values
+                 (lambda ()
+                   (parse-regexp/maybe-empty s_0 (add1 pos2_0) config_0))
+                 (lambda (rx_0 pos3_0)
+                   (let ((app_0
+                          (rx:lookahead7.1
+                           rx_0
+                           #f
+                           pre-num-groups_0
+                           (span-num-groups_0))))
+                     (values app_0 (check-close-paren s_0 pos3_0 config_0)))))
+                (if (eqv? tmp_0 '#\x3c)
+                  (let ((pos2+_0 (add1 pos2_0)))
+                    (let ((tmp_1
+                           (if (= pos2+_0 (chytes-length$1 s_0))
+                             'eos
+                             (chytes-ref/char s_0 pos2+_0))))
+                      (if (eq? tmp_1 'eos)
+                        (parse-error
+                         s_0
+                         pos2+_0
+                         config_0
+                         "expected `:`, `=`, `!`, `<=`, `<!`, `i`, `-i`, `m`, `-m`, `s`, or `-s` after `(?`")
+                        (if (eqv? tmp_1 '#\x3d)
                           (call-with-values
                            (lambda ()
                              (parse-regexp/maybe-empty
@@ -2610,7 +2601,7 @@
                              (let ((app_0
                                     (rx:lookbehind8.1
                                      rx_0
-                                     #f
+                                     #t
                                      0
                                      0
                                      pre-num-groups_0
@@ -2618,16 +2609,35 @@
                                (values
                                 app_0
                                 (check-close-paren s_0 pos3_0 config_0)))))
-                          (parse-error
-                           s_0
-                           pos2+_0
-                           config_0
-                           "expected `:`, `=`, `!`, `<=`, `<!`, `i`, `-i`, `m`, `-m`, `s`, or `-s` after `(?`"))))))
-                (parse-error
-                 s_0
-                 pos2_0
-                 config_0
-                 "expected `:`, `=`, `!`, `<=`, `<!`, `i`, `-i`, `m`, `-m`, `s`, or `-s` after `(?`")))))))))
+                          (if (eqv? tmp_1 '#\x21)
+                            (call-with-values
+                             (lambda ()
+                               (parse-regexp/maybe-empty
+                                s_0
+                                (add1 pos2+_0)
+                                config_0))
+                             (lambda (rx_0 pos3_0)
+                               (let ((app_0
+                                      (rx:lookbehind8.1
+                                       rx_0
+                                       #f
+                                       0
+                                       0
+                                       pre-num-groups_0
+                                       (span-num-groups_0))))
+                                 (values
+                                  app_0
+                                  (check-close-paren s_0 pos3_0 config_0)))))
+                            (parse-error
+                             s_0
+                             pos2+_0
+                             config_0
+                             "expected `:`, `=`, `!`, `<=`, `<!`, `i`, `-i`, `m`, `-m`, `s`, or `-s` after `(?`"))))))
+                  (parse-error
+                   s_0
+                   pos2_0
+                   config_0
+                   "expected `:`, `=`, `!`, `<=`, `<!`, `i`, `-i`, `m`, `-m`, `s`, or `-s` after `(?`"))))))))))
 (define parse-conditional
   (lambda (s_0 pos_0 config_0)
     (let ((tst-pre-num-groups_0
