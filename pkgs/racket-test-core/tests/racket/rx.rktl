@@ -1656,8 +1656,8 @@
 
 ;; A conditional test `(?(...)` that ends right after an inner `(?`
 ;; must report a pattern error, not read past the end of the pattern.
-(err/rt-test (pregexp "(?(?") exn:fail? #rx"after `[(][?]`")
-(err/rt-test (byte-pregexp #"(?(?") exn:fail? #rx"after `[(][?]`")
+(err/rt-test (pregexp "(?(?") exn:fail? #rx"after `[(][?]")
+(err/rt-test (byte-pregexp #"(?(?") exn:fail? #rx"after `[(][?]")
 
 (let ()
   (define out (open-output-bytes))
