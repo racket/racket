@@ -517,6 +517,14 @@ Returns a list of versions that are suitable as arguments to
 @history[#:added "8.11.1.7"]}
 
 
+@defproc[(pkg-search [terms (listof string?)])
+         void?]{
+
+Implements @racket[pkg-search-command].
+
+@history[#:added "9.4.0.4"]}
+
+
 @defproc[(pkg-catalog-show [names (listof string?)]
                            [#:all? all? boolean? #f]
                            [#:only-names? only-names? boolean? #f]

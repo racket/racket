@@ -1149,6 +1149,8 @@ for @nonterm{key}.
  @item{@DFlag{catalog} @nonterm{catalog} --- Searches @nonterm{catalog}s instead of the currently configured
        @tech{package catalogs}. This flag can be provided multiple times. The catalogs are tried in the order provided.}
  ]
+
+@history[#:added "9.4.0.4"]
 }
 
 @subcommand{@command/toc{catalog-show} @nonterm{option} ... @nonterm{package-name} ...
