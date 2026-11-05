@@ -68,6 +68,15 @@
         -> _CFStringRef/null)
   #:wrap (allocator CFRelease))
 
+;; Used only by error-logging code, so ok to fail to "???" on very long messages.
+(define-cf CFStringGetCString
+  (_fun [theString : _CFStringRef]
+        [buffer : _pointer = (make-bytes 1000)]
+        [buflen : _CFIndex = (bytes-length buffer)]
+        [encoding : _CFStringEncoding = kCFStringEncodingUTF8]
+        -> [ok? : _Boolean]
+        -> (if ok? (cast buffer _gcpointer _string/utf-8) "???")))
+
 (define (string->CFString s)
   (define buf (string->bytes/utf-8 s))
   (CFStringCreateWithBytes buf (bytes-length buf)))
@@ -97,6 +106,25 @@
 (define kCFTypeArrayCallBacks
   (cast (ffi-obj-ref 'kCFTypeArrayCallBacks libcf)
         _pointer _CFArrayCallBacks/null))
+
+(define-cf CFErrorGetDomain
+  (_fun _CFErrorRef -> _CFStringRef))
+(define-cf CFErrorGetCode
+  (_fun _CFErrorRef -> _CFIndex))
+(define-cf CFErrorCopyDescription
+  (_fun _CFErrorRef -> _CFStringRef)
+  #:wrap (allocator CFRelease))
+
+(define (report-verify-errors err)
+  (cond [err
+         (log-openssl-verify-warning
+          "verify error (~s, ~s): ~a"
+          (CFStringGetCString (CFErrorGetDomain err))
+          (CFErrorGetCode err)
+          (CFStringGetCString (CFErrorCopyDescription err)))]
+        [else
+         (log-openssl-verify-warning
+          "unknown verify error")]))
 
 ;; ----------------------------------------
 
@@ -150,12 +178,10 @@
 ;; Since Mac OS 10.14
 (define-sec SecTrustEvaluateWithError
   (_fun [trust : _SecTrustRef]
-        ;; I haven't found an enumeration of possible error results for this
-        ;; function, so no point in fetching error info.
-        [err : _pointer = #f] ;; (_ptr io _CFErrorRef/null)
+        [err : (_ptr io _CFErrorRef/null) = #f]
         -> [ok? : _bool]
         ;; Returns true if the certificate is trusted.
-        -> ok?))
+        -> (values ok? err)))
 
 ;; Since Mac OS 10.15
 ;; Must *call* from same dispatch queue as `queue` parameter.
@@ -184,25 +210,15 @@
 ;; ============================================================
 
 (define trust-error-mapping
-  `(
-    ;; There is an unknown critical extension flag.
-    (-67603 errSecUnknownCriticalExtensionFlag ,X509_V_ERR_UNHANDLED_CRITICAL_EXTENSION)
-    ;; The certificate cannot operate.
-    ;;(-67817 errSecCertificateCannotOperate _)
-    ;; An expired certificate was detected.
-    (-67818 errSecCertificateExpired ,X509_V_ERR_CERT_HAS_EXPIRED)
-    ;; The certificate is not yet valid.
-    (-67819 errSecCertificateNotValidYet ,X509_V_ERR_CERT_NOT_YET_VALID)
-    ;; The certificate was revoked.
-    (-67820 errSecCertificateRevoked ,X509_V_ERR_CERT_REVOKED)
-    ;; The certificate was suspended.
-    ;;(-67821 errSecCertificateSuspended _)
-    ;; The certificate authority is not valid.
-    (-67826 errSecInvalidCertAuthority ,X509_V_ERR_CERT_UNTRUSTED) ; ??
-    ;; An invalid certificate group was detected.
-    ;;(-67691 errSecInvalidCertificateGroup _)
-    ;; An invalid certificate reference was detected.
-    ;;(-67690 errSecInvalidCertificateRef _)
+  `((-67603 errSecUnknownCriticalExtensionFlag)
+    (-67817 errSecCertificateCannotOperate)
+    (-67818 errSecCertificateExpired)
+    (-67819 errSecCertificateNotValidYet)
+    (-67820 errSecCertificateRevoked)
+    (-67821 errSecCertificateSuspended)
+    (-67826 errSecInvalidCertAuthority)
+    (-67691 errSecInvalidCertificateGroup)
+    (-67690 errSecInvalidCertificateRef)
     ;; The requested name isn’t allowed for this certificate.
     ;;(?? errSecCertificateNameNotAllowed _)
     ;; The requested policy isn’t allowed for this certificate.
@@ -211,11 +227,10 @@
     ;;(?? errSecCertificateValidityPeriodTooLong _)
     ))
 
-;; set-trust-error : OSStatus _ -> Void
-(define (set-trust-error s set-error)
-  (cond [(assoc s trust-error-mapping)
-         => (lambda (e) (set-error 0 (caddr e)))]
-        [else (void)]))
+;; report-trust-errors : OSStatus -> Void
+(define (report-trust-errors s)
+  (let ([e (or (assoc s trust-error-mapping) '(_ unknown))])
+    (log-openssl-verify-warning "trust error: code ~s (~s)" s (cadr e))))
 
 ;; ============================================================
 
@@ -235,8 +250,8 @@
   (begin0 (CFArrayCreate elems len kCFTypeArrayCallBacks)
     (free elems)))
 
-;; make-trust : String/#f (Listof Bytes) _ -> (U SecTrustRef #f)
-(define (make-trust hostname cert-ders [set-error void])
+;; make-trust : String/#f (Listof Bytes) -> (U SecTrustRef #f)
+(define (make-trust hostname cert-ders)
   (define hostname-ref (string->CFString hostname))
   (define policy-ref
     (begin0 (SecPolicyCreateSSL #t hostname-ref)
@@ -255,16 +270,22 @@
                 trust]
                [else
                 (CFRelease trust)
-                (set-trust-error s2 set-error)
+                (report-trust-errors s2)
                 #f])]
         [else
          (when trust (CFRelease trust)) ;; impossible?
-         (set-trust-error s1 set-error)
+         (report-trust-errors s1)
          #f]))
 
-(define (macos-verify purpose hostname cert-der intermediate-ders [set-error void])
-  (define trust (make-trust hostname (cons cert-der intermediate-ders) set-error))
-  (and trust (SecTrustEvaluateWithError trust)))
+(define (verify-policy trust)
+  (define-values (ok? err) (SecTrustEvaluateWithError trust))
+  (unless ok? (report-verify-errors err))
+  (when err (CFRelease err))
+  ok?)
+
+(define (macos-verify purpose hostname cert-der intermediate-ders)
+  (define trust (make-trust hostname (cons cert-der intermediate-ders)))
+  (and trust (verify-policy trust)))
 
 (define macos-verify-callback (make-verify-callback macos-verify))
 (define (get-macos-verify-callback) macos-verify-callback)

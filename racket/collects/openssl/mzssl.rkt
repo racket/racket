@@ -48,8 +48,6 @@ TO DO:
  ["private/win32.rkt" (load-win32-store)]
  ["private/macosx.rkt" (load-macosx-keychain)])
 
-(define-logger openssl)
-
 (when (and libssl (not v1.0.2/later?))
   (log-openssl-error "OpenSSL library too old, version 1.0.2 or later required."))
 

@@ -116,45 +116,40 @@
 (define CERT_TRUST_NO_ERROR #x00000000)
 
 (define trust-error-mapping
-  `(;; reordered:
-    (#x04000000 CERT_TRUST_IS_EXPLICIT_DISTRUST ,X509_V_ERR_CERT_REJECTED)
-    ;; ----
-    (#x00000001 CERT_TRUST_IS_NOT_TIME_VALID ,X509_V_ERR_CERT_HAS_EXPIRED) ;; or NOT_YET_VALID
-    (#x00000004 CERT_TRUST_IS_REVOKED ,X509_V_ERR_CERT_REVOKED)
-    (#x00000008 CERT_TRUST_IS_NOT_SIGNATURE_VALID ,X509_V_ERR_CERT_SIGNATURE_FAILURE)
-    (#x00000010 CERT_TRUST_IS_NOT_VALID_FOR_USAGE ,X509_V_ERR_INVALID_PURPOSE)
-    (#x00000020 CERT_TRUST_IS_UNTRUSTED_ROOT ,X509_V_ERR_CERT_UNTRUSTED)
-    ;(#x00000040 CERT_TRUST_REVOCATION_STATUS_UNKNOWN)
-    (#x00000080 CERT_TRUST_IS_CYCLIC ,X509_V_ERR_PATH_LOOP)
-    (#x00000100 CERT_TRUST_INVALID_EXTENSION ,X509_V_ERR_INVALID_EXTENSION)
-    (#x00000200 CERT_TRUST_INVALID_POLICY_CONSTRAINTS ,X509_V_ERR_INVALID_POLICY_EXTENSION)
-    ;(#x00000400 CERT_TRUST_INVALID_BASIC_CONSTRAINTS)
-    (#x00000800 CERT_TRUST_INVALID_NAME_CONSTRAINTS ,X509_V_ERR_INVALID_EXTENSION)
-    (#x00001000 CERT_TRUST_HAS_NOT_SUPPORTED_NAME_CONSTRAINT ,X509_V_ERR_INVALID_EXTENSION)
-    (#x00002000 CERT_TRUST_HAS_NOT_DEFINED_NAME_CONSTRAINT  ,X509_V_ERR_INVALID_EXTENSION)
-    (#x00004000 CERT_TRUST_HAS_NOT_PERMITTED_NAME_CONSTRAINT ,X509_V_ERR_INVALID_EXTENSION)
-    (#x00008000 CERT_TRUST_HAS_EXCLUDED_NAME_CONSTRAINT ,X509_V_ERR_INVALID_EXTENSION)
-    ;(#x01000000 CERT_TRUST_IS_OFFLINE_REVOCATION)
-    ;(#x02000000 CERT_TRUST_NO_ISSUANCE_CHAIN_POLICY)
-    ;(#x08000000 CERT_TRUST_HAS_NOT_SUPPORTED_CRITICAL_EXT)
-    ;(#x00100000 CERT_TRUST_HAS_WEAK_SIGNATURE)
+  `((#x00000001 CERT_TRUST_IS_NOT_TIME_VALID)
+    (#x00000004 CERT_TRUST_IS_REVOKED)
+    (#x00000008 CERT_TRUST_IS_NOT_SIGNATURE_VALID)
+    (#x00000010 CERT_TRUST_IS_NOT_VALID_FOR_USAGE)
+    (#x00000020 CERT_TRUST_IS_UNTRUSTED_ROOT)
+    (#x00000040 CERT_TRUST_REVOCATION_STATUS_UNKNOWN)
+    (#x00000080 CERT_TRUST_IS_CYCLIC)
+    (#x00000100 CERT_TRUST_INVALID_EXTENSION)
+    (#x00000200 CERT_TRUST_INVALID_POLICY_CONSTRAINTS)
+    (#x00000400 CERT_TRUST_INVALID_BASIC_CONSTRAINTS)
+    (#x00000800 CERT_TRUST_INVALID_NAME_CONSTRAINTS)
+    (#x00001000 CERT_TRUST_HAS_NOT_SUPPORTED_NAME_CONSTRAINT)
+    (#x00002000 CERT_TRUST_HAS_NOT_DEFINED_NAME_CONSTRAINT)
+    (#x00004000 CERT_TRUST_HAS_NOT_PERMITTED_NAME_CONSTRAINT)
+    (#x00008000 CERT_TRUST_HAS_EXCLUDED_NAME_CONSTRAINT)
+    (#x01000000 CERT_TRUST_IS_OFFLINE_REVOCATION)
+    (#x02000000 CERT_TRUST_NO_ISSUANCE_CHAIN_POLICY)
+    (#x04000000 CERT_TRUST_IS_EXPLICIT_DISTRUST)
+    (#x08000000 CERT_TRUST_HAS_NOT_SUPPORTED_CRITICAL_EXT)
+    (#x00100000 CERT_TRUST_HAS_WEAK_SIGNATURE)
     ;; only for chains:
-    ;(#x00010000 CERT_TRUST_IS_PARTIAL_CHAIN)
-    ;(#x00020000 CERT_TRUST_CTL_IS_NOT_TIME_VALID)
-    ;(#x00040000 CERT_TRUST_CTL_IS_NOT_SIGNATURE_VALID)
-    ;(#x00080000 CERT_TRUST_CTL_IS_NOT_VALID_FOR_USAGE)
-    ))
+    (#x00010000 CERT_TRUST_IS_PARTIAL_CHAIN)
+    (#x00020000 CERT_TRUST_CTL_IS_NOT_TIME_VALID)
+    (#x00040000 CERT_TRUST_CTL_IS_NOT_SIGNATURE_VALID)
+    (#x00080000 CERT_TRUST_CTL_IS_NOT_VALID_FOR_USAGE)))
 
-(define (lookup-code-mapping code table)
-  (for/or ([e (in-list table)])
-    (if (zero? (bitwise-and code (car e))) #f (caddr e))))
-
-(define (set-chain-trust-error depth trust set-error)
+(define (report-chain-trust-errors chain-index element-index trust)
   (define errcode (CERT_TRUST_STATUS-errorStatus trust))
-  (cond [(= errcode X509_V_OK) #f]
-        [(lookup-code-mapping errcode trust-error-mapping)
-         => (lambda (code) (begin (set-error depth code) #t))]
-        [else #f]))
+  (unless (zero? errcode)
+    (for ([e (in-list trust-error-mapping)])
+      (unless (zero? (bitwise-and errcode (car e)))
+        (log-openssl-verify-debug
+         "chain error: code #x~x (~s) at chain ~s, element ~s"
+         (car e) (cadr e) chain-index element-index)))))
 
 ;; ----------------------------------------
 
@@ -226,9 +221,9 @@
    ;; incomplete
    ))
 
-(define (set-chain-element-error depth elem set-error)
+(define (report-chain-element-errors chain-index element-index elem)
   (define trust (CERT_CHAIN_ELEMENT-trustStatus elem))
-  (set-chain-trust-error depth trust set-error))
+  (report-chain-trust-errors chain-index element-index trust))
 
 (define-cstruct _CERT_SIMPLE_CHAIN
   ([size            _DWORD]
@@ -239,14 +234,13 @@
    ))
 (define _CERT_SIMPLE_CHAIN* _CERT_SIMPLE_CHAIN-pointer)
 
-(define (set-simple-chain-error sc set-error)
+(define (report-simple-chain-errors chain-index sc)
   (define trust (CERT_SIMPLE_CHAIN-trustStatus sc))
-  (cond [(= (CERT_TRUST_STATUS-errorStatus trust) CERT_TRUST_NO_ERROR) #f]
-        [else
-         (define elements (CERT_SIMPLE_CHAIN-elements sc))
-         (for/or ([depth (in-range (CERT_SIMPLE_CHAIN-cElement sc))])
-           (define elem (ptr-ref elements _CERT_CHAIN_ELEMENT-pointer depth))
-           (set-chain-element-error depth elem set-error))]))
+  (unless (= (CERT_TRUST_STATUS-errorStatus trust) CERT_TRUST_NO_ERROR)
+    (define elements (CERT_SIMPLE_CHAIN-elements sc))
+    (for ([element-index (in-range (CERT_SIMPLE_CHAIN-cElement sc))])
+      (define elem (ptr-ref elements _CERT_CHAIN_ELEMENT-pointer element-index))
+      (report-chain-element-errors chain-index element-index elem))))
 
 ;; ----------------------------------------
 
@@ -264,13 +258,11 @@
 (define _CERT_CHAIN_CONTEXT* _CERT_CHAIN_CONTEXT-pointer)
 (define _CERT_CHAIN_CONTEXT*/null _CERT_CHAIN_CONTEXT-pointer/null)
 
-(define (set-chain-error chain set-error)
-  (or (cond [(>= (CERT_CHAIN_CONTEXT-cChains chain) 1)
-             (define scs (CERT_CHAIN_CONTEXT-chains chain))
-             (define sc (ptr-ref scs _CERT_SIMPLE_CHAIN* 0))
-             (set-simple-chain-error sc set-error)]
-            [else #f])
-      (set-chain-trust-error 0 (CERT_CHAIN_CONTEXT-trustStatus chain) set-error)))
+(define (report-chain-errors chain)
+  (define scs (CERT_CHAIN_CONTEXT-chains chain))
+  (for ([i (CERT_CHAIN_CONTEXT-cChains chain)])
+    (define sc (ptr-ref scs _CERT_SIMPLE_CHAIN* i))
+    (report-simple-chain-errors i sc)))
 
 ;; ----------------------------------------
 
@@ -363,55 +355,32 @@
   (make-CERT_CHAIN_POLICY_STATUS size 0 0 0 #f))
 
 (define policy-error-mapping
-  `(;; The signature of the certificate cannot be verified.
-    (#x80096004 TRUST_E_CERT_SIGNATURE ,X509_V_ERR_CERT_SIGNATURE_FAILURE)
-    ;; The certificate or signature has been revoked.
-    (#x80092010 CRYPT_E_REVOKED ,X509_V_ERR_CERT_REVOKED)
-    ;; A certification chain processed correctly but terminated in a root
-    ;; certificate that is not trusted by the trust provider.
-    (#x800B0109 CERT_E_UNTRUSTEDROOT ,X509_V_ERR_CERT_UNTRUSTED)
-    ;; The root certificate is a testing certificate, and policy settings
-    ;; disallow test certificates.
-    (#x800B010D CERT_E_UNTRUSTEDTESTROOT ,X509_V_ERR_CERT_UNTRUSTED)
-    ;; A chain of certificates was not correctly created.
-    ;;(#x800B010A CERT_E_CHAINING _)
-    ;; The certificate is not valid for the requested usage.
-    (#x800B0110 CERT_E_WRONG_USAGE ,X509_V_ERR_INVALID_PURPOSE)
-    ;; A required certificate is not within its validity period.
-    (#x800B0101 CERT_E_EXPIRED ,X509_V_ERR_CERT_HAS_EXPIRED) ;; or NOT_YET_VALID
-    ;; The certificate has an invalid name. Either the name is not included in
-    ;; the permitted list, or it is explicitly excluded.
-    (#x800B0114 CERT_E_INVALID_NAME ,X509_V_ERR_EXCLUDED_VIOLATION) ;; or PERMITTED_VIOLATION
-    ;; The certificate has an invalid policy.
-    ;;(#x800B0113 CERT_E_INVALID_POLICY _)
-    ;; The basic constraints of the certificate are not valid, or they are missing.
-    ;;(#x80096019 TRUST_E_BASIC_CONSTRAINTS _)
-    ;; The certificate is being used for a purpose other than the purpose
-    ;; specified by its CA.
-    (#x800B0105 CERT_E_CRITICAL ,X509_V_ERR_UNHANDLED_CRITICAL_EXTENSION)
-    ;; The validity periods of the certification chain do not nest correctly.
-    ;;(#x800B0102 CERT_E_VALIDITYPERIODNESTING _)
-    ;; The revocation function was unable to check revocation for the certificate.
-    ;;(#x80092012 CRYPT_E_NO_REVOCATION_CHECK _)
-    ;; The revocation function was unable to check revocation because the
-    ;; revocation server was offline.
-    ;;(#x80092013 CRYPT_E_REVOCATION_OFFLINE _)
-    ;; The certificate's CN name does not match the passed value.
-    (#x800B010F CERT_E_CN_NO_MATCH ,X509_V_ERR_HOSTNAME_MISMATCH)
-    ;; The certificate is being used for a purpose other than the purposes
-    ;; specified by its CA.
-    (#x800B0106 CERT_E_PURPOSE ,X509_V_ERR_CERT_REJECTED)
-    ;; A certificate that can only be used as an end-entity is being used as a
-    ;; CA or vice versa.
-    (#x800B0103 CERT_E_ROLE ,X509_V_ERR_INVALID_PURPOSE)))
+  `((#x80096004 TRUST_E_CERT_SIGNATURE)
+    (#x80092010 CRYPT_E_REVOKED)
+    (#x800B0109 CERT_E_UNTRUSTEDROOT)
+    (#x800B010D CERT_E_UNTRUSTEDTESTROOT)
+    (#x800B010A CERT_E_CHAINING)
+    (#x800B0110 CERT_E_WRONG_USAGE)
+    (#x800B0101 CERT_E_EXPIRED)
+    (#x800B0114 CERT_E_INVALID_NAME)
+    (#x800B0113 CERT_E_INVALID_POLICY)
+    (#x80096019 TRUST_E_BASIC_CONSTRAINTS)
+    (#x800B0105 CERT_E_CRITICAL)
+    (#x800B0102 CERT_E_VALIDITYPERIODNESTING)
+    (#x80092012 CRYPT_E_NO_REVOCATION_CHECK)
+    (#x80092013 CRYPT_E_REVOCATION_OFFLINE)
+    (#x800B010F CERT_E_CN_NO_MATCH)
+    (#x800B0106 CERT_E_PURPOSE)
+    (#x800B0103 CERT_E_ROLE)))
 
-(define (set-verify-error status set-error)
-  (define errcode (CERT_CHAIN_POLICY_STATUS-error status))
-  ;; elementIndex can be -1 (whole chain), but OpenSSL needs nonnegative depth
-  (define depth (max 0 (CERT_CHAIN_POLICY_STATUS-elementIndex status)))
-  (cond [(assoc errcode policy-error-mapping)
-         => (lambda (e) (set-error depth (caddr e)))]
-        [else (void)]))
+(define (report-policy-errors policy-status)
+  (define errcode (CERT_CHAIN_POLICY_STATUS-error policy-status))
+  (define chainIndex (CERT_CHAIN_POLICY_STATUS-chainIndex policy-status))
+  (define elementIndex (CERT_CHAIN_POLICY_STATUS-elementIndex policy-status))
+  (let ([e (or (assoc errcode policy-error-mapping) '(_ unknown))])
+    (log-openssl-verify-warning
+     "policy error: code #x~x (~s) at chain ~s, element ~s"
+     errcode (cadr e) chainIndex elementIndex)))
 
 ;; ----------------------------------------
 
@@ -455,7 +424,7 @@
                  CERT_CHAIN_REVOCATION_CHECK_END_CERT))
   (CertGetCertificateChain cert untrusted-store chain-para flags))
 
-(define (verify-policy purpose hostname chain [set-error void])
+(define (verify-policy purpose hostname chain)
   (define hostname-mem (unmoving (string->bytes/utf16 hostname)))
   (define extra-policy (new-SSL_EXTRA_CERT_CHAIN_POLICY_PARA purpose hostname-mem))
   (define policy-para (new-ssl-CERT_CHAIN_POLICY_PARA extra-policy))
@@ -467,14 +436,20 @@
   (cond [status
          (define errorStatus (CERT_CHAIN_POLICY_STATUS-error status))
          (cond [(= errorStatus CERT_TRUST_NO_ERROR) #t]
-               [else (begin (set-verify-error status set-error) #f)])]
-        [else #f]))
+               [else (begin (report-errors chain status) #f)])]
+        [else (begin (report-errors chain #f) #f)]))
 
-(define (win32-verify purpose hostname cert-der untrusted-cert-ders [set-error void])
+(define (report-errors chain policy-status)
+  (when (log-level? openssl-verify-logger 'warning)
+    (cond [policy-status (report-policy-errors policy-status)]
+          [else (log-openssl-verify-warning "unable to evaluate policy")])))
+
+(define (win32-verify purpose hostname cert-der untrusted-cert-ders)
   (define chain (get-cert-chain purpose cert-der untrusted-cert-ders))
-  ;; The chain's trustStatus might have errors, but some of those may be ignored
-  ;; by the policy config (eg, unknown revocation status errors).
-  (and chain (verify-policy purpose hostname chain set-error)))
+  (when (log-level? openssl-verify-logger 'debug)
+    (report-chain-errors chain))
+  ;; Not all errors in chain are necessarily relevant to policy verification.
+  (and chain (verify-policy purpose hostname chain)))
 
 (define win32-verify-callback (make-verify-callback win32-verify))
 (define (get-win32-verify-callback) win32-verify-callback)
