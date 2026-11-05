@@ -529,7 +529,7 @@ loaded immediately; rather, they are searched only when a certificate
 needs verification.}
 
 @item{If @racket[src] is @racket[(list 'os)], then the verification function
-from OpenSSL is completely replaced with for all connections created with
+from OpenSSL is completely replaced for all connections created with
 @racket[context]. Verification is performed by the operating system using its
 own trust stores. Any other sources loaded before or after this are
 ignored. Only supported on Windows and Mac OS.}
