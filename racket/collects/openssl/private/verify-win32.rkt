@@ -472,12 +472,9 @@
 
 (define (win32-verify purpose hostname cert-der untrusted-cert-ders [set-error void])
   (define chain (get-cert-chain purpose cert-der untrusted-cert-ders))
-  (cond [chain
-         (define trust-status (CERT_CHAIN_CONTEXT-trustStatus chain))
-         (cond [(= (CERT_TRUST_STATUS-errorStatus trust-status) CERT_TRUST_NO_ERROR)
-                (verify-policy purpose hostname chain)]
-               [else (begin (set-chain-error chain set-error) #f)])]
-        [else #f]))
+  ;; The chain's trustStatus might have errors, but some of those may be ignored
+  ;; by the policy config (eg, unknown revocation status errors).
+  (and chain (verify-policy purpose hostname chain set-error)))
 
 (define win32-verify-callback (make-verify-callback win32-verify))
 (define (get-win32-verify-callback) win32-verify-callback)
