@@ -426,7 +426,7 @@ current platform for server connections.
 	   [#:context context
                       (or/c ssl-client-context? ssl-server-context?)
                       ((if (eq? mode 'accept)
-                           ssl-make-server-context 
+                           ssl-make-server-context
                            ssl-make-client-context)
                        protocol)]
 	   [#:encrypt protocol ssl-protocol-symbol/c 'auto]
@@ -532,7 +532,7 @@ needs verification.}
 from OpenSSL is completely replaced for all connections created with
 @racket[context]. Verification is performed by the operating system using its
 own trust stores. Any other sources loaded before or after this are
-ignored. Only supported on Windows and Mac OS.}
+ignored. Only supported on Windows, Mac OS and iOS.}
 
 @item{If @racket[src] is @racket[(list 'win32-store _store)], then the
 certificates from the store named @racket[_store] are loaded
@@ -879,7 +879,7 @@ attacks}.  See also @racket[ssl-set-verify-hostname!].
 
 
 @defproc[(ssl-try-verify! [clp (or/c ssl-client-context? ssl-server-context?
-                                     ssl-listener? ssl-port?)] 
+                                     ssl-listener? ssl-port?)]
                           [on? any/c])
          void?]{
 
