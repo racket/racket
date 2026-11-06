@@ -32,7 +32,7 @@
 
 ;; For now, this module implements option 2: verify without consulting network.
 
-(define _Boolean _bool)
+(define _Boolean _stdbool)
 
 ;; ----------------------------------------
 
@@ -179,7 +179,7 @@
 (define-sec SecTrustEvaluateWithError
   (_fun [trust : _SecTrustRef]
         [err : (_ptr io _CFErrorRef/null) = #f]
-        -> [ok? : _bool]
+        -> [ok? : _Boolean]
         ;; Returns true if the certificate is trusted.
         -> (values ok? err)))
 
