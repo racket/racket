@@ -34,7 +34,7 @@ platforms are also supported, but pinned to older builds):
  jpegsrc.v9e
  harfbuzz-14.3.0
  fribidi-1.0.16
- fontconfig-2.16.0
+ fontconfig-2.17.1
  freetype-2.14.3
  pango-1.58.0
  poppler-26.08.0

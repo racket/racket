@@ -871,7 +871,8 @@
                        #:make (meson-make)
                        #:make-install (meson-install)
                        #:configure (meson-configure
-                                    '("-Dfontconfig=enabled"))
+                                    '("--wrap-mode=nofallback"
+                                      "-Dfontconfig=enabled"))
                        #:patches (append
                                   (list coretext-fontreg-patch
                                         pango-coretext-scale-patch)))]
