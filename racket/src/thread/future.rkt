@@ -427,6 +427,9 @@
     (cond
       [(futures-enabled?)
        (define me-f (create-future thunk #f #f))
+       ;; No Racket thread is attached to `me-f`, so completing it does not
+       ;; wake up this place; ask for that as a dependent:
+       (set-future*-dependents! me-f (hash-set (future*-dependents me-f) 'place #t))
        (define pool
          (atomically
           (or fsemaphore-wait-poll
@@ -558,7 +561,9 @@
         ;; Lots to wait on, so give up on the current future for now
         (dependent-on-future f)]
        [else
-        ;; Wait until fsemaphore post succeeds for the future, then try again.
+        ;; Wait until fsemaphore post succeeds for the future, then try again;
+        ;; as for a running future, ask to be woken when the future completes
+        (set-future*-dependents! f (hash-set (future*-dependents f) 'place #t))
         (lock-release (future*-lock f))
         (log-future 'touch-pause (future*-id f))
         (sync (future-evt f #f))

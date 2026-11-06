@@ -12870,29 +12870,34 @@
     (let ((me-f_0
            (if (1/futures-enabled?)
              (let ((me-f_0 (create-future thunk_0 #f #f)))
-               (let ((pool_0
-                      (begin
-                        (start-atomic)
-                        (begin0
-                          (let ((or-part_0 (unsafe-place-local-ref cell.1$4)))
-                            (if or-part_0
-                              or-part_0
-                              (let ((pool_0
-                                     (create-parallel-thread-pool
-                                      'call-in-future
-                                      1
-                                      +inf.0
-                                      #f
-                                      #f)))
-                                (begin
-                                  (unsafe-place-local-set! cell.1$4 pool_0)
-                                  pool_0))))
-                          (end-atomic)))))
-                 (begin
-                   (set-future*-parallel!
-                    me-f_0
-                    (parallel*3.1 pool_0 #f #f #f))
-                   me-f_0)))
+               (begin
+                 (set-future*-dependents!
+                  me-f_0
+                  (hash-set (future*-dependents me-f_0) 'place #t))
+                 (let ((pool_0
+                        (begin
+                          (start-atomic)
+                          (begin0
+                            (let ((or-part_0
+                                   (unsafe-place-local-ref cell.1$4)))
+                              (if or-part_0
+                                or-part_0
+                                (let ((pool_0
+                                       (create-parallel-thread-pool
+                                        'call-in-future
+                                        1
+                                        +inf.0
+                                        #f
+                                        #f)))
+                                  (begin
+                                    (unsafe-place-local-set! cell.1$4 pool_0)
+                                    pool_0))))
+                            (end-atomic)))))
+                   (begin
+                     (set-future*-parallel!
+                      me-f_0
+                      (parallel*3.1 pool_0 #f #f #f))
+                     me-f_0))))
              (1/would-be-future thunk_0))))
       (dynamic-wind
        (lambda ()
@@ -13025,6 +13030,9 @@
                            (if (current-future-in-future-thread)
                              (dependent-on-future f_0)
                              (begin
+                               (set-future*-dependents!
+                                f_0
+                                (hash-set (future*-dependents f_0) 'place #t))
                                (lock-release (future*-lock f_0))
                                (let ((temp80_0 (future*-id f_0)))
                                  (log-future.1
