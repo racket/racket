@@ -138,14 +138,14 @@
   (run-callbacks-in-engine e callbacks t leftover-ticks))
 
 (define (clear-sched-info! t)
-  (define sched-info (thread-sched-info t))  
-  (when sched-info
-    (set-thread-sched-info! t #f)
-    ;; Maybe `sched-info` wasn't used by `process-sleep`, in which
-    ;; case the conservative assumption is that we might make progress
-    ;; if `sched-info` waits on anything
-    (when (schedule-info-repoll? sched-info)
-      (thread-poll-not-done! t))))
+  (set-thread-sched-info! t #f)
+  ;; A running thread has not finished polling. In particular, it may
+  ;; have been swapped out after polling but before `thread-yield`, in
+  ;; which case an event may have become ready since the poll, and
+  ;; the wakeup for that event may have been consumed by `process-sleep`;
+  ;; if the thread still counted as poll-done, then the scheduler
+  ;; could go to sleep again before the thread polls again
+  (thread-poll-not-done! t))
 
 (define (current-thread-now-running!)
   (set-thread-engine! (current-thread/in-racket) 'running))

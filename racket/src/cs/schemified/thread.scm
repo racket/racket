@@ -4953,10 +4953,6 @@
        (|#%app| (sandman-do-merge-timeout the-sandman) exts_0 timeout-at_0)))))
 (define schedule-info-did-work!
   (lambda (sched-info_0) (set-schedule-info-did-work?! sched-info_0 #t)))
-(define schedule-info-repoll?
-  (lambda (sched-info_0)
-    (let ((or-part_0 (schedule-info-did-work? sched-info_0)))
-      (if or-part_0 or-part_0 (schedule-info-exts sched-info_0)))))
 (define reference-sink (lambda (v_0) (begin (black-box v_0) (void))))
 (define finish_2437
   (make-struct-type-install-properties
@@ -14168,14 +14164,7 @@
           (run-callbacks-in-engine e_0 callbacks_0 t_0 leftover-ticks_0))))))
 (define clear-sched-info!
   (lambda (t_0)
-    (let ((sched-info_0 (thread-sched-info t_0)))
-      (if sched-info_0
-        (begin
-          (set-thread-sched-info! t_0 #f)
-          (if (schedule-info-repoll? sched-info_0)
-            (thread-poll-not-done! t_0)
-            (void)))
-        (void)))))
+    (begin (set-thread-sched-info! t_0 #f) (thread-poll-not-done! t_0))))
 (define current-thread-now-running!
   (lambda () (set-thread-engine! (current-thread/in-racket) 'running)))
 (define swap-in-engine
