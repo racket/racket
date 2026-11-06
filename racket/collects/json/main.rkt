@@ -465,6 +465,20 @@
       (- c (char->integer #\0)))
     (define (maybe-bytes c)
       (if (eof-object? c) #"" (bytes c)))
+    ;; consume a run of digits and add them to `n`, returning the new
+    ;; value and the number of digits; adding one digit at a time is
+    ;; O(n^2) for a long run, so convert the run all at once
+    (define (read-digits n)
+      (define o (open-output-bytes))
+      (let loop ()
+        (when (digit-byte? (peek-byte i))
+          (write-byte (read-byte i) o)
+          (loop)))
+      (define digits (get-output-bytes o))
+      (define len (bytes-length digits))
+      (values (+ (* n (expt 10 len))
+                 (string->number (bytes->string/latin-1 digits) 10))
+              len))
     ;; evaluate n * 10^exp to inexact? without passing large arguments to expt
     ;; assumes n is an integer
     (define (safe-exponential->inexact n exp)
@@ -508,8 +522,8 @@
       (define c (peek-byte i))
       (cond
         [(and more-digits? (digit-byte? c))
-         (read-byte i)
-         (read-integer-rest sgn (+ (* n 10) (to-number c)) #:more-digits? #t)]
+         (define-values (more-n len) (read-digits n))
+         (read-integer-rest sgn more-n #:more-digits? #t)]
         [(eqv? c (char->integer #\.))
          (read-byte i)
          (read-fraction sgn n)]
@@ -532,8 +546,8 @@
       (define c (peek-byte i))
       (cond
         [(digit-byte? c)
-         (read-byte i)
-         (read-fraction-rest sgn (+ (* n 10) (to-number c)) (sub1 exp))]
+         (define-values (more-n len) (read-digits n))
+         (read-fraction-rest sgn more-n (- exp len))]
         [(or (eqv? c (char->integer #\e))
              (eqv? c (char->integer #\E)))
          (read-byte i)
@@ -569,8 +583,8 @@
       (define c (peek-byte i))
       (cond
         [(digit-byte? c)
-         (read-byte i)
-         (read-exponent-rest n exp (+ (* 10 exp2) (to-number c)) sgn)]
+         (define-values (more-exp2 len) (read-digits exp2))
+         (read-exponent-rest n exp more-exp2 sgn)]
         [else (safe-exponential->inexact n (+ exp (* sgn exp2)))]))
     (start))
   ;;
