@@ -57,11 +57,14 @@
 
 ;; ----------------------------------------
 
+(define _cert-verify-callback
+  (_fun [ctx : _X509_STORE_CTX*]
+        [userdata : _pointer]
+        -> _int))
+
 (define-ssl SSL_CTX_set_cert_verify_callback
   (_fun [ctx : _SSL_CTX*]
-        [callback : (_fun [ctx : _X509_STORE_CTX*]
-                          [userdata : _pointer]
-                          -> _int)]
+        [callback : _fpointer]
         [userdata : _pointer]
         -> _void))
 

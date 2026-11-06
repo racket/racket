@@ -271,17 +271,17 @@ TO DO:
 (define ssl-default-verify-sources*
   (make-parameter
    (delay/sync
-     (case (system-type 'os*)
-       [(windows)
-        ;; On Windows, x509-root-sources produces paths like "/usr/local/ssl/certs", which
-        ;; aren't useful. So just skip them.
-        '((win32-store "ROOT"))]
-       [(macosx darwin)
-        '((macosx-keychain #f))]
-       [(ios)
+    (case (system-type 'os*)
+      [(windows)
+       ;; On Windows, x509-root-sources produces paths like "/usr/local/ssl/certs", which
+       ;; aren't useful. So just skip them.
+       '((win32-store "ROOT"))]
+      [(macosx darwin)
+       '((macosx-keychain #f))]
+      [(ios)
        '((os))]
-       [else
-        (x509-root-sources)]))))
+      [else
+       (x509-root-sources)]))))
 
 (define ssl-default-verify-sources
   (make-derived-parameter
@@ -655,13 +655,13 @@ TO DO:
                 (lambda (a b) (SSL_CTX_load_verify_locations a b #f))
                 scl src))
 
-;; Verifier callback must be retained as long as any context that might use
-;; it for verification. See reference-sink in wrap-ports.
 (define os-verify-callback
-  (case (system-type 'os*)
-    [(windows) (get-win32-verify-callback)]
-    [(macosx darwin ios) (get-macos-verify-callback)]
-    [else #f]))
+  (delay/sync
+   (let ([proc (case (system-type 'os*)
+                 [(windows) (get-win32-verify-callback)]
+                 [(macosx darwin ios) (get-macos-verify-callback)]
+                 [else #f])])
+     (and proc (function-ptr proc _cert-verify-callback)))))
 
 (define (ssl-load-verify-source! context src #:try? [try? #f])
   (define (bad-source)
@@ -693,13 +693,14 @@ TO DO:
          ;; This "source" completely replaces the verification function.
          ;; Other sources, whether added before or after, are silently ignored.
          ;; FIXME: detect, add warning/error.
-         (unless os-verify-callback
+         (define cb (force os-verify-callback))
+         (unless cb
            (error 'ssl-load-verify-source!
                   "not supported on this platform\n  source: ~e" src))
          (define ctx
            (get-context/listener 'ssl-load-verify-source! context
                                  #:need-unsealed? #t))
-         (SSL_CTX_set_cert_verify_callback ctx os-verify-callback #f)]
+         (SSL_CTX_set_cert_verify_callback ctx cb #f)]
         [else (bad-source)]))
 
 (define (ssl-load-default-verify-sources! ctx)
@@ -1473,7 +1474,6 @@ TO DO:
                                                            (SSL_connect ssl)
                                                            (SSL_accept ssl))
                                                        ssl)])
-            (void/reference-sink os-verify-callback)
             (let ([out-blocked? (pump-output mzssl)])
         (when (status . < . 1)
           (let ()
