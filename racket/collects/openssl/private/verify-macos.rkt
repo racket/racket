@@ -130,7 +130,8 @@
 
 (define libsec
   (case (system-type 'os*)
-    [(macosx darwin) (ffi-lib "/System/Library/Frameworks/Security.framework/Security")]
+    [(macosx darwin ios)
+     (ffi-lib "/System/Library/Frameworks/Security.framework/Security")]
     [else #f]))
 (define-ffi-definer define-sec libsec
   #:default-make-fail make-not-available)
