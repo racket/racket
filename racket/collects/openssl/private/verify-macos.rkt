@@ -285,7 +285,8 @@
 
 (define (macos-verify purpose hostname cert-der intermediate-ders)
   (define trust (make-trust hostname (cons cert-der intermediate-ders)))
-  (and trust (verify-policy trust)))
+  (and trust (begin0 (verify-policy trust)
+               (CFRelease trust))))
 
 (define macos-verify-callback (make-verify-callback macos-verify))
 (define (get-macos-verify-callback) macos-verify-callback)
