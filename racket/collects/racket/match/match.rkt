@@ -8,6 +8,8 @@
          "define-forms.rkt"
          "struct.rkt"
          (for-syntax racket/lazy-require
+                     racket/base
+                     "patterns.rkt"
                      "syntax-local-match-introduce.rkt"
                      (only-in "stxtime.rkt"
                               match-...-nesting
@@ -19,9 +21,15 @@
 (begin-for-syntax
   (lazy-require [racket/match/parse (parse)]))
 
+(define-for-syntax (pattern-bound-identifiers pstx)
+  (unless (syntax? pstx)
+    (raise-argument-error 'pattern-bound-identifiers "syntax?" pstx))
+  (pats->bound-vars parse (list pstx)))
+
 (provide (for-syntax match-...-nesting match-expander? legacy-match-expander?
                      prop:match-expander prop:legacy-match-expander
-                     syntax-local-match-introduce)
+                     syntax-local-match-introduce
+                     pattern-bound-identifiers)
          match-equality-test
          define-match-expander
          struct* ==

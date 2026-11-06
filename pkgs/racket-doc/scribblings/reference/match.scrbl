@@ -927,13 +927,24 @@ This binding is provided @racket[for-syntax].
 @defproc[(legacy-match-expander? [v any/c]) boolean?]]]{
 Predicates for values which implement the appropriate match expander
 properties.
+These bindings are provided @racket[for-syntax].
 }
 
 @defproc[(syntax-local-match-introduce [stx syntax?]) syntax?]{
 For backward compatibility only; equivalent to @racket[syntax-local-introduce].
 
+This binding is provided @racket[for-syntax].
+
 @history[#:changed "6.90.0.29" @elem{Made equivalent to @racket[syntax-local-introduce].}]}
 
+
+@defproc[(pattern-bound-identifiers [pat syntax?]) (listof identifier?)]{
+Parses @racket[pat] as a @racket[match] pattern, and returns a list of
+the identifiers bound by that pattern.
+
+This binding is provided @racket[for-syntax].
+@history[#:added "9.2.0.7"]
+}
 
 @defparam[match-equality-test comp-proc (any/c any/c . -> . any)]{
 
