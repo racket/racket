@@ -272,13 +272,7 @@ TO DO:
   (make-parameter
    (delay/sync
     (case (system-type 'os*)
-      [(windows)
-       ;; On Windows, x509-root-sources produces paths like "/usr/local/ssl/certs", which
-       ;; aren't useful. So just skip them.
-       '((win32-store "ROOT"))]
-      [(macosx darwin)
-       '((macosx-keychain #f))]
-      [(ios)
+      [(windows macosx darwin ios)
        '((os-verify))]
       [else
        (x509-root-sources)]))))
