@@ -655,13 +655,14 @@ TO DO:
                 (lambda (a b) (SSL_CTX_load_verify_locations a b #f))
                 scl src))
 
+;; Verifier callback must be retained as long as any context that might use
+;; it for verification. See reference-sink in wrap-ports.
 (define os-verify-callback
-  (delay/sync
-   (let ([proc (case (system-type 'os*)
-                 [(windows) (get-win32-verify-callback)]
-                 [(macosx darwin ios) (get-macos-verify-callback)]
-                 [else #f])])
-     (and proc (function-ptr proc _cert-verify-callback)))))
+  (function-ptr (case (system-type 'os*)
+                  [(windows) (get-win32-verify-callback)]
+                  [(macosx darwin ios) (get-macos-verify-callback)]
+                  [else #f])
+                _cert-verify-callback))
 
 (define (ssl-load-verify-source! context src #:try? [try? #f])
   (define (bad-source)
@@ -693,14 +694,13 @@ TO DO:
          ;; This "source" completely replaces the verification function.
          ;; Other sources, whether added before or after, are silently ignored.
          ;; FIXME: detect, add warning/error.
-         (define cb (force os-verify-callback))
-         (unless cb
+         (define os-verify-callback
            (error 'ssl-load-verify-source!
                   "not supported on this platform\n  source: ~e" src))
          (define ctx
            (get-context/listener 'ssl-load-verify-source! context
                                  #:need-unsealed? #t))
-         (SSL_CTX_set_cert_verify_callback ctx cb #f)]
+         (SSL_CTX_set_cert_verify_callback ctx os-verify-callback #f)]
         [else (bad-source)]))
 
 (define (ssl-load-default-verify-sources! ctx)
@@ -1474,6 +1474,7 @@ TO DO:
                                                            (SSL_connect ssl)
                                                            (SSL_accept ssl))
                                                        ssl)])
+            (void/reference-sink os-verify-callback)
             (let ([out-blocked? (pump-output mzssl)])
         (when (status . < . 1)
           (let ()
