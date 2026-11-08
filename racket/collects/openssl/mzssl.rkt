@@ -688,13 +688,15 @@ TO DO:
          ;; This "source" completely replaces the verification function.
          ;; Other sources, whether added before or after, are silently ignored.
          ;; FIXME: detect, add warning/error.
-         (define os-verify-callback
-           (error 'ssl-load-verify-source!
-                  "not supported on this platform\n  source: ~e" src))
-         (define ctx
-           (get-context/listener 'ssl-load-verify-source! context
-                                 #:need-unsealed? #t))
-         (SSL_CTX_set_cert_verify_callback ctx os-verify-callback #f)]
+         (cond [os-verify-callback
+                (define ctx
+                  (get-context/listener 'ssl-load-verify-source! context
+                                        #:need-unsealed? #t))
+                (SSL_CTX_set_cert_verify_callback ctx os-verify-callback #f)]
+               [try? (void)]
+               [else
+                (error 'ssl-load-verify-source!
+                       "not supported on this platform\n  source: ~e" src)])]
         [else (bad-source)]))
 
 (define (ssl-load-default-verify-sources! ctx)
