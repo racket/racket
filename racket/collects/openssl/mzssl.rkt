@@ -59,7 +59,7 @@ TO DO:
 
 (define verify-source/c
   (or/c path-string?
-        (list/c 'os)
+        (list/c 'os-verify)
         (list/c 'directory path-string?)
         (list/c 'win32-store string?)
         (list/c 'macosx-keychain (or/c #f path-string?))))
@@ -279,7 +279,7 @@ TO DO:
       [(macosx darwin)
        '((macosx-keychain #f))]
       [(ios)
-       '((os))]
+       '((os-verify))]
       [else
        (x509-root-sources)]))))
 
@@ -690,7 +690,7 @@ TO DO:
                                                #:need-unsealed? #t)])
                 (load-macosx-keychain 'ssl-load-verify-source! ctx val try?))]
              [else (bad-source)]))]
-        [(equal? src '(os))
+        [(equal? src '(os-verify))
          ;; This "source" completely replaces the verification function.
          ;; Other sources, whether added before or after, are silently ignored.
          ;; FIXME: detect, add warning/error.

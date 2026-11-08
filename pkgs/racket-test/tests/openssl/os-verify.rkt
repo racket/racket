@@ -14,9 +14,6 @@
       (list 'connected host)))
   (define (check-hosts) (map check-host hosts)))
 
-(printf "before:\n")
-(for ([host hosts]) (printf " ~s\n" (check-host host)))
-
 (printf "after:\n")
-(parameterize ((ssl-default-verify-sources '((os))))
+(parameterize ((ssl-default-verify-sources '((os-verify))))
   (for ([host hosts]) (printf " ~s\n" (check-host host))))
