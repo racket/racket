@@ -184,6 +184,23 @@
 (test-sequence [(a b c)] (stop-before (in-list '(a b c d e)) (lambda (x) (equal? x 'd))))
 (test-sequence [(3 4 5)] (stop-before (in-naturals 3) (lambda (x) (= x 6))))
 
+;; The predicate expression is evaluated only once, even when the
+;; `for` clause is optimized
+(let ([n 0])
+  (define (make-pred) (set! n (add1 n)) (lambda (x) (= x 2)))
+  (test '(0 1) 'stop-before-once (for/list ([x (stop-before (in-range 5) (make-pred))]) x))
+  (test 1 'stop-before-once n)
+  (set! n 0)
+  (test '(0 1 2) 'stop-after-once (for/list ([x (stop-after (in-range 5) (make-pred))]) x))
+  (test 1 'stop-after-once n))
+
+;; The predicate expression cannot refer to `for/fold` accumulators
+;; (at the top level, the reference is to an undefined variable)
+(err/rt-test (for/fold ([stop-acc #f]) ([x (stop-before (in-range 3) (lambda (x) stop-acc))]) #t)
+             exn:fail:contract:variable?)
+(err/rt-test (for/fold ([stop-acc #f]) ([x (stop-after (in-range 3) (lambda (x) stop-acc))]) #t)
+             exn:fail:contract:variable?)
+
 (test-sequence [(a b c) (0 1 2)] (in-indexed '(a b c)))
 (err/rt-test (for/list ([(x y) (in-indexed '(a b c) '?)]) x))
 (err/rt-test (for/list ([(x y) (in-indexed '(a b c) '?)]) x))

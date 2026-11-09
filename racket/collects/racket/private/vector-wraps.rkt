@@ -102,7 +102,7 @@
                                   (or (identifier? #'ids)
                                       (let ([l (syntax->list #'ids)])
                                         (and l (andmap identifier? l))))
-                                  (syntax/loc fc [ids (stop-after
+                                  (syntax/loc fc [ids (stop-after/inline
                                                        rhs
                                                        (lambda x
                                                          (unsafe-fx= i len)))])]
