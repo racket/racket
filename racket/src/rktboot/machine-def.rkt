@@ -48,5 +48,9 @@
                                          [(regexp-match? #rx"arm32" target-machine) "32"]
                                          [else "64"]))])
           (open-input-string s))])]
+    [(equal? filename "a6-options.def")
+     (let* ([s (file->string (build-path* dir filename))]
+            [s (regexp-replace* #rx"[$][(]level[)]" s "1")])
+       (open-input-string s))]
     [else
      (open-input-file (build-path* dir filename))]))
