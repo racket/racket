@@ -263,7 +263,8 @@
                               stream? stream-empty? stream-first stream-rest
                               prop:stream in-stream empty-stream make-do-stream
                               split-for-body
-                              expand-for-clause)
+                              expand-for-clause
+                              stop-after/inline)
              (all-from "kernstruct.rkt")
              (all-from "pico.rkt")
              #%top-interaction
