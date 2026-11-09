@@ -125,6 +125,12 @@
         (string->jsexpr @T{ 0e-9999999999999999   }) => 0.0
         (string->jsexpr @T{ 0.001e310 }) => 1.0e307
         (string->jsexpr @T{ 100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e-402 }) => 1e-292
+        ;; long runs of digits, which take quadratic time if they are
+        ;; accumulated one digit at a time
+        (string->jsexpr (make-string 300000 #\7)) => (string->number (make-string 300000 #\7))
+        (string->jsexpr (T "-0." (make-string 300000 #\7))) => -0.7777777777777778
+        (string->jsexpr (T "1e-" (make-string 300000 #\7))) => 0.0
+        (string->jsexpr (T "-1e" (make-string 300000 #\7))) => -inf.0
         (string->jsexpr @T{ true  }) => #t
         (string->jsexpr @T{ false }) => #f
         (string->jsexpr @T{ null  }) => 'null
