@@ -14,7 +14,8 @@
          "aim.rkt")
 
 (provide mutated-in-body
-         update-mutated-state!)
+         update-mutated-state!
+         delayable-construction?)
 
 ;; See "mutated-state.rkt" for information on the content of the
 ;; `mutated` table.
@@ -359,23 +360,7 @@
       [`(,rator ,exps ...)
        (cond
          [(and ids
-               (let ([rator (unwrap rator)])
-                 (and (symbol? rator)
-                      (let ([v (find-known rator prim-knowns knowns imports mutated)])
-                        (and (or (known-constructor? v)
-                                 ;; Some ad hoc constructors that are particularly
-                                 ;; useful to struct-type properties:
-                                 (eq? rator 'cons)
-                                 (eq? rator 'list)
-                                 (eq? rator 'list*)
-                                 (eq? rator 'vector)
-                                 (eq? rator 'hasheq)
-                                 (eq? rator 'make-struct-type-property))
-                             (bitwise-bit-set? (known-procedure-arity-mask v) (length exps))))
-                      (for/and ([exp (in-list exps)])
-                        (simple? exp prim-knowns knowns imports mutated simples unsafe-mode?
-                                 #:pure? #t
-                                 #:parameter-ok? #t)))))
+               (delayable-construction? rator exps prim-knowns knowns imports mutated simples unsafe-mode?))
           ;; Can delay construction
           (delay! ids (lambda () (find-mutated!* exps #f)))]
          [else
@@ -430,3 +415,27 @@
          (wrap-cdr mut-l)
          l)]
     [else mut-l]))
+
+;; Determines whether `(rator exp ...)` constructs a value without
+;; calling any procedure among `exps`, so that the construction can
+;; be delayed until the result is referenced; the "schemify.rkt" pass
+;; relies on this same test to determine that the `exps` were never
+;; inspected by `find-mutated!` when the result is unused
+(define (delayable-construction? rator exps prim-knowns knowns imports mutated simples unsafe-mode?)
+  (let ([rator (unwrap rator)])
+    (and (symbol? rator)
+         (let ([v (find-known rator prim-knowns knowns imports mutated)])
+           (and (or (known-constructor? v)
+                    ;; Some ad hoc constructors that are particularly
+                    ;; useful to struct-type properties:
+                    (eq? rator 'cons)
+                    (eq? rator 'list)
+                    (eq? rator 'list*)
+                    (eq? rator 'vector)
+                    (eq? rator 'hasheq)
+                    (eq? rator 'make-struct-type-property))
+                (bitwise-bit-set? (known-procedure-arity-mask v) (length exps))))
+         (for/and ([exp (in-list exps)])
+           (simple? exp prim-knowns knowns imports mutated simples unsafe-mode?
+                    #:pure? #t
+                    #:parameter-ok? #t)))))

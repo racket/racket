@@ -8008,6 +8008,34 @@
     5))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; make sure that a function called while computing the
+;; right-hand side of an unused binding is not dropped
+
+(module unused-binding-rhs-calls-function racket/base
+  (provide out)
+  (define out (box '()))
+  (define (note! v) (set-box! out (cons v (unbox out))))
+  (let-values ([(unused)
+                (let-values ([(vec) (list->vector
+                                     (let loop ([i 0])
+                                       (if (= i 3) (list i) (loop (+ i 1)))))])
+                  (note! vec)
+                  (lambda (x) vec))])
+    (let-values ([(unused2)
+                  (with-continuation-mark
+                   'key (let loop ([i 0])
+                          (if (= i 2) (note! i) (loop (+ i 1))))
+                   (lambda () 'unused))])
+      (let-values ([(unused3)
+                    (values
+                     (begin0
+                       (lambda () 'unused)
+                       ((lambda (f) (f)) (lambda () (note! 'called)))))])
+        (void)))))
+
+(test '(called 2 #(3)) unbox (dynamic-require ''unused-binding-rhs-calls-function 'out))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; regression test
 
 (let ([o (open-output-bytes)])

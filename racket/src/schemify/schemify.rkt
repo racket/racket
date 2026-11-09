@@ -516,14 +516,29 @@
 ;; Non-simple `mutated` state overrides bindings in `knowns`; a
 ;; a 'too-early state in `mutated` for a `letrec`-bound variable can be
 ;; effectively canceled with a mapping in `knowns`.
+(define (unused-state? wcm-state)
+  (or (eq? wcm-state 'unused)
+      (eq? wcm-state 'unused/all)))
+
 (define (schemify v prim-knowns primitives knowns mutated imports exports extra-variables simples allow-set!-undefined? add-import!
                   serializable?-box datum-intern? target unsafe-mode? allow-inline? no-prompt? explicit-unnamed?
                   compiler-query
                   wcm-state)
-  ;; `wcm-state` is one of: 'tail (= unknown), 'fresh (= no marks), or 'marked (= some marks)
+  ;; `wcm-state` is one of: 'tail (= unknown), 'fresh (= no marks), or 'marked (= some marks),
+  ;; or one of the following two states that are like 'fresh, but more:
+  ;;   * 'unused (= result is the value of a never-referenced binding, so
+  ;;     a `lambda` in this position is never called and `mutated` pass
+  ;;     did not inspect its body); propagates only to subexpressions that
+  ;;     produce the result, not to subexpressions that are evaluated
+  ;;     along the way
+  ;;   * 'unused/all (= in addition to 'unused, nothing within the
+  ;;     expression is ever called, as in arguments to a delayed
+  ;;     construction); propagates to all subexpressions
   (let schemify/knowns ([knowns knowns] [inline-fuel init-inline-fuel] [wcm-state wcm-state] [unsafe-mode? unsafe-mode?] [v v])
     (define (schemify* v wcm-state unsafe-mode?)
-      (define (next-state new-wcm-state) (if (eq? wcm-state 'unused) 'unused new-wcm-state))
+      (define (next-state new-wcm-state) (if (eq? wcm-state 'unused/all) 'unused/all new-wcm-state))
+      ;; for result positions that are not tail positions:
+      (define (result-state new-wcm-state) (if (unused-state? wcm-state) wcm-state new-wcm-state))
       (define (schemify v wcm-state [unsafe-mode? unsafe-mode?]) (schemify* v (next-state wcm-state) unsafe-mode?))
       (define (schemify-body body wcm-state [unsafe-mode? unsafe-mode?]) (schemify-body* body (next-state wcm-state) unsafe-mode?))
       (define s-v
@@ -533,7 +548,7 @@
            [`(lambda ,formals ,body ...)
             (infer-procedure-name
              v
-             `(lambda ,formals ,@(if (eq? wcm-state 'unused)
+             `(lambda ,formals ,@(if (unused-state? wcm-state)
                                      '(#f) ; function is never called and `mutated` pass never inspected
                                      (schemify-body (maybe-unsafe v body) 'tail)))
              explicit-unnamed?)]
@@ -542,7 +557,7 @@
              v
              `(case-lambda ,@(for/list ([formals (in-list formalss)]
                                         [body (in-list bodys)])
-                               `[,formals ,@(if (eq? wcm-state 'unused)
+                               `[,formals ,@(if (unused-state? wcm-state)
                                                 '(#f) ; function is never called and `mutated` pass never inspected
                                                 (schemify-body (maybe-unsafe v body) 'tail))]))
              explicit-unnamed?)]
@@ -754,7 +769,7 @@
            [`(with-continuation-mark ,key ,val ,body)
             (define s-key (schemify key 'fresh))
             (define s-val (schemify val 'fresh))
-            (define s-body (schemify body 'marked))
+            (define s-body (schemify body (result-state 'marked)))
             (define authentic-key?
               (authentic-valued? key knowns prim-knowns imports mutated))
             (define (build-wcm s-key s-val s-body)
@@ -813,7 +828,7 @@
            [`(begin0 ,exp)
             (schemify exp wcm-state)]
            [`(begin0 ,exp ,exps ...)
-            `(begin0 ,(schemify exp 'fresh) . ,(schemify-body exps 'fresh))]
+            `(begin0 ,(schemify exp (result-state 'fresh)) . ,(schemify-body exps 'fresh))]
            [`(set! ,id ,rhs)
             (define int-id (unwrap id))
             (define ex (or (hash-ref exports int-id #f)
@@ -1073,7 +1088,19 @@
                 (and (positive? inline-fuel)
                      (inline-rator))
                 (let ([s-rator (schemify rator 'fresh)]
-                      [args (schemify-body exps 'fresh)]
+                      [args (cond
+                              [(and (eq? wcm-state 'unused)
+                                    (eq? (unwrap rator) 'values))
+                               ;; each argument is a result
+                               (for/list ([exp (in-list exps)])
+                                 (schemify exp 'unused))]
+                              [(and (eq? wcm-state 'unused)
+                                    (delayable-construction? rator exps prim-knowns knowns imports mutated simples unsafe-mode?))
+                               ;; `mutated` pass never inspected the arguments
+                               (for/list ([exp (in-list exps)])
+                                 (schemify exp 'unused/all))]
+                              [else
+                               (schemify-body exps 'fresh)])]
                       [u-rator (unwrap rator)])
                   (define-values (k im) (find-known+import u-rator prim-knowns knowns imports mutated))
                   (cond
