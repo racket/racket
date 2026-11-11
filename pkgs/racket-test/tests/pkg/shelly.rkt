@@ -67,7 +67,8 @@
                   (define output-port (open-output-string))
                   (define error-port (open-output-string))
                   (when (verbose?)
-                    (printf "$ ~a\n" cmd))
+                    (printf "$ ~a\n" cmd)
+                    (flush-output))
                   (match-define
                    (list stdout stdin pid stderr to-proc)
                    (process/ports #f
