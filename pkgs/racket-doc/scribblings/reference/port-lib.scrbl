@@ -286,7 +286,7 @@ Returns two ports: an input port and an output port. The ports behave
 like those returned by @racket[make-pipe], except that the ports
 support non-byte values written with procedures such as
 @racket[write-special] and read with procedures such as
-@racket[get-byte-or-special].
+@racket[read-byte-or-special].
 
 The @racket[limit] argument determines the maximum capacity of the
 pipe in bytes, but this limit is disabled if special values are

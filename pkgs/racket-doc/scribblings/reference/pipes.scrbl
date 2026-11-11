@@ -25,7 +25,9 @@ Returns @racket[#t] if @racket[p] is either end of a pipe created by
 
 Returns two port values: the first port is an input port and the
 second is an output port. Data written to the output port is read from
-the input port, with no intermediate buffering. Unlike some other
+the input port, with no intermediate buffering (i.e., if data has been written
+to the pipe's output port, then it is immediately available from
+the pipe's input port). Unlike some other
 kinds of ports, pipe ports do not need to be explicitly closed to be
 reclaimed by @seclink["gc-model"]{garbage collection}.
 
@@ -34,8 +36,8 @@ number of unread bytes (i.e., limited only by the available
 memory). If @racket[limit] is a positive number, then the pipe will
 hold at most @racket[limit] unread/unpeeked bytes; writing to the
 pipe's output port thereafter will block until a read or peek from the
-input port makes more space available. (Peeks effectively extend the
-port's capacity until the peeked bytes are read.)
+input port makes more space available. Peeks effectively extend the
+port's capacity until the peeked bytes are read.
 
 The optional @racket[input-name] and @racket[output-name] are used
 as the names for the returned input and output ports, respectively.}
