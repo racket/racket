@@ -1,6 +1,6 @@
 #lang racket/base
 (require rackunit
-         (only-in racket/sandbox with-limits)
+         (only-in racket/sandbox with-limits exn:fail:resource?)
          openssl)
 
 ;; Test that (ssl-connect _ 443 'secure) does connect to well-known sites
@@ -19,7 +19,14 @@
 (define-logger test)
 
 ;; badssl.com can introduce delays because it's all served from the same host.
-(define TIMEOUT-SEC 30)
+(define TIMEOUT-SEC 10)
+
+;; try to connect to this host with possible retries
+(define (ssl-connect/retry hostname [tries 3])
+  (with-handlers ([(lambda (e) (and (exn:fail:resource? e) (> tries 1)))
+                   (lambda (e) (ssl-connect/retry hostname (sub1 tries)))])
+    (with-limits TIMEOUT-SEC #f
+      (ssl-connect hostname 443 'secure))))
 
 ;; Racket sites
 (define racket-hosts
@@ -165,8 +172,7 @@
   (test-case (format "good host ~a" host)
     (define hostname (format "~a" host))
     (define-values (in out)
-      (with-limits TIMEOUT-SEC #f
-        (ssl-connect hostname 443 'secure)))
+      (ssl-connect/retry hostname))
     (close-output-port out)
     (close-input-port in)
     (log-test-debug "ok, connected to ~a" host)))
@@ -201,8 +207,7 @@
     (define hostname (format "~a" bad-host))
     (check-exn #rx"connect failed"
                (lambda ()
-                 (with-limits TIMEOUT-SEC #f
-                   (ssl-connect hostname 443 'secure))))
+                 (ssl-connect/retry hostname)))
     (log-test-debug "ok, rejected ~a" bad-host)))
 
 (define (run-tests good-hostss bad-hostss)
