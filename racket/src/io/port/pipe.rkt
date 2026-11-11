@@ -23,14 +23,14 @@
   (let ([pipe-input-port?
          (lambda (p)
            (define cp (->core-input-port p))
-           (pipe-input-port? p))])
+           (pipe-input-port? cp))])
     pipe-input-port?))
 
 (define pipe-output-port?*
   (let ([pipe-output-port?
          (lambda (p)
            (define cp (->core-output-port p))
-           (pipe-output-port? p))])
+           (pipe-output-port? cp))])
     pipe-output-port?))
 
 (define (pipe-port? p)
@@ -41,21 +41,21 @@
      (raise-argument-error 'pipe-port? "port?" p)]))
 
 (define (pipe-content-length p)
-  (define d
+  ;; `cp` is the core port, which might be different from `p`
+  ;; if `p` is a structure with `prop:input-port` or `prop:output-port`
+  (define-values (cp d)
     (cond
-      [(let ([p (->core-input-port p)])
-         (and p
-              (pipe-input-port? p)
-              p))
-       => (lambda (p) (pipe-input-port-d p))]
-      [(let ([p (->core-output-port p)])
-         (and p
-              (pipe-output-port? p)
-              p))
-       => (lambda (p) (pipe-output-port-d p))]
+      [(let ([cp (->core-input-port p)])
+         (and (pipe-input-port? cp)
+              cp))
+       => (lambda (cp) (values cp (pipe-input-port-d cp)))]
+      [(let ([cp (->core-output-port p)])
+         (and (pipe-output-port? cp)
+              cp))
+       => (lambda (cp) (values cp (pipe-output-port-d cp)))]
       [else
        (raise-argument-error 'pipe-content-length "pipe-port?" p)]))
-  (with-lock p
+  (with-lock cp
    (with-object pipe-data d
      (sync-both)
      (content-length))))

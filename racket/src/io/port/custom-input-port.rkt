@@ -75,6 +75,9 @@
     (cond
       [(eq? user-bstr dest-bstr)
        n]
+      [(pipe-input-port? n)
+       ;; a pipe is an evt, but it's a redirection, not an evt result
+       n]
       [(evt? n)
        (wrap-evt n
                  (lambda (n)
@@ -105,7 +108,7 @@
                                 "special result" r))]
       [(pipe-input-port? r)
        (port-lock-require-atomic! self #t)
-       (set! input-pipe r)
+       (set! input-pipe (->core-input-port r))
        (when (port-lock-just-became-atomic? self)
          (port-unlock self)
          (port-lock self))]

@@ -329,10 +329,6 @@
     (define manager-ch (make-channel))
     (define resume-ch (make-channel))
     (define buf (make-bytes 4096))
-    (define (try-again)
-      (wrap-evt
-       (semaphore-peek-evt lock-semaphore)
-       (lambda (x) 0)))
     (define (suspend-manager)
       (channel-put manager-ch 'suspend))
     (define (resume-manager)
@@ -357,7 +353,7 @@
         (with-manager-lock (lambda () (do-read-it s)))
         (do-read-it s)))
     (define (read-it s)
-      (call-with-semaphore lock-semaphore read-it-with-lock try-again s))
+      (call-with-semaphore lock-semaphore read-it-with-lock #f s))
     (define (do-read-it s)
       (if (byte-ready? peeked-r)
         (if on-consumed (consume-from-peeked s) peeked-r)
@@ -399,7 +395,7 @@
       (let ([v (peek-bytes-avail!* s skip unless-evt peeked-r)])
         (if (eq? v 0)
           (call-with-semaphore lock-semaphore
-                               peek-it-with-lock try-again s skip unless-evt)
+                               peek-it-with-lock #f s skip unless-evt)
           v)))
     (define (do-peek-it s skip unless-evt)
       (let ([v (peek-bytes-avail!* s skip unless-evt peeked-r)])
@@ -1137,23 +1133,19 @@
                                                   (peek-bytes-evt 1 skip progress-evt port)))
                                   (lambda (x) 0)))
                     n)))))
-      (define (try-again)
-        (wrap-evt
-         (semaphore-peek-evt lock-semaphore)
-         (lambda (x) 0)))
       (make-input-port
        (object-name port)
        (lambda (str)
          (call-with-semaphore 
           lock-semaphore
           do-read
-          try-again
+          #f
           str))
        (lambda (str skip progress-evt)
          (call-with-semaphore 
           lock-semaphore
           do-peek
-          try-again
+          #f
           str skip progress-evt))
        (lambda ()
          (when close-orig?

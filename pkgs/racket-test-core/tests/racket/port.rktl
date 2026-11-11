@@ -99,6 +99,69 @@
 (test #f pipe-port? (open-input-string ""))
 (test #f pipe-port? (open-output-string))
 
+;; Pipes wrapped by structures with `prop:input-port` and `prop:output-port`
+(let ()
+  (struct wrapped-in (p) #:property prop:input-port 0)
+  (struct wrapped-out (p) #:property prop:output-port 0)
+  (define-values (r w) (make-pipe))
+  (test #t pipe-port? (wrapped-in r))
+  (test #t pipe-port? (wrapped-out w))
+  (write-bytes #"abc" w)
+  (test 3 pipe-content-length (wrapped-in r))
+  (test 3 pipe-content-length (wrapped-out w)))
+
+;; A custom port's read procedure can redirect to a pipe, and a non-blocking
+;; read should get bytes from the pipe right away, including when the
+;; read procedure's argument is a fresh byte string (as when the port has
+;; a peek procedure)
+(for* ([peek? '(#f #t)]
+       [wrap? '(#f #t)])
+  (struct wrapped-in (p) #:property prop:input-port 0)
+  (define-values (r w) (make-pipe))
+  (define r* (if wrap? (wrapped-in r) r))
+  (define in (make-input-port 'redirect
+                              (lambda (bstr)
+                                (if (byte-ready? r)
+                                    r*
+                                    (wrap-evt r (lambda (v) 0))))
+                              (and peek?
+                                   (lambda (bstr skip evt)
+                                     (define n (peek-bytes-avail!* bstr skip evt r))
+                                     (if (eqv? n 0)
+                                         (wrap-evt r (lambda (v) 0))
+                                         n)))
+                              void))
+  (define bstr (make-bytes 2))
+  (test 0 read-bytes-avail!* bstr in)
+  (write-bytes #"x" w)
+  (test 1 read-bytes-avail!* bstr in)
+  (test #"x" subbytes bstr 0 1)
+  (test 0 read-bytes-avail!* bstr in)
+  (write-bytes #"yz" w)
+  (test 2 read-bytes-avail!* bstr in)
+  (test #"yz" values bstr)
+  (write-bytes #"q" w)
+  (test 1 read-bytes-avail! bstr in)
+  (test #"q" subbytes bstr 0 1))
+
+;; A custom port's write procedure can redirect to a pipe, possibly wrapped
+(for ([wrap? '(#f #t)])
+  (struct wrapped-out (p) #:property prop:output-port 0)
+  (define-values (r w) (make-pipe))
+  (define w* (if wrap? (wrapped-out w) w))
+  (define out (make-output-port 'redirect
+                                w
+                                (lambda (bstr start end non-block? breakable?)
+                                  (if (or non-block? (= start end))
+                                      (write-bytes-avail* bstr w start end)
+                                      w*))
+                                void))
+  (test 3 write-bytes #"abc" out)
+  (flush-output out)
+  (test #"abc" read-bytes 3 r)
+  (test 2 write-bytes #"de" out)
+  (test #"de" read-bytes 2 r))
+
 (test #t string-port? (open-input-string ""))
 (test #t string-port? (open-input-bytes #""))
 (test #t string-port? (open-output-bytes))

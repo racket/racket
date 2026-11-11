@@ -86,7 +86,7 @@
          (raise-arguments-error who "bad result for a non-blocking write"
                                 "result" r))
        (port-lock-require-atomic! self #t)
-       (set! output-pipe r)
+       (set! output-pipe (->core-output-port r))
        (when (port-lock-just-became-atomic? self)
          (port-unlock self)
          (port-lock self))]

@@ -1510,5 +1510,28 @@
            (close-output-port o)])))))
 
 ;; --------------------------------------------------
+;; A non-blocking read on a `make-pipe-with-specials` port should
+;; see written bytes right away, even when another thread is peeking
+;; on the same port
+
+(let ()
+  (define-values (i o) (make-pipe-with-specials))
+  (define peeker (thread (lambda ()
+                           (let loop ()
+                             (peek-byte i)
+                             (loop)))))
+  (define bstr (make-bytes 1))
+  (define bad
+    (for/or ([j (in-range 10000)])
+      (or (and (not (eqv? 0 (read-bytes-avail!* bstr i)))
+               (list 'nonempty j))
+          (begin
+            (write-byte 42 o)
+            (and (eqv? 0 (read-bytes-avail!* bstr i))
+                 (list 'empty j))))))
+  (kill-thread peeker)
+  (test #f values bad))
+
+;; --------------------------------------------------
 
 (report-errs)

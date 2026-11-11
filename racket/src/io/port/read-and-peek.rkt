@@ -204,6 +204,10 @@
                                             "result" v
                                             "byte-string length" (- end start))])]
                  [(eof-object? v) eof]
+                 [(and (not v) progress-evt)
+                  ;; `progress-evt` became ready during the peek;
+                  ;; looping will notice and produce 0
+                  (loop in)]
                  [(semaphore? v)
                   (cond
                     [zero-ok? 0]

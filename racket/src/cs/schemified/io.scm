@@ -11209,76 +11209,81 @@
                                                   (- end35_0 start34_0))))
                                              (if (eof-object? v_1)
                                                eof
-                                               (if (semaphore? v_1)
-                                                 (if zero-ok?20_0
-                                                   0
-                                                   (if progress-evt19_0
-                                                     (begin
-                                                       (if enable-break?21_0
-                                                         (sync/enable-break
-                                                          v_1
-                                                          progress-evt19_0)
-                                                         (sync
-                                                          v_1
-                                                          progress-evt19_0))
-                                                       (loop_0 in_0))
-                                                     (begin
-                                                       (if enable-break?21_0
-                                                         (semaphore-wait/enable-break
-                                                          v_1)
-                                                         (semaphore-wait v_1))
-                                                       (loop_0 in_0))))
-                                                 (if (evt? v_1)
+                                               (if (if (not v_1)
+                                                     progress-evt19_0
+                                                     #f)
+                                                 (loop_0 in_0)
+                                                 (if (semaphore? v_1)
                                                    (if zero-ok?20_0
-                                                     (let ((r_0
-                                                            (sync/timeout
-                                                             0
-                                                             v_1)))
-                                                       (if r_0
-                                                         (result-loop_0 r_0)
-                                                         0))
+                                                     0
                                                      (if progress-evt19_0
-                                                       (let ((p-evt_0
-                                                              (wrap-evt
-                                                               progress-evt19_0
-                                                               (lambda (v_2)
-                                                                 0))))
+                                                       (begin
+                                                         (if enable-break?21_0
+                                                           (sync/enable-break
+                                                            v_1
+                                                            progress-evt19_0)
+                                                           (sync
+                                                            v_1
+                                                            progress-evt19_0))
+                                                         (loop_0 in_0))
+                                                       (begin
+                                                         (if enable-break?21_0
+                                                           (semaphore-wait/enable-break
+                                                            v_1)
+                                                           (semaphore-wait
+                                                            v_1))
+                                                         (loop_0 in_0))))
+                                                   (if (evt? v_1)
+                                                     (if zero-ok?20_0
+                                                       (let ((r_0
+                                                              (sync/timeout
+                                                               0
+                                                               v_1)))
+                                                         (if r_0
+                                                           (result-loop_0 r_0)
+                                                           0))
+                                                       (if progress-evt19_0
+                                                         (let ((p-evt_0
+                                                                (wrap-evt
+                                                                 progress-evt19_0
+                                                                 (lambda (v_2)
+                                                                   0))))
+                                                           (result-loop_0
+                                                            (if enable-break?21_0
+                                                              (sync/enable-break
+                                                               v_1
+                                                               p-evt_0)
+                                                              (sync
+                                                               v_1
+                                                               p-evt_0))))
                                                          (result-loop_0
                                                           (if enable-break?21_0
                                                             (sync/enable-break
-                                                             v_1
-                                                             p-evt_0)
-                                                            (sync
-                                                             v_1
-                                                             p-evt_0))))
-                                                       (result-loop_0
-                                                        (if enable-break?21_0
-                                                          (sync/enable-break
+                                                             v_1)
+                                                            (sync v_1)))))
+                                                     (if (procedure? v_1)
+                                                       (if special-ok?23_0
+                                                         (if limit-special-arity?24_0
+                                                           (lambda (a_0
+                                                                    b_0
+                                                                    c_0
+                                                                    d_0)
+                                                             (|#%app|
+                                                              v_1
+                                                              a_0
+                                                              b_0
+                                                              c_0
+                                                              d_0))
                                                            v_1)
-                                                          (sync v_1)))))
-                                                   (if (procedure? v_1)
-                                                     (if special-ok?23_0
-                                                       (if limit-special-arity?24_0
-                                                         (lambda (a_0
-                                                                  b_0
-                                                                  c_0
-                                                                  d_0)
-                                                           (|#%app|
-                                                            v_1
-                                                            a_0
-                                                            b_0
-                                                            c_0
-                                                            d_0))
-                                                         v_1)
-                                                       (raise-arguments-error
-                                                        who31_0
-                                                        "non-character in an unsupported context"
-                                                        "port"
-                                                        orig-in32_0))
-                                                     (internal-error
-                                                      (format
-                                                       "weird peek-bytes result ~s"
-                                                       v_1)))))))))))
+                                                         (raise-arguments-error
+                                                          who31_0
+                                                          "non-character in an unsupported context"
+                                                          "port"
+                                                          orig-in32_0))
+                                                       (internal-error
+                                                        (format
+                                                         "weird peek-bytes result ~s"
+                                                         v_1))))))))))))
                                       (result-loop_0 v_0))))
                                  (begin
                                    (begin
@@ -11504,13 +11509,13 @@
    pipe-input-port?
    (lambda (p_0)
      (let ((cp_0 (->core-input-port.1 unsafe-undefined p_0 #f)))
-       (pipe-input-port? p_0)))))
+       (pipe-input-port? cp_0)))))
 (define pipe-output-port?*
   (|#%name|
    pipe-output-port?
    (lambda (p_0)
      (let ((cp_0 (->core-output-port.1 unsafe-undefined p_0 #f)))
-       (pipe-output-port? p_0)))))
+       (pipe-output-port? cp_0)))))
 (define 1/pipe-port?
   (|#%name|
    pipe-port?
@@ -11524,37 +11529,40 @@
   (|#%name|
    pipe-content-length
    (lambda (p_0)
-     (let ((d_0
-            (let ((cond-val_0
-                   (let ((p_1 (->core-input-port.1 unsafe-undefined p_0 #f)))
-                     (if p_1 (if (pipe-input-port? p_1) p_1 #f) #f))))
-              (if cond-val_0
-                (pipe-input-port-d cond-val_0)
-                (let ((cond-val_1
-                       (let ((p_1
-                              (->core-output-port.1 unsafe-undefined p_0 #f)))
-                         (if p_1 (if (pipe-output-port? p_1) p_1 #f) #f))))
-                  (if cond-val_1
-                    (pipe-output-port-d cond-val_1)
-                    (raise-argument-error
-                     'pipe-content-length
-                     "pipe-port?"
-                     p_0)))))))
-       (begin
-         (begin
-           (unsafe-start-uninterruptible)
-           (assert-push-lock-level! 'port)
-           (if (unsafe-struct*-cas! p_0 2 #f #t) (void) (port-lock-slow p_0))
-           (memory-order-acquire))
-         (begin0
-           (begin (temp3.1$2 d_0) (temp4.1$1 d_0))
-           (begin
-             (memory-order-release)
-             (if (unsafe-struct*-cas! p_0 2 #t #f)
-               (void)
-               (port-unlock-slow p_0))
-             (assert-pop-lock-level! 'port)
-             (unsafe-end-atomic))))))))
+     (let ((cond-val_0
+            (let ((cp_0 (->core-input-port.1 unsafe-undefined p_0 #f)))
+              (if (pipe-input-port? cp_0) cp_0 #f))))
+       (call-with-values
+        (lambda ()
+          (if cond-val_0
+            (values cond-val_0 (pipe-input-port-d cond-val_0))
+            (let ((cond-val_1
+                   (let ((cp_0 (->core-output-port.1 unsafe-undefined p_0 #f)))
+                     (if (pipe-output-port? cp_0) cp_0 #f))))
+              (if cond-val_1
+                (values cond-val_1 (pipe-output-port-d cond-val_1))
+                (raise-argument-error
+                 'pipe-content-length
+                 "pipe-port?"
+                 p_0)))))
+        (lambda (cp_0 d_0)
+          (begin
+            (begin
+              (unsafe-start-uninterruptible)
+              (assert-push-lock-level! 'port)
+              (if (unsafe-struct*-cas! cp_0 2 #f #t)
+                (void)
+                (port-lock-slow cp_0))
+              (memory-order-acquire))
+            (begin0
+              (begin (temp3.1$2 d_0) (temp4.1$1 d_0))
+              (begin
+                (memory-order-release)
+                (if (unsafe-struct*-cas! cp_0 2 #t #f)
+                  (void)
+                  (port-unlock-slow cp_0))
+                (assert-pop-lock-level! 'port)
+                (unsafe-end-atomic))))))))))
 (define finish_2207
   (make-struct-type-install-properties
    '(pipe-data)
@@ -28213,32 +28221,35 @@
                                                              user-bstr_0
                                                              dest-bstr_0)
                                                           n_0
-                                                          (if (evt? n_0)
-                                                            (wrap-evt
-                                                             n_0
-                                                             (lambda (n_1)
-                                                               (begin
-                                                                 (if (exact-positive-integer?
+                                                          (if (pipe-input-port?*
+                                                               n_0)
+                                                            n_0
+                                                            (if (evt? n_0)
+                                                              (wrap-evt
+                                                               n_0
+                                                               (lambda (n_1)
+                                                                 (begin
+                                                                   (if (exact-positive-integer?
+                                                                        n_1)
+                                                                     (unsafe-bytes-copy!
+                                                                      dest-bstr_0
+                                                                      dest-start_0
+                                                                      user-bstr_0
+                                                                      0
                                                                       n_1)
-                                                                   (unsafe-bytes-copy!
-                                                                    dest-bstr_0
-                                                                    dest-start_0
-                                                                    user-bstr_0
-                                                                    0
-                                                                    n_1)
-                                                                   (void))
-                                                                 n_1)))
-                                                            (begin
-                                                              (if (exact-positive-integer?
+                                                                     (void))
+                                                                   n_1)))
+                                                              (begin
+                                                                (if (exact-positive-integer?
+                                                                     n_0)
+                                                                  (unsafe-bytes-copy!
+                                                                   dest-bstr_0
+                                                                   dest-start_0
+                                                                   user-bstr_0
+                                                                   0
                                                                    n_0)
-                                                                (unsafe-bytes-copy!
-                                                                 dest-bstr_0
-                                                                 dest-start_0
-                                                                 user-bstr_0
-                                                                 0
-                                                                 n_0)
-                                                                (void))
-                                                              n_0))))))))))
+                                                                  (void))
+                                                                n_0)))))))))))
                                           (let ((check-read-result_0
                                                  (|#%name|
                                                   check-read-result
@@ -28318,7 +28329,10 @@
                                                                self18_0
                                                                #t)
                                                               (set! input-pipe_0
-                                                                r17_0)
+                                                                (->core-input-port.1
+                                                                 unsafe-undefined
+                                                                 r17_0
+                                                                 #f))
                                                               (if (port-lock-just-became-atomic?
                                                                    self18_0)
                                                                 (begin
@@ -29488,7 +29502,10 @@
                                                            self17_0
                                                            #t)
                                                           (set! output-pipe_0
-                                                            r16_0)
+                                                            (->core-output-port.1
+                                                             unsafe-undefined
+                                                             r16_0
+                                                             #f))
                                                           (if (port-lock-just-became-atomic?
                                                                self17_0)
                                                             (begin

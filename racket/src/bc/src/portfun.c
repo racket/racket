@@ -106,8 +106,8 @@ static Scheme_Object *sch_default_write_handler(int argc, Scheme_Object *argv[])
 static Scheme_Object *sch_default_print_handler(int argc, Scheme_Object *argv[]);
 static Scheme_Object *sch_default_global_port_print_handler(int argc, Scheme_Object *argv[]);
 
-static int pipe_input_p(Scheme_Object *o);
-static int pipe_output_p(Scheme_Object *o);
+static Scheme_Object *pipe_input_p(Scheme_Object *o);
+static Scheme_Object *pipe_output_p(Scheme_Object *o);
 static int pipe_out_ready(Scheme_Output_Port *p);
 
 static Scheme_Object *sha1_bytes(int, Scheme_Object **args);
@@ -871,6 +871,7 @@ static intptr_t user_read_result(const char *who, Scheme_Input_Port *port,
         port->special = val;
         return SCHEME_SPECIAL;
       } else if (evt_ok && pipe_input_p(val)) {
+        val = pipe_input_p(val);
         ((User_Input_Port *)port->port_data)->prefix_pipe = val;
         return 0;
       } else if (evt_ok && scheme_is_evt(val)) {
@@ -1069,6 +1070,15 @@ user_get_or_peek_bytes(Scheme_Input_Port *port,
       return r;
     } else if (r) {
       return r;
+    }
+
+    if (uip->prefix_pipe) {
+      /* The procedure redirected to a pipe; if the pipe can satisfy
+         the request, use it right away, instead of reporting 0 for
+         a non-blocking read */
+      r = scheme_pipe_char_count(uip->prefix_pipe);
+      if (r && (!peek || (SCHEME_INTP(peek_skip) && (SCHEME_INT_VAL(peek_skip) < r))))
+        continue;
     }
 
     scheme_thread_block_enable_break(0.0, nonblock < 0); /* penalty for inaccuracy? */
@@ -1406,6 +1416,7 @@ user_write_result(const char *who, Scheme_Output_Port *port, int evt_ok,
                               NULL);
       }
 
+      val = pipe_output_p(val);
       ((User_Output_Port *)port->port_data)->buffer_pipe = val;
       
       return 0;
@@ -2228,32 +2239,34 @@ static Scheme_Object *pipe_length(int argc, Scheme_Object **argv)
   return scheme_make_integer(avail);
 }
 
-static int pipe_input_p(Scheme_Object *o)
+static Scheme_Object *pipe_input_p(Scheme_Object *o)
 {
-  /* Need an immediate pipe: */
-  if (SAME_TYPE(SCHEME_TYPE(o), scheme_input_port_type)) {
+  /* Returns the immediate pipe, which might be wrapped by a
+     `prop:input-port` structure, or NULL if `o` is not a pipe: */
+  if (SCHEME_INPUT_PORTP(o)) {
     Scheme_Input_Port *ip;
     ip = scheme_input_port_record(o);
     if (ip->sub_type == scheme_pipe_read_port_type) {
-      return 1;
+      return (Scheme_Object *)ip;
     }
   }
 
-  return 0;
+  return NULL;
 }
 
-static int pipe_output_p(Scheme_Object *o)
+static Scheme_Object *pipe_output_p(Scheme_Object *o)
 {
-  /* Need an immediate pipe: */
-  if (SAME_TYPE(SCHEME_TYPE(o), scheme_output_port_type)) {
+  /* Returns the immediate pipe, which might be wrapped by a
+     `prop:output-port` structure, or NULL if `o` is not a pipe: */
+  if (SCHEME_OUTPUT_PORTP(o)) {
     Scheme_Output_Port *op;
     op = scheme_output_port_record(o);
     if (op->sub_type == scheme_pipe_write_port_type) {
-      return 1;
+      return (Scheme_Object *)op;
     }
   }
 
-  return 0;
+  return NULL;
 }
 
 /*========================================================================*/
