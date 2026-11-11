@@ -97,6 +97,10 @@
      $ (~a "raco pkg catalog-show --version 5.3.6 --catalog file://" (path->string dir2) " whale")
      =stdout> #rx"Checksum: 123"
      $ "raco pkg catalog-show whale" =exit> 1
+     ;; `--catalog` accumulates, so `whale` is found in the first catalog:
+     $ (~a "raco pkg catalog-show --catalog file://" (path->string dir2)
+           " --catalog file://" (path->string dest) " whale")
+     =stdout> #rx"Checksum: 345"
      
      $ (~a "raco pkg catalog-copy --merge " (path->string dir2) " " (path->string dest))
      $ "raco pkg catalog-show whale" =stdout> #rx"Checksum: 345"
@@ -167,6 +171,13 @@
   $ (~a "test -f " archive-d "/pkgs/pkg-test2-snd.zip") =exit> 1
   $ (~a "test -f " archive-d "/pkgs/pkg-test2-snd.zip.CHECKSUM") =exit> 1
   
+  ;; Multiple `--include`s accumulate:
+  (delete-directory/files archive-d)
+  $ (~a "raco pkg catalog-archive --include pkg-test1 --include pkg-test2 "
+        archive-d " http://localhost:9990")
+  $ (~a "test -f " archive-d "/pkgs/pkg-test1.zip")
+  $ (~a "test -f " archive-d "/pkgs/pkg-test2.zip")
+
   ;; archive
 
   (delete-directory/files archive-d)

@@ -60,7 +60,9 @@
              #:attr (arg-val 1) (list #'name)
              #:attr fun #'(string->num 'name)])
 
-  (define-syntax-class option
+  ;; `group-k` is the keyword of the group that contains the option,
+  ;; such as `#:multi`
+  (define-syntax-class (option group-k)
     #:attributes (command-line variable (param 1) (call 1))
     [pattern (k:kind arg:id (alias:str ...) doc:expr body:expr ...)
              #:do
@@ -84,7 +86,7 @@
                 k.arg-val ...
                 doc
                 (set! #,arg-var #,(let ([one #'(k.fun k.arg-val ...)])
-                                    (if (eq? (syntax-e #'k) '#:multi)
+                                    (if (eq? (syntax-e group-k) '#:multi)
                                         #`(append (or #,arg-var '()) (list #,one))
                                         one)))
                 body ...])])
@@ -96,7 +98,7 @@
 
   (define-splicing-syntax-class option-group
     #:attributes ((command-line 1) variable (param 1) (call 1))
-    [pattern (~seq k:group-kind o:option ...)
+    [pattern (~seq k:group-kind (~var o (option #'k)) ...)
              #:attr (command-line 1)
              (syntax->list #'(k o.command-line ...))
              #:attr variable
