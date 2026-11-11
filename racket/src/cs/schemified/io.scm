@@ -4381,7 +4381,14 @@
               (internal-error
                "tried to set port lock atomicity without holding it"))))))))
 (define port-lock-just-became-atomic?
-  (lambda (p_0) (eq? (core-port-lock p_0) 'to-atomic)))
+  (lambda (p_0)
+    (let ((lock_0 (core-port-lock p_0)))
+      (let ((or-part_0 (eq? lock_0 'to-atomic)))
+        (if or-part_0
+          or-part_0
+          (if (lock? lock_0)
+            (if (lock-atomic? lock_0) (not (lock-was-atomic? lock_0)) #f)
+            #f))))))
 (define port-lock-init-atomic-mode
   (lambda (p_0) (begin (set-core-port-lock! p_0 'atomic) p_0)))
 (define make-lock
@@ -29463,7 +29470,19 @@
                                                             start18_0))
                                                         (void)
                                                         (begin
-                                                          (unsafe-end-atomic)
+                                                          (begin
+                                                            (memory-order-release)
+                                                            (if (unsafe-struct*-cas!
+                                                                 self17_0
+                                                                 2
+                                                                 #t
+                                                                 #f)
+                                                              (void)
+                                                              (port-unlock-slow
+                                                               self17_0))
+                                                            (assert-pop-lock-level!
+                                                             'port)
+                                                            (unsafe-end-atomic))
                                                           (raise-arguments-error
                                                            who15_0
                                                            "result integer is larger than the supplied byte string"
@@ -29482,7 +29501,19 @@
                                                                start18_0
                                                                end19_0)
                                                             (begin
-                                                              (unsafe-end-atomic)
+                                                              (begin
+                                                                (memory-order-release)
+                                                                (if (unsafe-struct*-cas!
+                                                                     self17_0
+                                                                     2
+                                                                     #t
+                                                                     #f)
+                                                                  (void)
+                                                                  (port-unlock-slow
+                                                                   self17_0))
+                                                                (assert-pop-lock-level!
+                                                                 'port)
+                                                                (unsafe-end-atomic))
                                                               (raise-arguments-error
                                                                who15_0
                                                                "bad result for a flushing write"
@@ -29491,7 +29522,19 @@
                                                             (void))
                                                           (if non-block/buffer?20_0
                                                             (begin
-                                                              (unsafe-end-atomic)
+                                                              (begin
+                                                                (memory-order-release)
+                                                                (if (unsafe-struct*-cas!
+                                                                     self17_0
+                                                                     2
+                                                                     #t
+                                                                     #f)
+                                                                  (void)
+                                                                  (port-unlock-slow
+                                                                   self17_0))
+                                                                (assert-pop-lock-level!
+                                                                 'port)
+                                                                (unsafe-end-atomic))
                                                               (raise-arguments-error
                                                                who15_0
                                                                "bad result for a non-blocking write"
@@ -29539,7 +29582,19 @@
                                                         (if (evt? r16_0)
                                                           (void)
                                                           (begin
-                                                            (unsafe-end-atomic)
+                                                            (begin
+                                                              (memory-order-release)
+                                                              (if (unsafe-struct*-cas!
+                                                                   self17_0
+                                                                   2
+                                                                   #t
+                                                                   #f)
+                                                                (void)
+                                                                (port-unlock-slow
+                                                                 self17_0))
+                                                              (assert-pop-lock-level!
+                                                               'port)
+                                                              (unsafe-end-atomic))
                                                             (raise-result-error
                                                              who15_0
                                                              "(or/c exact-nonnegative-integer? #f evt?)"

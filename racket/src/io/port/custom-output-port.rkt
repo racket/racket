@@ -71,18 +71,18 @@
                                          (if as-evt? " event" ""))
                                     "result" r))
            (unless (r . <= . (- end start))
-             (end-atomic)
+             (port-unlock self)
              (raise-arguments-error who "result integer is larger than the supplied byte string"
                                     "result" r
                                     "byte string length" (- end start))))]
       [(not r) r]
       [(pipe-output-port? r)
        (when (= start end)
-         (end-atomic)
+         (port-unlock self)
          (raise-arguments-error who "bad result for a flushing write"
                                 "result" r))
        (when non-block/buffer?
-         (end-atomic)
+         (port-unlock self)
          (raise-arguments-error who "bad result for a non-blocking write"
                                 "result" r))
        (port-lock-require-atomic! self #t)
@@ -93,7 +93,7 @@
       [(evt? r)
        (void)]
       [else
-       (end-atomic)
+       (port-unlock self)
        (raise-result-error who "(or/c exact-nonnegative-integer? #f evt?)" r)]))
   
 

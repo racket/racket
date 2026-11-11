@@ -239,6 +239,62 @@
                        (write-bytes #"a" o))))))
         (bytes-length (get-output-bytes o))))
 
+;; A custom port's lock can be contended at the point where the port's
+;; read procedure first redirects to a pipe; the reader must then
+;; switch to holding the lock in atomic mode before using the pipe
+;; (otherwise, in a parallel thread, the pipe's atomic-mode lock
+;; can't be taken)
+(test #t
+      'concurrent-redirect-read
+      (for/and ([j (in-range 200)])
+        (define-values (r w) (make-pipe))
+        (define in (make-input-port 'redirect
+                                    (lambda (bstr) (if (byte-ready? r) r (wrap-evt r (lambda (v) 0))))
+                                    (lambda (bstr skip evt)
+                                      (define n (peek-bytes-avail!* bstr skip evt r))
+                                      (if (eqv? n 0) (wrap-evt r (lambda (v) 0)) n))
+                                    void))
+        (define done? #f)
+        (define contenders
+          (for/list ([k 2])
+            (thread #:pool 'own
+                    (lambda ()
+                      (let loop ()
+                        (byte-ready? in)
+                        (unless done? (loop)))))))
+        (define reader
+          (thread #:pool 'own
+                  #:keep 'results
+                  (lambda ()
+                    (read-bytes 1 in))))
+        (sleep 0.001) ; let contenders run, so the lock is contended
+        (write-bytes #"x" w)
+        (define ok? (equal? #"x" (sync/timeout 10 (wrap-evt reader thread-wait))))
+        (set! done? #t)
+        (when ok? ; on failure, contenders may be stuck
+          (for-each thread-wait contenders))
+        ok?))
+
+;; A bad result from a custom output port's write procedure is an
+;; error, but the port remains usable afterward
+(for ([bad (list 'not-a-valid-result ; not a valid result
+                 100                 ; larger than the supplied string
+                 (let-values ([(r w) (make-pipe)]) w))]) ; pipe for non-blocking
+  (define bad? #t)
+  (define o (make-output-port 'o always-evt
+                              (lambda (bstr start end non-block? breakable?)
+                                (if bad?
+                                    (begin
+                                      (set! bad? #f)
+                                      bad)
+                                    (- end start)))
+                              void))
+  (err/rt-test/once (if (output-port? bad)
+                        (write-bytes-avail* #"a" o)
+                        (write-bytes #"a" o))
+                    exn:fail:contract?)
+  (test 1 write-bytes #"b" o))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Based on the Racket manual...
 

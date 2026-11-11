@@ -223,8 +223,14 @@
     [else
      (internal-error "tried to set port lock atomicity without holding it")]))
 
+;; with lock held; reports whether the lock is now required to be
+;; held in atomic mode, but the current holder took it non-atomically
 (define (port-lock-just-became-atomic? p)
-  (eq? (core-port-lock p) 'to-atomic))
+  (define lock (core-port-lock p))
+  (or (eq? lock 'to-atomic)
+      (and (lock? lock)
+           (lock-atomic? lock)
+           (not (lock-was-atomic? lock)))))
 
 (define (port-lock-init-atomic-mode p)
   (set-core-port-lock! p 'atomic)
