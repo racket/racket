@@ -1026,7 +1026,9 @@
                                                              (set! id (field-initialization-value temp))
                                                              ...
                                                              (void)))))])
-                                             (syntax-track-origin assignment e #'d-v))]
+                                             (syntax-track-origin assignment
+                                                                  e
+                                                                  (syntax-local-introduce #'d-v)))]
                                           [(_init orig idp ...)
                                            (and (identifier? (syntax _init))
                                                 (ormap (lambda (it) 
@@ -1056,7 +1058,7 @@
                                                     (set! id (wrapper (extract-arg 'class-name `idpos init-args defval)))
                                                     ...))
                                                 e
-                                                #'_init)))]
+                                                (syntax-local-introduce #'_init))))]
                                           [(-fld orig idp ...)
                                            (and (identifier? #'-fld)
 					        (free-identifier=? #'-fld #'-field))
@@ -1067,7 +1069,7 @@
                                                               (set! iid (field-initialization-value expr))
                                                               ...))
                                               e
-                                              #'-fld))]
+                                              (syntax-local-introduce #'-fld)))]
                                           [(-i-r id/rename)
                                            (and (identifier? #'-i-r) 
                                                 (free-identifier=? #'-i-r #'-init-rest))
@@ -1081,11 +1083,13 @@
                                               (syntax/loc e
                                                 (set! id (extract-rest-args n init-args)))
                                               e
-                                              #'-i-r))]
+                                              (syntax-local-introduce #'-i-r)))]
                                           [(-i-r)
                                            (and (identifier? #'-i-r) 
                                                 (free-identifier=? #'-i-r #'-init-rest))
-                                           (syntax-track-origin (syntax (void)) e #'-i-r)]
+                                           (syntax-track-origin (syntax (void))
+                                                                e
+                                                                (syntax-local-introduce #'-i-r))]
                                           [_else e]))
                                       exprs)]
                           [mk-method-temp

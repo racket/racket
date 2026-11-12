@@ -259,8 +259,10 @@ even after converting to syntax, we wrap non-#f values in a box, which
                               stop-list
                               def-ctx)])
                        (define (track e)
-                         (syntax-case defn-or-expr ()
-                           [(id . _) (syntax-track-origin e defn-or-expr #'id)]))
+                         (syntax-track-origin e
+                                              defn-or-expr
+                                              (syntax-case defn-or-expr ()
+                                                [(id . _) (syntax-local-introduce #'id)])))
                        (syntax-case defn-or-expr (begin define-values define-syntaxes)
                          [(begin . l)
                           (let ([l (parameterize ((current-syntax-context defn-or-expr))
@@ -390,7 +392,8 @@ even after converting to syntax, we wrap non-#f values in a box, which
                                        (syntax-property #'body 'inferred-name (car ids))
                                        #'body)))
                              defn-or-expr
-                             (syntax-case defn-or-expr () [(d-v . _) #'d-v]))
+                             (syntax-case defn-or-expr ()
+                               [(id . _) (syntax-local-introduce #'id)]))
                             defns-and-exprs)
                       (filter values ctc-exprs)))]
              [else (list (list defn-or-expr) '())]))

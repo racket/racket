@@ -1175,7 +1175,7 @@
                                   (lambda (new-rhs)
                                     (plain (syntax-track-origin new-rhs
                                                                 rhs
-                                                                lam-id)))
+                                                                (syntax-local-introduce lam-id))))
                                   (lambda (impl kwimpl wrap
                                                 core-id unpack-id
                                                 n-req
@@ -1199,7 +1199,9 @@
                                           #,(quasisyntax/loc stx
                                               (define #,unpack-id #,kwimpl))
                                           #,(quasisyntax/loc stx
-                                              (define proc #,(syntax-track-origin wrap rhs lam-id)))))))))])
+                                              (define proc #,(syntax-track-origin wrap
+                                                                                  rhs
+                                                                                  (syntax-local-introduce lam-id))))))))))])
         (syntax-case rhs (begin quote)
           [(lam-id . _)
            (can-opt? #'lam-id)
