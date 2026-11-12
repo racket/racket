@@ -3358,6 +3358,7 @@
          .
          #s(stx-boundary (s0 (s1 s2) s2)))
         (macro-pre-x . #s(stx-boundary (s0 (s1 s2) s2)))
+        (track-syntax s0 #s(stx-boundary s1) . #s(stx-boundary s1))
         (track-syntax
          s0
          #s(stx-boundary (s1 (s2) s2))
@@ -3399,6 +3400,7 @@
          .
          #s(stx-boundary (s0 (s1 s2) (s3 s2))))
         (macro-pre-x . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
+        (track-syntax s0 #s(stx-boundary s1) . #s(stx-boundary s1))
         (track-syntax
          s0
          #s(stx-boundary (s1 (s2) (s3 s2)))
@@ -3440,6 +3442,7 @@
          .
          #s(stx-boundary (s0 (s1 s2) 8)))
         (macro-pre-x . #s(stx-boundary (s0 (s1 s2) 8)))
+        (track-syntax s0 #s(stx-boundary s1) . #s(stx-boundary s1))
         (track-syntax
          s0
          #s(stx-boundary (s1 (s2) 8))
@@ -4510,6 +4513,7 @@
          .
          #s(stx-boundary (s0 (s1 s2) (s3 s2))))
         (macro-pre-x . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
+        (track-syntax s0 #s(stx-boundary s1) . #s(stx-boundary s1))
         (track-syntax
          s0
          #s(stx-boundary (s1 (s2) (s3 s2)))
@@ -4551,6 +4555,7 @@
          .
          #s(stx-boundary (s0 (s1 s2) 8)))
         (macro-pre-x . #s(stx-boundary (s0 (s1 s2) 8)))
+        (track-syntax s0 #s(stx-boundary s1) . #s(stx-boundary s1))
         (track-syntax
          s0
          #s(stx-boundary (s1 (s2) 8))
@@ -6429,6 +6434,7 @@
          .
          #s(stx-boundary (s0 (s1 s2) s2)))
         (macro-pre-x . #s(stx-boundary (s0 (s1 s2) s2)))
+        (track-syntax s0 #s(stx-boundary s1) . #s(stx-boundary s1))
         (track-syntax
          s0
          #s(stx-boundary (s1 (s2) s2))
@@ -6851,6 +6857,7 @@
          .
          #s(stx-boundary (s0 (s1 s2) s2)))
         (macro-pre-x . #s(stx-boundary (s0 (s1 s2) s2)))
+        (track-syntax s0 #s(stx-boundary s1) . #s(stx-boundary s1))
         (track-syntax
          s0
          #s(stx-boundary (s1 (s2) s2))
@@ -6892,6 +6899,7 @@
          .
          #s(stx-boundary (s0 (s1 s2) s2)))
         (macro-pre-x . #s(stx-boundary (s0 (s1 s2) s2)))
+        (track-syntax s0 #s(stx-boundary s1) . #s(stx-boundary s1))
         (track-syntax
          s0
          #s(stx-boundary (s1 (s2) s2))
@@ -7896,6 +7904,7 @@
          .
          #s(stx-boundary (s0 (s1 s2) (s3 8))))
         (macro-pre-x . #s(stx-boundary (s0 (s1 s2) (s3 8))))
+        (track-syntax s0 #s(stx-boundary s1) . #s(stx-boundary s1))
         (track-syntax
          s0
          #s(stx-boundary (s1 (s2) (s3 8)))
@@ -7937,6 +7946,7 @@
          .
          #s(stx-boundary (s0 (s1 s2) (s3 s2))))
         (macro-pre-x . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
+        (track-syntax s0 #s(stx-boundary s1) . #s(stx-boundary s1))
         (track-syntax
          s0
          #s(stx-boundary (s1 (s2) (s3 s2)))
@@ -8770,6 +8780,7 @@
          .
          #s(stx-boundary (s0 (s1 s2) s2)))
         (macro-pre-x . #s(stx-boundary (s0 (s1 s2) s2)))
+        (track-syntax s0 #s(stx-boundary s1) . #s(stx-boundary s1))
         (track-syntax
          s0
          #s(stx-boundary (s1 (s2) s2))
@@ -8811,6 +8822,7 @@
          .
          #s(stx-boundary (s0 (s1 s2) (s3 s2))))
         (macro-pre-x . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
+        (track-syntax s0 #s(stx-boundary s1) . #s(stx-boundary s1))
         (track-syntax
          s0
          #s(stx-boundary (s1 (s2) (s3 s2)))
@@ -8856,6 +8868,7 @@
          .
          #s(stx-boundary (s0 (s1 s2) 8)))
         (macro-pre-x . #s(stx-boundary (s0 (s1 s2) 8)))
+        (track-syntax s0 #s(stx-boundary s1) . #s(stx-boundary s1))
         (track-syntax
          s0
          #s(stx-boundary (s1 (s2) 8))
@@ -9400,6 +9413,7 @@
          .
          #s(stx-boundary (s0 (s1 s2) s2)))
         (macro-pre-x . #s(stx-boundary (s0 (s1 s2) s2)))
+        (track-syntax s0 #s(stx-boundary s1) . #s(stx-boundary s1))
         (track-syntax
          s0
          #s(stx-boundary (s1 (s2) s2))
@@ -9705,6 +9719,7 @@
          .
          #s(stx-boundary (s0 (s1 s2) s2)))
         (macro-pre-x . #s(stx-boundary (s0 (s1 s2) s2)))
+        (track-syntax s0 #s(stx-boundary s1) . #s(stx-boundary s1))
         (track-syntax
          s0
          #s(stx-boundary (s1 (s2) s2))
@@ -9746,6 +9761,7 @@
          .
          #s(stx-boundary (s0 (s1 s2) (s3 s2))))
         (macro-pre-x . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
+        (track-syntax s0 #s(stx-boundary s1) . #s(stx-boundary s1))
         (track-syntax
          s0
          #s(stx-boundary (s1 (s2) (s3 s2)))
@@ -9787,6 +9803,7 @@
          .
          #s(stx-boundary (s0 (s1 s2) 8)))
         (macro-pre-x . #s(stx-boundary (s0 (s1 s2) 8)))
+        (track-syntax s0 #s(stx-boundary s1) . #s(stx-boundary s1))
         (track-syntax
          s0
          #s(stx-boundary (s1 (s2) 8))
@@ -10136,6 +10153,7 @@
          .
          #s(stx-boundary (s0 (s1 s2) (s3 8))))
         (macro-pre-x . #s(stx-boundary (s0 (s1 s2) (s3 8))))
+        (track-syntax s0 #s(stx-boundary s1) . #s(stx-boundary s1))
         (track-syntax
          s0
          #s(stx-boundary (s1 (s2) (s3 8)))
