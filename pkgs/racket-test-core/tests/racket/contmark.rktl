@@ -1173,6 +1173,36 @@
                (or (not (cdr p)) (srcloc? (cdr p)))))
         (continuation-mark-set->context (exn-continuation-marks exn))))
 
+;; ----------------------------------------
+;; Applying a composable continuation that contains a prompt should
+;; not duplicate a mark that is in tail position of the delimiting
+;; prompt's thunk
+
+(let ()
+  (define tag (make-continuation-prompt-tag 'outer))
+  (define key (make-continuation-mark-key 'k))
+  (define (marks)
+    (continuation-mark-set->list (current-continuation-marks tag) key tag))
+  (define (capture)
+    ((call-with-composable-continuation
+      (λ (k) (λ () (abort-current-continuation tag (λ () k))))
+      tag)))
+  (define (probe)
+    (define before (marks))
+    (capture)
+    (list before (marks)))
+  (define (try body)
+    (define k (call-with-continuation-prompt body tag (λ (th) (th))))
+    (call-with-continuation-prompt (λ () (k void)) tag))
+  (test '((outer) (outer))
+        try (λ () (with-continuation-mark key 'outer
+                    (car (list (call-with-continuation-prompt probe))))))
+  (test '((outer) (outer))
+        try (λ () (with-continuation-mark key 'outer (car (list (probe))))))
+  (test '((outer) (outer))
+        try (λ () (car (list (with-continuation-mark key 'outer
+                                (car (list (call-with-continuation-prompt probe)))))))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

@@ -889,6 +889,8 @@
             ;; When all winders done for this frame:
             (lambda ()
               (current-metacontinuation (cons mf (current-metacontinuation)))
+              ;; The splice now lives in `mf`
+              (current-mark-splice empty-mark-frame)
               (loop rmc 0 (fx- entered-winder-n entered-winder-now-n)))
             ;; When a winder changes the metacontinuation, try again
             ;; for a non-composable continuation:
