@@ -1,0 +1,42 @@
+
+The unit of trust/distrust seems to be the certificate.
+That is, cannot distrust "subB", can only distrust
+a particular certificate with "subB" as subject.
+
+----------------------------------------
+On Windows
+
+Run the following as Administrator:
+
+    certutil -addstore "Root" "root_cert.pem"
+    certutil -addstore "Disallowed" "subB_cert.pem"
+
+Or open "Manage User Certificates" (certmgr) and do the following:
+- Select "Trusted Root Certification Authorities"
+  - Right click, select "All Tasks", then "Import..."
+  - Import the file "root_cert.pem" in this directory.
+- Select "Untrusted Certificates"
+  - Right click, select "All Tasks", then "Import..."
+  - Import the file "subB_cert.pem" in this directory.
+    - Don't select "distrust_subB_sert.pem".
+
+REMOVE THE ROOT CERTIFICATE AFTER RUNNING THE TESTS.
+Otherwise your system will be vulnerable to TLS MITM.
+
+    certutil -delstore "Root" "TestRKT Root CA"
+
+----------------------------------------
+On Mac OS
+
+Run the following:
+
+    sudo security add-trusted-cert -d -r trustAsRoot \
+      -k /Library/Keychains/System.keychain root_cert.pem
+    sudo security add-trusted-cert -d -r deny \
+      -k /Library/Keychains/System.keychain subB_cert.pem
+
+Or import the certificates into the System keychain using the Keychain
+Access utility and modify their trust settings.
+
+REMOVE THE ROOT CERTIFICATE AFTER RUNNING THE TESTS.
+Otherwise your system will be vulnerable to TLS MITM.

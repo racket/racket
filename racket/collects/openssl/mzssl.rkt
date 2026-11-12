@@ -40,12 +40,13 @@ TO DO:
          "libcrypto.rkt"
          "libssl.rkt"
          "private/ffi.rkt"
+         "private/verify.rkt"
          (for-syntax racket/base))
 (lazy-require
+ ["private/verify-macos.rkt" (get-macos-verify-callback)]
+ ["private/verify-win32.rkt" (get-win32-verify-callback)]
  ["private/win32.rkt" (load-win32-store)]
  ["private/macosx.rkt" (load-macosx-keychain)])
-
-(define-logger openssl)
 
 (when (and libssl (not v1.0.2/later?))
   (log-openssl-error "OpenSSL library too old, version 1.0.2 or later required."))
@@ -58,6 +59,7 @@ TO DO:
 
 (define verify-source/c
   (or/c path-string?
+        (list/c 'os-verify)
         (list/c 'directory path-string?)
         (list/c 'win32-store string?)
         (list/c 'macosx-keychain (or/c #f path-string?))))
@@ -269,22 +271,11 @@ TO DO:
 (define ssl-default-verify-sources*
   (make-parameter
    (delay/sync
-     (case (system-type 'os*)
-       [(windows)
-        ;; On Windows, x509-root-sources produces paths like "/usr/local/ssl/certs", which
-        ;; aren't useful. So just skip them.
-        '((win32-store "ROOT"))]
-       [(macosx darwin)
-        '((macosx-keychain #f))]
-       [(ios)
-        ;; On iOS, the function SecTrustCopyAnchorCertificates is not
-        ;; provided by the Security framework, so applications must
-        ;; bundle and provide their own certificates. Log an error here
-        ;; if the sources have not been changed.
-        (log-openssl-error "ssl-default-verify-sources must be set on iOS")
-        null]
-       [else
-        (x509-root-sources)]))))
+    (case (system-type 'os*)
+      [(windows macosx darwin ios)
+       '((os-verify))]
+      [else
+       (x509-root-sources)]))))
 
 (define ssl-default-verify-sources
   (make-derived-parameter
@@ -658,6 +649,15 @@ TO DO:
                 (lambda (a b) (SSL_CTX_load_verify_locations a b #f))
                 scl src))
 
+;; Verifier callback must be retained as long as any context that might use
+;; it for verification. See reference-sink in wrap-ports.
+(define os-verify-callback
+  (function-ptr (case (system-type 'os*)
+                  [(windows) (get-win32-verify-callback)]
+                  [(macosx darwin ios) (get-macos-verify-callback)]
+                  [else #f])
+                _cert-verify-callback))
+
 (define (ssl-load-verify-source! context src #:try? [try? #f])
   (define (bad-source)
     (error 'ssl-load-verify-source!
@@ -684,6 +684,19 @@ TO DO:
                                                #:need-unsealed? #t)])
                 (load-macosx-keychain 'ssl-load-verify-source! ctx val try?))]
              [else (bad-source)]))]
+        [(equal? src '(os-verify))
+         ;; This "source" completely replaces the verification function.
+         ;; Other sources, whether added before or after, are silently ignored.
+         ;; FIXME: detect, add warning/error.
+         (cond [os-verify-callback
+                (define ctx
+                  (get-context/listener 'ssl-load-verify-source! context
+                                        #:need-unsealed? #t))
+                (SSL_CTX_set_cert_verify_callback ctx os-verify-callback #f)]
+               [try? (void)]
+               [else
+                (error 'ssl-load-verify-source!
+                       "not supported on this platform\n  source: ~e" src)])]
         [else (bad-source)]))
 
 (define (ssl-load-default-verify-sources! ctx)
@@ -1457,6 +1470,7 @@ TO DO:
                                                            (SSL_connect ssl)
                                                            (SSL_accept ssl))
                                                        ssl)])
+            (void/reference-sink os-verify-callback)
             (let ([out-blocked? (pump-output mzssl)])
         (when (status . < . 1)
           (let ()

@@ -11,6 +11,8 @@
          (for-syntax racket/base))
 (provide (protect-out (all-defined-out)))
 
+(define-logger openssl)
+
 (define-ffi-definer define-crypto libcrypto
   #:default-make-fail make-not-available)
 (define-ffi-definer define-ssl libssl
