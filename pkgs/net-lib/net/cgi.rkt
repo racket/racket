@@ -105,7 +105,7 @@
   (define (err fmt . xs)
     (generate-error-output
      (list (format "Server generated malformed input for ~a method:" method)
-           (apply format fmt xs))))
+           (string->html (apply format fmt xs)))))
   (define value-rx (delimiter->rx (current-alist-separator-mode)))
   (define (process str) (form-urlencoded-decode (bytes->string/utf-8 str)))
   (let loop ([bindings '()])
@@ -145,9 +145,9 @@
 (define (bindings-as-html bindings)
   `("<code>"
     ,@(map (lambda (bind)
-             (string-append (symbol->string (car bind))
+             (string-append (string->html (symbol->string (car bind)))
                             "&nbsp;--&gt;&nbsp;"
-                            (cdr bind)
+                            (string->html (cdr bind))
                             "<br>"))
            bindings)
     "</code>"))
