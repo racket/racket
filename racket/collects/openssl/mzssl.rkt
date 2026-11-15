@@ -1585,7 +1585,7 @@ TO DO:
 
 (define (asn1string->bytes asn1str)
   (let* ([len (ASN1_STRING_length asn1str)]
-         [data (ASN1_STRING_data asn1str)]
+         [data (ASN1_STRING_get0_data asn1str)]
          [buf (make-bytes len 0)])
     (memcpy buf data len)
     ;; FIXME: detect UTF-8 strings?

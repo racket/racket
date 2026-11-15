@@ -39,7 +39,10 @@
 (define openssl-lib-versions
   (let
     ([versions
-      '("1.1"
+      '("3"
+        "4"
+
+        "1.1"
         "1.0.2"
 
         ;; Compatibility-based version / SONAME
@@ -53,9 +56,7 @@
 
         ;; Known versions for *BSD variants
         "111"
-
-        ;; OpenSSL 3 works for most functionality:
-        "3")])
+        )])
     ;; Don't use the versionless dylib on macOS, as it aborts on 10.15
     (case (system-type)
       [(macosx)

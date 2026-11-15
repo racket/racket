@@ -264,7 +264,7 @@
 
 (define-crypto GENERAL_NAME_free _fpointer)
 (define-crypto ASN1_STRING_length (_fun _ASN1_STRING* -> _int))
-(define-crypto ASN1_STRING_data (_fun _ASN1_STRING* -> _pointer))
+(define-crypto ASN1_STRING_get0_data (_fun _ASN1_STRING* -> _pointer))
 (define-crypto X509_NAME_get_index_by_NID (_fun _X509_NAME* _int _int -> _int))
 (define-crypto X509_NAME_get_entry (_fun _X509_NAME* _int -> _X509_NAME_ENTRY*/null))
 (define-crypto X509_NAME_ENTRY_get_data (_fun _X509_NAME_ENTRY* -> _ASN1_STRING*))
