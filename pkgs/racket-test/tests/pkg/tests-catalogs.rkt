@@ -131,6 +131,20 @@
   (try-merge dir)
   (try-merge db)
 
+  ;; catalog-copy rejects names that are not package names, since
+  ;; they become file names in a directory catalog:
+  (define bad-dir (build-path d "bad-catalog"))
+  (make-directory* bad-dir)
+  (call-with-output-file*
+   (build-path bad-dir "pkgs-all")
+   (lambda (o)
+     (write (hash "../../escaped" (hash 'source "http://localhost:9997/fish.zip"
+                                        'checksum "123"))
+            o)))
+  $ (~a "raco pkg catalog-copy " (path->string bad-dir) " " (path->string (build-path d "bad-copy")))
+  =exit> 1 =stderr> #rx"invalid package name"
+  $ (~a "test -f " (path->string (build-path d "escaped"))) =exit> 1
+
   ;; catalog-archive:
 
   (define archive-d (build-path d "archive"))

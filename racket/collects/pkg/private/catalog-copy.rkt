@@ -2,6 +2,7 @@
 (require racket/format
          racket/file
          net/url
+         "../name.rkt"
          (prefix-in db: "../db.rkt")
          "config.rkt"
          "catalog.rkt"
@@ -115,6 +116,16 @@
          (values k ht))]
       [else
        absolute-details]))
+
+  ;; Names from a catalog are used as file names in a directory
+  ;; destination and by `pkg-catalog-archive`, so make sure they
+  ;; are valid package names:
+  (for ([k (in-hash-keys details)])
+    (unless (and (string? k)
+                 (package-source->name k 'name))
+      (pkg-error (~a "invalid package name in catalog\n"
+                     "  name: ~e")
+                 k)))
 
   (when (and force? (not merge?))
     (cond
