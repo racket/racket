@@ -3619,26 +3619,25 @@ int scheme_grapheme_cluster_step(mzchar c, int *_state) {
      So, if you get to the end of a string with a non-0 state, then
      "flush" the state by consuming that last grapheme cluster. */
 
-#define MZ_EXT_STATE_SHIFT 3
+#define MZ_EXT_STATE_SHIFT 2
   
   int old_state = *_state;
   int prev = (int)((old_state - 1) & ((1 << (MZ_GRAPHBREAK_BITS+1))-1));
-  int ind_state = (int)(((old_state) >> (MZ_GRAPHBREAK_BITS+1)) & 0x3);
+  int ind_state = (int)(((old_state) >> (MZ_GRAPHBREAK_BITS+1)) & 0x1);
   int ext_pict = (int)((old_state) >> (MZ_GRAPHBREAK_BITS+MZ_EXT_STATE_SHIFT));
   int prop, indc;
 
   prop = scheme_grapheme_cluster_break(c);
   indc = scheme_indic_conjunct_break(c);
 
-#define MZ_EXT_IND1 1
-#define MZ_EXT_IND2 2
-#define MZG_NEXT_INDIC_STATE()  ((indc == MZ_INDIC_CONJUNCT_NONE)       \
-                                 ? 0                                    \
-                                 : ((indc == MZ_INDIC_CONJUNCT_CONSONANT) \
-                                    ? MZ_EXT_IND1                       \
-                                    : ((indc == MZ_INDIC_CONJUNCT_LINKER) && (ind_state == MZ_EXT_IND1) \
-                                       ? MZ_EXT_IND2                    \
-                                       : ind_state)))
+  /* Indic conjunct state is 1 after matching `Linker (Extend|Linker)*` */
+#define MZ_EXT_IND 1
+#define MZG_NEXT_INDIC_STATE()  ((indc == MZ_INDIC_CONJUNCT_LINKER)      \
+                                 ? MZ_EXT_IND                           \
+                                 : (((indc == MZ_INDIC_CONJUNCT_EXTEND) \
+                                     && (ind_state == MZ_EXT_IND))      \
+                                    ? MZ_EXT_IND                        \
+                                    : 0))
 
 #define MZ_GRAPHBREAK_EXTENDED_PICTOGRAPHIC MZ_GRAPHBREAK_COUNT  
 #define MZG_PROP0_STATE() (prop+1)
@@ -3701,7 +3700,7 @@ int scheme_grapheme_cluster_step(mzchar c, int *_state) {
   } else if (prev == MZ_GRAPHBREAK_PREPEND) { /* GB9b */
     *_state = MZG_NEXT_STATE();
     return 0;
-  } else if ((ind_state == MZ_EXT_IND2)
+  } else if ((ind_state == MZ_EXT_IND)
              && (indc == MZ_INDIC_CONJUNCT_CONSONANT)) {  /* GB9c */
     *_state = MZG_NEXT_STATE();
     return 0;
