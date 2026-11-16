@@ -1,5 +1,6 @@
 #lang racket/base
 (require "../common/set.rkt"
+         "../common/scope-set.rkt"
          "../syntax/syntax.rkt"
          "../syntax/scope.rkt"
          "../common/phase.rkt"
@@ -57,8 +58,12 @@
 ;; Decoding, used at run time:
 (define (decode-namespace-scopes stx)
   (define vec (syntax-e stx))
-  (values (syntax-scope-set (vector-ref vec 0) 0)
-          (syntax-scope-set (vector-ref vec 1) 0)))
+  (values (scope-set->seteq (syntax-scope-set (vector-ref vec 0) 0))
+          (scope-set->seteq (syntax-scope-set (vector-ref vec 1) 0))))
+
+(define (scope-set->seteq scs)
+  (for/seteq ([sc (in-scope-set scs)])
+    sc))
 
 (define (namespace-scopes=? nss1 nss2)
   (and (set=? (namespace-scopes-post nss1)

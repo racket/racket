@@ -13,6 +13,7 @@
          "attach.rkt"
          "core.rkt"
          "../common/set.rkt"
+         "../common/scope-set.rkt"
          "../common/phase.rkt"
          "../expand/require+provide.rkt"
          "../expand/context.rkt"
@@ -62,7 +63,7 @@
   (check who namespace? ns)
   (define root-ctx (namespace-get-root-expand-ctx ns))
   (define post-scope (post-expansion-scope (root-expand-context-post-expansion root-ctx)))
-  (define other-namespace-scopes (for/list ([sc (in-set
+  (define other-namespace-scopes (for/list ([sc (in-scope-set
                                                  ;; `all-scopes-stx` corresponds to the initial import
                                                  (syntax-scope-set (root-expand-context-all-scopes-stx root-ctx)
                                                                    0))]

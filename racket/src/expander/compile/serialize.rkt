@@ -4,6 +4,7 @@
          "serialize-property.rkt"
          "serialize-state.rkt"
          "../common/set.rkt"
+         "../common/scope-set.rkt"
          "../syntax/syntax.rkt"
          "../syntax/binding-table.rkt"
          "../syntax/scope.rkt"
@@ -878,8 +879,20 @@
                  [(#:seteq) (seteq)]
                  [(#:seteqv) (seteqv)]))
      (define len (vector*-ref vec (add1 pos)))
-     (for/fold ([s s] [pos (+ pos 2)]) ([i (in-range len)])
-       (decodes #:pos pos (k) (set-add s k)))]
+     (define-values (rev-elems new-pos)
+       (for/fold ([r null] [pos (+ pos 2)]) ([i (in-range len)])
+         (decodes #:pos pos (k) (cons k r))))
+     (values (for/fold ([s s]) ([k (in-list rev-elems)])
+               (set-add s k))
+             new-pos)]
+    [(#:scope-set)
+     (define len (vector*-ref vec (add1 pos)))
+     (define-values (rev-elems new-pos)
+       (for/fold ([r null] [pos (+ pos 2)]) ([i (in-range len)])
+         (decodes #:pos pos (k) (cons k r))))
+     ;; Scopes get fresh ids when they are deserialized, so the
+     ;; elements are sorted again here
+     (values (list->scope-set rev-elems) new-pos)]
     [(#:prefab)
      (define-values (key next-pos) (decodes #:pos (add1 pos) (k) k))
      (define len (vector*-ref vec next-pos))

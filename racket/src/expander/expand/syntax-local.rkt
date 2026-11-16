@@ -1,5 +1,6 @@
 #lang racket/base
 (require "../common/set.rkt"
+         "../common/scope-set.rkt"
          "../common/struct-star.rkt"
          "../syntax/syntax.rkt"
          "../common/phase.rkt"
@@ -163,12 +164,12 @@
   (check who phase? #:contract phase?-string phase)
   (define ext-scs (syntax-scope-set ext-s phase))
   (define base-scs (syntax-scope-set (or base-s empty-syntax) phase))
-  (define use-base-scs (if (subset? base-scs ext-scs)
+  (define use-base-scs (if (scope-set-subset? base-scs ext-scs)
                            base-scs
                            (or (and (identifier? base-s)
                                     (resolve base-s phase #:get-scopes? #t))
-                               (seteq))))
-  (define delta-scs (set->list (set-subtract ext-scs use-base-scs)))
+                               empty-scope-set)))
+  (define delta-scs (scope-set->list (scope-set-subtract ext-scs use-base-scs)))
   (define maybe-taint (if (syntax-clean? ext-s) values syntax-taint))
   (define shifts (syntax-mpi-shifts ext-s))
   (lambda (s [mode 'add])
