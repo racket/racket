@@ -1,5 +1,6 @@
 #lang racket/base
 (require "../common/set.rkt"
+         "../common/scope-set.rkt"
          "syntax.rkt"
          "scope.rkt"
          "fallback.rkt"
@@ -41,7 +42,7 @@
            [(identifier? s)
             (define-values (bindings covered-scopess)
               (for*/fold ([bindings null] [covered-scope-sets (set)])
-                         ([sc (in-set s-scs)]
+                         ([sc (in-scope-set s-scs)]
                           [(scs b) (in-binding-table sym (scope-binding-table sc) s null)]
                           #:when (and scs b
                                       ;; Skip overridden:
@@ -50,7 +51,7 @@
                  (cons
                   (hasheq 'name (syntax-e s)
                           'context (scope-set->context scs)
-                          'match? (subset? scs s-scs)
+                          'match? (scope-set-subset? scs s-scs)
                           'via (scope-id sc)
                           (classify-binding b) (extract-binding b))
                   bindings)
@@ -60,7 +61,7 @@
          ;; All other bindings (but not other bulk bindings, currently)
          (cond
            [all-bindings?
-            (for*/list ([sc (in-set s-scs)]
+            (for*/list ([sc (in-scope-set s-scs)]
                         [(o-sym scs b) (in-full-non-bulk-binding-table (scope-binding-table sc))]
                         #:unless (eq? o-sym sym))
               (hasheq 'name o-sym
@@ -78,7 +79,7 @@
 
 (define (scope-set->context scs)
   (sort
-   (for/list ([sc (in-set scs)])
+   (for/list ([sc (in-scope-set scs)])
      (cond
        [(interned-scope? sc)
         (vector (scope-id sc)

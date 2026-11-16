@@ -1,5 +1,6 @@
 #lang racket/base
 (require "../common/set.rkt"
+         "../common/scope-set.rkt"
          "../common/struct-star.rkt"
          "../syntax/syntax.rkt"
          "../syntax/scope.rkt"
@@ -121,15 +122,15 @@
                      (identifier? id)))))))
 
 (define (extract-scope-list stx)
-  (map generalize-scope (set->list (syntax-scope-set stx 0))))
+  (map generalize-scope (scope-set->list (syntax-scope-set stx 0))))
 
 (define (syntax-with-one-scope? stx)
   (and (syntax? stx)
-       (= 1 (set-count (syntax-scope-set stx 0)))))
+       (= 1 (scope-set-count (syntax-scope-set stx 0)))))
 
 (define (extract-scope stx)
   (define s (syntax-scope-set stx 0))
-  (generalize-scope (set-first s)))
+  (generalize-scope (scope-set-max s)))
 
 (define (extract-shifts stx)
   (syntax-mpi-shifts stx))

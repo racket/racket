@@ -677,7 +677,7 @@
      (decode* (box-immutable v))]
     [(#:cons)
      (decode* (cons a d))]
-    [(#:list #:vector #:set #:seteq #:seteqv)
+    [(#:list #:vector #:set #:seteq #:seteqv #:scope-set)
      (define len (vector-ref vec (add1 pos)))
      (define r (make-vector len))
      (define next-pos
@@ -690,7 +690,8 @@
                   [(#:vector) 'vector]
                   [(#:set) 'set]
                   [(#:seteq) 'seteq]
-                  [(#:seteqv) 'seteqv])
+                  [(#:seteqv) 'seteqv]
+                  [(#:scope-set) 'scope-set])
                ,@(vector->list r))
              next-pos)]
     [(#:hash #:hasheq #:hasheqv #:hasheqv/phase+space)
@@ -824,3 +825,12 @@
   (try '(lambda (q . more)
           (letrec ([f (lambda (x) f)])
             (lambda (g) f)))))
+
+(module+ test
+  ;; A scope set is serialized as a tag, a count, and that many scopes;
+  ;; decoding must consume all of them so that the following value is kept
+  (define d (decompile-deserialize '#() #f #f
+                                   0 '#() 0 '#() '#()
+                                   '#(#:vector 2 #:scope-set 0 next)))
+  (unless (equal? d '(let (()) (let* (()) (vector (scope-set) 'next))))
+    (error 'decompile-test "scope-set decoding failed: ~s" d)))

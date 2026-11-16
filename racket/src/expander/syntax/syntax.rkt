@@ -5,6 +5,7 @@
          "../compile/serialize-property.rkt"
          "../compile/serialize-state.rkt"
          "../common/set.rkt"
+         "../common/scope-set.rkt"
          "../common/inline.rkt"
          "../namespace/inspector.rkt"
          "preserved.rkt"
@@ -218,7 +219,7 @@
 
 ;; ----------------------------------------
 
-(define empty-scopes (seteq))
+(define empty-scopes empty-scope-set)
 (define empty-shifted-multi-scopes (seteq))
 (define empty-mpi-shifts null)
 (define empty-props #hasheq())

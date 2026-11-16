@@ -1,5 +1,6 @@
 #lang racket/base
 (require "../common/set.rkt"
+         "../common/scope-set.rkt"
          "../common/phase.rkt"
          "syntax.rkt"
          "scope.rkt"
@@ -15,7 +16,7 @@
                              #:only-interned? [only-interned? #f]
                              #:exactly? [exactly? #f])
   (define s-scs (syntax-scope-set s phase))
-  (for/fold ([syms (seteq)]) ([sc (in-set s-scs)])
+  (for/fold ([syms (seteq)]) ([sc (in-scope-set s-scs)])
     (set-union syms
                (binding-table-symbols (scope-binding-table sc) s-scs s null
                                       #:only-interned? only-interned?
@@ -29,7 +30,7 @@
 (define (syntax-mapped-interned-scope-symbols s phase #:exactly? exactly?)
   (define s-scs (syntax-scope-set s phase))
   (define sym (syntax-e s))
-  (for/fold ([syms (seteq)]) ([sc (in-set s-scs)])
+  (for/fold ([syms (seteq)]) ([sc (in-scope-set s-scs)])
     (set-union syms
                (binding-table-interned-scope-keys (scope-binding-table sc) s-scs sym s null
                                                   #:exactly? exactly?

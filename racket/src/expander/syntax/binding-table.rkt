@@ -1,6 +1,7 @@
 #lang racket/base
 (require (for-syntax racket/base)
          "../common/set.rkt"
+         "../common/scope-set.rkt"
          "../compile/serialize-property.rkt"
          "../compile/serialize-state.rkt"
          "syntax.rkt"
@@ -322,13 +323,13 @@
                #:when (or (not only-interned?) (symbol-interned? sym))
                #:when (for/or ([an-scs (in-hash-keys at-sym)])
                         (if exactly?
-                            (set=? an-scs scs)
-                            (subset? an-scs scs))))
+                            (scope-set=? an-scs scs)
+                            (scope-set-subset? an-scs scs))))
      sym)
    (for*/seteq ([bba (in-list bulk-bindings)]
                 #:when (if exactly?
-                           (set=? (bulk-binding-at-scopes bba) scs)
-                           (subset? (bulk-binding-at-scopes bba) scs))
+                           (scope-set=? (bulk-binding-at-scopes bba) scs)
+                           (scope-set-subset? (bulk-binding-at-scopes bba) scs))
                 [sym (in-hash-keys
                       (bulk-binding-symbols (bulk-binding-at-bulk bba) s extra-shifts))]
                 #:when (or (not only-interned?) (symbol-interned? sym)))
@@ -347,28 +348,33 @@
                 (table-with-bulk-bindings-bulk-bindings table))))
   (set-union
    (for*/seteq ([an-scs (in-hash-keys (hash-ref ht sym #hasheq()))]
-                [sc (in-set an-scs)]
+                [sc (in-scope-set an-scs)]
                 #:when (and (interned-scope? sc)
-                            (not (set-member? scs sc))
+                            (not (scope-set-member? scs sc))
                             (if exactly?
-                                (set=? an-scs (set-add scs sc))
-                                (subset? an-scs (set-add scs sc)))))
+                                (scope-set=? an-scs (scope-set-add scs sc))
+                                (scope-set-subset? an-scs (scope-set-add scs sc)))))
      (interned-scope-key sc))
    (for*/seteq ([bba (in-list bulk-bindings)]
                 #:when (hash-ref (bulk-binding-symbols (bulk-binding-at-bulk bba) s extra-shifts)
                                  sym
                                  #f)
                 #:do [(define an-scs (bulk-binding-at-scopes bba))]
-                [sc (in-set an-scs)]
+                [sc (in-scope-set an-scs)]
                 #:when (and (interned-scope? sc)
-                            (not (set-member? scs sc))
+                            (not (scope-set-member? scs sc))
                             (if exactly?
-                                (set=? an-scs (set-add scs sc))
-                                (subset? an-scs (set-add scs sc)))))
+                                (scope-set=? an-scs (scope-set-add scs sc))
+                                (scope-set-subset? an-scs (scope-set-add scs sc)))))
      (interned-scope-key sc))))
 
 ;; ----------------------------------------
 ;; Pruning functions are called by scope serialization
+
+;; Is every scope in the scope set `scs` in the `seteq` `ht`?
+(define (scope-set-all-in? scs ht)
+  (for/and ([sc (in-scope-set scs)])
+    (set-member? ht sc)))
 
 (define (binding-table-prune-to-reachable bt state)
   (or (hash-ref (serialize-state-bindings-intern state) bt #f)
@@ -381,7 +387,7 @@
                         [new-bindings-for-sym
                          (in-value
                           (for/hash ([(scopes binding) (in-immutable-hash bindings-for-sym)]
-                                     #:when (subset? scopes reachable-scopes))
+                                     #:when (scope-set-all-in? scopes reachable-scopes))
                             (values (intern-scopes scopes state) binding)))]
                         #:when (positive? (hash-count new-bindings-for-sym)))
             (values sym new-bindings-for-sym)))
@@ -389,7 +395,7 @@
           (if (hash? bt)
               null
               (for/list ([bba (in-list (table-with-bulk-bindings-bulk-bindings bt))]
-                         #:when (subset? (bulk-binding-at-scopes bba) reachable-scopes))
+                         #:when (scope-set-all-in? (bulk-binding-at-scopes bba) reachable-scopes))
                 (struct-copy bulk-binding-at bba
                              [scopes (intern-scopes (bulk-binding-at-scopes bba) state)]))))
         (define new-bt
@@ -428,14 +434,14 @@
                                    register-trigger reach-implicitly)
   (define reachable-scopes (get-reachable-scopes))
   (cond
-    [(subset? scopes reachable-scopes)
+    [(scope-set-all-in? scopes reachable-scopes)
      (reach v bulk-shifts)]
     [else
      ;; There may be implicitly reachable scopes (i.e., multi-scope
      ;; representatives that should only be reachable if they
      ;; participate in a binding)
      (define pending-scopes
-       (for/seteq ([sc (in-set scopes)]
+       (for/seteq ([sc (in-scope-set scopes)]
                    #:unless (or (set-member? reachable-scopes sc)
                                 (implicitly-reachable? sc)))
          sc))
@@ -444,7 +450,7 @@
          ;; All scopes became reachable, so make the value reachable,
          ;; and declare implcitily reachables as explicitly reachable
          (reach v bulk-shifts)
-         (for ([sc (in-set scopes)])
+         (for ([sc (in-scope-set scopes)])
            (when (implicitly-reachable? sc)
              ;; Mark implicitly reachable as reachable, depending on `bulk-shifts`
              (cond
