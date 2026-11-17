@@ -508,6 +508,37 @@
       (with-check-info (['response-raw raw])
         (test-colon-field-lws raw))))
 
+  ;; A CR or LF in the method, uri, or a header must not be able to
+  ;; inject headers or a second request; nothing should be sent.
+  (let ()
+    (define l (tcp-listen 0 40 #t "127.0.0.1"))
+    (define-values (_host1 port _host2 _port2)
+      (tcp-addresses l #t))
+    (define received #f)
+    (define lt
+      (thread
+       (lambda ()
+         (define-values (in out) (tcp-accept l))
+         (tcp-close l)
+         (set! received (port->bytes in))
+         (close-output-port out))))
+    (define hc (hc:http-conn-open "127.0.0.1" #:port port))
+    (check-exn
+     #rx"uri contains a carriage return or linefeed"
+     (lambda ()
+       (hc:http-conn-send! hc "/a\r\nX-Injected: 1")))
+    (check-exn
+     #rx"method contains a carriage return or linefeed"
+     (lambda ()
+       (hc:http-conn-send! hc "/" #:method "GET /a HTTP/1.1\r\nX-Injected: 1\r\nX:")))
+    (check-exn
+     #rx"header contains a carriage return or linefeed"
+     (lambda ()
+       (hc:http-conn-send! hc "/" #:headers '(#"X-A: 1\nX-Injected: 1"))))
+    (hc:http-conn-close! hc)
+    (thread-wait lt)
+    (check-equal? received #""))
+
   ;; Ensure decoding errors are raised in the http-conn-recv!ing thread.
   ;; xref: https://github.com/Bogdanp/racket-http-easy/issues/35
   (let ()
