@@ -50,6 +50,7 @@
                                       dest strip-count filter
                                       permissive?
                                       #f
+                                      #f
                                       #f)))))))
 
 (define (read-bytes* n in)
@@ -70,12 +71,13 @@
                              dest strip-count filter
                              permissive?
                              path-from-extended-attributes
-                             link-target-from-extended-attributes)
+                             link-target-from-extended-attributes
+                             size-from-extended-attributes)
   (define name-bytes (read-bytes* 100 in))
   (define mode (tar-bytes->number (read-bytes* 8 in) in))
   (define owner (tar-bytes->number (read-bytes* 8 in) in #:allow-zeros? #t))
   (define group (tar-bytes->number (read-bytes* 8 in) in #:allow-zeros? #t))
-  (define size (tar-bytes->number (read-bytes* 12 in) in))
+  (define header-size (tar-bytes->number (read-bytes* 12 in) in))
   (define mod-time (tar-bytes->number (read-bytes* 12 in) in))
   (define checksum-bytes (read-bytes* 8 in))
   (define type-byte (integer->char (read-byte in)))
@@ -93,6 +95,12 @@
                  [(#\L) 'gnu-long-name]
                  [(#\K) 'gnu-long-link]
                  [else 'unknown]))
+  ;; a pax `size` record overrides the size field of the entry it
+  ;; applies to, but not of intervening GNU long-name/link records
+  (define size (if (and size-from-extended-attributes
+                        (not (memq type '(extended-header-for-next gnu-long-name gnu-long-link))))
+                   size-from-extended-attributes
+                   header-size))
   (define link-target-bytes (read-bytes* 100 in))
   (define ustar? (bytes=? #"ustar\00000" (read-bytes* 8 in)))
   (define owner-bytes (trim-terminator (read-bytes* 32 in)))
@@ -169,7 +177,13 @@
                                 path-from-extended-attributes)
                             (or (let ([v (hash-ref extended-header 'linkpath #f)])
                                   (and v (bytes->path v)))
-                                link-target-from-extended-attributes))]
+                                link-target-from-extended-attributes)
+                            (or (let ([v (hash-ref extended-header 'size #f)])
+                                  (and v
+                                       (if (regexp-match? #rx#"^[0-9]+$" v)
+                                           (string->number (bytes->string/latin-1 v))
+                                           (error 'untar "bad size in pax header\n  size: ~e" v))))
+                                size-from-extended-attributes))]
       [(gnu-long-name)
        ;; GNU record to support long names
        (define o (open-output-bytes))
@@ -179,7 +193,8 @@
                             dest strip-count filter
                             permissive?
                             (bytes->path (nul-terminated (get-output-bytes o)))
-                            link-target-from-extended-attributes)]
+                            link-target-from-extended-attributes
+                            size-from-extended-attributes)]
       [(gnu-long-link)
        ;; GNU record to support long link targets
        (define o (open-output-bytes))
@@ -189,7 +204,8 @@
                             dest strip-count filter
                             permissive?
                             path-from-extended-attributes
-                            (bytes->path (nul-terminated (get-output-bytes o))))]
+                            (bytes->path (nul-terminated (get-output-bytes o)))
+                            size-from-extended-attributes)]
       [else
        (log-untar-info "ignored ~a[~a]: ~a" type type-byte filename)
        (copy-bytes total-len in #f)
@@ -258,9 +274,12 @@
   (define len (bytes-length bstr))
   (cond
    [(bitwise-bit-set? (bytes-ref bstr 0) 7)
-    ;; base-256:
-    (for/fold ([v 0]) ([i (in-range 1 len)])
-      (+ (* v 256) v))]
+    ;; base-256, where a leading #xFF byte means negative:
+    (define v (for/fold ([v 0]) ([i (in-range 1 len)])
+                (+ (* v 256) (bytes-ref bstr i))))
+    (if (= (bytes-ref bstr 0) #xFF)
+        (- v (expt 256 (sub1 len)))
+        v)]
    [(and allow-zeros?
          (for/and ([b (in-bytes bstr)])
            (zero? b)))

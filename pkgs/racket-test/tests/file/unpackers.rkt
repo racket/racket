@@ -295,6 +295,42 @@
          (with-handlers ([exn? exn-message])
            (untgz (open-input-bytes bad-tar.gz) #:filter (lambda args #f))))))
 
+(define (untar-entry-size-tests)
+  ;; An entry's size can come from a pax `size` record or a base-256
+  ;; field; if it is misread, the bytes of `hidden` inside "cover.txt"
+  ;; would be unpacked as a separate entry
+  (define (header name type size-field)
+    (define h (make-bytes 512 0))
+    (bytes-copy! h 0 name)
+    (bytes-copy! h 100 #"0000644\0")
+    (bytes-copy! h 124 size-field)
+    (bytes-copy! h 136 #"00000000000\0")
+    (bytes-set! h 156 (char->integer type))
+    (bytes-copy! h 257 #"ustar\00000")
+    h)
+  (define (pad bstr)
+    (bytes-append bstr (make-bytes (- 512 (remainder (bytes-length bstr) 512)) 0)))
+  (define hidden (bytes-append (header #"smuggled.txt" #\0 #"00000000006\0")
+                               (pad #"pwned\n")))
+  (define (entries bstr)
+    (define got '())
+    (untar (open-input-bytes bstr)
+           #:handle-entry (lambda (kind path content len attribs)
+                            (set! got (cons (cons (path->string path) (read-bytes len content))
+                                            got))
+                            null))
+    (reverse got))
+  (test (entries (bytes-append (header #"././@PaxHeader" #\x #"00000000015\0")
+                               (pad #"13 size=1024\n")
+                               (header #"cover.txt" #\0 #"00000000000\0")
+                               hidden
+                               (make-bytes 1024 0)))
+        => (list (cons "cover.txt" hidden))
+        (entries (bytes-append (header #"cover.txt" #\0 (bytes-append #"\200" (make-bytes 9 0) #"\4\0"))
+                               hidden
+                               (make-bytes 1024 0)))
+        => (list (cons "cover.txt" hidden))))
+
 (module+ main (tests))
 ;; Use "main.rkt" with `raco test`, instead of this file
 
@@ -302,4 +338,5 @@
   (test do (untar-tests)
         do (unzip-tests)
         do (unzip-tests #t)
-        do (untar-of-invalid-tests)))
+        do (untar-of-invalid-tests)
+        do (untar-entry-size-tests)))
