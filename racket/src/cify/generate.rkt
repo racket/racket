@@ -988,6 +988,10 @@
                      (arithmetic-shift e -32))]
             [else
              (error 'generate-quite "number is too large: ~e" e)])]
+         [(and (exact? e) (rational? e))
+          (format "scheme_make_rational(~a, ~a)"
+                  (generate-single-quote (numerator e))
+                  (generate-single-quote (denominator e)))]
          [(eqv? e +inf.0) "scheme_inf_object"]
          [(eqv? e -inf.0) "scheme_minus_inf_object"]
          [(eqv? e +nan.0) "scheme_nan_object"]
