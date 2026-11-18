@@ -446,9 +446,13 @@
 (define (win32-verify purpose hostname cert-der untrusted-cert-ders)
   (define chain (get-cert-chain purpose cert-der untrusted-cert-ders))
   ;; Not all chain errors are necessarily relevant to policy verification.
-  (when (log-level? openssl-verify-logger 'debug)
-    (report-chain-errors chain))
-  (and chain (verify-policy purpose hostname chain)))
+  (cond [chain
+         (when (log-level? openssl-verify-logger 'debug)
+           (report-chain-errors chain))
+         (verify-policy purpose hostname chain)]
+        [else
+         (log-openssl-verify-warning "unable to build chain")
+         #f]))
 
 (define win32-verify-callback (make-verify-callback win32-verify))
 (define (get-win32-verify-callback) win32-verify-callback)
