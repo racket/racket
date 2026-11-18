@@ -101,7 +101,7 @@ TO DO:
         (any/c any/c)
         void?)]
   [ssl-load-verify-root-certificates!
-   (c-> (or/c ssl-context? ssl-listener? ssl-port?)
+   (c-> (or/c ssl-context? ssl-listener?)
         path-string?
         void?)]
   [ssl-load-verify-source!
@@ -645,10 +645,9 @@ TO DO:
           (if asn1? SSL_FILETYPE_ASN1 SSL_FILETYPE_PEM)))
        ssl-context-or-listener path-or-data)))
 
-(define (ssl-load-verify-root-certificates! scl src)
-  (ssl-load-... 'ssl-load-verify-root-certificates!
-                (lambda (a b) (SSL_CTX_load_verify_locations a b #f))
-                scl src))
+(define (ssl-load-verify-root-certificates! context-or-listener src)
+  (ssl-load-verify-source! context-or-listener src
+                           #:who 'ssl-load-verify-root-certificates!))
 
 ;; Verifier callback must be retained as long as any context that might use
 ;; it for verification. See reference-sink in wrap-ports.
@@ -665,8 +664,9 @@ TO DO:
 ;; - 'os-verify -- initialized with OS verify source
 ;; Once VerifyState is initialized, cannot switch.
 
-(define (ssl-load-verify-source! context-or-listener src #:try? [try? #f])
-  (define who 'ssl-load-verify-source!)
+(define (ssl-load-verify-source! context-or-listener src
+                                 #:try? [try? #f]
+                                 #:who [who 'ssl-load-verify-source!])
   (define context
     (if (ssl-listener? context-or-listener)
         (ssl-listener-mzctx context-or-listener)
@@ -686,7 +686,7 @@ TO DO:
     (error who "internal error: bad source: ~e" src))
   (cond [(path-string? src)
          (check/set-state 'openssl)
-         (ssl-load-... 'ssl-load-verify-source!
+         (ssl-load-... who
                        (lambda (a b) (SSL_CTX_load_verify_locations a b #f))
                        context src #:try? try?)]
         [(and (list? src) (= (length src) 2))
@@ -695,27 +695,22 @@ TO DO:
            (case tag
              [(directory)
               (check/set-state 'openssl)
-              (ssl-load-... 'ssl-load-verify-source!
+              (ssl-load-... who
                             (lambda (a b) (SSL_CTX_load_verify_locations a #f b))
                             context val #:try? try?)]
              [(win32-store)
               (check/set-state 'openssl)
-              (let ([ctx (get-context/listener 'ssl-load-verify-source! context
-                                               #:need-unsealed? #t)])
-                (load-win32-store 'ssl-load-verify-source!
-                                               ctx val try?))]
+              (let ([ctx (get-context/listener who context #:need-unsealed? #t)])
+                (load-win32-store who ctx val try?))]
              [(macosx-keychain)
               (check/set-state 'openssl)
-              (let ([ctx (get-context/listener 'ssl-load-verify-source! context
-                                               #:need-unsealed? #t)])
-                (load-macosx-keychain 'ssl-load-verify-source! ctx val try?))]
+              (let ([ctx (get-context/listener who context #:need-unsealed? #t)])
+                (load-macosx-keychain who ctx val try?))]
              [else (bad-source)]))]
         [(equal? src '(os-verify))
          (check/set-state 'os-verify)
          (cond [os-verify-callback
-                (define ctx
-                  (get-context/listener 'ssl-load-verify-source! context
-                                        #:need-unsealed? #t))
+                (define ctx (get-context/listener who context #:need-unsealed? #t))
                 (define purpose
                   (if (or (ssl-server-context? context)
                           (ssl-listener? context))
@@ -724,14 +719,14 @@ TO DO:
                 (SSL_CTX_set_cert_verify_callback ctx os-verify-callback purpose)]
                [try? (void)]
                [else
-                (error 'ssl-load-verify-source!
-                       "not supported on this platform\n  source: ~e" src)])]
+                (error who "not supported on this platform\n  source: ~e" src)])]
         [else (bad-source)]))
 
 (define (ssl-load-default-verify-sources! ctx)
   (maybe-complain-on-cert)
+  (define who 'ssl-load-default-verify-sources!)
   (for ([src (in-list (ssl-default-verify-sources))])
-    (ssl-load-verify-source! ctx src #:try? #t)))
+    (ssl-load-verify-source! ctx src #:try? #t #:who who)))
 
 (define (ssl-set-ciphers! context cipher-spec)
   (let* ([ctx (extract-ctx 'ssl-set-ciphers! #t context)]

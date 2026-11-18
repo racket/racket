@@ -607,7 +607,7 @@ nonexistent paths.
 }
 
 @defproc[(ssl-load-verify-root-certificates!
-            [context-or-listener (or/c ssl-client-conntext? ssl-server-context?
+            [context-or-listener (or/c ssl-client-context? ssl-server-context?
                                        ssl-listener?)]
             [pathname path-string?])
          void?]{
