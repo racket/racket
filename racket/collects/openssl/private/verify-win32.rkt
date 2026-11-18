@@ -419,7 +419,10 @@
   (CertGetCertificateChain cert untrusted-store chain-para flags))
 
 (define (verify-policy purpose hostname chain)
-  (define hostname-mem (unmoving (string->bytes/utf16 hostname)))
+  (define hostname-mem
+    (and hostname
+         (eq? purpose 'server-auth)
+         (unmoving (string->bytes/utf16 hostname))))
   (define extra-policy (new-SSL_EXTRA_CERT_CHAIN_POLICY_PARA purpose hostname-mem))
   (define policy-para (new-ssl-CERT_CHAIN_POLICY_PARA extra-policy))
   (define status (CertVerifyCertificateChainPolicy chain policy-para))
@@ -438,11 +441,13 @@
     (cond [policy-status (report-policy-errors policy-status)]
           [else (log-openssl-verify-warning "unable to evaluate policy")])))
 
+;; win32-verify : Purpose (U String #f) Bytes (Listof Bytes) -> Boolean
+;; If purpose is not 'server-auth, hostname is ignored.
 (define (win32-verify purpose hostname cert-der untrusted-cert-ders)
   (define chain (get-cert-chain purpose cert-der untrusted-cert-ders))
+  ;; Not all chain errors are necessarily relevant to policy verification.
   (when (log-level? openssl-verify-logger 'debug)
     (report-chain-errors chain))
-  ;; Not all errors in chain are necessarily relevant to policy verification.
   (and chain (verify-policy purpose hostname chain)))
 
 (define win32-verify-callback (make-verify-callback win32-verify))

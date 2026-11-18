@@ -205,7 +205,7 @@
 
 (define-sec SecPolicyCreateSSL
   (_fun [server : _Boolean]
-        [hostname : _CFStringRef]
+        [hostname : _CFStringRef/null]
         -> _SecPolicyRef))
 
 ;; ============================================================
@@ -248,12 +248,13 @@
   (begin0 (CFArrayCreate elems len (get-kCFTypeArrayCallBacks))
     (free elems)))
 
-;; make-trust : String/#f (Listof Bytes) -> (U SecTrustRef #f)
-(define (make-trust hostname cert-ders)
-  (define hostname-ref (string->CFString hostname))
+;; make-trust : Purpose (U String #f) (Listof Bytes) -> (U SecTrustRef #f)
+(define (make-trust purpose hostname cert-ders)
+  (define server? (eq? purpose 'server-auth))
+  (define hostname-ref (and server? hostname (string->CFString hostname)))
   (define policy-ref
-    (begin0 (SecPolicyCreateSSL #t hostname-ref)
-      (CFRelease hostname-ref)))
+    (begin0 (SecPolicyCreateSSL server? hostname-ref)
+      (when hostname-ref (CFRelease hostname-ref))))
   (define cert-array
     (let ([certs (map der->cert cert-ders)])
       (begin0 (make-ref-array certs)
@@ -281,8 +282,10 @@
   (when err (CFRelease err))
   ok?)
 
+;; macos-verify : Purpose (U String #f) Bytes (Listof Bytes) -> Boolean
+;; If purpose is not 'server-auth, hostname is ignored.
 (define (macos-verify purpose hostname cert-der intermediate-ders)
-  (define trust (make-trust hostname (cons cert-der intermediate-ders)))
+  (define trust (make-trust purpose hostname (cons cert-der intermediate-ders)))
   (and trust (begin0 (verify-policy trust)
                (CFRelease trust))))
 

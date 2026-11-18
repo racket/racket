@@ -70,7 +70,28 @@
   (test-case "checking end3 chain (with subB distrusted)"
     (check-equal?
      (verify 'server-auth "server3.racket.example.com" end3-cert (list int3-cert subB-cert))
-     #f)))
+     #f))
+
+  (test-case "checking end1 chain w/o hostname (with subB distrusted)"
+    (check-equal?
+     (verify 'server-auth #f end1-cert (list int1-cert subA-cert))
+     #t))
+  (test-case "checking end2 chain w/o hostname (with subB distrusted)"
+    (check-equal?
+     (verify 'server-auth #f end2-cert (list int2-cert subB-cert))
+     #f))
+
+  (test-case "checking end1 chain as client"
+    (check-equal?
+     (verify 'client-auth #f end1-cert (list int1-cert subA-cert))
+     ;; invalid for client-auth
+     #f))
+  (test-case "checking end1 chain as client w/ hostname"
+    (check-equal?
+     (verify 'client-auth "server1.racket.example.com" end1-cert (list int1-cert subA-cert))
+     ;; invalid for client-auth
+     #f))
+  (void))
 
 ;; ----------------------------------------
 
