@@ -1241,6 +1241,13 @@ static void *malloc_sector(intptr_t size, intptr_t kind, int no_new, int executa
   if (no_new)
     return NULL;
 
+  if (need != (int)need) {
+    if (GC_out_of_memory)
+      GC_out_of_memory();
+    FPRINTF(STDERR, "out of memory\n");
+    exit(1);
+  }
+
   naya = malloc_plain_sector(need, executable);
   sector_mem_use += (need << LOG_SECTOR_SEGMENT_SIZE);
   register_sector(naya, need, kind);
