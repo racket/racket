@@ -353,11 +353,12 @@
     [(prop:procedure) (or (is-lambda? val-expr 1 defns)
                           (immutable-field? val-expr immutables-expr))]
     [(prop:equal+hash)
-     (define l (correlated->list val-expr))
-     (and (eq? 'list (car l))
-          (is-lambda? (list-ref l 1) 3 defns)
-          (is-lambda? (list-ref l 2) 2 defns)
-          (is-lambda? (list-ref l 3) 2 defns))]
+     (and (eqv? (correlated-length val-expr) 4)
+          (let ([l (correlated->list val-expr)])
+            (and (eq? 'list (car l))
+                 (is-lambda? (list-ref l 1) 3 defns)
+                 (is-lambda? (list-ref l 2) 2 defns)
+                 (is-lambda? (list-ref l 3) 2 defns))))]
     [(prop:checked-procedure)
      (and (quoted? false? super-expr)
           ;; checking that we have at least 2 fields
