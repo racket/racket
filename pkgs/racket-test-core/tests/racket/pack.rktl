@@ -10,7 +10,10 @@
 	 setup/unpack
 	 racket/system
 	 setup/dirs
-	 racket/file)
+	 racket/file
+	 racket/port
+	 file/gzip
+	 net/base64)
 
 ;; Test via mzc interface
 
@@ -155,6 +158,54 @@
 
   (delete-directory/files tmp-plt)
   (delete-directory/files tmp-dest-dir))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; An archive entry with an up-directory element must not be
+;; written outside the target directory
+
+(let ()
+  (define tmp-dir
+    (make-temporary-file "evil~a" 'directory))
+  (define dest-dir (build-path tmp-dir "dest"))
+  (make-directory dest-dir)
+
+  (define evil-plt (build-path tmp-dir "evil.plt"))
+  (define content
+    (with-output-to-bytes
+     (lambda ()
+       (printf "PLT\n")
+       (write '(lambda (request failure)
+                 (case request
+                   [(name) "evil"]
+                   [(unpacker) 'mzscheme]
+                   [(requires) '()]
+                   [(conflicts) '()]
+                   [(plt-relative?) #f]
+                   [(plt-home-relative?) #f]
+                   [else (failure)])))
+       (write '(unit (import main-collects-parent-dir mzuntar) (export) (mzuntar void) (quote ())))
+       (write 'file)
+       (write '(".." "escaped"))
+       (printf "\n2\n*ok"))))
+  (call-with-output-file evil-plt
+    (lambda (o)
+      (define gz (open-output-bytes))
+      (gzip-through-ports (open-input-bytes content) gz #f 0)
+      (write-bytes (base64-encode (get-output-bytes gz)) o)))
+
+  (err/rt-test (unpack evil-plt dest-dir void (lambda () dest-dir))
+               exn:fail?
+               #rx"up-directory")
+  (test #f file-exists? (build-path tmp-dir "escaped"))
+
+  (err/rt-test (fold-plt-archive evil-plt void void
+                                 (lambda (dir a) a)
+                                 (lambda (file i kind a) a)
+                                 (void))
+               exn:fail?
+               #rx"up-directory")
+
+  (delete-directory/files tmp-dir))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
