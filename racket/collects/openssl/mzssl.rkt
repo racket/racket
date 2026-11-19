@@ -40,12 +40,13 @@ TO DO:
          "libcrypto.rkt"
          "libssl.rkt"
          "private/ffi.rkt"
+         "private/verify.rkt"
          (for-syntax racket/base))
 (lazy-require
+ ["private/verify-macos.rkt" (get-macos-verify-callback)]
+ ["private/verify-win32.rkt" (get-win32-verify-callback)]
  ["private/win32.rkt" (load-win32-store)]
  ["private/macosx.rkt" (load-macosx-keychain)])
-
-(define-logger openssl)
 
 (when (and libssl (not v1.0.2/later?))
   (log-openssl-error "OpenSSL library too old, version 1.0.2 or later required."))
@@ -58,6 +59,7 @@ TO DO:
 
 (define verify-source/c
   (or/c path-string?
+        (list/c 'os-verify)
         (list/c 'directory path-string?)
         (list/c 'win32-store string?)
         (list/c 'macosx-keychain (or/c #f path-string?))))
@@ -99,7 +101,7 @@ TO DO:
         (any/c any/c)
         void?)]
   [ssl-load-verify-root-certificates!
-   (c-> (or/c ssl-context? ssl-listener? ssl-port?)
+   (c-> (or/c ssl-context? ssl-listener?)
         path-string?
         void?)]
   [ssl-load-verify-source!
@@ -269,22 +271,11 @@ TO DO:
 (define ssl-default-verify-sources*
   (make-parameter
    (delay/sync
-     (case (system-type 'os*)
-       [(windows)
-        ;; On Windows, x509-root-sources produces paths like "/usr/local/ssl/certs", which
-        ;; aren't useful. So just skip them.
-        '((win32-store "ROOT"))]
-       [(macosx darwin)
-        '((macosx-keychain #f))]
-       [(ios)
-        ;; On iOS, the function SecTrustCopyAnchorCertificates is not
-        ;; provided by the Security framework, so applications must
-        ;; bundle and provide their own certificates. Log an error here
-        ;; if the sources have not been changed.
-        (log-openssl-error "ssl-default-verify-sources must be set on iOS")
-        null]
-       [else
-        (x509-root-sources)]))))
+    (case (system-type 'os*)
+      [(windows macosx darwin ios)
+       '((os-verify))]
+      [else
+       (x509-root-sources)]))))
 
 (define ssl-default-verify-sources
   (make-derived-parameter
@@ -360,6 +351,7 @@ TO DO:
 
 (define-struct ssl-context
   (ctx
+   [verify-state #:mutable]
    [verify-hostname? #:mutable]
    [sealed? #:mutable]
    [keylog-cb #:mutable]))
@@ -450,7 +442,7 @@ TO DO:
 
 (define (make-context who protocol-symbol client? priv-key cert-chain)
   (define ctx (make-raw-context who protocol-symbol client?))
-  (define mzctx ((if client? make-ssl-client-context make-ssl-server-context) ctx #f #f #f))
+  (define mzctx ((if client? make-ssl-client-context make-ssl-server-context) ctx #f #f #f #f))
   (when cert-chain (ssl-load-certificate-chain! mzctx cert-chain))
   (cond [(and (pair? priv-key) (eq? (car priv-key) 'pem))
          (ssl-load-private-key! mzctx (cadr priv-key) #f #f)]
@@ -653,17 +645,48 @@ TO DO:
           (if asn1? SSL_FILETYPE_ASN1 SSL_FILETYPE_PEM)))
        ssl-context-or-listener path-or-data)))
 
-(define (ssl-load-verify-root-certificates! scl src)
-  (ssl-load-... 'ssl-load-verify-root-certificates!
-                (lambda (a b) (SSL_CTX_load_verify_locations a b #f))
-                scl src))
+(define (ssl-load-verify-root-certificates! context-or-listener src)
+  (ssl-load-verify-source! context-or-listener src
+                           #:who 'ssl-load-verify-root-certificates!))
 
-(define (ssl-load-verify-source! context src #:try? [try? #f])
+;; Verifier callback must be retained as long as any context that might use
+;; it for verification. See reference-sink in wrap-ports.
+(define os-verify-callback
+  (function-ptr (case (system-type 'os*)
+                  [(windows) (get-win32-verify-callback)]
+                  [(macosx darwin ios) (get-macos-verify-callback)]
+                  [else #f])
+                _cert-verify-callback))
+
+;; VerifyState is one of
+;; - #f         -- uninitialized
+;; - 'openssl   -- initialized with OpenSSL verify sources
+;; - 'os-verify -- initialized with OS verify source
+;; Once VerifyState is initialized, cannot switch.
+
+(define (ssl-load-verify-source! context-or-listener src
+                                 #:try? [try? #f]
+                                 #:who [who 'ssl-load-verify-source!])
+  (define context
+    (if (ssl-listener? context-or-listener)
+        (ssl-listener-mzctx context-or-listener)
+        context-or-listener))
+  (define (check/set-state new-state)
+    ;; Note: commits to new-state even if try? is true and load fails.
+    (define old-state (ssl-context-verify-state context))
+    (cond [old-state
+           (unless (eq? new-state old-state)
+             (error who "~a\n  context: ~e"
+                    (case new-state
+                      [(openssl) "cannot load OpenSSL verify source after selecting OS verifier"]
+                      [else "cannot use OS verifier after loading OpenSSL verify sources"])
+                    context-or-listener))]
+          [else (set-ssl-context-verify-state! context new-state)]))
   (define (bad-source)
-    (error 'ssl-load-verify-source!
-           "internal error: bad source: ~e" src))
+    (error who "internal error: bad source: ~e" src))
   (cond [(path-string? src)
-         (ssl-load-... 'ssl-load-verify-source!
+         (check/set-state 'openssl)
+         (ssl-load-... who
                        (lambda (a b) (SSL_CTX_load_verify_locations a b #f))
                        context src #:try? try?)]
         [(and (list? src) (= (length src) 2))
@@ -671,25 +694,39 @@ TO DO:
                [val (cadr src)])
            (case tag
              [(directory)
-              (ssl-load-... 'ssl-load-verify-source!
+              (check/set-state 'openssl)
+              (ssl-load-... who
                             (lambda (a b) (SSL_CTX_load_verify_locations a #f b))
                             context val #:try? try?)]
              [(win32-store)
-              (let ([ctx (get-context/listener 'ssl-load-verify-source! context
-                                               #:need-unsealed? #t)])
-                (load-win32-store 'ssl-load-verify-source!
-                                               ctx val try?))]
+              (check/set-state 'openssl)
+              (let ([ctx (get-context/listener who context #:need-unsealed? #t)])
+                (load-win32-store who ctx val try?))]
              [(macosx-keychain)
-              (let ([ctx (get-context/listener 'ssl-load-verify-source! context
-                                               #:need-unsealed? #t)])
-                (load-macosx-keychain 'ssl-load-verify-source! ctx val try?))]
+              (check/set-state 'openssl)
+              (let ([ctx (get-context/listener who context #:need-unsealed? #t)])
+                (load-macosx-keychain who ctx val try?))]
              [else (bad-source)]))]
+        [(equal? src '(os-verify))
+         (check/set-state 'os-verify)
+         (cond [os-verify-callback
+                (define ctx (get-context/listener who context #:need-unsealed? #t))
+                (define purpose
+                  (if (or (ssl-server-context? context)
+                          (ssl-listener? context))
+                      OS-VERIFY-CLIENT ;; server ctx wants to verify client
+                      OS-VERIFY-SERVER))
+                (SSL_CTX_set_cert_verify_callback ctx os-verify-callback purpose)]
+               [try? (void)]
+               [else
+                (error who "not supported on this platform\n  source: ~e" src)])]
         [else (bad-source)]))
 
 (define (ssl-load-default-verify-sources! ctx)
   (maybe-complain-on-cert)
+  (define who 'ssl-load-default-verify-sources!)
   (for ([src (in-list (ssl-default-verify-sources))])
-    (ssl-load-verify-source! ctx src #:try? #t)))
+    (ssl-load-verify-source! ctx src #:try? #t #:who who)))
 
 (define (ssl-set-ciphers! context cipher-spec)
   (let* ([ctx (extract-ctx 'ssl-set-ciphers! #t context)]
@@ -1457,6 +1494,7 @@ TO DO:
                                                            (SSL_connect ssl)
                                                            (SSL_accept ssl))
                                                        ssl)])
+            (void/reference-sink os-verify-callback)
             (let ([out-blocked? (pump-output mzssl)])
         (when (status . < . 1)
           (let ()
