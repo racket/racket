@@ -568,6 +568,15 @@
    [else
     (raise-argument-error who "vector?" v)]))
 
+(define/who make-fxvector
+  (case-lambda
+   [(n) (make-fxvector n 0)]
+   [(n v)
+    (unless (and (fixnum? n)
+                 (fx< n 1000))
+      (guard-large-allocation who 'fxvector n (foreign-sizeof 'void*)))
+    (#2%make-fxvector n v)]))
+
 (define (shared-fxvector . args)
   (register-place-shared (apply fxvector args)))
 

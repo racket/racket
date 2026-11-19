@@ -521,6 +521,7 @@
           unsafe-flvector-set!
           unsafe-flvector-ref
 
+          make-fxvector
           shared-fxvector
           make-shared-fxvector
 
