@@ -96,6 +96,12 @@
    (append-headers test-header/bytes #"Athird: data\r\n\r\n")
    => #"From: abc\r\nTo: field is\r\n continued\r\nAnother: zoo\r\n continued\r\nAthird: data\r\n\r\n"
 
+   (extract-addresses "a@b.c (Gu) (Sophie)" 'all)
+   => '(("Gu" "a@b.c" "a@b.c (Gu) (Sophie)"))
+   ;; a run of open parentheses should not take cubic time
+   (extract-addresses (make-string 2000 #\() 'address)
+   =error> "cannot parse address"
+
    )
 
   (let ([test (lambda (expect f . args)
