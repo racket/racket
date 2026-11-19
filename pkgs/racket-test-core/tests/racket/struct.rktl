@@ -1345,6 +1345,18 @@
                exn:fail:contract?
                #rx"hash procedure returned a value other than an exact integer"))
 
+;; The compiler must not assume that a `prop:equal+hash` value is good
+(err/rt-test (eval '(let ()
+                      (struct foo (f) #:property prop:equal+hash (list (lambda (a b recur) #f)))
+                      foo))
+             exn:fail:contract?
+             #rx"guard-for-prop:equal[+]hash")
+(err/rt-test (eval '(let ()
+                      (struct foo (f) #:property prop:equal+hash 5)
+                      foo))
+             exn:fail:contract?
+             #rx"guard-for-prop:equal[+]hash")
+
 ;; ----------------------------------------
 
 (let ()
