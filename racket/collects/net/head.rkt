@@ -285,7 +285,7 @@
   (select-result form s s s))
 
 (define re:quoted-name (regexp (format "^~a*(\"[^\"]*\")(.*)" blank)))
-(define re:parened-name (regexp (format "(.*)[(]([^)]*)[)]~a*$" blank)))
+(define re:parened-name (regexp (format "^(.*)[(]([^()]*)[)]~a*$" blank)))
 (define re:simple-name (regexp (format "^~a*(~a.*)(<.*>)~a*$" blank nonblank blank)))
 (define re:normal-name (regexp (format "~a*<([^>]*)>~a*" blank blank)))
 (define re:double-less (regexp "<.*<"))
