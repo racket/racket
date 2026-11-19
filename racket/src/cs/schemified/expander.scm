@@ -68516,13 +68516,13 @@
                      ec_0)))))))))))
 (define read-struct-sequence
   (lambda (read-one_0 opener-c_0 opener_0 closer_0 in_0 config_0)
-    (let ((temp36_0
+    (let ((temp37_0
            (lambda (init-c_0 in_1 config_1)
              (|#%app| read-one_0 init-c_0 in_1 (disable-wrapping config_1)))))
       (read-unwrapped-sequence.1
-       'all
+       #f
        unsafe-undefined
-       temp36_0
+       temp37_0
        #f
        unsafe-undefined
        read-one_0
