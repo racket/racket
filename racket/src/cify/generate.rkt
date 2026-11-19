@@ -987,7 +987,7 @@
                      (bitwise-and e (sub1 (expt 2 32)))
                      (arithmetic-shift e -32))]
             [else
-             (error 'generate-quite "number is too large: ~e" e)])]
+             (error 'generate-quote "number is too large: ~e" e)])]
          [(and (exact? e) (rational? e))
           (format "scheme_make_rational(~a, ~a)"
                   (generate-single-quote (numerator e))
