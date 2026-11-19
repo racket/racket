@@ -71,5 +71,6 @@
 
 (define (read-struct-sequence read-one opener-c opener closer in config)
   (read-unwrapped-sequence read-one opener-c opener closer in config
+                           #:dot-mode #f
                            #:first-read-one (lambda (init-c in config)
                                               (read-one init-c in (disable-wrapping config)))))
