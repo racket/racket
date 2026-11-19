@@ -54,7 +54,7 @@
                            fllog flatan
                            fxquotient
                            expt
-                           make-flvector flvector-copy
+                           make-flvector make-fxvector flvector-copy
                            make-pseudo-random-generator
                            pseudo-random-generator?
                            pseudo-random-generator-next!
