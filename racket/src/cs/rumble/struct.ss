@@ -252,6 +252,8 @@
 
 ;; ----------------------------------------
 
+(define max-struct-field-count 32768)
+
 ;; returns a procedure that takes an rtd and finishes creating/installing it
 (define (check-make-struct-type-arguments who name parent-rtd init-count auto-count
                                           props insp proc-spec immutables guard constructor-name
@@ -288,6 +290,16 @@
          immutables)
   (check who :or-false procedure? guard)
   (check who :or-false symbol? constructor-name)
+  (let ([total-count (+ init-count
+                        auto-count
+                        (if parent-rtd
+                            (struct-type-total*-field-count (strip-impersonator parent-rtd))
+                            0))])
+    (unless (<= total-count max-struct-field-count)
+      (raise-arguments-error who
+                             "too many fields for structure type"
+                             "total field count" total-count
+                             "maximum total field count" max-struct-field-count)))
 
   (cond
     [(eq? insp 'prefab)
