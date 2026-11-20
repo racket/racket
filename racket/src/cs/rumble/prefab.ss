@@ -9,6 +9,7 @@
   (getprop (record-type-uid rtd) 'prefab-key+count #f))
 
 (define/who (prefab-key->struct-type key field-count)
+  (check-integer who 0 max-struct-field-count field-count)
   (prefab-key+count->rtd
    (cons (normalized-prefab-key/check who key field-count)
          field-count)))

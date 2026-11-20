@@ -34,6 +34,7 @@
 
 (define NUMBER-OF-BASE-RTD-FIELDS 9)
 (define NUMBER-OF-RACKET-BASE-RTD-FIELDS (+ NUMBER-OF-BASE-RTD-FIELDS 4))
+(define MAX-STRUCT-FIELD-COUNT 32768)
 (define ARGUMENT-COUNT-BEFORE-TYPE-FIELDS 6) ; number of `rest` arguments that are for `make-struct-type`
 
 ;; Parse `make-struct-type` forms, returning a `struct-type-info`
@@ -59,6 +60,7 @@
                    (known-struct-type?
                     (find-known u-parent prim-knowns knowns imports mutated)))
                (exact-nonnegative-integer? fields)
+               (fields . <= . MAX-STRUCT-FIELD-COUNT) ; else leave error to `make-struct-type`
                (if maker
                    ((length rest) . = . (+ ARGUMENT-COUNT-BEFORE-TYPE-FIELDS (known-struct-type-maker-field-count maker)))
                    ((length rest) . <= . ARGUMENT-COUNT-BEFORE-TYPE-FIELDS))
