@@ -122,11 +122,12 @@
              (found-state! target e)
              (loop target))
          (loop rhs)]
-        [`(box-cas! ,target ,rhs)
+        [`(box-cas! ,target ,old-rhs ,new-rhs)
          (if (symbol? target)
              (found-state! target e)
              (loop target))
-         (loop rhs)]
+         (loop old-rhs)
+         (loop new-rhs)]
         [`(hash-set! ,target ,key-rhs ,val-rhs)
          (if (symbol? target)
              (found-state! target e)
