@@ -4344,14 +4344,8 @@
     (let ((lock_0 (core-port-lock p_0)))
       (if (eq? lock_0 #t)
         (if atomic?_0
-          (letrec*
-           ((loop_0
-             (|#%name|
-              loop
-              (lambda ()
-                (let ((or-part_0 (unsafe-struct*-cas! p_0 2 #t 'to-atomic)))
-                  (if or-part_0 or-part_0 (loop_0)))))))
-           (loop_0))
+          (let ((or-part_0 (unsafe-struct*-cas! p_0 2 #t 'to-atomic)))
+            (if or-part_0 or-part_0 (port-lock-require-atomic! p_0 atomic?_0)))
           (void))
         (if (eq? lock_0 'to-atomic)
           (if atomic?_0

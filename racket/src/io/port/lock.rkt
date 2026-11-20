@@ -205,9 +205,10 @@
   (cond
     [(eq? lock #t)
      (when atomic?
-       (let loop ()
-         (or (core-port-lock-cas! p #t 'to-atomic)
-             (loop))))]
+       ;; A contender may have replaced #t with a lock record, so
+       ;; if the CAS fails, start over to use the record
+       (or (core-port-lock-cas! p #t 'to-atomic)
+           (port-lock-require-atomic! p atomic?)))]
     [(eq? lock 'to-atomic)
      (unless atomic?
        (let loop ()
