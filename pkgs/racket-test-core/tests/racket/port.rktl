@@ -275,6 +275,50 @@
           (for-each thread-wait contenders))
         ok?))
 
+;; While the reader switches a custom port's lock to atomic mode, a
+;; contender can change how the lock is represented; the reader must
+;; notice the change instead of spinning forever
+(test #t
+      'concurrent-redirect-read-lock-change
+      (let ()
+        (define current (box (open-input-bytes #"")))
+        (define done? #f)
+        (define contenders
+          (for/list ([k 8])
+            (thread #:pool 'own
+                    (lambda ()
+                      (let loop ()
+                        (byte-ready? (unbox current))
+                        (unless done? (loop)))))))
+        (define ports (make-channel))
+        (define read-done (make-semaphore))
+        (define reader
+          (thread #:pool 'own
+                  (lambda ()
+                    (let loop ()
+                      (define in (channel-get ports))
+                      (when in
+                        (read-bytes 1 in)
+                        (semaphore-post read-done)
+                        (loop))))))
+        (define ok?
+          (for/and ([j (in-range 10000)])
+            (define-values (r w) (make-pipe))
+            (define in (make-input-port 'redirect
+                                        (lambda (bstr) r)
+                                        (lambda (bstr skip evt) (peek-bytes-avail!* bstr skip evt r))
+                                        void))
+            (set-box! current in)
+            (channel-put ports in)
+            (write-bytes #"x" w)
+            (sync/timeout 10 read-done)))
+        (set! done? #t)
+        (when ok? ; on failure, the reader and contenders may be stuck
+          (channel-put ports #f)
+          (thread-wait reader)
+          (for-each thread-wait contenders))
+        (and ok? #t)))
+
 ;; A bad result from a custom output port's write procedure is an
 ;; error, but the port remains usable afterward
 (for ([bad (list 'not-a-valid-result ; not a valid result
