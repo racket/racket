@@ -327,6 +327,37 @@
 (check-same (local-entry-info six-arg-path-zip)
             (list (cons #"x" 0)))
 
+;; a set-user-id, set-group-id, or sticky bit in an archive is not
+;; restored, which is how `unzip` behaves
+(define set-id-zip (make-temporary-file "~a-set-id.zip"))
+(call-with-output-file set-id-zip
+  #:exists 'truncate
+  (lambda (out)
+    (zip->output
+     (list (make-zip-entry 'file
+                           "set-id.txt"
+                           #"set-id"
+                           6
+                           #hash((permissions . #o4755))
+                           0)
+           (make-zip-entry 'directory
+                           "sticky"
+                           #f
+                           0
+                           #hash((permissions . #o1777))
+                           0))
+     out)))
+
+(define set-id-dir (make-temporary-directory))
+(parameterize ([current-directory set-id-dir])
+  (unzip set-id-zip #:preserve-attributes? #t))
+
+(unless (eq? 'windows (system-type))
+  (check-same (file-or-directory-permissions (build-path set-id-dir "set-id.txt") 'bits)
+              #o755)
+  (check-same (file-or-directory-permissions (build-path set-id-dir "sticky") 'bits)
+              #o777))
+
 "waiting 2 seconds"
 (sleep 2)
 
@@ -352,7 +383,9 @@
 (delete-file size-mismatch-zip)
 (delete-file streamed-zip)
 (delete-file six-arg-path-zip)
+(delete-file set-id-zip)
 (delete-directory/files synthetic-dir)
 (delete-directory/files synthetic-extra-dir)
+(delete-directory/files set-id-dir)
 (delete-directory/files streamed-dir)
 (delete-directory/files dir)

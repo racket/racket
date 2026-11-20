@@ -149,12 +149,18 @@ A thunk is returned on Unix and Mac OS when arguments refer to a
 directory that does not already exist and either a timestamp
 attribute, permission attribute, or both are provided.
 
+A permission attribute is applied only for the user, group, and other
+read, write, and execute bits. Like @exec{unzip}, the reader does not
+restore set-user-id, set-group-id, or sticky bits from the archive.
+
 @history[#:changed "6.0.0.3"
          @elem{Added support for the optional timestamp argument in the result function.}
          #:changed "6.3"
          @elem{Added the @racket[#:permissive?] argument.}
          #:changed "8.7.0.9"
-         @elem{Added support for an optional attributes hash-table argument in the result function.}]}
+         @elem{Added support for an optional attributes hash-table argument in the result function.}
+         #:changed "9.4.0.6"
+         @elem{Changed to not restore set-user-id, set-group-id, or sticky bits.}]}
 
 
 @defproc[(read-zip-directory [in (or/c path-string? input-port?)]) zip-directory?]{

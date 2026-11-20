@@ -135,4 +135,11 @@ As the default entry handler for @racket[untar],
 list of thunks that complete unpacking by setting directory
 permissions and modification times.
 
-@history[#:added "8.1.0.5"]}
+Permissions from the archive are applied only for the user, group, and
+other read, write, and execute bits. Like @exec{tar},
+@racket[handle-tar-entry] does not restore set-user-id, set-group-id,
+or sticky bits from the archive.
+
+@history[#:added "8.1.0.5"
+         #:changed "9.4.0.6"
+         @elem{Changed to not restore set-user-id, set-group-id, or sticky bits.}]}

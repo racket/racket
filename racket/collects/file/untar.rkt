@@ -333,7 +333,10 @@
                                     (bitwise-ior user-perms
                                                  (arithmetic-shift user-perms -3)
                                                  (arithmetic-shift user-perms -6))]
-                                   [else perms])))
+                                   [else
+                                    ;; like `tar`, do not restore set-user-id,
+                                    ;; set-group-id, or sticky bits from the archive
+                                    (bitwise-and perms #o777)])))
 
 (define (read-pax in len)
   ;; Format of pax entries is sequence of "<num><space><key>=<value>\n"
