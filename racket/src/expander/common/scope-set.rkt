@@ -17,14 +17,16 @@
 ;; Shared tails also let equality and subset tests stop early. The
 ;; hash code makes `equal?`-based hashing on scope sets constant time,
 ;; and it lets `scope-set=?` reject almost every pair of distinct sets
-;; without looking at elements. The most recent scope, which is where
-;; bindings are attached, is the first element.
+;; without looking at elements. Bindings are attached to the first
+;; scope that is not interned (see `scope-set-max`), since interned
+;; scopes sort ahead of all others.
 ;;
 ;; The representation relies on these properties of scopes:
 ;;
 ;;  * Distinct scopes have distinct ids, so that the sorted list for
 ;;    a set is unique. (The id counter in "../syntax/scope.rkt" is
-;;    shared by all places and threads.)
+;;    shared by all threads, and on Racket CS by all places; see the
+;;    comment there.)
 ;;
 ;;  * A scope's id and key never change.
 ;;
