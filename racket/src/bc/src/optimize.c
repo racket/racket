@@ -1685,6 +1685,11 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int
             && (SCHEME_INT_VAL(app->args[3]) >= 0)
             && SCHEME_INTP(app->args[4])
             && (SCHEME_INT_VAL(app->args[4]) >= 0)
+            && (SCHEME_INT_VAL(app->args[3]) <= MAX_STRUCT_FIELD_COUNT)
+            && (SCHEME_INT_VAL(app->args[4]) <= MAX_STRUCT_FIELD_COUNT)
+            && ((SCHEME_INT_VAL(app->args[3]) + SCHEME_INT_VAL(app->args[4])
+                 + (super_count_plus_one ? (super_count_plus_one - 1) : 0))
+                <= MAX_STRUCT_FIELD_COUNT)
             && ((app->num_args < 5)
                 /* auto-field value: */
                 || (flags & CHECK_STRUCT_TYPE_DELAY_AUTO_CHECK)
