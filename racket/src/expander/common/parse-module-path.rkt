@@ -76,7 +76,7 @@
           (define file (cadr v))
           (define pkg (caddr v))
           (define subs (cdddr v))
-          (and file
+          (and (string? file)
                (module-path-string? file
                                     #:just-file-ok? #t
                                     #:file-end-ok? #t)
@@ -85,11 +85,12 @@
                     (planet-user/pkg-string? (car pkg))
                     (planet-user/pkg-string? (cadr pkg))
                     (or (null? (cddr pkg))
-                        (planet-version-number? (caddr pkg))
-                        (and (or (null? (cddr pkg))
+                        (and (planet-version-number? (caddr pkg))
+                             (or (null? (cdddr pkg))
                                  (planet-version-minor-spec? (cadddr pkg))))))
                (for/and ([sub (in-list subs)])
-                 (module-path-string? sub)))])))
+                 (and (string? sub)
+                      (module-path-string? sub))))])))
 
 (define (planet-version-number? v)
   (exact-nonnegative-integer? v))

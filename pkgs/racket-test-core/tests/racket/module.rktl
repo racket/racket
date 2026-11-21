@@ -888,6 +888,12 @@
 (test #t module-path? '(planet "foo.rkt" ("robby" "redex.plt" 7 (= 8))))
 (test #t module-path? '(planet "foo.rkt" ("robby" "redex.plt") "sub" "deeper"))
 (test #t module-path? '(planet "foo%2e.rkt" ("robby%2e" "redex%2e.plt") "sub%2e" "%2edeeper"))
+(test #f module-path? '(planet robby/redex 7))
+(test #f module-path? '(planet foo (robby redex)))
+(test #f module-path? '(planet "foo.rkt" ("robby" "redex.plt") 7))
+(test #f module-path? '(planet "foo.rkt" ("robby" "redex.plt" x)))
+(test #f module-path? '(planet "foo.rkt" ("robby" "redex.plt" x 7)))
+(test #f module-path? '(planet "foo.rkt" ("robby" "redex.plt" 7 x)))
 
 (err/rt-test (make-resolved-module-path "not good"))
 (err/rt-test (resolved-module-path-name "not good"))
