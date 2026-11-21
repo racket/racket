@@ -1481,6 +1481,8 @@ mark_user_input {
   gcMARK2(uip->reuse_str, gc);
   gcMARK2(uip->peeked, gc);
   gcMARK2(uip->prefix_pipe, gc);
+  gcMARK2(uip->change_sema, gc);
+  gcMARK2(uip->pending, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(User_Input_Port));
 }

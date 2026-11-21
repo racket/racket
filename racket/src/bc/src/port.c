@@ -1131,7 +1131,7 @@ intptr_t scheme_get_byte_string_unless(const char *who,
 {
   Scheme_Input_Port *ip;
   intptr_t got = 0, total_got = 0, gc;
-  int special_ok = special_is_ok, check_special, recheck_peeked = 0, depipe_short;
+  int special_ok = special_is_ok, check_special, recheck_peeked = 0, depipe_short, input_changed;
   Scheme_Get_String_Fun gs;
   Scheme_Peek_String_Fun ps;
   Scheme_Object *orig_peek_skip;
@@ -1165,6 +1165,7 @@ intptr_t scheme_get_byte_string_unless(const char *who,
     SCHEME_USE_FUEL(1);
 
     depipe_short = 0;
+    input_changed = 0;
 
     if (ip->input_lock)
       scheme_wait_input_allowed(ip, only_avail);
@@ -1428,9 +1429,19 @@ intptr_t scheme_get_byte_string_unless(const char *who,
 
 	  if (!peek && gc && ip->progress_evt
 	      && ((gc != EOF) || ip->pending_eof)
-	      && (gc != SCHEME_UNLESS_READY))
+	      && (gc != SCHEME_UNLESS_READY)
+	      && (gc != SCHEME_INPUT_CHANGED))
 	    post_progress(ip);
 	}
+
+        if (gc == SCHEME_INPUT_CHANGED) {
+          /* Another thread changed the port while we were in the get
+             function, so look again at bytes buffered for peeking;
+             don't stop even if `only_avail` would otherwise stop */
+          gc = 0;
+          recheck_peeked = 1;
+          input_changed = 1;
+        }
 
 	/* Let other threads know that something happened,
 	   and/or deregister this thread's request for information. */
@@ -1562,9 +1573,10 @@ intptr_t scheme_get_byte_string_unless(const char *who,
     total_got += got;
     got = 0; /* for next round, if any */
 
-    if (!size
-	|| (total_got && ((only_avail == 1) || (only_avail == -1)))
-	|| (only_avail == 2))
+    if (!input_changed
+        && (!size
+            || (total_got && ((only_avail == 1) || (only_avail == -1)))
+            || (only_avail == 2)))
       break;
 
     /* Need to try to get more. */
@@ -2406,7 +2418,7 @@ static MZ_INLINE intptr_t get_one_byte(GC_CAN_IGNORE const char *who,
          peek via the port's get function: */
       v = gs(ip, buffer, 0, 1, (ip->unless_cache ? 1 : 0), NULL);
     
-      if (v) {
+      if (v && (v != SCHEME_INPUT_CHANGED)) {
         if (v == SCHEME_SPECIAL) {
           scheme_bad_time_for_special(who, port);
         }

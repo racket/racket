@@ -65,6 +65,8 @@ static int mark_user_input_MARK(void *p, struct NewGC *gc) {
   gcMARK2(uip->reuse_str, gc);
   gcMARK2(uip->peeked, gc);
   gcMARK2(uip->prefix_pipe, gc);
+  gcMARK2(uip->change_sema, gc);
+  gcMARK2(uip->pending, gc);
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
 # else
@@ -89,6 +91,8 @@ static int mark_user_input_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(uip->reuse_str, gc);
   gcFIXUP2(uip->peeked, gc);
   gcFIXUP2(uip->prefix_pipe, gc);
+  gcFIXUP2(uip->change_sema, gc);
+  gcFIXUP2(uip->pending, gc);
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
 # else

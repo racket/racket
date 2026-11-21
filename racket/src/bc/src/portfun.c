@@ -821,6 +821,23 @@ typedef struct User_Input_Port {
   Scheme_Object *reuse_str;
   Scheme_Object *peeked;
   Scheme_Object *prefix_pipe;
+  /* The rest are used only for a port without a peek procedure,
+     where peeking is implemented by reading, and where multiple
+     threads can be in the read procedure at once:
+       `change_count` increments whenever a call to the read procedure
+       produces bytes, an EOF, or a special result, so a thread can
+       detect that another thread may have buffered bytes for peeking
+       (in `peeked` or in the port's peek buffer) while the read
+       procedure ran;
+       `change_sema` is NULL or a semaphore to post on a change, so that
+       a thread waiting on an evt from the read procedure can look again;
+       `pending` is NULL or a byte string, and `pending_eof` is 1 if
+       an EOF follows `pending` --- which holds a result that was read
+       while another thread got (and possibly buffered) earlier bytes */
+  intptr_t change_count;
+  Scheme_Object *change_sema;
+  Scheme_Object *pending;
+  int pending_eof;
 } User_Input_Port;
 
 #define MAX_USER_INPUT_REUSE_SIZE 1024
@@ -829,16 +846,100 @@ typedef struct User_Input_Port {
 /*   Result checking                                             */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+static void user_input_changed(User_Input_Port *uip)
+{
+  uip->change_count++;
+  if (uip->change_sema) {
+    scheme_post_sema_all(uip->change_sema);
+    uip->change_sema = NULL;
+  }
+}
+
+static Scheme_Object *get_user_input_change_sema(User_Input_Port *uip)
+{
+  if (!uip->change_sema) {
+    Scheme_Object *sema;
+    sema = scheme_make_sema(0);
+    uip->change_sema = sema;
+  }
+  return uip->change_sema;
+}
+
+/* Adds bytes that were read to the end of `pending` */
+static void add_user_input_pending(User_Input_Port *uip, Scheme_Object *bstr, intptr_t n)
+{
+  Scheme_Object *new_pending;
+  intptr_t old_len = (uip->pending ? SCHEME_BYTE_STRLEN_VAL(uip->pending) : 0);
+
+  new_pending = scheme_alloc_byte_string(old_len + n, 0);
+  if (old_len)
+    memcpy(SCHEME_BYTE_STR_VAL(new_pending), SCHEME_BYTE_STR_VAL(uip->pending), old_len);
+  memcpy(SCHEME_BYTE_STR_VAL(new_pending) + old_len, SCHEME_BYTE_STR_VAL(bstr), n);
+  uip->pending = new_pending;
+}
+
+/* Takes a result that was read earlier by `byte-ready?` or while
+   another thread got earlier bytes; returns 0 if there's nothing */
+static intptr_t take_user_input_buffered(User_Input_Port *uip,
+                                         char *buffer, intptr_t offset, intptr_t size)
+{
+  Scheme_Object *val;
+
+  val = uip->peeked;
+  if (val) {
+    /* Leftover from a read-based peek used to implement `char-ready?'
+       This can't happen is peek is 1, because in that case we have a
+       peek_proc, so there's no need for read-based peeks. */
+    uip->peeked = NULL;
+    if (SCHEME_INTP(val)) {
+      buffer[offset] = (char)SCHEME_INT_VAL(val);
+      return 1;
+    } else if (SCHEME_VOIDP(val)) {
+      return SCHEME_SPECIAL;
+    } else
+      return EOF;
+  }
+
+  if (uip->pending) {
+    intptr_t len = SCHEME_BYTE_STRLEN_VAL(uip->pending);
+    if (len > size) {
+      Scheme_Object *rest;
+      rest = scheme_alloc_byte_string(len - size, 0);
+      memcpy(SCHEME_BYTE_STR_VAL(rest), SCHEME_BYTE_STR_VAL(uip->pending) + size, len - size);
+      memcpy(buffer + offset, SCHEME_BYTE_STR_VAL(uip->pending), size);
+      uip->pending = rest;
+      return size;
+    } else {
+      memcpy(buffer + offset, SCHEME_BYTE_STR_VAL(uip->pending), len);
+      uip->pending = NULL;
+      return len;
+    }
+  }
+
+  if (uip->pending_eof) {
+    uip->pending_eof = 0;
+    return EOF;
+  }
+
+  return 0;
+}
+
 /* This function is mainly responsible for checking the result of a
-   read-proc or peek-proc. */
+   read-proc or peek-proc. If `watch_change`, then a wait on an evt
+   result also stops if another thread changes the port (see
+   `change_sema`), and the result is SCHEME_INPUT_CHANGED in that case. */
 
 static intptr_t user_read_result(const char *who, Scheme_Input_Port *port,
 			     Scheme_Object *val, Scheme_Object *bstr,
 			     int peek, int nonblock, int evt_ok,
 			     int special_ok, int false_ok,
-			     Scheme_Schedule_Info *sinfo)
+			     Scheme_Schedule_Info *sinfo,
+                             int watch_change)
 {
   Scheme_Object *a[2];
+  /* Created on demand, and then kept for any nested evt, since
+     the port's `change_sema` is discarded when it is posted: */
+  Scheme_Object *change_sema = NULL;
 
   val_again:
 
@@ -879,6 +980,14 @@ static intptr_t user_read_result(const char *who, Scheme_Input_Port *port,
 	   when the read/peek (at some offset) succeeds. */
 	if (nonblock > 0) {
 	  if (sinfo) {
+            if (watch_change) {
+              /* Also poll again on a change from another thread */
+              if (!change_sema)
+                change_sema = get_user_input_change_sema((User_Input_Port *)port->port_data);
+              a[0] = val;
+              a[1] = change_sema;
+              val = scheme_make_evt_set(2, a);
+            }
 	    scheme_set_sync_target(sinfo, val, (Scheme_Object *)port, NULL, 0, 1, NULL);
 	    return 0;
 	  } else {
@@ -893,12 +1002,19 @@ static intptr_t user_read_result(const char *who, Scheme_Input_Port *port,
 	    goto val_again;
 	  }
 	} else {
-	  /* Sync on the given evt. */
+	  /* Sync on the given evt, and also on `change_sema` if
+             another thread can buffer bytes for peeking */
+          if (watch_change && !change_sema)
+            change_sema = get_user_input_change_sema((User_Input_Port *)port->port_data);
 	  a[0] = val;
+          a[1] = change_sema;
 	  if (nonblock < 0)
-	    val = scheme_sync_enable_break(1, a);
+	    val = scheme_sync_enable_break(change_sema ? 2 : 1, a);
 	  else
-	    val = scheme_sync(1, a);
+	    val = scheme_sync(change_sema ? 2 : 1, a);
+
+          if (change_sema && SAME_OBJ(val, change_sema))
+            return SCHEME_INPUT_CHANGED;
 
 	  /* Port may have been closed while we were syncing: */
 	  if (port->closed) {
@@ -981,27 +1097,18 @@ user_get_or_peek_bytes(Scheme_Input_Port *port,
                                              unless, sinfo);
   }
 
-  val = uip->peeked;
-  if (val) {
-    /* Leftover from a read-based peek used to implement `char-ready?'
-       This can't happen is peek is 1, because in that case we have a
-       peek_proc, so there's no need for read-based peeks. Also,
-       SCHEME_CDR(unless) must be NULL. */
-    uip->peeked = NULL;
-    if (SCHEME_INTP(val)) {
-      buffer[offset] = (char)SCHEME_INT_VAL(val);
-      return 1;
-    } else if (SCHEME_VOIDP(val)) {
-      return SCHEME_SPECIAL;
-    } else
-      return EOF;
-  }
-
   if (unless && SCHEME_PAIRP(unless))
     unless = SCHEME_CDR(unless);
 
   while (1) {
     int nb;
+    intptr_t start_count;
+
+    if (!uip->peek_proc) {
+      r = take_user_input_buffered(uip, buffer, offset, size);
+      if (r)
+        return r;
+    }
 
     if (uip->prefix_pipe) {
       /* Guarantee: if we call into a client, then we're not using the
@@ -1018,6 +1125,8 @@ user_get_or_peek_bytes(Scheme_Input_Port *port,
                                           2, peek, peek_skip,
                                           unless);
         scheme_end_atomic_no_swap();
+        if (r && !uip->peek_proc)
+          user_input_changed(uip);
         return r;
       } else {
         /* Setting the pipe to NULL ensures that we don't start using it while
@@ -1051,6 +1160,8 @@ user_get_or_peek_bytes(Scheme_Input_Port *port,
     /* Disable breaks while calling the port's function: */
     scheme_push_break_enable(&cframe, 0, 0);
 
+    start_count = uip->change_count;
+
     /* Call the read/peek function: */
     val = scheme_apply(fun, peek ? 3 : 1, a);
     
@@ -1059,11 +1170,44 @@ user_get_or_peek_bytes(Scheme_Input_Port *port,
       uip->reuse_str = bstr;
     }
 
+    if (!uip->peek_proc) {
+      /* Another thread may have buffered bytes for peeking while the
+         read procedure ran; if so, an evt result could be waiting for
+         bytes that will never arrive, so look again: */
+      if ((start_count != uip->change_count)
+          && !SCHEME_INTP(val) && !SCHEME_EOFP(val) && !SCHEME_PROCP(val)
+          && scheme_is_evt(val) && !pipe_input_p(val)) {
+        scheme_pop_break_enable(&cframe, 1);
+        return SCHEME_INPUT_CHANGED;
+      }
+    }
+
     r = user_read_result(peek ? "user port peek" : "user port read",
 			 port, val, bstr, peek, nb,
-			 1, !!uip->peek_proc, !!unless, sinfo);
+			 1, !!uip->peek_proc, !!unless, sinfo,
+                         !uip->peek_proc);
 
     scheme_pop_break_enable(&cframe, 1);
+
+    if (!uip->peek_proc) {
+      if (r == SCHEME_INPUT_CHANGED)
+        return r;
+      if ((start_count != uip->change_count) && (r != SCHEME_SPECIAL)) {
+        /* Another thread got something while the read procedure ran,
+           and it may have buffered bytes for peeking that precede
+           anything that we got; set aside our result, so it is
+           delivered after those bytes */
+        if (r > 0)
+          add_user_input_pending(uip, bstr, r);
+        else if (r == EOF)
+          uip->pending_eof = 1;
+        if (r)
+          user_input_changed(uip);
+        return SCHEME_INPUT_CHANGED;
+      }
+      if (r)
+        user_input_changed(uip);
+    }
 
     if (r > 0) {
       memcpy(buffer + offset, SCHEME_BYTE_STR_VAL(bstr), r);
@@ -1199,10 +1343,21 @@ user_byte_ready_sinfo(Scheme_Input_Port *port, Scheme_Schedule_Info *sinfo)
 
   can_peek = (uip->peek_proc ? 1 : 0);
 
-  c = user_get_or_peek_bytes(port, s, 0, 1,
-			     1, can_peek, scheme_make_integer(0),
-			     NULL,
-			     sinfo);
+  while (1) {
+    c = user_get_or_peek_bytes(port, s, 0, 1,
+                               1, can_peek, scheme_make_integer(0),
+                               NULL,
+                               sinfo);
+    if (c != SCHEME_INPUT_CHANGED)
+      break;
+    /* Another thread may have put bytes into the port's own peek
+       buffer, which is consulted before this function: */
+    if (port->ungotten_count
+        || port->ungotten_special
+        || (port->pending_eof > 1)
+        || (port->peeked_read && scheme_pipe_char_count(port->peeked_read)))
+      return 1;
+  }
 
   if (c == EOF) {
     if (!can_peek)
@@ -1254,6 +1409,9 @@ user_close_input(Scheme_Input_Port *port)
   User_Input_Port *uip = (User_Input_Port *)port->port_data;
 
   scheme_apply_multi(uip->close_proc, 0, NULL);
+
+  /* wake up any thread waiting on an evt from the read procedure */
+  user_input_changed(uip);
 }
 
 static Scheme_Object *
@@ -3209,7 +3367,7 @@ do_read_line (int as_bytes, const char *who, int argc, Scheme_Object *argv[])
 
       if (ch == SCHEME_SPECIAL) {
         scheme_bad_time_for_special(who, port);
-      } else if (ch) {
+      } else if (ch && (ch != SCHEME_INPUT_CHANGED)) {
         if (ip->p.position >= 0)
           ip->p.position++;
 

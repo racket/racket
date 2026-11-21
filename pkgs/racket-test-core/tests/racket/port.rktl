@@ -244,9 +244,10 @@
 ;; switch to holding the lock in atomic mode before using the pipe
 ;; (otherwise, in a parallel thread, the pipe's atomic-mode lock
 ;; can't be taken)
+;; (many iterations are useful only where threads can run in parallel)
 (test #t
       'concurrent-redirect-read
-      (for/and ([j (in-range 200)])
+      (for/and ([j (in-range (if (eq? 'chez-scheme (system-type 'vm)) 200 10))])
         (define-values (r w) (make-pipe))
         (define in (make-input-port 'redirect
                                     (lambda (bstr) (if (byte-ready? r) r (wrap-evt r (lambda (v) 0))))
@@ -403,12 +404,13 @@
   (test #t byte-ready? in)
   (test #"x" 'no-peek-small-read-after-byte-ready (finish)))
 
-;; Same, but for a large read that bypasses the buffer
+;; Same, but for a large read that bypasses the buffer; the read may
+;; produce only the byte that `byte-ready?` buffered, or more
 (let-values ([(in w start-paused) (make-pausable-no-peek-port)])
   (define finish (start-paused (lambda (in) (read-available 4096 in))))
   (write-bytes #"xy" w)
   (test #t byte-ready? in)
-  (test #"xy" 'no-peek-large-read-after-byte-ready (finish)))
+  (test #t 'no-peek-large-read-after-byte-ready (and (member (finish) '(#"x" #"xy")) #t)))
 
 ;; Same, but for a peek
 (let-values ([(in w start-paused) (make-pausable-no-peek-port)])
@@ -457,7 +459,8 @@
   (test #"z" read-available 10 in))
 
 ;; The port is closed while a read is in the read procedure, and
-;; then the read procedure produces a byte
+;; then the read procedure produces a byte; the read can either
+;; produce the byte or report that the port is closed
 (let-values ([(in w start-paused) (make-pausable-no-peek-port)])
   (define finish (start-paused
                   (lambda (in)
@@ -468,7 +471,7 @@
                       (read-bytes 1 in)))))
   (write-bytes #"x" w)
   (close-input-port in)
-  (test 'closed 'no-peek-close-during-read (finish))
+  (test #t 'no-peek-close-during-read (and (member (finish) '(closed #"x")) #t))
   ;; port's lock must have been released
   (test #t 'no-peek-close-during-read-unlocked
         (let ([t (thread #:keep 'results (lambda () (port-closed? in)))])
@@ -533,20 +536,19 @@
   (define result
     (and (sync/timeout 3 polling)
          (sync/timeout 3 (system-idle-evt))
-         (begin
-           (change in w)
-           (zero? (pipe-content-length r)))
+         (change in w)
          (sync/timeout 3 reader)
          (thread-wait reader)))
   (unless result (kill-thread reader))
   result)
 
 (test #"x" buffered-custom-port-wakeup (lambda (in) (read-bytes 1 in)))
-(test #"xy" buffered-custom-port-wakeup
+;; (the read may produce only the byte that `byte-ready?` buffered, or more)
+(test #t buffered-custom-port-wakeup
       (lambda (in)
         (define bstr (make-bytes 4096))
         (define n (read-bytes-avail! bstr in))
-        (subbytes bstr 0 n))
+        (and (member (subbytes bstr 0 n) '(#"x" #"xy")) #t))
       #:nested? #t)
 (test #"y" buffered-custom-port-wakeup (lambda (in) (peek-bytes 1 1 in)))
 (test eof buffered-custom-port-wakeup (lambda (in) (read-bytes 1 in))

@@ -3789,6 +3789,14 @@ intptr_t scheme_redirect_get_or_peek_bytes(Scheme_Input_Port *orig_port,
                                            Scheme_Object *unless,
                                            Scheme_Schedule_Info *sinfo);
 
+/* A result from a port's get-string function (in addition to EOF,
+   SCHEME_SPECIAL, and SCHEME_UNLESS_READY) that means nothing was
+   read, but another thread changed the port's state while the
+   function was running, so the caller should look again at bytes
+   that are buffered for peeking; currently produced only by custom
+   ports that implement peeking via reading */
+#define SCHEME_INPUT_CHANGED (-4)
+
 Scheme_Object *scheme_filesystem_change_evt(Scheme_Object *path, int flags, int report_errs);
 void scheme_filesystem_change_evt_cancel(Scheme_Object *evt, void *ignored_data);
 int scheme_filesystem_change_evt_ready(Scheme_Object *evt, Scheme_Schedule_Info *sinfo);
