@@ -5115,7 +5115,7 @@
             (let ((file_0 (cadr v_0)))
               (let ((pkg_0 (caddr v_0)))
                 (let ((subs_0 (cdddr v_0)))
-                  (if file_0
+                  (if (string? file_0)
                     (if (module-path-string?.1 #f #t #f #t file_0)
                       (if (if (list? pkg_0)
                             (if (<= 2 (length pkg_0) 4)
@@ -5124,18 +5124,15 @@
                                   (let ((or-part_0 (null? (cddr pkg_0))))
                                     (if or-part_0
                                       or-part_0
-                                      (let ((or-part_1
-                                             (let ((v_1 (caddr pkg_0)))
-                                               (exact-nonnegative-integer?
-                                                v_1))))
-                                        (if or-part_1
-                                          or-part_1
-                                          (let ((or-part_2
-                                                 (null? (cddr pkg_0))))
-                                            (if or-part_2
-                                              or-part_2
-                                              (planet-version-minor-spec?
-                                               (cadddr pkg_0))))))))
+                                      (if (let ((v_1 (caddr pkg_0)))
+                                            (exact-nonnegative-integer? v_1))
+                                        (let ((or-part_1
+                                               (null? (cdddr pkg_0))))
+                                          (if or-part_1
+                                            or-part_1
+                                            (planet-version-minor-spec?
+                                             (cadddr pkg_0))))
+                                        #f)))
                                   #f)
                                 #f)
                               #f)
@@ -5150,12 +5147,14 @@
                                   (let ((rest_0 (unsafe-cdr lst_0)))
                                     (let ((result_1
                                            (let ((result_1
-                                                  (module-path-string?.1
-                                                   #f
-                                                   #f
-                                                   #f
-                                                   #f
-                                                   sub_0)))
+                                                  (if (string? sub_0)
+                                                    (module-path-string?.1
+                                                     #f
+                                                     #f
+                                                     #f
+                                                     #f
+                                                     sub_0)
+                                                    #f)))
                                              (values result_1))))
                                       (if (if (not
                                                (let ((x_0 (list sub_0)))
