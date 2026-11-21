@@ -20245,7 +20245,7 @@
                                  "position"
                                  new-pos251_0))
                               (void))
-                            (temp5.1 this-id_0 len_0)
+                            (temp5.1 this-id_0 new-pos251_0)
                             (set-bytes-output-port-pos! this-id_0 new-pos251_0)
                             (set-bytes-output-port-max-pos!
                              this-id_0
@@ -20339,7 +20339,7 @@
             0
             app_0
             0
-            (bytes-output-port-pos this-id_0)))
+            (bytes-output-port-max-pos this-id_0)))
          (set-bytes-output-port-bstr! this-id_0 new-bstr_0))))))
 (define temp6.1
   (|#%name|

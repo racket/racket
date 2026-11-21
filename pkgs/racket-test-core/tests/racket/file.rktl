@@ -255,6 +255,22 @@
   (test #"23" get-output-bytes os #t 1 3)
   (test #"" get-output-bytes os #f 0 #f))
 
+;; moving well past the end of the port's buffer
+(let ([os (open-output-bytes)])
+  (file-position os 1000)
+  (test (make-bytes 1000 0) get-output-bytes os)
+  (write-bytes #"z" os)
+  (test (bytes-append (make-bytes 1000 0) #"z") get-output-bytes os))
+
+;; moving past the end after moving back keeps existing content
+(let ([os (open-output-bytes)])
+  (write-bytes #"1234" os)
+  (file-position os 0)
+  (file-position os 20)
+  (test (bytes-append #"1234" (make-bytes 16 0)) get-output-bytes os)
+  (write-bytes #"z" os)
+  (test (bytes-append #"1234" (make-bytes 16 0) #"z") get-output-bytes os))
+
 (err/rt-test (get-output-bytes (open-output-bytes) #t 1))
 (err/rt-test (get-output-bytes (open-output-bytes) #t 0 1))
 (err/rt-test (get-output-bytes (open-output-string) #t 1))
