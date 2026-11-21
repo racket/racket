@@ -187,7 +187,7 @@
   [enlarge!
    (lambda (len)
      (define new-bstr (make-bytes (fx* 2 len)))
-     (bytes-copy! new-bstr 0 bstr 0 pos)
+     (bytes-copy! new-bstr 0 bstr 0 max-pos)
      (set! bstr new-bstr))]
 
   ;; with lock held
@@ -250,7 +250,7 @@
                                   "new position is too large"
                                   "port" this
                                   "position" new-pos))
-         (enlarge! len)
+         (enlarge! new-pos)
          (set! pos new-pos)
          (set! max-pos new-pos)]
         [else
