@@ -322,8 +322,14 @@
 (struct shifted-to-label-phase (from) #:prefab)
 
 ;; Each new scope increments the counter, so we can check whether one
-;; scope is newer than another.
-(define-place-local id-counter (box 0))
+;; scope is newer than another. Ids must also be unique among all
+;; scopes that can meet in a set. Scopes defined at the top level of
+;; the expander, such as `core-scope`, are shared by all places on
+;; Racket CS, so the counter is shared by all places, too, and it is
+;; updated with CAS. On Racket BC, each place has its own expander
+;; instance and so its own counter, which is enough, since syntax
+;; objects cannot move between places.
+(define id-counter (box 0))
 (define (new-scope-id!)
   (define c (unbox* id-counter))
   (cond

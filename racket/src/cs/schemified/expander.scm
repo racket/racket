@@ -4010,7 +4010,7 @@
   (lambda (lock_0) (unsafe-uninterruptible-lock-release lock_0)))
 (define cell.1$1_1678 (unsafe-make-place-local #f))
 (define cell.2$8 (unsafe-make-place-local #f))
-(define cell.3$2 (unsafe-make-place-local #f))
+(define cell.3$1 (unsafe-make-place-local #f))
 (define cell.4$1 (unsafe-make-place-local 0))
 (define check-fxvector
   (lambda (v_0)
@@ -11701,12 +11701,11 @@
          0
          s
          'from))))))
-(define cell.1$5 (unsafe-make-place-local (box 0)))
+(define id-counter (box 0))
 (define new-scope-id!
   (lambda ()
-    (let ((c_0 (unsafe-unbox* (unsafe-place-local-ref cell.1$5))))
-      (if (let ((app_0 (unsafe-place-local-ref cell.1$5)))
-            (unsafe-box*-cas! app_0 c_0 (add1 c_0)))
+    (let ((c_0 (unsafe-unbox* id-counter)))
+      (if (unsafe-box*-cas! id-counter c_0 (add1 c_0))
         (add1 c_0)
         (new-scope-id!)))))
 (define new-deserialize-scope-id! (lambda () (- (new-scope-id!))))
@@ -11725,27 +11724,27 @@
   (lambda (kind_0)
     (let ((id_0 (new-scope-id!)))
       (scope1.1 id_0 (make-scope-key id_0) kind_0 empty-binding-table))))
-(define cell.2$4 (unsafe-make-place-local (make-ephemeron-hasheq)))
-(define cell.3$1 (unsafe-make-place-local (unsafe-make-uninterruptible-lock)))
+(define cell.1$5 (unsafe-make-place-local (make-ephemeron-hasheq)))
+(define cell.2$4 (unsafe-make-place-local (unsafe-make-uninterruptible-lock)))
 (define interned-scope-symbols
   (lambda ()
     (begin
-      (let ((lock_0 (unsafe-place-local-ref cell.3$1)))
+      (let ((lock_0 (unsafe-place-local-ref cell.2$4)))
         (unsafe-uninterruptible-lock-acquire lock_0))
-      (let ((keys_0 (hash-keys (unsafe-place-local-ref cell.2$4))))
+      (let ((keys_0 (hash-keys (unsafe-place-local-ref cell.1$5))))
         (begin
-          (let ((lock_0 (unsafe-place-local-ref cell.3$1)))
+          (let ((lock_0 (unsafe-place-local-ref cell.2$4)))
             (unsafe-uninterruptible-lock-release lock_0))
           keys_0)))))
 (define interned-scopes
   (lambda ()
     (begin
-      (let ((lock_0 (unsafe-place-local-ref cell.3$1)))
+      (let ((lock_0 (unsafe-place-local-ref cell.2$4)))
         (unsafe-uninterruptible-lock-acquire lock_0))
       (let ((table_0 hash2610))
         (let ((scs_0
                (let ((table_1 table_0))
-                 (let ((ht_0 (unsafe-place-local-ref cell.2$4)))
+                 (let ((ht_0 (unsafe-place-local-ref cell.1$5)))
                    (letrec*
                     ((for-loop_0
                       (|#%name|
@@ -11762,14 +11761,14 @@
                            table_2)))))
                     (for-loop_0 table_1 (hash-iterate-first ht_0)))))))
           (begin
-            (let ((lock_0 (unsafe-place-local-ref cell.3$1)))
+            (let ((lock_0 (unsafe-place-local-ref cell.2$4)))
               (unsafe-uninterruptible-lock-release lock_0))
             scs_0))))))
 (define scope-place-init!
   (lambda ()
     (begin
-      (unsafe-place-local-set! cell.2$4 (make-ephemeron-hasheq))
-      (unsafe-place-local-set! cell.3$1 (unsafe-make-uninterruptible-lock)))))
+      (unsafe-place-local-set! cell.1$5 (make-ephemeron-hasheq))
+      (unsafe-place-local-set! cell.2$4 (unsafe-make-uninterruptible-lock)))))
 (define make-interned-scope
   (lambda (sym_0)
     (let ((make_0
@@ -11783,29 +11782,29 @@
                  'interned
                  empty-binding-table
                  sym_0))))))
-      (let ((cond-val_0 (hash-ref (unsafe-place-local-ref cell.2$4) sym_0 #f)))
+      (let ((cond-val_0 (hash-ref (unsafe-place-local-ref cell.1$5) sym_0 #f)))
         (if cond-val_0
           cond-val_0
           (let ((new_0 (make_0)))
             (begin
-              (let ((lock_0 (unsafe-place-local-ref cell.3$1)))
+              (let ((lock_0 (unsafe-place-local-ref cell.2$4)))
                 (unsafe-uninterruptible-lock-acquire lock_0))
               (let ((s_0
                      (let ((or-part_0
                             (hash-ref
-                             (unsafe-place-local-ref cell.2$4)
+                             (unsafe-place-local-ref cell.1$5)
                              sym_0
                              #f)))
                        (if or-part_0
                          or-part_0
                          (begin
                            (hash-set!
-                            (unsafe-place-local-ref cell.2$4)
+                            (unsafe-place-local-ref cell.1$5)
                             sym_0
                             new_0)
                            new_0)))))
                 (begin
-                  (let ((lock_0 (unsafe-place-local-ref cell.3$1)))
+                  (let ((lock_0 (unsafe-place-local-ref cell.2$4)))
                     (unsafe-uninterruptible-lock-release lock_0))
                   s_0)))))))))
 (define syntax-has-interned-scope?
@@ -20074,7 +20073,7 @@
                   (lambda (s_0) (error "bad syntax:" s_0)))))
             (lambda (t_0) v_0))))))))
 (define 1/make-set!-transformer
-  (let ((finish942
+  (let ((finish941
          (make-struct-type-install-properties
           '(set!-transformer)
           1
@@ -20096,11 +20095,11 @@
             #f
             '(1 . 0)
             'make-struct-type
-            (finish942 'proc)
-            (finish942 'arity)
+            (finish941 'proc)
+            (finish941 'arity)
             #f
             |#%system-inspector|)))
-      (let ((effect943 (finish942 struct:set!-transformer_0)))
+      (let ((effect942 (finish941 struct:set!-transformer_0)))
         (let ((set!-transformer1_0
                (|#%name|
                 set!-transformer
