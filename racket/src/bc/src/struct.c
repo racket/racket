@@ -3470,10 +3470,9 @@ static Scheme_Object *prefab_key_struct_type(int argc, Scheme_Object *argv[])
   Scheme_Struct_Type *stype;
   int v;
 
-  if (SCHEME_INTP(argv[1])) {
+  if (SCHEME_INTP(argv[1])
+      && (SCHEME_INT_VAL(argv[1]) <= MAX_STRUCT_FIELD_COUNT)) {
     v = SCHEME_INT_VAL(argv[1]);
-    if (v > MAX_STRUCT_FIELD_COUNT)
-      v = -1;
   } else
     v = -1;
 
@@ -5352,6 +5351,7 @@ static Scheme_Object *_make_struct_type(Scheme_Object *name,
       || (num_fields > MAX_STRUCT_FIELD_COUNT)
       || (num_uninit_fields > MAX_STRUCT_FIELD_COUNT)
       || (num_uninit_fields + num_fields > MAX_STRUCT_FIELD_COUNT)
+      || (struct_type->num_slots > MAX_STRUCT_FIELD_COUNT)
       || (parent_type
 	  && ((struct_type->num_slots < parent_type->num_slots)
 	      || (struct_type->num_islots < parent_type->num_islots)))) {
@@ -5808,7 +5808,9 @@ static Scheme_Object *general_make_struct_type(const char *who, Scheme_Object *m
       scheme_wrong_contract(who, "exact-nonnegative-integer?", 2, argc, argv);
       return NULL;
     }
-  } else
+  } else if (SCHEME_INT_VAL(argv[2]) > MAX_STRUCT_FIELD_COUNT)
+    initc = -1;
+  else
     initc = SCHEME_INT_VAL(argv[2]);
 
   if (!SCHEME_INTP(argv[3]) || (SCHEME_INT_VAL(argv[3]) < 0)) {
@@ -5818,7 +5820,9 @@ static Scheme_Object *general_make_struct_type(const char *who, Scheme_Object *m
       scheme_wrong_contract(who, "exact-nonnegative-integer?", 3, argc, argv);
       return NULL;
     }
-  } else
+  } else if (SCHEME_INT_VAL(argv[3]) > MAX_STRUCT_FIELD_COUNT)
+    uninitc = -1;
+  else
     uninitc = SCHEME_INT_VAL(argv[3]);
   
   if (argc > 4) {
@@ -5901,6 +5905,11 @@ static Scheme_Object *general_make_struct_type(const char *who, Scheme_Object *m
 
   MZ_ASSERT(SCHEME_FALSEP(inspector) || SAME_OBJ(inspector, prefab_symbol)
          || SAME_TYPE(SCHEME_TYPE(inspector), scheme_inspector_type));
+
+  if ((initc < 0) || (uninitc < 0) || (initc + uninitc > MAX_STRUCT_FIELD_COUNT))
+    scheme_raise_exn(MZEXN_FAIL, "%s: too many fields for struct-type\n"
+                     "  maximum total field count: " MAX_STRUCT_FIELD_COUNT_STR,
+                     who);
 
   immutable_array = immutable_pos_list_to_immutable_array(immutable_pos_list, initc + uninitc);
 
@@ -6256,6 +6265,8 @@ Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int min_field_
       if (!SCHEME_INTP(SCHEME_CAR(a)))
         return NULL;
       ucnt = SCHEME_INT_VAL(SCHEME_CAR(a));
+      if ((ucnt < 0) || (ucnt > MAX_STRUCT_FIELD_COUNT))
+        return NULL;
       a = SCHEME_CDR(a);
       uninit_val = SCHEME_CAR(a);
       key = SCHEME_CDR(key);

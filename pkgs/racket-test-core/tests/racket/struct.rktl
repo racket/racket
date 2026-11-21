@@ -2134,6 +2134,24 @@
                 (read (open-input-bytes (get-output-bytes o)))))))
 
 ;; ----------------------------------------
+;; The total field count of a structure type is limited to 32768
+
+(test #t struct-type? (prefab-key->struct-type 'big-prefab 32768))
+(err/rt-test (prefab-key->struct-type 'big-prefab 32769) exn:fail:contract? #rx"integer-in 0 32768")
+(err/rt-test (prefab-key->struct-type 'big-prefab (expt 2 32)) exn:fail:contract? #rx"integer-in 0 32768")
+(err/rt-test (prefab-key->struct-type 'big-prefab -1) exn:fail:contract? #rx"integer-in 0 32768")
+(let-values ([(struct:big make-big big? big-ref big-set!) (make-struct-type 'big #f 32768 0)])
+  (test #t struct-type? struct:big)
+  (err/rt-test (make-struct-type 'bigger struct:big 1 0) exn:fail? #rx"too many fields"))
+(err/rt-test (make-struct-type 'big #f 32769 0) exn:fail? #rx"too many fields")
+(err/rt-test (make-struct-type 'big #f 32768 1) exn:fail? #rx"too many fields")
+(err/rt-test (make-struct-type 'big #f (expt 2 32) 0 #f null 'prefab) exn:fail? #rx"too many fields")
+(module m-with-too-many-fields racket/base
+  (define-values (struct:big make-big big? big-ref big-set!)
+    (make-struct-type 'big #f 32769 0)))
+(err/rt-test/once (dynamic-require ''m-with-too-many-fields #f) exn:fail? #rx"too many fields")
+
+;; ----------------------------------------
 ;; Report malformed struct-copy correctly
 ;; https://github.com/racket/racket/issues/5194
 
