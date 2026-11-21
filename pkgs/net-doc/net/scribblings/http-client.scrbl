@@ -108,6 +108,9 @@ additional headers given in @racket[headers] and the additional data
 @racket[data]. If @racket[method] is @racket[#"HEAD"] (or
 @racket["HEAD"] or @racket['HEAD]), provide the same @racket[method]
 when calling @racket[http-conn-recv!] to avoid attempting to receive content.
+If @racket[uri], @racket[method], or any element of @racket[headers]
+contains a carriage return or linefeed character,
+@racket[exn:fail:contract] is raised before anything is sent.
 
 If @racket[data] is a procedure, it will be called once with a
 procedure of one argument, which is a string or
