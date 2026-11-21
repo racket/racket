@@ -70,6 +70,7 @@
 
   ;; port or (bytes start-k end-k copy? -*> (or/c integer? ...))
   ;; Called with lock held.
+  ;; May leave locked mode temporarily in the case of a custom port.
   ;; A port value redirects to the port. Otherwise, the function
   ;; never blocks, and can assume `(- end-k start-k)` is non-zero.
   ;; The `copy?` flag indicates that the given byte string should not
@@ -82,6 +83,7 @@
 
   ;; port or (bytes start-k end-k skip-k progress-evt copy? -*> (or/c integer? ...))
   ;; Called with lock held.
+  ;; May leave locked mode temporarily in the case of a custom port.
   ;; A port value redirects to the port. Otherwise, the function
   ;; never blocks, and it can assume that `(- end-k start-k)` is
   ;; non-zero. The `copy?` flag is the same as for `read-in`. The
@@ -90,6 +92,7 @@
 
   ;; port or ((->) -*> (or/c boolean? evt))
   ;; Called with lock held.
+  ;; May leave locked mode temporarily in the case of a custom port.
   ;; A port value makes sense when `peek-in` has a port value.
   ;; Otherwise, check whether a peek on one byte would succeed
   ;; without blocking and return a boolean, or return an event that

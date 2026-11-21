@@ -17,6 +17,16 @@
   [end-pos 0]
   [peeked-eof? #f]
   [buffer-mode 'block]
+  ;; When `read-inner-may-leave-lock?`, the buffer can change while
+  ;; `read-in/inner` runs. `buffer-generation` counts changes that
+  ;; add bytes or an EOF to the buffer or close the buffer, so a 0 or
+  ;; evt result can be detected as stale. A thread that waits on an
+  ;; evt result also needs to wake up on a later change, since the
+  ;; change can mean that the evt never becomes ready; such waiters
+  ;; use `buffer-change-sema`, and while it exists, the port lock
+  ;; requires atomic mode so that the semaphore can be posted.
+  [buffer-generation 0]
+  [buffer-change-sema #f]
 
   #:public
   ;; with lock held; must override
@@ -30,6 +40,15 @@
   ;; and other possibilities are #t or evt 
   [byte-ready/inner
    (lambda (work-done!) #f)]
+
+  ;; (-> boolean?)
+  [read-inner-may-leave-lock? (lambda () #f)]
+
+  ;; with lock held
+  ;; (-> boolean?)
+  ;; Reports whether the port lock must continue to require atomic
+  ;; mode for a reason specific to the subclass
+  [lock-must-stay-atomic? (lambda () #f)]
 
   #:static
   ;; with lock held
@@ -45,6 +64,7 @@
    (lambda ()
      (purge-buffer)
      (set! bstr #"")
+     (buffer-changed!)
      (progress!))]
 
   ;; with lock held
@@ -74,17 +94,119 @@
   [pull-some-bytes
    (lambda ([amt (if (eq? 'block buffer-mode) (bytes-length bstr) 1)] [offset 0] [init-pos 0])
      (define get-end (min (+ amt offset) (bytes-length bstr)))
-     (define v (send peek-via-read-input-port this read-in/inner bstr offset get-end #f #t))
      (cond
-       [(eof-object? v)
-        (set! peeked-eof? #t)
-        eof]
-       [(evt? v) v]
-       [(eqv? v 0) 0]
+       [(send peek-via-read-input-port this read-inner-may-leave-lock?)
+        ;; Another thread can read, peek, commit, or close while the
+        ;; lock is released, so `bstr`, `pos`, and `end-pos` may all
+        ;; change. Pull into a fresh byte string, and then append to
+        ;; the buffer as it exists after the lock is reacquired.
+        (define fresh-bstr (make-bytes (fx- get-end offset)))
+        (define generation buffer-generation)
+        (define v (send peek-via-read-input-port this read-in/inner fresh-bstr 0 (bytes-length fresh-bstr) #f #t))
+        (cond
+          [(eof-object? v)
+           (pulled-eof!)
+           eof]
+          [(or (evt? v) (eqv? v 0))
+           (retry-on-buffer-change
+            generation v
+            ;; If an evt eventually produces a byte count, the bytes
+            ;; are in `fresh-bstr`, so move them to the buffer; for a
+            ;; count or EOF, report 0 to make the caller look again
+            (lambda (r)
+              (cond
+                [(exact-positive-integer? r)
+                 (with-lock this
+                   (append-pulled-bytes! fresh-bstr r))
+                 0]
+                [(eof-object? r)
+                 (with-lock this
+                   (pulled-eof!))
+                 0]
+                [else r])))]
+          [else
+           (append-pulled-bytes! fresh-bstr v)
+           (if closed? 0 v)])]
        [else
-        (set! pos init-pos)
-        (set! end-pos (fx+ offset v))
-        v]))]
+        ;; lock is kept, so `bstr`, `pos`, and `end-pos` stay as-is
+        (define v (send peek-via-read-input-port this read-in/inner bstr offset get-end #f #t))
+        (cond
+          [(eof-object? v)
+           (set! peeked-eof? #t)
+           eof]
+          [(evt? v) v]
+          [(eqv? v 0) 0]
+          [else
+           (set! pos init-pos)
+           (set! end-pos (fx+ offset v))
+           v])]))]
+
+  ;; with lock held; adds `n` bytes from `src-bstr` after any
+  ;; currently buffered bytes, shifting or growing the buffer as
+  ;; needed; drops the bytes if the port has been closed
+  [append-pulled-bytes!
+   (lambda (src-bstr n)
+     (unless closed?
+       ;; another thread may have switched to fast mode
+       (slow-mode!)
+       (define len (bytes-length bstr))
+       (unless ((fx+ end-pos n) . fx<= . len)
+         (define keep (fx- end-pos pos))
+         (define new-bstr (if ((fx+ keep n) . fx<= . len)
+                              bstr
+                              (make-bytes (fxmax (fx* 2 len) (fx+ keep n)))))
+         (bytes-copy! new-bstr 0 bstr pos end-pos)
+         (set! bstr new-bstr)
+         (set! pos 0)
+         (set! end-pos keep))
+       (bytes-copy! bstr end-pos src-bstr 0 n)
+       (set! end-pos (fx+ end-pos n))
+       (buffer-changed!)))]
+
+  ;; with lock held; records an EOF from a pull that may have left
+  ;; the lock, unless the port has been closed
+  [pulled-eof!
+   (lambda ()
+     (unless closed?
+       (set! peeked-eof? #t)
+       (buffer-changed!)))]
+
+  ;; with lock held, and in atomic mode if `buffer-change-sema`
+  [buffer-changed!
+   (lambda ()
+     (set! buffer-generation (add1 buffer-generation))
+     (define s buffer-change-sema)
+     (when s
+       (set! buffer-change-sema #f)
+       (semaphore-post s)
+       (unless progress-sema
+         (send commit-input-port this no-more-atomic-for-progress))))]
+
+  ;; with lock held, where `v` is a 0 or evt result from a
+  ;; `read-in/inner` that may have left the lock, and `generation`
+  ;; is the value of `buffer-generation` before the call. If the
+  ;; buffer changed meanwhile, the result is 'retry. Otherwise, an evt
+  ;; is adjusted to also become ready with 0 on a later buffer
+  ;; change; `on-result` is applied to a non-evt result of the evt
+  [retry-on-buffer-change
+   (lambda (generation v [on-result values])
+     (cond
+       [(not (eqv? generation buffer-generation)) 'retry]
+       [(evt? v)
+        (define s (or buffer-change-sema
+                      (let ([s (make-semaphore)])
+                        (set! buffer-change-sema s)
+                        (port-lock-require-atomic! this #t)
+                        s)))
+        (define changed-evt (wrap-evt (semaphore-peek-evt s) (lambda (r) 0)))
+        ;; an evt's result can be another evt, which needs the same treatment
+        (let loop ([v v])
+          (choice-evt (list (wrap-evt v (lambda (r)
+                                          (if (evt? r)
+                                              (loop r)
+                                              (on-result r))))
+                            changed-evt)))]
+       [else v]))]
 
   ;; with lock held
   [pull-more-bytes
@@ -112,7 +234,8 @@
   ;; with lock held
   [retry-pull?
    (lambda (v)
-     (and (integer? v) (not (eqv? v 0))))]
+     (or (eq? v 'retry)
+         (and (integer? v) (not (eqv? v 0)))))]
 
   ;; with lock held
   [fast-mode!
@@ -140,6 +263,14 @@
        (set-direct-pos! b (direct-end b))))]
 
   #:override
+  ;; with lock held
+  [no-more-atomic-for-progress
+   (lambda ()
+     (unless (or closed-sema
+                 buffer-change-sema
+                 (send peek-via-read-input-port this lock-must-stay-atomic?))
+       (port-lock-require-atomic! this #f)))]
+
   ;; in atomic mode
   [prepare-change
    (lambda ()
@@ -148,8 +279,8 @@
   ;; with lock held
   [read-in
    (lambda (dest-bstr start end copy?)
-     (slow-mode!)
      (let try-again ()
+       (slow-mode!)
        (cond
          [(pos . fx< . end-pos)
           (define amt (min (fx- end-pos pos) (fx- end start)))
@@ -169,12 +300,20 @@
              (define v (pull-some-bytes))
              (cond
                [(or (eqv? v 0) (evt? v)) v]
-               [else (try-again)])]
+               [else (try-again)])] ; includes 'retry
             [else
+             (define generation buffer-generation)
              (define v (send peek-via-read-input-port this read-in/inner dest-bstr start end copy? #f))
-             (unless (eqv? v 0)
-               (progress!))
-             v])])))]
+             (define r (if (and (or (eqv? v 0) (evt? v))
+                                (send peek-via-read-input-port this read-inner-may-leave-lock?))
+                           (retry-on-buffer-change generation v)
+                           v))
+             (cond
+               [(eq? r 'retry) (try-again)]
+               [else
+                (unless (eqv? r 0)
+                  (progress!))
+                r])])])))]
 
   ;; with lock held, and in atomic mode if `progress-evt`
   [peek-in
@@ -201,7 +340,7 @@
             [else
              (slow-mode!)
              (define v (pull-more-bytes (+ (- skip peeked-amt) (fx- end start))))
-             (if (retry-pull? v)
+             (if (retry-pull? v) ; includes 'retry
                  (try-again)
                  v)])])))]
 
@@ -222,7 +361,7 @@
           (define v (pull-some-bytes))
           (work-done!)
           (cond
-            [(retry-pull? v)
+            [(retry-pull? v) ; includes 'retry
              (loop)]
             [(evt? v) v]
             [else

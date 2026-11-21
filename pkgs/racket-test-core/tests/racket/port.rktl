@@ -319,6 +319,244 @@
           (for-each thread-wait contenders))
         (and ok? #t)))
 
+;; A custom input port without a peek procedure gets an internal peek
+;; buffer, and the port's read procedure runs without the port's lock
+;; held. Check that other threads using the port while a read
+;; procedure is running don't lose, duplicate, or misplace bytes.
+
+;; The original report: a read procedure that finds no data waits on
+;; an event, but meanwhile `byte-ready?` in another thread has moved
+;; data into the port's buffer
+(test #"x"
+      'no-peek-redirect-after-byte-ready
+      (let ()
+        (define-values (r w) (make-pipe))
+        (define in-read-proc (make-semaphore))
+        (define continue (make-semaphore))
+        (define in
+          (make-input-port 'redirect
+                           (lambda (bstr)
+                             (cond
+                               [(byte-ready? r) r]
+                               [else
+                                (semaphore-post in-read-proc)
+                                (semaphore-wait continue)
+                                (wrap-evt r (lambda (v) 0))]))
+                           #f
+                           void))
+        (define reader (thread #:keep 'results (lambda () (read-bytes 1 in))))
+        (semaphore-wait in-read-proc) ; the reader has seen an empty pipe
+        (write-bytes #"x" w)
+        (byte-ready? in) ; moves "x" from the pipe into `in`'s buffer
+        (semaphore-post continue) ; the reader now waits on the empty pipe
+        (or (sync/timeout 10 (wrap-evt reader thread-wait))
+            (begin (kill-thread reader) 'timeout))))
+
+;; Makes a no-peek custom port that reads from a pipe, and returns
+;; the port, the pipe's output end, and a `start-paused` function.
+;; `(start-paused proc)` calls `(proc in)` in a new thread and
+;; returns once that thread is paused in the port's read procedure,
+;; which is the next call to the read procedure; the result of
+;; `start-paused` is a function that resumes the thread and returns
+;; its result, or 'timeout if the thread gets stuck
+(define (make-pausable-no-peek-port)
+  (define-values (r w) (make-pipe))
+  (define pause? #f)
+  (define paused (make-semaphore))
+  (define resume (make-semaphore))
+  (define in
+    (make-input-port 'pausable
+                     (lambda (bstr)
+                       (when pause?
+                         (set! pause? #f)
+                         (semaphore-post paused)
+                         (semaphore-wait resume))
+                       (define n (read-bytes-avail!* bstr r))
+                       (if (eqv? n 0)
+                           (wrap-evt r (lambda (v) 0))
+                           n))
+                     #f
+                     void))
+  (define (start-paused proc)
+    (set! pause? #t)
+    (define t (thread #:keep 'results (lambda () (proc in))))
+    (unless (sync/timeout 10 paused)
+      (error 'start-paused "thread did not reach the read procedure"))
+    (lambda ()
+      (semaphore-post resume)
+      (or (sync/timeout 10 (wrap-evt t thread-wait))
+          (begin (kill-thread t) 'timeout))))
+  (values in w start-paused))
+
+;; Reads whatever is available without blocking
+(define (read-available n in)
+  (define bstr (make-bytes n))
+  (define k (read-bytes-avail!* bstr in))
+  (if (eof-object? k) k (subbytes bstr 0 k)))
+
+;; `byte-ready?` fills the buffer while a small read (which goes
+;; through the buffer) is in the read procedure, and then the read
+;; procedure finds nothing more and returns an event
+(let-values ([(in w start-paused) (make-pausable-no-peek-port)])
+  (define finish (start-paused (lambda (in) (read-bytes 1 in))))
+  (write-bytes #"x" w)
+  (test #t byte-ready? in)
+  (test #"x" 'no-peek-small-read-after-byte-ready (finish)))
+
+;; Same, but for a large read that bypasses the buffer
+(let-values ([(in w start-paused) (make-pausable-no-peek-port)])
+  (define finish (start-paused (lambda (in) (read-available 4096 in))))
+  (write-bytes #"xy" w)
+  (test #t byte-ready? in)
+  (test #"xy" 'no-peek-large-read-after-byte-ready (finish)))
+
+;; Same, but for a peek
+(let-values ([(in w start-paused) (make-pausable-no-peek-port)])
+  (define finish (start-paused (lambda (in) (peek-bytes 1 0 in))))
+  (write-bytes #"x" w)
+  (test #t byte-ready? in)
+  (test #"x" 'no-peek-peek-after-byte-ready (finish)))
+
+;; Same, but for synchronizing on the port, and with a peek in
+;; the other thread
+(let-values ([(in w start-paused) (make-pausable-no-peek-port)])
+  (define finish (start-paused (lambda (in) (eq? in (sync/timeout 5 in)))))
+  (write-bytes #"x" w)
+  (test #"x" peek-bytes 1 0 in)
+  (test #t 'no-peek-sync-after-peek (finish)))
+
+;; A read consumes buffered bytes while a peek beyond the buffer is in
+;; the read procedure; the peek must not restore the consumed bytes
+(let-values ([(in w start-paused) (make-pausable-no-peek-port)])
+  (write-bytes #"ab" w)
+  (test #"a" peek-bytes 1 0 in) ; buffers "ab"
+  (define finish (start-paused (lambda (in) (peek-bytes 1 2 in))))
+  (test #"ab" read-bytes 2 in)
+  (write-bytes #"cde" w)
+  (test #"e" 'no-peek-read-during-peek (finish))
+  (test #"cde" read-available 10 in))
+
+;; Two reads are in the read procedure at the same time; the one that
+;; finishes second must add to the buffer instead of replacing it
+(let-values ([(in w start-paused) (make-pausable-no-peek-port)])
+  (define finish (start-paused (lambda (in) (read-bytes 1 in))))
+  (write-bytes #"xyz" w)
+  (test #"x" read-bytes 1 in) ; buffers "yz"
+  (write-bytes #"w" w)
+  (test #"y" 'no-peek-read-during-read (finish))
+  (test #"zw" read-available 10 in))
+
+;; A peek and a read move through the buffer while a read is in the
+;; read procedure, where the read uses the buffer's fast path
+(let-values ([(in w start-paused) (make-pausable-no-peek-port)])
+  (define finish (start-paused (lambda (in) (read-bytes 1 in))))
+  (write-bytes #"xyz" w)
+  (test #"x" peek-bytes 1 0 in) ; buffers "xyz"
+  (test (char->integer #\x) read-byte in)
+  (test #"y" 'no-peek-fast-read-during-read (finish))
+  (test #"z" read-available 10 in))
+
+;; The port is closed while a read is in the read procedure, and
+;; then the read procedure produces a byte
+(let-values ([(in w start-paused) (make-pausable-no-peek-port)])
+  (define finish (start-paused
+                  (lambda (in)
+                    (with-handlers ([exn:fail? (lambda (exn)
+                                                 (if (regexp-match? #rx"closed" (exn-message exn))
+                                                     'closed
+                                                     (exn-message exn)))])
+                      (read-bytes 1 in)))))
+  (write-bytes #"x" w)
+  (close-input-port in)
+  (test 'closed 'no-peek-close-during-read (finish))
+  ;; port's lock must have been released
+  (test #t 'no-peek-close-during-read-unlocked
+        (let ([t (thread #:keep 'results (lambda () (port-closed? in)))])
+          (or (sync/timeout 10 (wrap-evt t thread-wait))
+              (begin (kill-thread t) 'timeout)))))
+
+;; A read procedure's event result can produce a byte count, which
+;; means that bytes were written to the read procedure's byte string
+(let ()
+  (define (make-evt-count-port)
+    (define first? #t)
+    (make-input-port 'evt-count
+                     (lambda (bstr)
+                       (cond
+                         [first?
+                          (set! first? #f)
+                          (wrap-evt always-evt (lambda (v) (bytes-set! bstr 0 65) 1))]
+                         [else eof]))
+                     #f
+                     void))
+  (let ([in (make-evt-count-port)])
+    (test #"A" peek-bytes 1 0 in)
+    (test #"A" read-bytes 1 in)
+    (test eof read-bytes 1 in))
+  (let ([in (make-evt-count-port)])
+    (test #"A" read-bytes 1 in)
+    (test eof read-bytes 1 in))
+  (let ([in (make-evt-count-port)])
+    (test #t byte-ready? in)
+    (test #"A" read-bytes 1 in)
+    (test eof read-bytes 1 in)))
+
+;; A read or peek can already be waiting on the read procedure's event
+;; when another thread's `byte-ready?` moves data or an EOF from the
+;; underlying source into the port's buffer, or when the port is closed;
+;; the waiting thread must notice the change
+(define (buffered-custom-port-wakeup read-or-peek
+                                     #:nested? [nested? #f]
+                                     #:change [change (lambda (in w)
+                                                        (write-bytes #"xy" w)
+                                                        (byte-ready? in))])
+  (define-values (r w) (make-pipe))
+  (define polling (make-semaphore))
+  (define wait-evt
+    (guard-evt (lambda () (semaphore-post polling) never-evt)))
+  (define empty-evt
+    (if nested? (wrap-evt always-evt (lambda (v) wait-evt)) wait-evt))
+  (define in
+    (make-input-port 'buffer-wakeup
+                     (lambda (bstr)
+                       (define n (read-bytes-avail!* bstr r))
+                       (if (eqv? n 0) empty-evt n))
+                     #f
+                     void))
+  (define reader (thread #:keep 'results
+                         (lambda ()
+                           (with-handlers ([exn:fail? (lambda (exn)
+                                                        (if (regexp-match? #rx"closed" (exn-message exn))
+                                                            'closed
+                                                            (exn-message exn)))])
+                             (read-or-peek in)))))
+  (define result
+    (and (sync/timeout 3 polling)
+         (sync/timeout 3 (system-idle-evt))
+         (begin
+           (change in w)
+           (zero? (pipe-content-length r)))
+         (sync/timeout 3 reader)
+         (thread-wait reader)))
+  (unless result (kill-thread reader))
+  result)
+
+(test #"x" buffered-custom-port-wakeup (lambda (in) (read-bytes 1 in)))
+(test #"xy" buffered-custom-port-wakeup
+      (lambda (in)
+        (define bstr (make-bytes 4096))
+        (define n (read-bytes-avail! bstr in))
+        (subbytes bstr 0 n))
+      #:nested? #t)
+(test #"y" buffered-custom-port-wakeup (lambda (in) (peek-bytes 1 1 in)))
+(test eof buffered-custom-port-wakeup (lambda (in) (read-bytes 1 in))
+      #:change (lambda (in w)
+                 (close-output-port w)
+                 (byte-ready? in)))
+(test 'closed buffered-custom-port-wakeup (lambda (in) (read-bytes 1 in))
+      #:change (lambda (in w)
+                 (close-input-port in)))
+
 ;; A bad result from a custom output port's write procedure is an
 ;; error, but the port remains usable afterward
 (for ([bad (list 'not-a-valid-result ; not a valid result

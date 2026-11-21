@@ -191,7 +191,7 @@
          [else r])]))
 
   ;; with lock held, which implies in atomic mode if `input-pipe` is a pipe
-  (define (read-in/inner self dest-bstr dest-start dest-end copy? to-buffer)
+  (define (read-in/inner self dest-bstr dest-start dest-end copy? to-buffer?)
     (read-in self dest-bstr dest-start dest-end copy?))
 
   ;; with lock held, which implies in atomic mode if `input-pipe` is a pipe
@@ -310,6 +310,9 @@
            [offset init-offset]
            #:override
            [byte-ready-non-atomic? (lambda () #t)]
+           [read-inner-may-leave-lock? (lambda () #t)]
+           ;; reading from a redirection pipe requires atomic mode
+           [lock-must-stay-atomic? (lambda () (and input-pipe #t))]
            [read-in/inner read-in/inner]
            [close (values
                    (lambda (self)
