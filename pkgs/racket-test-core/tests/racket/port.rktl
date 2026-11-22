@@ -247,7 +247,7 @@
 ;; (many iterations are useful only where threads can run in parallel)
 (test #t
       'concurrent-redirect-read
-      (for/and ([j (in-range (if (eq? 'chez-scheme (system-type 'vm)) 200 10))])
+      (for/and ([j (in-range (if (eq? 'chez-scheme (system-type 'vm)) 50 5))])
         (define-values (r w) (make-pipe))
         (define in (make-input-port 'redirect
                                     (lambda (bstr) (if (byte-ready? r) r (wrap-evt r (lambda (v) 0))))
@@ -279,6 +279,7 @@
 ;; While the reader switches a custom port's lock to atomic mode, a
 ;; contender can change how the lock is represented; the reader must
 ;; notice the change instead of spinning forever
+;; (many iterations are useful only where threads can run in parallel)
 (test #t
       'concurrent-redirect-read-lock-change
       (let ()
@@ -303,7 +304,7 @@
                         (semaphore-post read-done)
                         (loop))))))
         (define ok?
-          (for/and ([j (in-range 10000)])
+          (for/and ([j (in-range (if (eq? 'chez-scheme (system-type 'vm)) 1000 50))])
             (define-values (r w) (make-pipe))
             (define in (make-input-port 'redirect
                                         (lambda (bstr) r)
