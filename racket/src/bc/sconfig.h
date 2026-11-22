@@ -174,6 +174,10 @@
 # if defined(__arm__)
 # define MZ_USE_JIT_ARM
 #endif
+#if defined(__aarch64__)
+# define MZ_USE_JIT_ARM64
+# define MZ_JIT_USE_MPROTECT
+#endif
 
 #endif
 
@@ -581,7 +585,9 @@
 # define IGNORE_BY_BORLAND_CONTROL_87
 #endif
 
-#if defined(__MINGW32__) && defined(USE_DIRECT_LONG_DOUBLE)
+#if defined(_M_ARM64)
+/* No extflonums */
+#elif defined(__MINGW32__) && defined(USE_DIRECT_LONG_DOUBLE)
 /* Beware: different from the MSVC build when SSE-based floating-point
    math is enabled in the C compiler. Sets the floating-point mode to
    extended precision to support extflonums, and changing precision
@@ -602,6 +608,7 @@
 # define NO_MBTOWC_FUNCTIONS
 
 # if defined(_M_ARM64)
+#  define MZ_USE_JIT_ARM64
 # elif defined(_WIN64)
 #  define MZ_USE_JIT_X86_64
 # else
@@ -705,6 +712,9 @@
 #if defined(__arm__)
 # define MZ_USE_JIT_ARM
 #elif defined(__arm64__)
+# if !(defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE)
+#  define MZ_USE_JIT_ARM64
+# endif
 #elif defined(__POWERPC__)
 # define MZ_USE_JIT_PPC
 #else

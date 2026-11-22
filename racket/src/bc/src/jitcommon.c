@@ -78,7 +78,7 @@ static Scheme_Object *vector_check_chaperone_of(Scheme_Object *o, Scheme_Object 
 
 static int save_struct_temp(mz_jit_state *jitter, int reg)
 {
-#if defined(MZ_USE_JIT_PPC) || defined(MZ_USE_JIT_ARM)
+#if defined(MZ_USE_JIT_PPC) || defined(MZ_USE_JIT_ARM) || defined(MZ_USE_JIT_ARM64)
   jit_movr_p(JIT_V(3), reg);
 #endif
 #ifdef MZ_USE_JIT_I386
@@ -97,7 +97,7 @@ int scheme_save_struct_temp(mz_jit_state *jitter, int reg) {
 
 static int restore_struct_temp(mz_jit_state *jitter, int reg)
 {
-#if defined(MZ_USE_JIT_PPC) || defined(MZ_USE_JIT_ARM)
+#if defined(MZ_USE_JIT_PPC) || defined(MZ_USE_JIT_ARM) || defined(MZ_USE_JIT_ARM64)
   jit_movr_p(reg, JIT_V(3));
 #endif
 #ifdef MZ_USE_JIT_I386
@@ -902,6 +902,9 @@ static int common2(mz_jit_state *jitter, void *_data)
 #endif
 #ifdef MZ_USE_JIT_ARM
   jit_ldxi_p(JIT_R0, JIT_R0, JIT_NEXT_FP_OFFSET);
+#endif
+#ifdef MZ_USE_JIT_ARM64
+  jit_ldr_p(JIT_R0, JIT_R0);
 #endif
   jit_movr_p(JIT_RET, JIT_R0);
   jit_ret();

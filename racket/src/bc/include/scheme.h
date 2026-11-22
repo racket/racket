@@ -192,7 +192,7 @@ typedef jmpbuf jmp_buf[1];
 #define GC_MIGHT_USE_REGISTERED_STATICS
 
 #ifndef MZ_DONT_USE_JIT
-# if defined(MZ_USE_JIT_PPC) || defined(MZ_USE_JIT_I386) || defined(MZ_USE_JIT_X86_64) || defined(MZ_USE_JIT_ARM)
+# if defined(MZ_USE_JIT_PPC) || defined(MZ_USE_JIT_I386) || defined(MZ_USE_JIT_X86_64) || defined(MZ_USE_JIT_ARM) || defined(MZ_USE_JIT_ARM64)
 #  define MZ_USE_JIT
 # endif
 #endif

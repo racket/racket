@@ -587,6 +587,9 @@ case "$host_os" in
        enable_parallel_by_default=yes
        check_for_unwind=REG_ESP
        ;;
+      aarch64*)
+       MZOPTIONS="$MZOPTIONS -fno-omit-frame-pointer" # to make JIT backtraces work
+       ;;
       arm*)
        EXTRA_GMP_NAME='gmp_arm_gcc.S'
        ;;

@@ -53,6 +53,11 @@ typedef void *(*Get_Stack_Proc)();
 # define NEXT_FRAME_OFFSET JIT_NEXT_FP_OFFSET
 # define RETURN_ADDRESS_OFFSET (JIT_NEXT_FP_OFFSET+1)
 #endif
+#ifdef MZ_USE_JIT_ARM64
+/* AArch64 frame record: */
+# define NEXT_FRAME_OFFSET 0
+# define RETURN_ADDRESS_OFFSET 1
+#endif
 
 #define CACHE_STACK_MIN_TRIGGER 128
 
@@ -111,7 +116,9 @@ uintptr_t scheme_approx_sp()
   return p;
 }
 
-#if defined( _WIN64) && !defined(__MINGW32__)
+#if defined( _WIN64) && !defined(__MINGW32__) && !defined(MZ_USE_JIT_ARM64)
+/* x86_64 only; on AArch64, JIT-generated code and C code both maintain
+   a frame-pointer chain */
 # define USE_WIN64_UNWIND
 # ifndef UNWIND_HISTORY_TABLE_SIZE
 extern PRUNTIME_FUNCTION WINAPI RtlLookupFunctionEntry(ULONG64, ULONG64*, void*);

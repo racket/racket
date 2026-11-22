@@ -996,6 +996,20 @@ void scheme_thread_code_end_write(void) {
   if (jit_code_write_enabled == 0)
     pthread_jit_write_protect_np(1);
 }
+int scheme_thread_code_start_exec(void) {
+  int saved = jit_code_write_enabled;
+  if (saved) {
+    jit_code_write_enabled = 0;
+    pthread_jit_write_protect_np(1);
+  }
+  return saved;
+}
+void scheme_thread_code_end_exec(int saved) {
+  if (saved) {
+    jit_code_write_enabled = saved;
+    pthread_jit_write_protect_np(0);
+  }
+}
 #else
 # define MAYBE_MAP_JIT 0
 #endif

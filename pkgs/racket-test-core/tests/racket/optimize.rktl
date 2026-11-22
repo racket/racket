@@ -7054,31 +7054,35 @@
                        (hash-set (hash) 'ok v))))
                   (struct pie (type)
                     #:property prop:p (lambda () pie-type))))])
-    (test #t
-          list?
-          (let loop ([tries 3])
-            (define msecs
-              (for/list ([pie (in-list pies)])
-                (define go
-                  (parameterize ([current-namespace (make-base-namespace)])
-                    (eval `(module pie racket/base
-                             (provide go)
-                             ,pie
-                             (define p (pie 'a))
-                             (define (go)
-                               (for ([i 10000000])
-                                 (pie-type p)))))
-                    (dynamic-require ''pie 'go)))
-                (define-values (r cpu-msec real-msec gc-msec) (time-apply go '()))
-                cpu-msec))
-            (or
-             (and (for*/and ([msec (in-list msecs)]
-                             [other-msec (in-list msecs)])
-                    (<= (/ other-msec 1.2) msec (* other-msec 1.2)))
-                  (cons 'pie-timing-test msecs))
-             (if (> tries 0)
-                 (loop (sub1 tries))
-                 (vector 'pie-timing-test-failed msecs)))))))
+    (let ([factor (if (eq? 'chez-scheme (system-type 'vm))
+                      1.2
+                      ;; BC has more overhead for some variants
+                      1.4)])
+      (test #t
+            list?
+            (let loop ([tries 3])
+              (define msecs
+                (for/list ([pie (in-list pies)])
+                  (define go
+                    (parameterize ([current-namespace (make-base-namespace)])
+                      (eval `(module pie racket/base
+                               (provide go)
+                               ,pie
+                               (define p (pie 'a))
+                               (define (go)
+                                 (for ([i 10000000])
+                                   (pie-type p)))))
+                      (dynamic-require ''pie 'go)))
+                  (define-values (r cpu-msec real-msec gc-msec) (time-apply go '()))
+                  cpu-msec))
+              (or
+               (and (for*/and ([msec (in-list msecs)]
+                               [other-msec (in-list msecs)])
+                      (<= (/ other-msec 1.2) msec (* other-msec 1.2)))
+                    (cons 'pie-timing-test msecs))
+               (if (> tries 0)
+                   (loop (sub1 tries))
+                   (vector 'pie-timing-test-failed msecs))))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Regression test to check that the optimizer doesn't

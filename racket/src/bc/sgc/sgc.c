@@ -957,6 +957,14 @@ static void *mmap_sector(int count, int executable)
     prot -= PROT_EXEC;
 #endif
 
+#ifdef MZ_USE_MAP_JIT
+  /* Writable and executable memory requires MAP_JIT, and then writing
+     is enabled only via scheme_thread_code_start_write(), which the
+     runtime system arranges around code allocation and collections */
+  if (executable)
+    flags |= MAP_JIT;
+#endif
+
   p = mmap(NULL, (count + 1) << LOG_SECTOR_SEGMENT_SIZE, prot,
            MAP_PRIVATE | flags, fd, 0);
 

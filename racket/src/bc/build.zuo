@@ -415,6 +415,10 @@
      (at-source "src/lightning/arm/funcs.h") (at-source "src/lightning/arm/funcs-common.h")
      (at-source "src/lightning/arm/fp.h") (at-source "src/lightning/arm/fp-common.h")
      (at-source "src/lightning/arm/fp-vfp.h") (at-source "src/lightning/arm/fp-swf.h")
+     (at-source "src/lightning/arm64/core.h") (at-source "src/lightning/arm64/core-common.h")
+     (at-source "src/lightning/arm64/asm.h") (at-source "src/lightning/arm64/asm-common.h")
+     (at-source "src/lightning/arm64/funcs.h") (at-source "src/lightning/arm64/funcs-common.h")
+     (at-source "src/lightning/arm64/fp.h") (at-source "src/lightning/arm64/fp-common.h")
      (at-source "src/future.h") (at-source "src/jit_ts.c") (at-source "src/jit_ts_protos.h")))
 
   ;; These headers have only preprocessor definitions, so they're not

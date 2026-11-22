@@ -4063,11 +4063,20 @@ static void on_demand_generate_lambda(Scheme_Native_Closure *nc, Scheme_Native_L
     ((Scheme_Native_Lambda_Plus_Case *)nlam)->case_lam = NULL;
   }
 
-  while (gdata.patch_depth) {
-    void **pd;
-    pd = (void **)gdata.patch_depth;
-    gdata.patch_depth = pd[1];
-    jit_patch_movi(((jit_insn *)(*pd)), (void *)(intptr_t)max_depth);
+  if (gdata.patch_depth) {
+    /* The code is already generated, so enable writing again: */
+    scheme_thread_code_start_write();
+    while (gdata.patch_depth) {
+      void **pd;
+      pd = (void **)gdata.patch_depth;
+      gdata.patch_depth = pd[1];
+      jit_patch_movi(((jit_insn *)(*pd)), (void *)(intptr_t)max_depth);
+# ifdef MZ_USE_JIT_ARM64
+      /* A patched load is 4 instructions */
+      jit_flush_code(*pd, (char *)*pd + 16);
+# endif
+    }
+    scheme_thread_code_end_write();
   }
 
   nlam->start_code = start_code;
@@ -4446,6 +4455,17 @@ XFORM_NONGCING static int lambda_has_been_jitted(Scheme_Native_Lambda *nlam)
   return (nlam->start_code != scheme_on_demand_jit_code);
 }
 
+static Scheme_Object *call_get_arity_code(Scheme_Object *closure)
+{
+  Scheme_Object *a;
+  int saved;
+  /* may be called during JIT generation, when writing is enabled */
+  saved = scheme_thread_code_start_exec();
+  a = sjc.get_arity_code(closure, 0, 0 EXTRA_NATIVE_ARGUMENT);
+  scheme_thread_code_end_exec(saved);
+  return a;
+}
+
 int scheme_native_arity_check(Scheme_Object *closure, int argc)
   XFORM_SKIP_PROC /* called in a future thread for `future' argument arity check */
 {
@@ -4487,7 +4507,14 @@ int scheme_native_arity_check(Scheme_Object *closure, int argc)
     return 1;
   }
 
-  return sjc.check_arity_code(closure, argc + 1, 0 EXTRA_NATIVE_ARGUMENT);
+  {
+    int r, saved;
+    /* may be called during JIT generation, when writing is enabled */
+    saved = scheme_thread_code_start_exec();
+    r = sjc.check_arity_code(closure, argc + 1, 0 EXTRA_NATIVE_ARGUMENT);
+    scheme_thread_code_end_exec(saved);
+    return r;
+  }
 }
 
 Scheme_Object *scheme_get_native_arity(Scheme_Object *closure, int mode)
@@ -4537,7 +4564,7 @@ Scheme_Object *scheme_get_native_arity(Scheme_Object *closure, int mode)
   if (mode == -4) {
     Scheme_Object *a;
     intptr_t n;
-    a = sjc.get_arity_code(closure, 0, 0 EXTRA_NATIVE_ARGUMENT);
+    a = call_get_arity_code(closure);
     if (SCHEME_BOXP(a)) a = SCHEME_BOX_VAL(a);
     n = SCHEME_INT_VAL(a);
     if (n < 0)
@@ -4547,7 +4574,7 @@ Scheme_Object *scheme_get_native_arity(Scheme_Object *closure, int mode)
     else
       return scheme_make_arity_mask(n, n);
   } else
-    return sjc.get_arity_code(closure, 0, 0 EXTRA_NATIVE_ARGUMENT);
+    return call_get_arity_code(closure);
 }
 
 /**********************************************************************/

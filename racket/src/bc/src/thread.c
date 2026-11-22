@@ -9668,6 +9668,13 @@ void scheme_prepare_this_thread_for_GC(Scheme_Thread *p)
 
 static void get_ready_for_GC()
 {
+#ifdef MZ_USE_JIT
+  /* With W^X code pages (MZ_USE_MAP_JIT), the GC needs write access to
+     code memory: the 3m GC updates pointers in the "retained" area of
+     JIT-generated code, and the CGC GC manages code memory */
+  scheme_thread_code_start_write();
+#endif
+
   start_this_gc_real_time = scheme_get_inexact_milliseconds();
   start_this_gc_time = scheme_get_process_milliseconds();
 
@@ -9749,6 +9756,10 @@ extern int GC_words_allocd;
 
 static void done_with_GC()
 {
+#ifdef MZ_USE_JIT
+  scheme_thread_code_end_write();
+#endif
+
   scheme_gmp_tls_unload(scheme_current_thread->gmp_tls, scheme_current_thread->gmp_tls_data);
   scheme_current_thread->gmp_tls_data = NULL;
 

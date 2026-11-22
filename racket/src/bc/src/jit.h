@@ -96,7 +96,7 @@ END_XFORM_ARITH;
 #define _jit (jitter->js)
 #define _jitp (&_jit)
 
-#ifdef MZ_USE_JIT_X86_64
+#if defined(MZ_USE_JIT_X86_64) || defined(MZ_USE_JIT_ARM64)
 # define JIT_LOG_WORD_SIZE 3
 #else
 # define JIT_LOG_WORD_SIZE 2
@@ -149,6 +149,15 @@ END_XFORM_ARITH;
 # define NEED_LONG_JUMPS
 # define LONG_JUMPS_DEFAULT(x) 1
 #endif
+#if defined(MZ_USE_JIT_ARM64)
+/* For AArch64, long jumps are needed for conditional branches longer
+   than 2^20 and other jumps longer than 2^27. Since a conditional
+   branch can't reach as far as on 32-bit ARM, long jumps may be
+   needed even within a JIT-generated block (as for PPC). */
+# define NEED_LONG_JUMPS
+# define NEED_LONG_BRANCHES
+# define LONG_JUMPS_DEFAULT(x) 1
+#endif
 
 #ifdef MZ_USE_FUTURES
 # define MZ_USE_LWC
@@ -181,6 +190,9 @@ END_XFORM_ARITH;
 #  define USE_FLONUM_UNBOXING
 # endif
 # if defined(MZ_USE_JIT_ARM) && defined(__ARM_PCS_VFP)
+#  define USE_FLONUM_UNBOXING
+# endif
+# if defined(MZ_USE_JIT_ARM64)
 #  define USE_FLONUM_UNBOXING
 # endif
 #endif
@@ -780,6 +792,9 @@ static void *top;
       two locals). 
     - On ARM, the stack should be 8-byte aligned, and
       jit_prolog() leaves the stack in an aligned state.
+    - On AArch64, the stack must be 16-byte aligned, and
+      jit_prolog() leaves the stack in an aligned state with room
+      for four locals.
 */
 
 /*    LOCAL1 is used to save the value current_cont_mark_stack,
@@ -921,6 +936,42 @@ void scheme_jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 {
   jit_movr_p(JIT_LR, ret_addr_reg);
   arm_prolog(_jitp, n);
+}
+# endif
+# define _jit_prolog_again scheme_jit_prolog_again
+#endif
+
+/* --- AArch64 --- */
+#ifdef MZ_USE_JIT_ARM64
+/* See "lightning/arm64/core.h" for the frame layout. The frame
+   pointer is also the stack pointer after jit_prolog(), and unboxed
+   flonums are stored below that. */
+# define JIT_LOCAL1 JIT_FRAME_LOCALS_OFFSET
+# define JIT_LOCAL2 (JIT_FRAME_LOCALS_OFFSET+8)
+# define JIT_LOCAL3 (JIT_FRAME_LOCALS_OFFSET+16)
+# define JIT_LOCAL4 (JIT_FRAME_LOCALS_OFFSET+24)
+# define JIT_FRAME_FLOSTACK_OFFSET 0
+# define mz_set_local_p_x(x, l, FP) jit_stxi_p(l, FP, x)
+# define mz_get_local_p_x(x, l, FP) jit_ldxi_p(x, FP, l)
+# define mz_patch_branch_at(a, v) jit_patch_at(a, v)
+# define mz_patch_ucbranch_at(a, v) jit_patch_at(a, v)
+/* A lightweight function saves its return address in LOCAL2 of
+   the enclosing frame: */
+# define mz_prolog(x) (mz_set_local_p(JIT_LR, JIT_LOCAL2))
+# define mz_epilog(x) (mz_get_local_p(JIT_LR, JIT_LOCAL2), jit_jmpr(JIT_LR))
+# define mz_epilog_without_jmp() /* empty */
+# define jit_shuffle_saved_regs() /* empty */
+# define jit_unshuffle_saved_regs() /* empty */
+# define mz_push_locals() /* empty */
+# define mz_pop_locals() /* empty */
+# define jit_base_prolog() jit_prolog(0)
+# ifdef SUPPRESS_LIGHTNING_FUNCS
+void scheme_jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg);
+# else
+void scheme_jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
+{
+  jit_movr_p(JIT_LR, ret_addr_reg);
+  a64_prolog(_jitp, n);
 }
 # endif
 # define _jit_prolog_again scheme_jit_prolog_again
@@ -1341,7 +1392,12 @@ static void emit_indentation(mz_jit_state *jitter)
 /*                             jitstate                               */
 /**********************************************************************/
 
-#define JIT_BUFFER_PAD_SIZE 200
+#ifdef MZ_USE_JIT_ARM64
+/* AArch64 long-jump sequences are relatively long */
+# define JIT_BUFFER_PAD_SIZE 400
+#else
+# define JIT_BUFFER_PAD_SIZE 200
+#endif
 
 #define PAST_LIMIT() ((uintptr_t)jit_get_raw_ip() > (uintptr_t)jitter->limit)
 #define CHECK_LIMIT() if (PAST_LIMIT()) return past_limit(jitter, __FILE__, __LINE__);

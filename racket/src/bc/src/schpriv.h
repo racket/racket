@@ -286,9 +286,15 @@ void scheme_clear_ephemerons(void);
 #ifdef MZ_USE_MAP_JIT
 XFORM_NONGCING void scheme_thread_code_start_write(void);
 XFORM_NONGCING void scheme_thread_code_end_write(void);
+/* For calling JIT-generated code from C while code writing might be
+   enabled (e.g., during JIT generation): */
+XFORM_NONGCING int scheme_thread_code_start_exec(void);
+XFORM_NONGCING void scheme_thread_code_end_exec(int saved);
 #else
 # define scheme_thread_code_start_write() do { } while (0)
 # define scheme_thread_code_end_write()   do { } while (0)
+# define scheme_thread_code_start_exec()  0
+# define scheme_thread_code_end_exec(s)   do { } while (0)
 #endif
 
 /*========================================================================*/

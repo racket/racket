@@ -879,7 +879,7 @@ int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
   /* Fast inlined-native jump ok (proc will check argc, if necessary) */
   {
     GC_CAN_IGNORE jit_insn *refr;
-#if defined(MZ_USE_JIT_I386) || defined(MZ_USE_JIT_ARM)
+#if defined(MZ_USE_JIT_I386) || defined(MZ_USE_JIT_ARM) || defined(MZ_USE_JIT_ARM64)
 # define KEEP_CALL_AND_RETURN_PAIRED
 #endif
 #ifdef KEEP_CALL_AND_RETURN_PAIRED

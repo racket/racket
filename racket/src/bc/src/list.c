@@ -4139,7 +4139,7 @@ void scheme_chaperone_hash_key_value(const char *name, Scheme_Object *obj, Schem
                                      Scheme_Object **_chap_key, Scheme_Object **_chap_val,
                                      int ischap)
 {
-  return chaperone_hash_key_value(name, obj, k, _chap_key, _chap_val, ischap);
+  chaperone_hash_key_value(name, obj, k, _chap_key, _chap_val, ischap);
 }
 
 static Scheme_Object *chaperone_hash_clear(const char *name, Scheme_Object *table)

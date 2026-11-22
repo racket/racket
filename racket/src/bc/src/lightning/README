@@ -41,6 +41,19 @@ many ways, including the following:
    instruction-set choices are made statically based on pre-processor
    definitions.
 
+ * The AArch64 support in "arm64" follows the lightning 1.x-style
+   interface and structure of the ARM support, while its instruction
+   encodings and opcode tables are derived from Paulo César Pereira
+   de Andrade's AArch64 port in GNU Lightning 2.x (version 2.2.3,
+   "lib/jit_aarch64-cpu.c" and "lib/jit_aarch64-fpu.c"), which is
+   also distributed under the LGPL version 3 or later. The
+   logical-immediate encoder is adapted from
+   "lib/aarch64-logical-immediates.c" in that distribution, whose
+   author placed it in the public domain (CC0). As in the x86_64
+   support, `_i` operations work on 32-bit values; a long-jump mode
+   (the default) uses an absolute-address sequence for each branch
+   and call so that it can be patched and can reach any target.
+
 ----------------------------------------
 
 GNU Lightning authors:
@@ -49,6 +62,7 @@ GNU Lightning authors:
  i386 and PPC assemblers by Ian Piumarta <piumarta@inria.fr>
  Major PPC contributions by Laurent Michel <ldm@thorgal.homelinux.org>
  ARM assembler by Paulo César Pereira de Andrade
+ AArch64 assembler by Paulo César Pereira de Andrade
 
 ----------------------------------------
 

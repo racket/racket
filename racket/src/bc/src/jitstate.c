@@ -245,6 +245,9 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
       size_pre_retained = size_pre_retained_double + (num_retained_double * sizeof(double));
       size = size_pre_retained + WORDS_TO_BYTES(num_retained);
       padding = 0;
+      /* Enable writing to code before allocating, in case the
+         allocator writes to code memory: */
+      scheme_thread_code_start_write();
       if (gcable) {
 #ifdef MZ_PRECISE_GC
 	buffer = scheme_malloc_code(size);
@@ -255,7 +258,6 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
       } else {
         buffer = scheme_malloc_permanent_code(size);
       }
-      scheme_thread_code_start_write();
       RECORD_CODE_SIZE(size);
     } else if (old_jitter) {
       /* this is a recursive generate, so use leftover space in
