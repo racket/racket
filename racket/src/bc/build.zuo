@@ -225,10 +225,17 @@
            (at-dir "xsrc" (.c->.o (file-name-from-path name))))
          3m-src-names))
 
+  ;; GMP's temporary-allocation state must be place-local for 3m,
+  ;; which needs `MZ_PRECISE_GC` (and so `MZ_USE_PLACES`) defined
+  ;; when compiling, so it cannot share the CGC object file
+  (define gmp3m.o (at-dir (.c->.o "xsrc/gmp.c")))
+
   (define 3m-all-objs
     (append
      (map (lambda (name)
-            (at-dir "src" (.c->.o (file-name-from-path name))))
+            (if (equal? name "gmp/gmp.c")
+                gmp3m.o
+                (at-dir "src" (.c->.o (file-name-from-path name)))))
           third-party-src-names)
      3m-objs
      (if foreign? (list foreign3m.o) '())))
@@ -1131,6 +1138,15 @@
                                                          (at-dir "phase2"))))])
                3m-src-names
                3m-objs)
+
+        ;; GMP compiled for 3m (not xformed, but with places enabled)
+        [:target ,gmp3m.o (,(at-source "src/gmp/gmp.c") ,rktio_config.h ,@common-headers)
+                 ,(lambda (path token)
+                    (c-compile path
+                               (at-source "src/gmp/gmp.c")
+                               (config-define (config-include (mz-config config #t)
+                                                              (at-dir "phase2"))
+                                              "MZ_PRECISE_GC")))]
 
         ;; Phase1 startup
         [:target ,startup1.o (,(at-source "src/startup.c") ,@common-headers

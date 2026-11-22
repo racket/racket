@@ -42,9 +42,7 @@
 
 /* Enable places --- 3m only: */
 #ifdef MZ_PRECISE_GC
-# ifndef _M_ARM64
-#  define MZ_USE_PLACES
-# endif
+# define MZ_USE_PLACES
 #endif
 
 /* Enable single-precision floats: */

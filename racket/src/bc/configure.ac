@@ -589,6 +589,8 @@ case "$host_os" in
        ;;
       aarch64*)
        MZOPTIONS="$MZOPTIONS -fno-omit-frame-pointer" # to make JIT backtraces work
+       # Futures are not supported, due to the weak memory model
+       enable_places_by_default=yes
        ;;
       arm*)
        EXTRA_GMP_NAME='gmp_arm_gcc.S'
@@ -679,6 +681,8 @@ case "$host_os" in
        enable_parallel_by_default=yes
        ;;
       aarch64*|arm64*)
+       # Futures are not supported, due to the weak memory model
+       enable_places_by_default=yes
        ;;       
       *)
        ;;
@@ -1032,7 +1036,7 @@ fi
 
 ############### places ###################
 
-if test "${enable_parallel_by_default}" = "yes" ; then
+if test "${enable_parallel_by_default}" = "yes" || test "${enable_places_by_default}" = "yes" ; then
   if test "${enable_places}" = "" ; then
     enable_places=yes
   fi

@@ -160,6 +160,11 @@ END_XFORM_ARITH;
 #endif
 
 #ifdef MZ_USE_FUTURES
+# ifdef MZ_USE_JIT_ARM64
+/* Futures would need memory fences for AArch64's weak memory model,
+   in addition to lightweight-continuation support in the JIT */
+#  error "futures are not supported with the AArch64 JIT"
+# endif
 # define MZ_USE_LWC
 #endif
 

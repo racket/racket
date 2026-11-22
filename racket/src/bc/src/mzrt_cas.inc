@@ -45,6 +45,9 @@ XFORM_NONGCING static MZ_INLINE int mz_MZRT_CAS(volatile mz_CAS_T *addr, mz_CAS_
     
     return result;
 #  undef CAS_I_SIZE
+# elif defined(__aarch64__)
+  /* full barrier, which places rely on for synchronization */
+  return __sync_bool_compare_and_swap(addr, old, new_val);
 # else
 #  error mzrt_cas not defined on this platform
 # endif
