@@ -70,6 +70,17 @@
                     (exn-message e))))
 
   (test/spec-passed/result
+   'nelistof-any/c1
+   '(contract (non-empty-listof any/c) '(1 #f #t) 'pos 'neg)
+   '(1 #f #t))
+  (test/pos-blame
+   'nelistof-any/c2
+   '(contract (non-empty-listof any/c) '() 'pos 'neg))
+  (test/pos-blame
+   'nelistof-any/c3
+   '(contract (non-empty-listof any/c) (cons 1 2) 'pos 'neg))
+
+  (test/spec-passed/result
    'imlistof1
    '(contract (list*of integer?) '(1 2 . 3) 'pos 'neg)
    '(1 2 . 3))
