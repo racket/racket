@@ -209,7 +209,7 @@
          [else
           (if (prop:any/c? elem-ctc)
               (λ (val neg-party)
-                (if (list? val)
+                (if (pred? val)
                     val
                     (raise-listof-blame-error blame val (pe-listof-ctc? ctc) neg-party)))
               (λ (val neg-party)
