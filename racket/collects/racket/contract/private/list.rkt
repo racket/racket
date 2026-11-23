@@ -53,7 +53,7 @@
                (λ () '())
                #f)))]))
 
-(define (listof-exercise ctc) 
+(define (listof-exercise ctc)
   (cond
     [(pe-listof-ctc? ctc)
      (λ (fuel) (values void '()))]
@@ -64,7 +64,7 @@
        (values
         (λ (lst)
           (contract-random-generate-stash
-           env last-ctc 
+           env last-ctc
            (let loop ([lst lst])
              (cond
                [(pair? lst) (loop (cdr lst))]
@@ -77,7 +77,7 @@
        (values
         (λ (lst)
           (contract-random-generate-stash
-           env elem-ctc 
+           env elem-ctc
            (oneof lst)))
         (list elem-ctc)))]))
 
@@ -129,7 +129,7 @@
           (contract-struct-equivalent? this-elem hd-ctc)
           (contract-struct-equivalent? (ne->pe-ctc this) tl-ctc))]
     [else #f]))
-           
+
 (define (raise-listof-blame-error blame val empty-ok? neg-party)
   (raise-blame-error blame #:missing-party neg-party val
                      '(expected: "~s" given: "~e")
@@ -175,7 +175,7 @@
      (λ (v)
        (let loop ([v v])
          (cond
-           [(pair? v) 
+           [(pair? v)
             (and (elem-fo? (car v))
                  (loop (cdr v)))]
            [else
@@ -203,7 +203,7 @@
                 [(pair? val)
                  (elem-proj+blame (car val) neg-party)
                  (loop (cdr val))]
-                [else 
+                [else
                  (last-elem-proj+blame val neg-party)]))
             val)]
          [else
@@ -230,7 +230,7 @@
                 [(pair? val)
                  (cons (elem-proj+blame (car val) neg-party)
                        (loop (cdr val)))]
-                [else 
+                [else
                  (last-elem-proj+blame val neg-party)])))]
          [else
           (λ (val neg-party)
@@ -687,7 +687,7 @@
     [else
      (higher-order-list/c ctc-args)]))
 
-(define (list/c-name-proc c) 
+(define (list/c-name-proc c)
   (define args (generic-list/c-args c))
   (cond
     [(null? args) ''()]
@@ -751,16 +751,16 @@
    #:stronger list/c-stronger
    #:equivalent list/c-equivalent
    #:late-neg-projection
-   (λ (c) 
+   (λ (c)
      (λ (blame)
-       (define projs 
+       (define projs
          (for/list ([ctc (in-list (generic-list/c-args c))]
                     [i (in-naturals 1)])
            ((get/build-late-neg-projection ctc)
             (add-list-context blame i))))
        (define args (generic-list/c-args c))
        (define expected-length (length args))
-       (λ (val neg-party) 
+       (λ (val neg-party)
          (cond
            [(list? val)
             (define actual-length (length val))
@@ -771,12 +771,12 @@
                  (proj ele neg-party))
                val]
               [else
-               (expected-a-list-of-len val actual-length expected-length blame 
+               (expected-a-list-of-len val actual-length expected-length blame
                                        #:missing-party neg-party)])]
            [else
             (raise-blame-error blame #:missing-party neg-party
                                val
-                               '(expected "a list" given: "~e") 
+                               '(expected "a list" given: "~e")
                                val)]))))
    #:list-contract? (λ (c) #t)))
 
@@ -808,7 +808,7 @@
   (define projs (map get/build-late-neg-projection (generic-list/c-args c)))
   (define expected (length projs))
   (λ (blame)
-    (define p-apps (for/list ([proj (in-list projs)] 
+    (define p-apps (for/list ([proj (in-list projs)]
                               [i (in-naturals 1)])
                      (proj (add-list-context blame i))))
     (λ (val neg-party)
