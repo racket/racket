@@ -2168,6 +2168,12 @@
 (test #f prefab-key? (list 'v (vector (expt 2 128))))
 (test #f prefab-key? (list 'v (vector (expt 2 40))))
 (test #f prefab-key? (list 'v (vector 32768)))
+;; Duplicate mutable-field indices are not allowed
+(test #t prefab-key? '(v #(0 1)))
+(test #f prefab-key? '(v #(1 1)))
+(test #f prefab-key? '(v 2 #(0 0)))
+(err/rt-test (make-prefab-struct '(v 2 #(1 1)) 1 2) exn:fail:contract?)
+(err/rt-test (read (open-input-string "#s((v #(0 0)) 1)")) exn:fail:read?)
 (err/rt-test (read (open-input-string "#s((v #(340282366920938463463374607431768211456)) 1)"))
              exn:fail:read?)
 (err/rt-test (make-struct-type 'a #f 1 0 #f null (current-inspector) #f (list (expt 2 40)))

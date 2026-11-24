@@ -6191,7 +6191,7 @@ static char *mutability_data_to_immutability_data(int icnt, int ucnt, Scheme_Obj
         return NULL;
 
       for (i = 0; i < len; i++) {
-        int a_val;
+        int a_val, j;
         Scheme_Object *a;
         a = SCHEME_VEC_ELS(mutables)[i];
         if (!SCHEME_INTP(a)
@@ -6201,6 +6201,10 @@ static char *mutability_data_to_immutability_data(int icnt, int ucnt, Scheme_Obj
                 && !_min_cnt))
           return NULL;
         a_val = SCHEME_INT_VAL(a);
+        for (j = 0; j < i; j++) {
+          if (SCHEME_VEC_ELS(mutables)[j] == a)
+            return NULL; /* duplicate */
+        }
         if (_min_cnt && ((a_val+ucnt) >= *_min_cnt)) {
           *_min_cnt = a_val+ucnt+1;
         }
