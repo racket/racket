@@ -856,6 +856,8 @@
                                          [mask mask])
                                 (cond
                                   [(null? imms) mask]
+                                  ;; an out-of-range index is reported by `finish!`
+                                  [(>= (car imms) init-count) (loop (cdr imms) mask)]
                                   [else
                                    (let ([m (bitwise-not (arithmetic-shift 1 (car imms)))])
                                      (loop (cdr imms) (bitwise-and mask m)))])))))
