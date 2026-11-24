@@ -539,8 +539,14 @@
        [(null? ms) n]
        [else (loop (lcm n (car ms)) (cdr ms))]))]))
 
-(define (fllog n) (#2%fllog n))
-(define (flatan n) (#2%flatan n))
+(define fllog
+  (case-lambda
+   [(n) (#2%fllog n)]
+   [(n b) (#2%fllog n b)]))
+(define flatan
+  (case-lambda
+   [(n) (#2%flatan n)]
+   [(n b) (#2%flatan n b)]))
 
 (define (fxquotient n d) (#2%fxquotient n d))
 

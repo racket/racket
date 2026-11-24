@@ -12,7 +12,9 @@
 ;; imaginary parts, not just flonums; we test them more in "jitinline.rktl"
 
 (define 2ary-table
-  (list (list make-flrectangular unsafe-make-flrectangular)))
+  (list (list make-flrectangular unsafe-make-flrectangular)
+        (list flatan unsafe-flatan)
+        (list fllog unsafe-fllog)))
 
 (define 1nary-table
   (list (list fl- unsafe-fl-)
@@ -417,6 +419,33 @@
 (test -inf.0 fllog -0.0)
 (test +nan.0 fllog -1.0)
 (test +nan.0 log (fllog -1.0))
+
+;; two-argument variants, which are like `atan` and `log` on flonums
+
+(test (atan 0.35 0.65) flatan 0.35 0.65)
+(test (atan 2.0 1.0) flatan 2.0 1.0)
+(test (atan -2.0 -1.0) flatan -2.0 -1.0)
+(test (atan +inf.0 -inf.0) flatan +inf.0 -inf.0)
+(test (atan 0.0 0.0) flatan 0.0 0.0)
+(test (atan -0.0 0.0) flatan -0.0 0.0)
+(test (atan 0.0 -0.0) flatan 0.0 -0.0)
+(test (atan -0.0 -0.0) flatan -0.0 -0.0)
+(test (atan 0.0 -1.0) flatan 0.0 -1.0)
+(test (atan -0.0 -1.0) flatan -0.0 -1.0)
+
+(test (log 100.0 10.0) fllog 100.0 10.0)
+(test (log 8.0 2.0) fllog 8.0 2.0)
+(test -inf.0 fllog 0.0 2.0)
+(test +inf.0 fllog 2.0 1.0)
+(test +nan.0 fllog 1.0 1.0)
+(test +nan.0 fllog -1.0 2.0)
+
+(err/rt-test (flatan 0.35 1) exn:fail:contract?)
+(err/rt-test (flatan 1 0.65) exn:fail:contract?)
+(err/rt-test (flatan 0.35 0.65 0.95) exn:fail:contract?)
+(err/rt-test (fllog 8.0 2) exn:fail:contract?)
+(err/rt-test (fllog 8 2.0) exn:fail:contract?)
+(err/rt-test (fllog 8.0 2.0 10.0) exn:fail:contract?)
 
 (test -0.0 flsqrt -0.0)
 (test +nan.0 log (flsqrt -1.0))

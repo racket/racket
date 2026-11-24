@@ -107,7 +107,10 @@ Like @racket[flround], @racket[flfloor], @racket[flceiling], and
 
 Like @racket[flsin], @racket[flcos], @racket[fltan], @racket[flasin],
 @racket[flacos], @racket[flatan], @racket[fllog], @racket[flexp], and
-@racket[flsqrt], and @racket[flexpt], but for @tech{extflonums}.}
+@racket[flsqrt], and @racket[flexpt], but for @tech{extflonums}.
+Unlike @racket[flatan] and @racket[fllog], @racket[extflatan]
+and @racket[extfllog] accept only a single argument.
+}
 
 @deftogether[(
 @defproc[(->extfl [a exact-integer?]) extflonum?]
