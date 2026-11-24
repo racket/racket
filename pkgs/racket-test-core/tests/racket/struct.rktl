@@ -2177,6 +2177,13 @@
     (make-struct-type 'a #f 1 0 #f null (current-inspector) #f '(1099511627776))))
 (err/rt-test/once (dynamic-require ''m-with-huge-immutable-index #f) exn:fail:contract?)
 
+;; An out-of-range procedure index must be rejected even without
+;; other properties
+(err/rt-test (make-struct-type 'a #f 1 0 #f null (current-inspector) 1)
+             exn:fail:contract? #rx"index for procedure")
+(err/rt-test (make-struct-type 'a #f 1 0 #f null (current-inspector) 100000000)
+             exn:fail:contract? #rx"index for procedure")
+
 ;; ----------------------------------------
 ;; Report malformed struct-copy correctly
 ;; https://github.com/racket/racket/issues/5194

@@ -335,7 +335,7 @@
                      (extract-procedure-properties props
                                                    proc-spec
                                                    (cond
-                                                     [(or guard (positive? auto-count) parent-rtd* auto-authentic?)
+                                                     [(or guard proc-spec (positive? auto-count) parent-rtd* auto-authentic?)
                                                       (make-eq-hashtable)]
                                                      [else empty-props-table]))])
          (let ([install-table? (and (not system?)
