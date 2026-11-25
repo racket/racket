@@ -13491,11 +13491,18 @@
                                                                                             rhs_0)))
                                                                                       (if (if (symbol?
                                                                                                u_0)
-                                                                                            (simple-mutated-state?
-                                                                                             (hash-ref
-                                                                                              mutated_0
-                                                                                              u_0
-                                                                                              #f))
+                                                                                            (if (simple-mutated-state?
+                                                                                                 (hash-ref
+                                                                                                  mutated_0
+                                                                                                  u_0
+                                                                                                  #f))
+                                                                                              (simple-mutated-state?
+                                                                                               (hash-ref
+                                                                                                mutated_0
+                                                                                                (unwrap
+                                                                                                 id_0)
+                                                                                                #f))
+                                                                                              #f)
                                                                                             #f)
                                                                                         (let ((app_0
                                                                                                (unwrap

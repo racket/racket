@@ -8067,4 +8067,13 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(module assigns-to-variable-initialized-from-another-variable racket/base
+  (define (f a) (let ([w a]) (set! w 0) w))
+  (define r (f 1))
+  (provide r))
+
+(test 0 dynamic-require ''assigns-to-variable-initialized-from-another-variable 'r)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)

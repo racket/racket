@@ -217,7 +217,8 @@
                 (define u (unwrap rhs))
                 (cond
                   [(and (symbol? u)
-                        (simple-mutated-state? (hash-ref mutated u #f)))
+                        (simple-mutated-state? (hash-ref mutated u #f))
+                        (simple-mutated-state? (hash-ref mutated (unwrap id) #f)))
                    (hash-set env (unwrap id) (hash-ref env u rhs))]
                   [else env])]
                [`,_ env])))
