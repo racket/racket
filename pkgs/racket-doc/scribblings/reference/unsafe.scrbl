@@ -205,7 +205,11 @@ For @tech{flonums}: Unchecked (potentially) versions of
 @racket[flsin], @racket[flcos], @racket[fltan], @racket[flasin],
 @racket[flacos], @racket[flatan], @racket[fllog], @racket[flexp],
 @racket[flhypot], @racket[flsqrt], and @racket[flexpt]. Currently, some of these
-bindings are simply aliases for the corresponding safe bindings.}
+bindings are simply aliases for the corresponding safe bindings.
+
+@history[#:changed "9.4.0.7" @elem{Added two-argument variants of
+                                   @racket[unsafe-flatan] and
+                                   @racket[unsafe-fllog].}]}
 
 
 @deftogether[(
