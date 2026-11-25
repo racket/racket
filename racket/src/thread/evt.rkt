@@ -182,22 +182,36 @@
                (primary-evt-ref evt)]
               [else
                (secondary-evt-ref evt)])]
-         [v (if (selector-prop-evt-value? v)
+         [v (if (and (selector-prop-evt-value? v)
+                     (not (impersonator? evt)))
                 ((selector-prop-evt-value-selector v) evt)
                 v)])
     (cond
+      [(selector-prop-evt-value? v)
+       ;; a chaperone's accessor can call user code, so call it out of atomic mode
+       (values #f (delayed-poll
+                   (lambda ()
+                     (let ([v (call-with-continuation-barrier
+                               (lambda () ((selector-prop-evt-value-selector v) evt)))])
+                       (cond
+                         [(procedure? v) (call-evt-procedure v evt)]
+                         [(evt? v) v]
+                         [else the-never-evt])))))]
       [(procedure? v)
        (values #f (delayed-poll
                    ;; out of atomic mode:
-                   (lambda ()
-                     (let ([v (call-with-continuation-barrier (lambda () (v evt)))])
-                       (cond
-                         [(evt? v) v]
-                         [(poller? v) (poller-evt v)]
-                         [else (wrap-evt the-always-evt (lambda (v) evt))])))))]
+                   (lambda () (call-evt-procedure v evt))))]
       [(poller? v) ((poller-proc v) evt poll-ctx)]
       [(evt? v) (values #f v)]
       [else (values #f the-never-evt)])))
+
+;; Called out of atomic mode for a `prop:evt` procedure
+(define (call-evt-procedure proc evt)
+  (let ([v (call-with-continuation-barrier (lambda () (proc evt)))])
+    (cond
+      [(evt? v) v]
+      [(poller? v) (poller-evt v)]
+      [else (wrap-evt the-always-evt (lambda (v) evt))])))
 
 ;; Possible result from `evt-poll`:
 (struct delayed-poll (resume)
