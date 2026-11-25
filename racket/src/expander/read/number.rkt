@@ -165,6 +165,9 @@
   (cond
     [(eq? n 'dbz) n]
     [(eq? n 'dbz!) n]
+    [(lazy-rational? n) (lazy-number (simplify-lazy-divide n) radix exp)]
+    [(lazy-expt? n) (lazy-number (lazy-expt-n n) radix (+ (lazy-expt-exp n) exp))]
+    [(eqv? n 0) 0]
     [else
      (if (and (exp . < . 30)
               (exp . > . -30))

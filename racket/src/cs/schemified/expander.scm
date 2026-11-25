@@ -65374,9 +65374,18 @@
       n_0
       (if (eq? n_0 'dbz!)
         n_0
-        (if (if (< exp_0 30) (> exp_0 -30) #f)
-          (* n_0 (expt radix_0 exp_0))
-          (lazy-expt9.1 n_0 radix_0 exp_0))))))
+        (if (lazy-rational? n_0)
+          (lazy-number (simplify-lazy-divide n_0) radix_0 exp_0)
+          (if (lazy-expt? n_0)
+            (lazy-number
+             (lazy-expt-n n_0)
+             radix_0
+             (+ (lazy-expt-exp n_0) exp_0))
+            (if (eqv? n_0 0)
+              0
+              (if (if (< exp_0 30) (> exp_0 -30) #f)
+                (* n_0 (expt radix_0 exp_0))
+                (lazy-expt9.1 n_0 radix_0 exp_0)))))))))
 (define lazy-divide
   (lambda (n_0 d_0 d-exactness_0)
     (if (eqv? d_0 0)
