@@ -65625,7 +65625,17 @@
                          (let ((cn_0 (make-polar m_0 a_0)))
                            (let ((tmp_0 (parse-state-exactness state21_0)))
                              (if (eq? tmp_0 'exact)
-                               (inexact->exact cn_0)
+                               (if (if (rational? (real-part cn_0))
+                                     (rational? (imag-part cn_0))
+                                     #f)
+                                 (inexact->exact cn_0)
+                                 (if (eq?
+                                      (state->convert-mode state21_0)
+                                      'must-read)
+                                   (format
+                                    "no exact representation for ~a"
+                                    cn_0)
+                                   #f))
                                cn_0))))))))))
            (if fst_0
              (if (eq? (state->convert-mode state21_0) 'must-read)

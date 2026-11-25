@@ -332,7 +332,11 @@
                         (lambda (a)
                           (define cn (make-polar m a))
                           (case (parse-state-exactness state)
-                            [(exact) (inexact->exact cn)]
+                            [(exact)
+                             (if (and (rational? (real-part cn))
+                                      (rational? (imag-part cn)))
+                                 (inexact->exact cn)
+                                 (fail state "no exact representation for ~a" cn))]
                             [else cn])))))])]
     [fst (fail state "missing `i` for complex number in `~.a`" s)]))
 
