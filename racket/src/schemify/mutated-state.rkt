@@ -59,6 +59,7 @@
          unused-mutated-state?
          via-variable-mutated-state?
          set!ed-mutated-state?
+         easily-reconstructed-mutated-state?
          state->set!ed-state)
 
 ;; Used for `letrec` bindings to record a name:
@@ -122,6 +123,10 @@
 
 (define (unused-mutated-state? v)
   (eq? v 'unused))
+
+(define (easily-reconstructed-mutated-state? v)
+  (or (not v)
+      (eq? v 'set!ed)))
 
 ;; When referencing an exported identifier, we need to consistently go
 ;; through a `variable` record when it can be `set!`ed or is not yet

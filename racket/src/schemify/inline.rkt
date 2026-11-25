@@ -154,6 +154,10 @@
                 (cons (cons (car need) id) env))))))
 
 (define (clone-args args base-env mutated)
+  ;; We could try to copy info from `mutated` to generated names,
+  ;; but the only possible states are `#f` and `'set!ed`. Since
+  ;; that mutated state is note recorded for cross-module inlining,
+  ;; just reconstruct `'set!ed` while cloning the body.
   (define env
     (let loop ([args args])
       (cond
@@ -161,14 +165,12 @@
         [(wrap-pair? args)
          (define u (unwrap (wrap-car args)))
          (define g (deterministic-gensym u))
-         (define m (hash-ref mutated u #f))
-         (when m
-           (hash-set! mutated g m))
          (cons (cons u g)
                (loop (wrap-cdr args)))]
         [else
          (define u (unwrap args))
-         (cons (cons u (deterministic-gensym u)) base-env)])))
+         (define g (deterministic-gensym u))
+         (cons (cons u g) base-env)])))
   (values (let loop ([args args] [env env])
             (cond
               [(wrap-null? args) '()]
@@ -226,7 +228,10 @@
      [`(begin-unsafe ,exps ...)
       `(begin-unsafe . ,(clone-body exps env mutated))]
      [`(set! ,id ,rhs)
-      `(set! ,(clone-expr id env mutated) ,(clone-expr rhs env mutated))]
+      (define g (clone-expr id env mutated))
+      (unless (hash-ref mutated g #f)
+        (hash-set! mutated g 'set!ed))
+      `(set! ,g ,(clone-expr rhs env mutated))]
      [`(#%variable-reference) v]
      [`(#%variable-reference ,id)
       `(#%variable-reference ,(clone-expr id env mutated))]
@@ -398,6 +403,10 @@
         (cond
           [(symbol? u-v)
            (cond
+             [(not (easily-reconstructed-mutated-state? (hash-ref mutated u-v #f)))
+              ;; disallow inlining across module boundaries where the `mutated` pass
+              ;; has already run and would not have seen the body to inline
+              #f]
              [(or (memq u-v env)
                   (hash-ref prim-knowns u-v #f)
                   (hash-ref needed u-v #f))

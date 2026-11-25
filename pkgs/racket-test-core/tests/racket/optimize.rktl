@@ -8072,7 +8072,36 @@
   (define r (f 1))
   (provide r))
 
+(module assigns-to-variable-initialized-from-another-variable2 racket/base
+  (define r
+    (let ([f (lambda (a b c d e . args)
+               (set! args 0)
+               args)])
+      (f 1 2 3 4 5 6)))
+  (provide r))
+
+(module assigns-to-variable-initialized-from-another-variable/cross-module-inlined racket/base
+  (module a racket/base
+    (provide f)
+    (define (f a) (set! a 0) a))
+  (require (submod "." a))
+  (define r (f 7))
+  (provide r))
+
+(module non-simple-mutated-state-for-cross-module-inlined racket/base
+  (module a racket/base
+    (provide f)
+    (define (f a b c d e)
+      (letrec ([x x])
+        x)))
+  (require (submod "." a))
+  (f 8 9 10 11 12))
+
 (test 0 dynamic-require ''assigns-to-variable-initialized-from-another-variable 'r)
+(test 0 dynamic-require ''assigns-to-variable-initialized-from-another-variable2 'r)
+(test 0 dynamic-require ''assigns-to-variable-initialized-from-another-variable/cross-module-inlined 'r)
+(err/rt-test/once (dynamic-require ''non-simple-mutated-state-for-cross-module-inlined #f)
+                  exn:fail:contract:variable?)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

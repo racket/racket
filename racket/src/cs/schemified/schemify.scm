@@ -6931,6 +6931,9 @@
             (let ((or-part_2 (eq? v_0 'too-early/ready)))
               (if or-part_2 or-part_2 (eq? v_0 'implicitly-set!ed)))))))))
 (define unused-mutated-state? (lambda (v_0) (eq? v_0 'unused)))
+(define easily-reconstructed-mutated-state?
+  (lambda (v_0)
+    (let ((or-part_0 (not v_0))) (if or-part_0 or-part_0 (eq? v_0 'set!ed)))))
 (define via-variable-mutated-state?
   (lambda (v_0)
     (let ((or-part_0 (eq? v_0 'set!ed)))
@@ -14950,15 +14953,11 @@
                    (if (pair? (unwrap args_1))
                      (let ((u_0 (unwrap (wrap-car args_1))))
                        (let ((g_0 (deterministic-gensym u_0)))
-                         (let ((m_0 (hash-ref mutated_0 u_0 #f)))
-                           (begin
-                             (if m_0 (hash-set! mutated_0 g_0 m_0) (void))
-                             (let ((app_0 (cons u_0 g_0)))
-                               (cons app_0 (loop_0 (wrap-cdr args_1))))))))
+                         (let ((app_0 (cons u_0 g_0)))
+                           (cons app_0 (loop_0 (wrap-cdr args_1))))))
                      (let ((u_0 (unwrap args_1)))
-                       (cons
-                        (cons u_0 (deterministic-gensym u_0))
-                        base-env_0))))))))
+                       (let ((g_0 (deterministic-gensym u_0)))
+                         (cons (cons u_0 g_0) base-env_0)))))))))
             (loop_0 args_0))))
       (values
        (letrec*
@@ -15492,18 +15491,25 @@
                                               a_0))))
                                      (let ((id_1 id_0))
                                        (let ((id_2 id_1) (rhs_1 rhs_0))
-                                         (let ((app_0
+                                         (let ((g_0
                                                 (clone-expr
                                                  id_2
                                                  env_0
                                                  mutated_0)))
-                                           (list
-                                            'set!
-                                            app_0
-                                            (clone-expr
-                                             rhs_1
-                                             env_0
-                                             mutated_0)))))))))
+                                           (begin
+                                             (if (hash-ref mutated_0 g_0 #f)
+                                               (void)
+                                               (hash-set!
+                                                mutated_0
+                                                g_0
+                                                'set!ed))
+                                             (list
+                                              'set!
+                                              g_0
+                                              (clone-expr
+                                               rhs_1
+                                               env_0
+                                               mutated_0))))))))))
                              (if (if (eq? '|#%variable-reference| hd_0)
                                    (let ((a_0 (cdr (unwrap v_0))))
                                      (let ((app_0 (unwrap '())))
@@ -16144,128 +16150,135 @@
                                        needed_0))
                                     (let ((u-v_0 (unwrap v_0)))
                                       (if (symbol? u-v_0)
-                                        (if (let ((or-part_0
-                                                   (memq u-v_0 env_0)))
-                                              (if or-part_0
-                                                or-part_0
-                                                (let ((or-part_1
-                                                       (hash-ref
-                                                        prim-knowns_0
-                                                        u-v_0
-                                                        #f)))
-                                                  (if or-part_1
-                                                    or-part_1
-                                                    (hash-ref
-                                                     needed_0
-                                                     u-v_0
-                                                     #f)))))
-                                          needed_0
-                                          (let ((cond-val_0
-                                                 (hash-ref
-                                                  exports_0
-                                                  u-v_0
-                                                  #f)))
-                                            (if cond-val_0
-                                              (hash-set
-                                               needed_0
-                                               u-v_0
-                                               (cons
-                                                (export-ext-id cond-val_0)
-                                                #f))
-                                              (let ((cond-val_1
-                                                     (hash-ref
-                                                      imports_0
-                                                      u-v_0
-                                                      #f)))
-                                                (if cond-val_1
-                                                  (hash-set
-                                                   needed_0
-                                                   u-v_0
-                                                   (cons
-                                                    (import-ext-id cond-val_1)
-                                                    (import-group-index
-                                                     (import-grp cond-val_1))))
-                                                  (let ((cond-val_2
+                                        (if (not
+                                             (easily-reconstructed-mutated-state?
+                                              (hash-ref mutated_0 u-v_0 #f)))
+                                          #f
+                                          (if (let ((or-part_0
+                                                     (memq u-v_0 env_0)))
+                                                (if or-part_0
+                                                  or-part_0
+                                                  (let ((or-part_1
                                                          (hash-ref
-                                                          added-exports_0
+                                                          prim-knowns_0
                                                           u-v_0
                                                           #f)))
-                                                    (if cond-val_2
-                                                      (hash-set
+                                                    (if or-part_1
+                                                      or-part_1
+                                                      (hash-ref
                                                        needed_0
                                                        u-v_0
-                                                       (cons
-                                                        (cadr cond-val_2)
-                                                        #f))
-                                                      (if (simple-mutated-state?
+                                                       #f)))))
+                                            needed_0
+                                            (let ((cond-val_0
+                                                   (hash-ref
+                                                    exports_0
+                                                    u-v_0
+                                                    #f)))
+                                              (if cond-val_0
+                                                (hash-set
+                                                 needed_0
+                                                 u-v_0
+                                                 (cons
+                                                  (export-ext-id cond-val_0)
+                                                  #f))
+                                                (let ((cond-val_1
+                                                       (hash-ref
+                                                        imports_0
+                                                        u-v_0
+                                                        #f)))
+                                                  (if cond-val_1
+                                                    (hash-set
+                                                     needed_0
+                                                     u-v_0
+                                                     (cons
+                                                      (import-ext-id
+                                                       cond-val_1)
+                                                      (import-group-index
+                                                       (import-grp
+                                                        cond-val_1))))
+                                                    (let ((cond-val_2
                                                            (hash-ref
-                                                            mutated_0
+                                                            added-exports_0
                                                             u-v_0
-                                                            #f))
-                                                        (let ((int-id_0
-                                                               (deterministic-gensym
-                                                                u-v_0)))
-                                                          (let ((ext-id_0
-                                                                 (letrec*
-                                                                  ((loop_0
-                                                                    (|#%name|
-                                                                     loop
-                                                                     (lambda (i_0)
-                                                                       (let ((sym_0
-                                                                              (if (eqv?
-                                                                                   i_0
-                                                                                   0)
-                                                                                u-v_0
-                                                                                (let ((app_0
-                                                                                       (symbol->string
-                                                                                        u-v_0)))
-                                                                                  (string-append
-                                                                                   app_0
-                                                                                   (number->string
-                                                                                    i_0))))))
-                                                                         (if (let ((or-part_0
-                                                                                    (hash-ref
-                                                                                     exports_0
-                                                                                     sym_0
-                                                                                     #f)))
-                                                                               (if or-part_0
-                                                                                 or-part_0
-                                                                                 (hash-ref
-                                                                                  added-exports_0
-                                                                                  sym_0
-                                                                                  #f)))
-                                                                           (loop_0
-                                                                            (add1
-                                                                             i_0))
-                                                                           sym_0))))))
-                                                                  (loop_0 0))))
-                                                            (begin
-                                                              (hash-set!
-                                                               added-exports_0
-                                                               u-v_0
-                                                               (list
-                                                                int-id_0
-                                                                ext-id_0))
-                                                              (hash-set!
-                                                               added-exports_0
-                                                               kw2822
-                                                               (let ((app_0
-                                                                      (list
-                                                                       u-v_0
-                                                                       ext-id_0)))
+                                                            #f)))
+                                                      (if cond-val_2
+                                                        (hash-set
+                                                         needed_0
+                                                         u-v_0
+                                                         (cons
+                                                          (cadr cond-val_2)
+                                                          #f))
+                                                        (if (simple-mutated-state?
+                                                             (hash-ref
+                                                              mutated_0
+                                                              u-v_0
+                                                              #f))
+                                                          (let ((int-id_0
+                                                                 (deterministic-gensym
+                                                                  u-v_0)))
+                                                            (let ((ext-id_0
+                                                                   (letrec*
+                                                                    ((loop_0
+                                                                      (|#%name|
+                                                                       loop
+                                                                       (lambda (i_0)
+                                                                         (let ((sym_0
+                                                                                (if (eqv?
+                                                                                     i_0
+                                                                                     0)
+                                                                                  u-v_0
+                                                                                  (let ((app_0
+                                                                                         (symbol->string
+                                                                                          u-v_0)))
+                                                                                    (string-append
+                                                                                     app_0
+                                                                                     (number->string
+                                                                                      i_0))))))
+                                                                           (if (let ((or-part_0
+                                                                                      (hash-ref
+                                                                                       exports_0
+                                                                                       sym_0
+                                                                                       #f)))
+                                                                                 (if or-part_0
+                                                                                   or-part_0
+                                                                                   (hash-ref
+                                                                                    added-exports_0
+                                                                                    sym_0
+                                                                                    #f)))
+                                                                             (loop_0
+                                                                              (add1
+                                                                               i_0))
+                                                                             sym_0))))))
+                                                                    (loop_0
+                                                                     0))))
+                                                              (begin
+                                                                (hash-set!
+                                                                 added-exports_0
+                                                                 u-v_0
+                                                                 (list
+                                                                  int-id_0
+                                                                  ext-id_0))
+                                                                (hash-set!
+                                                                 added-exports_0
+                                                                 kw2822
+                                                                 (let ((app_0
+                                                                        (list
+                                                                         u-v_0
+                                                                         ext-id_0)))
+                                                                   (cons
+                                                                    app_0
+                                                                    (hash-ref
+                                                                     added-exports_0
+                                                                     kw2822
+                                                                     null))))
+                                                                (hash-set
+                                                                 needed_0
+                                                                 u-v_0
                                                                  (cons
-                                                                  app_0
-                                                                  (hash-ref
-                                                                   added-exports_0
-                                                                   kw2822
-                                                                   null))))
-                                                              (hash-set
-                                                               needed_0
-                                                               u-v_0
-                                                               (cons
-                                                                ext-id_0
-                                                                #f)))))
-                                                        #f))))))))
+                                                                  ext-id_0
+                                                                  #f)))))
+                                                          #f)))))))))
                                         needed_0)))))))))))))))))
       #f)))
 (define body-needed-imports
