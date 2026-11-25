@@ -244,8 +244,8 @@
        [(cross) cross-mode]
        [else (raise-argument-error 'system-type
                                    (string-append
-                                    "(or/c 'os 'os* 'arch 'word 'so-find 'platform
-                                           'vm 'gc 'link 'machine 'target-machine\n"
+                                    "(or/c 'os 'os* 'arch 'word 'so-find 'platform\n"
+                                    "      'vm 'gc 'link 'machine 'target-machine\n"
                                     "      'so-suffix 'so-mode 'fs-change 'cross)")
                                    mode)])])))
 
