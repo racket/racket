@@ -493,7 +493,7 @@
           make-flrectangular
           gcd
           lcm
-          fllog flatan flhypot
+          flhypot
           fxquotient
 
           random

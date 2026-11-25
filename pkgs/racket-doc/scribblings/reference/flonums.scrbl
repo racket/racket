@@ -104,8 +104,10 @@ set in its (semi-infinite) two's complement representation.
 @defproc[(fltan  [a flonum?]) flonum?]
 @defproc[(flasin [a flonum?]) flonum?]
 @defproc[(flacos [a flonum?]) flonum?]
-@defproc[(flatan [a flonum?]) flonum?]
-@defproc[(fllog  [a flonum?]) flonum?]
+@defproc*[([(flatan [a flonum?]) flonum?]
+           [(flatan [y flonum?] [x flonum?]) flonum?])]
+@defproc*[([(fllog  [a flonum?]) flonum?]
+           [(fllog  [a flonum?] [b flonum?]) flonum?])]
 @defproc[(flexp  [a flonum?]) flonum?]
 @defproc[(flsqrt [a flonum?]) flonum?]
 )]{
@@ -113,11 +115,15 @@ set in its (semi-infinite) two's complement representation.
 Like @racket[sin], @racket[cos], @racket[tan], @racket[asin],
 @racket[acos], @racket[atan], @racket[log], @racket[exp], and
 @racket[sqrt], but constrained to consume and produce
-@tech{flonums}. Unlike @racket[atan] and @racket[log], @racket[flatan]
-and @racket[fllog] accept only a single argument. The result is
+@tech{flonums}. The two-argument variants of @racket[flatan] and
+@racket[fllog] are like the two-argument variants of @racket[atan] and
+@racket[log], respectively. The result is
 @racket[+nan.0] when a number outside the range @racket[-1.0] to
 @racket[1.0] is given to @racket[flasin] or @racket[flacos], or when a
-negative number is given to @racket[fllog] or @racket[flsqrt].}
+negative number is given to @racket[fllog] or @racket[flsqrt].
+
+@history[#:changed "9.4.0.7" @elem{Added two-argument variants of
+                                   @racket[flatan] and @racket[fllog].}]}
 
 @defproc[(flhypot [a flonum?] [b flonum?]) flonum?]{
 

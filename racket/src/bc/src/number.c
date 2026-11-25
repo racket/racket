@@ -1065,23 +1065,23 @@ void scheme_init_flfxnum_number(Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
   scheme_addto_prim_instance("flacos", p, env);
 
-  p = scheme_make_folding_prim(fl_atan, "flatan", 1, 1, 1);
+  p = scheme_make_folding_prim(fl_atan, "flatan", 1, 2, 1);
   if (scheme_can_inline_fp_op())
     flags = SCHEME_PRIM_IS_UNARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
-                                                            | SCHEME_PRIM_WANTS_FLONUM_FIRST
+                                                            | SCHEME_PRIM_WANTS_FLONUM_BOTH
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
   scheme_addto_prim_instance("flatan", p, env);
 
-  p = scheme_make_folding_prim(fl_log, "fllog", 1, 1, 1);
+  p = scheme_make_folding_prim(fl_log, "fllog", 1, 2, 1);
   if (scheme_can_inline_fp_op())
     flags = SCHEME_PRIM_IS_UNARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
-                                                            | SCHEME_PRIM_WANTS_FLONUM_FIRST
+                                                            | SCHEME_PRIM_WANTS_FLONUM_BOTH
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
   scheme_addto_prim_instance("fllog", p, env);
 
@@ -5684,9 +5684,41 @@ SAFE_FL(cos)
 SAFE_FL(tan)
 SAFE_FL(asin)
 SAFE_FL(acos)
-SAFE_FL(atan)
 SAFE_FL(exp)
-SAFE_FL(log)
+
+static Scheme_Object *fl_atan (int argc, Scheme_Object *argv[])
+{
+  double v, v2;
+
+  if (!SCHEME_DBLP(argv[0]))
+    scheme_wrong_contract("flatan", "flonum?", 0, argc, argv);
+  v = SCHEME_DBL_VAL(argv[0]);
+  if (argc < 2)
+    return scheme_make_double(scheme_double_atan(v));
+
+  if (!SCHEME_DBLP(argv[1]))
+    scheme_wrong_contract("flatan", "flonum?", 1, argc, argv);
+  v2 = SCHEME_DBL_VAL(argv[1]);
+
+  return scheme_make_double(scheme_double_atan2(v, v2));
+}
+
+static Scheme_Object *fl_log (int argc, Scheme_Object *argv[])
+{
+  double v, b;
+
+  if (!SCHEME_DBLP(argv[0]))
+    scheme_wrong_contract("fllog", "flonum?", 0, argc, argv);
+  v = scheme_double_log(SCHEME_DBL_VAL(argv[0]));
+  if (argc < 2)
+    return scheme_make_double(v);
+
+  if (!SCHEME_DBLP(argv[1]))
+    scheme_wrong_contract("fllog", "flonum?", 1, argc, argv);
+  b = scheme_double_log(SCHEME_DBL_VAL(argv[1]));
+
+  return scheme_make_double(v / b);
+}
 
 #define SAFE_BIN_FL(op) \
   static Scheme_Object * fl_ ## op (int argc, Scheme_Object *argv[])    \
