@@ -177,8 +177,13 @@ See more in PR8831.
     (unless (eof-object? c)
       (cond [(eqv? c #\%)
              (define hex (read-string 2 in))
-             (define hex-n (and (string? hex) (string->number hex 16)))
-             (cond [(exact-nonnegative-integer? hex-n) ;; not negative, fractional
+             ;; `pct-encoded' is "%" HEXDIG HEXDIG (RFC 3986, section 2.1), but
+             ;; `string->number' also accepts a sign and a single digit, so
+             ;; check for two hex digits before converting
+             (define hex-n (and (string? hex)
+                                (regexp-match? #rx"^[0-9a-fA-F][0-9a-fA-F]$" hex)
+                                (string->number hex 16)))
+             (cond [hex-n
                     ;; Note: write as byte to support multi-byte Unicode chars
                     (write-byte hex-n out)]
                    [else
