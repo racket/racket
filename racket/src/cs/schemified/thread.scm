@@ -2780,7 +2780,22 @@
                          evt_0)))))
                 (if (procedure? v_2)
                   (call-evt-procedure v_2 evt_0)
-                  (if (1/evt? v_2) v_2 the-never-evt))))))
+                  (if (1/evt? v_2)
+                    v_2
+                    (if (poller? v_2)
+                      (let ((proc_0 (poller-proc v_2)))
+                        (poller-evt13.1
+                         (poller2.1
+                          (lambda (self_0 poll-ctx_1)
+                            (call-with-values
+                             (lambda () (|#%app| proc_0 evt_0 poll-ctx_1))
+                             (lambda (results_0 new-evt_0)
+                               (values
+                                results_0
+                                (if (eq? new-evt_0 evt_0)
+                                  self_0
+                                  new-evt_0))))))))
+                      the-never-evt)))))))
           (if (procedure? v_1)
             (values
              #f

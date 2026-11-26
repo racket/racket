@@ -196,6 +196,13 @@
                        (cond
                          [(procedure? v) (call-evt-procedure v evt)]
                          [(evt? v) v]
+                         [(poller? v)
+                          ;; keep `evt` as the poller's `self` argument
+                          (let ([proc (poller-proc v)])
+                            (poller-evt
+                             (poller (lambda (self poll-ctx)
+                                       (let-values ([(results new-evt) (proc evt poll-ctx)])
+                                         (values results (if (eq? new-evt evt) self new-evt)))))))]
                          [else the-never-evt])))))]
       [(procedure? v)
        (values #f (delayed-poll
