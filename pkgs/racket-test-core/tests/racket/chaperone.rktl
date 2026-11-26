@@ -2830,6 +2830,24 @@
                             v)))
   (test #t values checked?))
 
+;; a chaperone on a `prop:evt` field is called outside of atomic mode,
+;; so it can raise an exception
+(let ()
+  (struct e (orig)
+    #:property prop:evt 0)
+  (err/rt-test (sync (chaperone-struct (e always-evt)
+                                       e-orig
+                                       (lambda (self v) (error 'e-orig "boom"))))
+               exn:fail?
+               #rx"boom")
+  (test #f sync/timeout 0 never-evt)
+  (test 'ok sync (chaperone-struct (e (lambda (self) (wrap-evt always-evt (lambda (x) 'ok))))
+                                   e-orig
+                                   (lambda (self v) v)))
+  (test #f sync/timeout 0 (chaperone-struct (e 'not-an-evt)
+                                            e-orig
+                                            (lambda (self v) v))))
+
 (test #t evt? (chaperone-evt (make-custodian-box (current-custodian) 1)
                              (λ (evt)
                                (values evt values))))

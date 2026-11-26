@@ -2762,25 +2762,59 @@
                (primary-evt-ref evt_0)
                (secondary-evt-ref evt_0)))))
       (let ((v_1
-             (if (selector-prop-evt-value? v_0)
+             (if (if (selector-prop-evt-value? v_0)
+                   (not (impersonator? evt_0))
+                   #f)
                (|#%app| (selector-prop-evt-value-selector v_0) evt_0)
                v_0)))
-        (if (procedure? v_1)
+        (if (selector-prop-evt-value? v_1)
           (values
            #f
            (delayed-poll12.1
             (lambda ()
               (let ((v_2
                      (call-with-continuation-barrier
-                      (lambda () (|#%app| v_1 evt_0)))))
-                (if (1/evt? v_2)
-                  v_2
-                  (if (poller? v_2)
-                    (poller-evt13.1 v_2)
-                    (wrap-evt7.1 the-always-evt (lambda (v_3) evt_0))))))))
-          (if (poller? v_1)
-            (|#%app| (poller-proc v_1) evt_0 poll-ctx_0)
-            (if (1/evt? v_1) (values #f v_1) (values #f the-never-evt))))))))
+                      (lambda ()
+                        (|#%app|
+                         (selector-prop-evt-value-selector v_1)
+                         evt_0)))))
+                (if (procedure? v_2)
+                  (call-evt-procedure v_2 evt_0)
+                  (if (1/evt? v_2)
+                    v_2
+                    (if (poller? v_2)
+                      (let ((proc_0 (poller-proc v_2)))
+                        (poller-evt13.1
+                         (poller2.1
+                          (lambda (self_0 poll-ctx_1)
+                            (call-with-values
+                             (lambda () (|#%app| proc_0 evt_0 poll-ctx_1))
+                             (lambda (results_0 new-evt_0)
+                               (values
+                                results_0
+                                (if (eq? new-evt_0 evt_0)
+                                  self_0
+                                  new-evt_0))))))))
+                      the-never-evt)))))))
+          (if (procedure? v_1)
+            (values
+             #f
+             (delayed-poll12.1 (lambda () (call-evt-procedure v_1 evt_0))))
+            (if (poller? v_1)
+              (|#%app| (poller-proc v_1) evt_0 poll-ctx_0)
+              (if (1/evt? v_1)
+                (values #f v_1)
+                (values #f the-never-evt)))))))))
+(define call-evt-procedure
+  (lambda (proc_0 evt_0)
+    (let ((v_0
+           (call-with-continuation-barrier
+            (lambda () (|#%app| proc_0 evt_0)))))
+      (if (1/evt? v_0)
+        v_0
+        (if (poller? v_0)
+          (poller-evt13.1 v_0)
+          (wrap-evt7.1 the-always-evt (lambda (v_1) evt_0)))))))
 (define finish_2478
   (make-struct-type-install-properties
    '(delayed-poll)

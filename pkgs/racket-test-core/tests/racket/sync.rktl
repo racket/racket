@@ -1108,6 +1108,38 @@
        (values #f never-evt))))
   (test #f sync/timeout 0 (not-ever-evt)))
 
+;; An unsafe poller in a `prop:evt` field of a chaperoned structure
+;; receives the chaperone as `self`
+(let ()
+  (struct q (p) #:property prop:evt 0)
+  (define selves '())
+  ;; Racket BC does not register wakeups for a poller that is not
+  ;; immediately the `prop:evt` value, so poll just once there:
+  (define counter (if (eq? 'chez-scheme (system-type 'vm)) 3 0))
+  (define c
+    (chaperone-struct
+     (q (unsafe-poller
+         (lambda (self wakeups)
+           (set! selves (cons self selves))
+           (cond
+             [(zero? counter)
+              (values '(done) #f)]
+             [else
+              (set! counter (sub1 counter))
+              (when wakeups
+                ;; Cancel any sleep:
+                (unsafe-poll-ctx-milliseconds-wakeup wakeups (current-inexact-monotonic-milliseconds)))
+              (values #f self)]))))
+     q-p
+     (lambda (self v) v)))
+  (test 'done sync c)
+  (test #t pair? selves)
+  (test #t andmap (lambda (s) (eq? s c)) selves)
+  (test #f sync/timeout 0 (chaperone-struct
+                           (q (unsafe-poller (lambda (self wakeups) (values #f self))))
+                           q-p
+                           (lambda (self v) v))))
+
 ;; ----------------------------------------
 ;;  Garbage collection
 
