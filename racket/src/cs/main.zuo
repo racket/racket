@@ -274,7 +274,7 @@
          (alert "keeping modified file" path)]
         [else
          (racket vars
-                (at-source "convert.rkt")
+                "-y" (at-source "convert.rkt")
                 (if unsafe?
                     "--unsafe"
                     '())
