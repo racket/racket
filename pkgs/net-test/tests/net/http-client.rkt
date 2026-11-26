@@ -508,6 +508,68 @@
       (with-check-info (['response-raw raw])
         (test-colon-field-lws raw))))
 
+  ;; A Content-Length is 1*DIGIT and a chunk-size is 1*HEXDIG, so a value
+  ;; that only `string->number` accepts must not frame the response.
+  (let ()
+    (local-require (prefix-in gs: "http-proxy/generic-server.rkt"))
+
+    ;; Answers one request with `raw`, then closes, and reports either
+    ;; (list <status> <body> <still live?>) or (list 'error <message>).
+    (define (framing-result raw)
+      (define-values (gs:port _gs:thread gs:kill)
+        (gs:serve
+         (lambda (inp outp)
+           (void (read-request inp))
+           (write-bytes raw outp)
+           (flush-output outp))))
+      (define c (hc:http-conn-open "localhost" #:port gs:port #:ssl? #f))
+      (define result (make-channel))
+      (define reader
+        (thread
+         (lambda ()
+           (channel-put
+            result
+            (with-handlers ([exn:fail? (lambda (e) (list 'error (exn-message e)))])
+              (define-values (status _headers bodyp)
+                (hc:http-conn-sendrecv! c "/"))
+              (list status (port->bytes bodyp) (hc:http-conn-live? c)))))))
+      (begin0
+        (or (sync/timeout 10 result)
+            (begin (kill-thread reader) 'timed-out))
+        (gs:kill)))
+
+    ;; When "-1" ends the first response, the second one is left in the
+    ;; connection and is read as the reply to the next request sent on it.
+    (check-equal?
+     (framing-result #"HTTP/1.1 200 OK\r\nContent-Length: -1\r\n\r\nHTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nPWNED")
+     (list #"HTTP/1.1 200 OK"
+           #"HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nPWNED"
+           #f))
+
+    (for ([cl (in-list '(#"+4" #"#x4" #"1e0" #"4/1"))])
+      (with-check-info (['content-length cl])
+        (check-equal?
+         (framing-result (bytes-append #"HTTP/1.1 200 OK\r\nContent-Length: " cl
+                                       #"\r\n\r\nbodymore"))
+         (list #"HTTP/1.1 200 OK" #"bodymore" #f))))
+
+    (for ([size (in-list '(#"+5" #"#x5" #"5/1"))])
+      (with-check-info (['chunk-size size])
+        (match (framing-result (bytes-append #"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n"
+                                             size #"\r\nhello\r\n0\r\n\r\n"))
+          [(list 'error msg)
+           (check-regexp-match #rx"Could not parse" msg)]
+          [other
+           (fail (format "expected a parse error, got ~e" other))])))
+
+    ;; Framing that HTTP does define keeps working.
+    (check-equal?
+     (framing-result #"HTTP/1.1 200 OK\r\nContent-Length: 4\r\n\r\nbody")
+     (list #"HTTP/1.1 200 OK" #"body" #t))
+    (check-equal?
+     (framing-result #"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n5\r\nhello\r\n0\r\n\r\n")
+     (list #"HTTP/1.1 200 OK" #"hello" #f)))
+
   ;; Ensure decoding errors are raised in the http-conn-recv!ing thread.
   ;; xref: https://github.com/Bogdanp/racket-http-easy/issues/35
   (let ()

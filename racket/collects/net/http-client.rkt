@@ -252,8 +252,12 @@
       [else
        (define size-str
          (string-trim in-v))
+       ;; A chunk-size is 1*HEXDIG (RFC 9112, section 7.1), while
+       ;; `string->number` also reads forms like "+a", "-a", "a/2",
+       ;; and "#xa".
        (define chunk-size
-         (string->number size-str 16))
+         (and (regexp-match? #rx"^[0-9a-fA-F]+$" size-str)
+              (string->number size-str 16)))
        (unless chunk-size
          (error 'http-pipe-chunk
                 "Could not parse ~S as hexadecimal number"
@@ -463,8 +467,11 @@
       [(regexp-member #rx#"^(?i:Transfer-Encoding:[\t ]*chunked)$" headers)
        (values (http-conn-response-port/chunked! hc #:close? #t)
                #t)]
+      ;; A Content-Length is 1*DIGIT (RFC 9112, section 6.2), while
+      ;; `string->number` also reads forms like "+1", "-1", "1/2",
+      ;; "1e3", and "#x1".
       [(ormap (λ (h)
-                (match (regexp-match #rx#"^(?i:Content-Length:)[\t ]*(.+)$" h)
+                (match (regexp-match #rx#"^(?i:Content-Length:)[\t ]*([0-9]+)[\t ]*$" h)
                   [#f #f]
                   [(list _ cl-bs)
                    (string->number
