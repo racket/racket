@@ -9,6 +9,21 @@
         (uri-decode "%P")  => "%P"
         (uri-decode "λ")   => "λ"
 
+        ;; an escape is "%" followed by exactly two hex digits, so a sign or a
+        ;; single digit is not an escape and is passed through
+        (uri-decode "%+a") => "%+a"
+        (uri-decode "%+d") => "%+d"
+        (uri-decode "%-0") => "%-0"
+        (uri-decode "x%a") => "x%a"
+        (uri-decode "x%0") => "x%0"
+        (uri-path-segment-decode "%+a") => "%+a"
+        (uri-userinfo-decode "%+a") => "%+a"
+        (uri-unreserved-decode "%+a") => "%+a"
+        (uri-path-segment-unreserved-decode "%+a") => "%+a"
+        (form-urlencoded-decode "%+a") => "%+a"
+        (form-urlencoded->alist "to=victim%+d%+aBcc:+evil")
+        => '([to . "victim%+d%+aBcc: evil"])
+
         (uri-decode (string-append
                      "\u631\u633\u627\u646\u647\u200c\u647\u627\u6cc\u2d\u62e\u648\u62f"
                      "\u645\u627\u646\u6cc\u2f\u62d\u642\u648\u642\u2d\u628\u634\u631\u2d"
