@@ -90,29 +90,26 @@
   (define p (explode given-p))
   (define (build-path* l)
     (if (null? l) 'same (apply build-path l)))
+  (define (cache-ref! key proc)
+    (if cache
+        (hash-ref! cache key proc)
+        (proc)))
   (for/fold ([pkg #f] [subpath #f] [collect #f] [install-scope #f])
       ([scope (in-list (list* 'user
                               (get-pkgs-search-dirs)))]
        #:when (not pkg))
-    (define d (or (and cache
-                       (hash-ref cache `(dir ,scope) #f))
-                  (let ([d (explode (get-pkgs-dir scope))])
-                    (when cache (hash-set! cache `(dir ,scope) d))
-                    d)))
+    (define d
+      (cache-ref! `(dir ,scope)
+                  (lambda () (explode (get-pkgs-dir scope)))))
     (define (read-pkg-db/cached)
-      (or (and cache
-               (hash-ref cache `(db ,scope) #f))
-          (let ([db (read-pkgs-db scope)])
-            (when cache (hash-set! cache `(db ,scope) db))
-            db)))
+      (cache-ref! `(db ,scope)
+                  (lambda () (read-pkgs-db scope))))
     (define (normal-case-mapping/cached db)
       (if (eq? 'windows (system-path-convention-type))
-	  (or (and cache
-		   (hash-ref cache `(normal-case ,scope) #f))
-	      (let ([ht (for/hash ([n (in-hash-keys db)])
-			  (values (normal-case-path n) n))])
-		(when cache (hash-set! cache `(normal-case ,scope) ht))
-		ht))
+	  (cache-ref! `(normal-case ,scope)
+	              (lambda ()
+	                (for/hash ([n (in-hash-keys db)])
+	                  (values (normal-case-path n) n))))
 	  #hash()))
     (cond
      [(sub-path? < p d)
@@ -156,14 +153,12 @@
                  (or (eq? 'link (car orig))
                      (eq? 'static-link (car orig))
                      (eq? 'clone (car orig))))
-            (let ([e (or (and cache
-                              (hash-ref cache `(pkg-dir ,(cadr orig)) #f))
-                         (let ([e (explode (simplify-path 
-                                            (path->complete-path (cadr orig) pkgs-dir) 
-                                            #f))])
-                           (when cache
-                             (hash-set! cache `(pkg-dir ,(cadr orig)) e))
-                           e))])
+            (let ([e (cache-ref! `(pkg-dir ,(cadr orig))
+                                 (lambda ()
+                                   (explode
+                                    (simplify-path
+                                     (path->complete-path (cadr orig) pkgs-dir)
+                                     #f))))])
               (if (sub-path? <= p e)
                   (values k
                           (build-path* (list-tail p (length e)))
