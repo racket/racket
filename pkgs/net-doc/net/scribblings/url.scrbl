@@ -387,9 +387,13 @@ port} contains both the returned headers and the body. The
                         [post bytes?]
                         [header (listof string?) null])
          input-port?]
+@defproc[(patch-pure-port [URL url?]
+                          [post bytes?]
+                          [header (listof string?) null])
+         input-port?]
 )]{
 
-Initiates a POST/PUT request for @racket[URL] and sends the
+Initiates a POST/PUT/PATCH request for @racket[URL] and sends the
 @racket[post] byte string.  The result is a @tech{pure port}, which
 contains the body of the response is returned.  The optional list of
 strings can be used to send header lines to the server.
@@ -408,6 +412,10 @@ strings can be used to send header lines to the server.
 @defproc[(put-impure-port [URL url?]
                           [post bytes?]
                           [header (listof string?) null])
+         input-port?]
+@defproc[(patch-impure-port [URL url?]
+                            [post bytes?]
+                            [header (listof string?) null])
          input-port?]
 )]{
 
