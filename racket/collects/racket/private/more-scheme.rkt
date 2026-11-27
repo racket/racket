@@ -3,6 +3,7 @@
 ;; more-scheme : case, do, etc. - remaining syntax
 
 (module more-scheme '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
   (#%require "core-syntax.rkt" '#%paramz "case.rkt" "logger.rkt"
              (for-syntax '#%kernel "stx.rkt" "core-syntax.rkt" "stxcase-scheme.rkt" "qqstx.rkt"))
 

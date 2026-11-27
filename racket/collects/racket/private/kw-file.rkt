@@ -1,4 +1,5 @@
 (module kw-file "pre-base.rkt" 
+  (#%declare #:unsafe-cross-phase-persistent)
 
   (require (prefix-in k: "pre-base.rkt")
            "sort.rkt")

@@ -1,4 +1,5 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 (require racket/syntax
          racket/pretty
          (submod "residual.rkt" ct)

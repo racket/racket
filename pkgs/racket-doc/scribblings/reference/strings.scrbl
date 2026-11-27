@@ -505,7 +505,7 @@ for @racket[substring], otherwise the @exnraise[exn:fail:contract].
 @; ----------------------------------------
 @section{Additional String Functions}
 
-@note-lib[racket/string]
+@note-lib[racket/string #:cross-phase-persistent]
 @(define string-eval (make-base-eval))
 @examples[#:hidden #:eval string-eval (require racket/string racket/list)]
 

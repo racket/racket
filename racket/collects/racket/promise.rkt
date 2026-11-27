@@ -1,4 +1,5 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 (require "private/promise.rkt" (for-syntax racket/base syntax/for-body))
 (provide delay lazy force promise? promise-forced? promise-running? promise/name?
          (rename-out [delay/name* delay/name]

@@ -7,7 +7,7 @@
 @(the-eval '(require racket/syntax))
 @(the-eval '(require (for-syntax racket/base racket/syntax)))
 
-@note-lib-only[racket/syntax]
+@note-lib-only[racket/syntax #:cross-phase-persistent]
 
 
 @;{----}

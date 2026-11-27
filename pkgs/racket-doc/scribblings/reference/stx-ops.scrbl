@@ -505,7 +505,7 @@ limited to---the following keys:
 
 @section{Syntax Object Source Locations}
 
-@note-lib-only[racket/syntax-srcloc]
+@note-lib-only[racket/syntax-srcloc #:cross-phase-persistent]
 
 @defproc[(syntax-srcloc [stx syntax?]) (or/c #f srcloc?)]{
 

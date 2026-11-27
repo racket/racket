@@ -897,7 +897,7 @@ changes.}
 @;------------------------------------------------------------------------
 @section[#:tag "runtime-path"]{Declaring Paths Needed at Run Time}
 
-@note-lib-only[racket/runtime-path]
+@note-lib-only[racket/runtime-path #:cross-phase-persistent]
 
 The @racketmodname[racket/runtime-path] library provides forms for
 accessing files and directories at run time using a path that are

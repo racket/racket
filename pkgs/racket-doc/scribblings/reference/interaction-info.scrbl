@@ -3,7 +3,7 @@
 
 @title[#:tag "interaction-info"]{Interaction Configuration}
 
-@note-lib-only[racket/interaction-info]
+@note-lib-only[racket/interaction-info #:cross-phase-persistent]
 
 The @racketmodname[racket/interaction-info] library provides a way to
 register a langauge's configuration for a

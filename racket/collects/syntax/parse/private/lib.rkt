@@ -1,4 +1,5 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 (require "sc.rkt"
          "keywords.rkt"
          (only-in "residual.rkt" state-cons!)

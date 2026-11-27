@@ -1,10 +1,11 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 (require (for-syntax racket/base
                      syntax/for-body)
          racket/hash-code
          "treelist.rkt"
          (submod "treelist.rkt" unsafe)
-         "private/sort.rkt"
+         (only-in "private/sort.rkt" vector-sort!)
          "private/serialize-structs.rkt")
 
 (provide make-mutable-treelist

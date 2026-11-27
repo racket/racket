@@ -1,4 +1,5 @@
 (module list "pre-base.rkt"
+  (#%declare #:unsafe-cross-phase-persistent)
   (require (rename-in "pico.rkt" [alt-reverse reverse]))
 
   (provide foldl

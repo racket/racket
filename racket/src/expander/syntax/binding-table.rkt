@@ -312,7 +312,8 @@
 ;; Return a set of symbols that have bindings for a given scope set
 (define (binding-table-symbols table scs s extra-shifts
                                #:only-interned? [only-interned? #f]
-                               #:exactly? [exactly? #f])
+                               #:exactly? [exactly? #f]
+                               #:normalize [normalize values])
   (define-values (ht bulk-bindings)
     (if (hash? table)
         (values table null)
@@ -321,15 +322,17 @@
   (set-union
    (for/seteq ([(sym at-sym) (in-hash ht)]
                #:when (or (not only-interned?) (symbol-interned? sym))
-               #:when (for/or ([an-scs (in-hash-keys at-sym)])
+               #:when (for/or ([raw-an-scs (in-hash-keys at-sym)])
+                        (define an-scs (normalize raw-an-scs))
                         (if exactly?
                             (scope-set=? an-scs scs)
                             (scope-set-subset? an-scs scs))))
      sym)
    (for*/seteq ([bba (in-list bulk-bindings)]
-                #:when (if exactly?
-                           (scope-set=? (bulk-binding-at-scopes bba) scs)
-                           (scope-set-subset? (bulk-binding-at-scopes bba) scs))
+                #:when (let ([an-scs (normalize (bulk-binding-at-scopes bba))])
+                         (if exactly?
+                             (scope-set=? an-scs scs)
+                             (scope-set-subset? an-scs scs)))
                 [sym (in-hash-keys
                       (bulk-binding-symbols (bulk-binding-at-bulk bba) s extra-shifts))]
                 #:when (or (not only-interned?) (symbol-interned? sym)))
@@ -340,14 +343,16 @@
 ;; Return a set of interned scopes that can be added to `scs` to reach some binding
 (define (binding-table-interned-scope-keys table scs sym s extra-shifts
                                            interned-scope? interned-scope-key
-                                           #:exactly? [exactly? #f])
+                                           #:exactly? [exactly? #f]
+                                           #:normalize [normalize values])
   (define-values (ht bulk-bindings)
     (if (hash? table)
         (values table null)
         (values (table-with-bulk-bindings-syms table)
                 (table-with-bulk-bindings-bulk-bindings table))))
   (set-union
-   (for*/seteq ([an-scs (in-hash-keys (hash-ref ht sym #hasheq()))]
+   (for*/seteq ([raw-an-scs (in-hash-keys (hash-ref ht sym #hasheq()))]
+                [an-scs (in-value (normalize raw-an-scs))]
                 [sc (in-scope-set an-scs)]
                 #:when (and (interned-scope? sc)
                             (not (scope-set-member? scs sc))
@@ -359,7 +364,7 @@
                 #:when (hash-ref (bulk-binding-symbols (bulk-binding-at-bulk bba) s extra-shifts)
                                  sym
                                  #f)
-                #:do [(define an-scs (bulk-binding-at-scopes bba))]
+                #:do [(define an-scs (normalize (bulk-binding-at-scopes bba)))]
                 [sc (in-scope-set an-scs)]
                 #:when (and (interned-scope? sc)
                             (not (scope-set-member? scs sc))

@@ -27,6 +27,7 @@
                      #:import/export-only import/export-only
                      #:pre-submodules pre-submodules
                      #:post-submodules post-submodules
+                     #:cross-phase-persistent? [cross-phase-persistent? #f]
                      #:dump-output-file dump-output-file)
 
   (define-values (min-phase max-phase)
@@ -368,7 +369,10 @@
                             (hash-set metadata-ht 'pre pre-submodules))]
            [metadata-ht (if (null? post-submodules)
                             metadata-ht
-                            (hash-set metadata-ht 'post post-submodules))])
+                            (hash-set metadata-ht 'post post-submodules))]
+           [metadata-ht (if cross-phase-persistent?
+                            (hash-set metadata-ht 'cross-phase-persistent? #t)
+                            metadata-ht)])
       metadata-ht))
       
   (define metadata-ht/stx

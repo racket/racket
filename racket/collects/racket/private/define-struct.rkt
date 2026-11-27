@@ -2,6 +2,7 @@
 ;;  (planet "struct.ss" ("ryanc" "macros.plt" 1 0)))
 
 (module define-struct '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
   (#%require "core-syntax.rkt" "../stxparam.rkt"
              "generic-methods.rkt"
              (for-syntax '#%kernel "core-syntax.rkt"

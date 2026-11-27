@@ -188,7 +188,9 @@
 (check-cross-phase #f '(define-values (x) (lambda () (letrec-values ([(q) (set! x x)]) q))))
 (check-cross-phase #f '(define-values (x) (lambda () (letrec-values ([(q) 'ok]) (set! x x)))))
 (check-cross-phase #f '(define-values (x) (#%variable-reference x)))
-(check-cross-phase #f '(#%require racket/base) #:why-not-message #rx"required.*module.*racket/base")
+(check-cross-phase #f '(#%require racket/contract) #:why-not-message #rx"required.*module.*racket/contract")
+;; `racket/base` is cross-phase persistent, so it can be required
+(check-cross-phase #t '(#%require racket/base))
 (check-cross-phase #f '(define-values (x) (gensym 1)))
 (check-cross-phase #f '(define-values (x) (string->uninterned-symbol)))
 

@@ -1,4 +1,5 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 
 (require racket/private/stxcase-scheme
          racket/private/qqstx

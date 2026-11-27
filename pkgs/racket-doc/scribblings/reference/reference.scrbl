@@ -54,7 +54,9 @@ language.
 
 Unless otherwise noted, the bindings defined in this manual are
 exported by the @racketmodname[racket/base] and @racketmodname[racket]
-languages.}
+languages. The @racketmodname[racket/base] library is a
+@tech{cross-phase persistent} module, while @racketmodname[racket] is
+not.}
 
 
 @margin-note{The @racketmodname[racket/base] library is much smaller than

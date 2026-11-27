@@ -3,6 +3,7 @@
 ;; based on Shriram's pattern matcher for Zodiac
 
 (module sc '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
   (#%require "stx.rkt" "core-syntax.rkt"
              (rename "core-syntax.rkt" -define define)
              (rename "core-syntax.rkt" -define-syntax define-syntax)

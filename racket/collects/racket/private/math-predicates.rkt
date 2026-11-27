@@ -1,4 +1,5 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 (require "performance-hint.rkt")
 (provide nan?
          infinite?

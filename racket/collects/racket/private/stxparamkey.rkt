@@ -1,5 +1,6 @@
 
 (module stxparamkey '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
   (#%require "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt"
              "stxcase.rkt" "stxloc.rkt" "with-stx.rkt"
              (only '#%unsafe unsafe-root-continuation-prompt-tag)

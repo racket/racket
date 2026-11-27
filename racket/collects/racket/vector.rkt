@@ -1,4 +1,5 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 
 (provide vector-empty? vector-set*! vector-copy vector-set/copy
          vector-map vector-map! vector-append

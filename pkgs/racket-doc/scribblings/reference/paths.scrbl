@@ -664,7 +664,7 @@ machine and volume names become path elements.
 
 @(define path-eval (make-base-eval `(require racket/path)))
 
-@note-lib[racket/path]
+@note-lib[racket/path #:cross-phase-persistent]
 
 @defproc[(file-name-from-path [path (or/c path-string? path-for-some-system?)])
          (or/c path-for-some-system? #f)]{

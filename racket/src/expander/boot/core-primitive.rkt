@@ -164,6 +164,8 @@
                       syntax-local-lift-module
                       
                       syntax-local-lift-require
+                      syntax-local-state-ref
+                      syntax-local-state-set!
                       syntax-local-lift-provide
                       syntax-local-lift-module-end-declaration
                       
@@ -241,6 +243,7 @@
                       variable-reference->phase
                       variable-reference->module-base-phase
                       variable-reference->module-declaration-inspector
+                      variable-reference-add-attach-dependency!
 
                       read-syntax
                       read-syntax/recursive)

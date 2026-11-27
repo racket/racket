@@ -291,7 +291,8 @@
                             #f ; stx-mpi
                             #hasheqv() ; portal-stxes
                             null       ; pre-submodules
-                            null)))    ; post-submodules
+                            null       ; post-submodules
+                            #f)))      ; cross-phase-persistent?
       path/submod+pane-content))
 
   ;; For each pane submodule, build an exclusion list that points to the other submodules

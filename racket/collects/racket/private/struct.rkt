@@ -1,5 +1,6 @@
 
 (module struct '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
   (#%require "core-syntax.rkt"
              "define-struct.rkt"
              (for-syntax '#%kernel "core-syntax.rkt"

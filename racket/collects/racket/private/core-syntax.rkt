@@ -1,4 +1,5 @@
 (module core-syntax '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
 
   ; ======================================================================
   ; Many of the base syntactic forms of Racket-- things like `and`, `let`,

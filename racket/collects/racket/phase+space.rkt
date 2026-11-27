@@ -1,4 +1,5 @@
 (module phase+space '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
   (#%require "private/core-syntax.rkt")
   
   (#%provide phase?

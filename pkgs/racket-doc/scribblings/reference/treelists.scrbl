@@ -42,7 +42,7 @@ as a @tech{stream}.
 
 @section{Immutable Treelists}
 
-@note-lib-only[racket/treelist]
+@note-lib-only[racket/treelist #:cross-phase-persistent]
 
 @history[#:added "8.12.0.7"]
 
@@ -610,7 +610,7 @@ and the default @racket[fail-k] raises @racket[exn:fail:contract].
 
 @section{Mutable Treelists}
 
-@note-lib-only[racket/mutable-treelist]
+@note-lib-only[racket/mutable-treelist #:cross-phase-persistent]
 
 A @deftech{mutable treelist} is like an immutable @tech{treelist} in a
 box, where operations that change the mutable treelist replace the

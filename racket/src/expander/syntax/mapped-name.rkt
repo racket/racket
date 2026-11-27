@@ -16,11 +16,26 @@
                              #:only-interned? [only-interned? #f]
                              #:exactly? [exactly? #f])
   (define s-scs (syntax-scope-set s phase))
-  (for/fold ([syms (seteq)]) ([sc (in-scope-set s-scs)])
+  (define-values (pl-reps normalize) (phaseless-info s))
+  (define (add syms sc)
     (set-union syms
                (binding-table-symbols (scope-binding-table sc) s-scs s null
                                       #:only-interned? only-interned?
-                                      #:exactly? exactly?))))
+                                      #:exactly? exactly?
+                                      #:normalize normalize)))
+  (for/fold ([syms (for/fold ([syms (seteq)]) ([sc (in-scope-set s-scs)])
+                     (add syms sc))])
+            ([sc (in-list pl-reps)])
+    (add syms sc)))
+
+;; For an identifier with a phaseless multi-scope, extra binding tables
+;; to consult and a normalizer for scope sets in those tables
+(define (phaseless-info s)
+  (define pl-reps (phaseless-representatives (fallback-first (syntax-shifted-multi-scopes s))))
+  (values pl-reps
+          (if (null? pl-reps)
+              values
+              (lambda (scs) (phaseless-normalize-scopes scs pl-reps)))))
 
 (define (syntax-mapped-phases s)
   (define smss (fallback-first (syntax-shifted-multi-scopes s)))
@@ -30,8 +45,14 @@
 (define (syntax-mapped-interned-scope-symbols s phase #:exactly? exactly?)
   (define s-scs (syntax-scope-set s phase))
   (define sym (syntax-e s))
-  (for/fold ([syms (seteq)]) ([sc (in-scope-set s-scs)])
+  (define-values (pl-reps normalize) (phaseless-info s))
+  (define (add syms sc)
     (set-union syms
                (binding-table-interned-scope-keys (scope-binding-table sc) s-scs sym s null
                                                   #:exactly? exactly?
-                                                  interned-scope? interned-scope-key))))
+                                                  #:normalize normalize
+                                                  interned-scope? interned-scope-key)))
+  (for/fold ([syms (for/fold ([syms (seteq)]) ([sc (in-scope-set s-scs)])
+                     (add syms sc))])
+            ([sc (in-list pl-reps)])
+    (add syms sc)))

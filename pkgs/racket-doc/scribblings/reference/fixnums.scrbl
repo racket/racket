@@ -12,7 +12,7 @@
 
 @title[#:tag "fixnums"]{Fixnums}
 
-@defmodule[racket/fixnum]
+@defmodule[racket/fixnum]{The @racketmodname[racket/fixnum] library is a @tech{cross-phase persistent} module.}
 
 The @racketmodname[racket/fixnum] library provides operations like
 @racket[fx+] that consume and produce only @tech{fixnums}. The operations in

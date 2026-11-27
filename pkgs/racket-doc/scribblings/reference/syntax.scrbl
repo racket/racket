@@ -371,6 +371,7 @@ Legal only in a @tech{module begin context}, and handled by the
 @defform[(#%declare declaration-keyword ...)
          #:grammar
          ([declaration-keyword #:cross-phase-persistent
+                               #:unsafe-cross-phase-persistent
                                #:empty-namespace
                                #:require=define
                                #:flatten-requires
@@ -388,6 +389,21 @@ module:
        error if the module does not meet the
        @seclink["cross-phase persistent-grammar"]{constraints
        of cross-phase persistent modules}.}
+
+ @item{@indexed-racket[#:unsafe-cross-phase-persistent] --- declares
+       the module as @tech{cross-phase persistent} without the
+       constraints on its body that apply for
+       @racket[#:cross-phase-persistent], making the module an
+       @tech{unsafe cross-phase persistent} module. A syntax error is
+       reported if the module imports a module that is not
+       @tech{cross-phase persistent}, imports a module at the
+       @tech{label phase level}, or binds an identifier differently
+       at different @tech{phase levels}. The
+       @racket[#:unsafe-cross-phase-persistent] declaration keyword
+       is allowed only when the current @tech{code inspector} is the
+       initial one, and it cannot be combined with
+       @racket[#:cross-phase-persistent]. See
+       @secref["unsafe-cross-phase-persistent-modules"].}
 
 @item{@indexed-racket[#:empty-namespace] --- declares that
        @racket[module->namespace] for this module should produce a
@@ -450,7 +466,8 @@ context} or a @tech{module-begin context}. Each
          #:changed "8.4.0.2" @elem{Added @racket[#:realm].}
          #:changed "8.6.0.9" @elem{Added @racket[#:require=define].}
          #:changed "8.13.0.4" @elem{Added @racket[#:flatten-requires].}
-         #:changed "8.13.0.9" @elem{Added @racket[#:unlimited-compile].}]}
+         #:changed "8.13.0.9" @elem{Added @racket[#:unlimited-compile].}
+         #:changed "9.4.0.8" @elem{Added @racket[#:unsafe-cross-phase-persistent].}]}
 
 
 @;------------------------------------------------------------------------
@@ -2354,7 +2371,7 @@ See also @racket[local], which supports local bindings with
 @;------------------------------------------------------------------------
 @section[#:tag "local"]{Local Definitions: @racket[local]}
 
-@note-lib[racket/local]
+@note-lib[racket/local #:cross-phase-persistent]
 
 @defform[(local [definition ...] body ...+)]{
 
@@ -2572,7 +2589,7 @@ in @math{O(log N)} time for @math{N} @racket[datum]s.
 
 @subsection[#:tag "case/equal"]{Variants of @racket[case]}
 
-@note-lib-only[racket/case]
+@note-lib-only[racket/case #:cross-phase-persistent]
 
 @history[#:added "8.11.1.8"]
 
@@ -3226,7 +3243,7 @@ syntactic forms or languages that supply a more limited kind of
 @;------------------------------------------------------------------------
 @section[#:tag "performance-hint"]{Performance Hints: @racket[begin-encourage-inline]}
 
-@note-lib-only[racket/performance-hint]
+@note-lib-only[racket/performance-hint #:cross-phase-persistent]
 
 @defform[(begin-encourage-inline form ...)]{
 
@@ -3267,7 +3284,7 @@ heuristics, and should only be used when other inlining attempts (such as
 @;------------------------------------------------------------------------
 @section[#:tag "lazy-require"]{Importing Modules Lazily: @racket[lazy-require]}
 
-@note-lib-only[racket/lazy-require]
+@note-lib-only[racket/lazy-require #:cross-phase-persistent]
 
 @(define lazy-require-eval (make-base-eval))
 @(lazy-require-eval '(require racket/lazy-require))
@@ -3295,6 +3312,15 @@ also triggers a use of @racket[register-external-module] to declare an
 indirect compilation dependency (in case the function is used in the
 process of compiling a module).
 
+When @racket[lazy-require] is used in a @tech{cross-phase persistent}
+module, each @racket[module-path] should refer to a @tech{cross-phase
+persistent} module, since the lazily loaded module's instance is
+shared along with the enclosing module's instance. Each
+@racket[module-path] is registered with
+@racket[variable-reference-add-attach-dependency!], so that attaching
+the enclosing module to another namespace also loads and attaches the
+lazily required modules.
+
 @examples[#:eval lazy-require-eval
 (lazy-require
   [racket/list (partition)])
@@ -3307,7 +3333,9 @@ process of compiling a module).
   ['hello ([hello greet])])
 (greet)
 ]
-}
+
+@history[#:changed "9.4.0.8" @elem{Added registration with
+                                   @racket[variable-reference-add-attach-dependency!].}]}
 
 @defform[(lazy-require-syntax [module-path (macro-import ...)] ...)
          #:grammar

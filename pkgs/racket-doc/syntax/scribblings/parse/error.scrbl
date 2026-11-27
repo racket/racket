@@ -11,7 +11,7 @@
 
 @title[#:tag "error"]{Configuring Error Reporting}
 
-@defmodule[syntax/parse/report-config]
+@defmodule[syntax/parse/report-config]{@cross-phase-persistent-lib[syntax/parse/report-config]}
 
 @history[#:added "8.9.0.5"]
 

@@ -95,11 +95,15 @@
 ;; ----------------------------------------
 ;; Module path index serialization
 
-(struct module-path-index-table (positions intern))
+(struct module-path-index-table (positions intern rewrite))
 
-(define (make-module-path-index-table)
+;; If `rewrite` is provided, it maps an added mpi to one that is
+;; equivalent but better to serialize; the mapping happens before
+;; interning, so that the table never has duplicates
+(define (make-module-path-index-table #:rewrite [rewrite #f])
   (module-path-index-table (make-hasheq) ; module-path-index -> pos
-                           (make-module-path-index-intern-table)))
+                           (make-module-path-index-intern-table)
+                           rewrite))
 
 (define (add-module-path-index! mpis mpi)
   (define pos
@@ -111,7 +115,9 @@
   (cond
    [(not mpi) #f]
    [mpi
-    (let ([mpi (intern-module-path-index! (module-path-index-table-intern mpis) mpi)]
+    (let ([mpi (intern-module-path-index! (module-path-index-table-intern mpis)
+                                          (let ([rewrite (module-path-index-table-rewrite mpis)])
+                                            (if rewrite (rewrite mpi) mpi)))]
           [positions (module-path-index-table-positions mpis)])
       (or (hash-ref positions mpi #f)
           (let ([pos (hash-count positions)])
@@ -909,6 +915,8 @@
      (decode* (make-interned-scope id))]
     [(#:multi-scope)
      (decode* (deserialize-multi-scope name scopes))]
+    [(#:phaseless-multi-scope)
+     (decode* (deserialize-phaseless-multi-scope name scopes))]
     [(#:shifted-multi-scope)
      (decode* (deserialize-shifted-multi-scope phase multi-scope))]
     [(#:table-with-bulk-bindings)

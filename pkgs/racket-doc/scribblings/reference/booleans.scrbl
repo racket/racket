@@ -143,7 +143,7 @@ Returns @racket[(not v)].}
 
 @section{Mutability Predicates}
 
-@note-lib-only[racket/mutability]
+@note-lib-only[racket/mutability #:cross-phase-persistent]
 
 @history[#:added "8.9.0.3"]
 

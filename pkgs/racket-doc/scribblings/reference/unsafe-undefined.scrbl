@@ -4,7 +4,7 @@
 
 @title[#:tag "unsafe-undefined"]{Unsafe Undefined}
 
-@note-lib-only[racket/unsafe/undefined]
+@note-lib-only[racket/unsafe/undefined #:cross-phase-persistent]
 
 The constant @racket[unsafe-undefined] is used internally as a
 placeholder value. For example, it is used by @racket[letrec] as a

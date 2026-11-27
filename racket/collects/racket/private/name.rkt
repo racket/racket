@@ -1,5 +1,6 @@
 
 (module name '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
   (#%require "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt")
   (#%provide syntax-local-infer-name
              simplify-inferred-name)

@@ -19,6 +19,7 @@
 ; THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 
 ;; Note that this module only semi-private, in the sense that other packages
 ;; which are in the main distribution but in separate repositories require

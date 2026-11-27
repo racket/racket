@@ -1,5 +1,6 @@
 
 (module boundmap racket/base
+  (#%declare #:unsafe-cross-phase-persistent)
   (require (for-syntax racket/base))
   
   (define-syntax (make-mapping-code stx)

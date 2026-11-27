@@ -1,4 +1,5 @@
 (module sort '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
 
 (#%require "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt" (for-syntax "stxcase-scheme.rkt"))
 

@@ -624,12 +624,11 @@
                                    (module-compiled-submodules renamed-code #f null) #t null)]))
                         (values new-code pre-submods post-submods))])
                 (let*-values ([(runtime-paths)
-                               (if (module-compiled-cross-phase-persistent? code)
-                                   ;; avoid potentially trying to redeclare cross-phase persistent modules,
-                                   ;; since redeclaration isn't allowed:
-                                   null
                                    ;; check for run-time paths by visiting the module in an
-                                   ;; expand-time namespace:
+                                   ;; expand-time namespace; that applies even to cross-phase
+                                   ;; persistent modules, which can use `lazy-require` (and the
+                                   ;; module is declared only if it isn't declared already, so
+                                   ;; there's no redeclaration of a cross-phase persistent module)
                                    (parameterize ([current-namespace expand-namespace])
                                      (let ([module-path
                                             (if (path? module-path)
@@ -655,7 +654,7 @@
                                                 p))]
                                          [_else (error 'create-empbedding-executable
                                                        "expansion mismatch when getting external paths: ~e"
-                                                       (syntax->datum e))]))))]
+                                                       (syntax->datum e))])))]
                               [(extra-runtime-paths) (filter-map (lambda (p)
                                                                    (and (pair? p)
                                                                         (eq? (car p) 'module)

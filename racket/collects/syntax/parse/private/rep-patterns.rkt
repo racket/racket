@@ -1,4 +1,5 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 (require (submod "residual.rkt" ct)
          "rep-attrs.rkt"
          "minimatch.rkt"
@@ -216,6 +217,7 @@
 (define repc:plus (make-rep:bounds 1 +inf.0 #f #f #f)) ;; used for ...+
 
 (module simple racket/base
+  (#%declare #:unsafe-cross-phase-persistent)
   ;; S ::=
   ;; | _                  -- match any, don't bind
   ;; | var                -- match any, bind

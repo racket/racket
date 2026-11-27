@@ -1,6 +1,6 @@
 #lang racket/base
-(require racket/contract/base
-         syntax/private/id-table
+(#%declare #:unsafe-cross-phase-persistent)
+(require syntax/private/id-table
          racket/syntax
          (submod "residual.rkt" ct)
          "minimatch.rkt"
@@ -169,10 +169,6 @@ expressions are duplicated, and may be evaluated in different scopes.
 
 ;; Contracts
 
-(define DeclEnv/c declenv?)
-
-(define DeclEntry/c 
-  (or/c den:lit? den:datum-lit? den:class? den:magic-class? den:delayed?))
 
 (provide (struct-out den:class)
          (struct-out den:magic-class)
@@ -181,39 +177,16 @@ expressions are duplicated, and may be evaluated in different scopes.
          (struct-out den:datum-lit)
          (struct-out den:delayed))
 
-(provide/contract
- [DeclEnv/c contract?]
- [DeclEntry/c contract?]
-
- [new-declenv
-  (->* [(listof (or/c den:lit? den:datum-lit?))]
-       [#:conventions list?]
-       DeclEnv/c)]
- [declenv-lookup
-  (-> DeclEnv/c identifier? any)]
- [declenv-apply-conventions
-  (-> DeclEnv/c identifier? any)]
- [declenv-put-stxclass
-  (-> DeclEnv/c identifier? identifier? arguments? (or/c syntax? #f)
-      DeclEnv/c)]
- [declenv-domain-difference
-  (-> DeclEnv/c (listof identifier?)
-      (listof identifier?))]
- [declenv-update/fold
-  (-> DeclEnv/c
-      (-> (or/c identifier? regexp?) DeclEntry/c any/c (values DeclEntry/c any/c))
-      any/c
-      (values DeclEnv/c any/c))]
- [declenv-check-unbound
-  (->* [DeclEnv/c identifier?] [symbol? #:blame-declare? boolean?] any)]
-
- [get-stxclass
-  (->* [identifier?] [boolean?] (or/c stxclass? #f))]
- [check-stxclass-arity
-  (-> stxclass? syntax? exact-nonnegative-integer? (listof keyword?) any)]
- [get-stxclass/check-arity
-  (-> identifier? syntax? exact-nonnegative-integer? (listof keyword?)
-      stxclass?)])
+(provide new-declenv
+         declenv-lookup
+         declenv-apply-conventions
+         declenv-put-stxclass
+         declenv-domain-difference
+         declenv-update/fold
+         declenv-check-unbound
+         get-stxclass
+         check-stxclass-arity
+         get-stxclass/check-arity)
 
 ;; get-stxclass : Identifier [Boolean] -> stxclass/#f
 ;; Stxclasses are primarily bound by env / syntax-local-value, but a few

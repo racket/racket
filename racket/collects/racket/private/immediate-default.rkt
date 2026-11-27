@@ -1,4 +1,5 @@
 (module kw '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
   (#%require "core-syntax.rkt"
              "stxcase-scheme.rkt"
              (for-template '#%kernel))

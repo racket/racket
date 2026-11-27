@@ -3,6 +3,7 @@
 ;;       [http://scheme2006.cs.uchicago.edu/07-clinger.pdf]
 
 (module case '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
   (#%require '#%paramz '#%unsafe "core-syntax.rkt" "fixnum.rkt"
              (for-syntax '#%kernel "core-syntax.rkt"
                          "stxcase-scheme.rkt"

@@ -4,7 +4,7 @@
 
 @title[#:tag "define"]{Parsing @racket[define]-like Forms}
 
-@defmodule[syntax/define]
+@defmodule[syntax/define]{@cross-phase-persistent-lib[syntax/define]}
 
 @defproc[(normalize-definition [defn-stx syntax?]
                                [lambda-id-stx identifier?]

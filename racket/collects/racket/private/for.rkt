@@ -1,4 +1,5 @@
 (module for '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
 
   (#%require "misc.rkt"
              "core-syntax.rkt"
@@ -9,7 +10,8 @@
              "promise.rkt"
              '#%unsafe
              '#%flfxnum
-             (for-syntax '#%kernel
+             (for-syntax (all-except '#%kernel raise-argument-error raise-arguments-error raise-range-error)
+                         (rename '#%kernel kernel:raise-argument-error raise-argument-error)
                          "stx.rkt"
                          "qqstx.rkt"
                          "core-syntax.rkt"
@@ -155,13 +157,13 @@
       (unless (and (procedure? proc1)
                    (or (procedure-arity-includes? proc1 1)
                        (procedure-arity-includes? proc1 0)))
-        (raise-argument-error 'define-sequence-syntax
+        (kernel:raise-argument-error 'define-sequence-syntax
                               "(or/c (procedure-arity-includes/c 0) (procedure-arity-includes/c 1))"
                               0
                               proc1 proc2))
       (unless (and (procedure? proc2)
                    (procedure-arity-includes? proc2 1))
-        (raise-argument-error 'define-sequence-syntax
+        (kernel:raise-argument-error 'define-sequence-syntax
                           "(procedure-arity-includes/c 1)"
                           1
                           proc1 proc2))
@@ -454,7 +456,7 @@
     (define (create-splicing-for-clause-transformer proc)
       (unless (and (procedure? proc)
                    (procedure-arity-includes? proc 1))
-        (raise-argument-error 'define-splicing-for-clause-syntax
+        (kernel:raise-argument-error 'define-splicing-for-clause-syntax
                               "(procedure-arity-includes/c 1)"
                               proc))
       (make-splicing-for-clause-transformer proc)))
@@ -467,7 +469,7 @@
 
   (define-for-syntax (syntax-local-splicing-for-clause-introduce stx)
     (unless (syntax? stx)
-      (raise-argument-error 'syntax-local-splicing-for-clause-introduce "syntax?" stx))
+      (kernel:raise-argument-error 'syntax-local-splicing-for-clause-introduce "syntax?" stx))
     (syntax-local-introduce stx))
 
   (define-for-syntax (expand-splicing-clause orig-form form)

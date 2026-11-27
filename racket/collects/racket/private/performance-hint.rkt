@@ -1,5 +1,6 @@
 
 (module inline '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
   (#%require (for-syntax '#%kernel))
   (#%provide begin-encourage-inline)
 

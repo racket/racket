@@ -221,7 +221,7 @@ _i)] is the value produced by @racket[(proc _i)].
 @; ----------------------------------------
 @section{Additional Vector Functions}
 
-@note-lib[racket/vector]
+@note-lib[racket/vector #:cross-phase-persistent]
 @(define vec-eval (make-base-eval))
 @examples[#:hidden #:eval vec-eval
           (require racket/vector)]

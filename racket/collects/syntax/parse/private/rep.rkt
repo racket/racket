@@ -1,10 +1,10 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 (require (for-template racket/base
                        "keywords.rkt"
                        "residual.rkt"
                        "runtime.rkt")
          racket/list
-         racket/contract/base
          "minimatch.rkt"
          syntax/private/id-table
          syntax/stx
@@ -21,58 +21,22 @@
 ;; All entry points should have explicit, mandatory #:context arg
 ;; (mandatory from outside, at least)
 
-(provide/contract
- [atomic-datum-stx?
-  (-> syntax?
-      boolean?)]
- [parse-rhs
-  (->* [syntax? boolean? #:context (or/c false/c syntax?)]
-       [#:default-description (or/c #f string?)]
-       rhs?)]
- [parse-pattern+sides
-  (-> syntax? syntax?
-      #:splicing? boolean?
-      #:decls DeclEnv/c
-      #:context syntax?
-      any)]
- [parse-EH-variant
-  (-> syntax? DeclEnv/c boolean?
-      #:context syntax?
-      any)]
- [parse-directive-table any/c]
- [get-decls+defs
-  (-> list? #:context (or/c false/c syntax?)
-      (values DeclEnv/c (listof syntax?)))]
- [create-aux-def
-  (-> DeclEntry/c
-      (values DeclEntry/c (listof syntax?)))]
- [parse-argu
-  (-> (listof syntax?)
-      #:context syntax?
-      arguments?)]
- [parse-kw-formals
-  (-> syntax?
-      #:context syntax?
-      arity?)]
- [check-stxclass-header
-  (-> syntax? syntax?
-      (list/c identifier? syntax? arity?))]
- [check-stxclass-application
-  (-> syntax? syntax?
-      (cons/c identifier? arguments?))]
- [check-conventions-rules
-  (-> syntax? syntax?
-      (listof (list/c regexp? any/c)))]
- [check-datum-literals-list
-  (-> syntax? syntax?
-      (listof den:datum-lit?))]
- [check-attr-arity-list
-  (-> syntax? syntax?
-      (listof sattr?))]
- [stxclass-colon-notation?
-  (parameter/c boolean?)]
- [fixup-rhs
-  (-> rhs? boolean? (listof sattr?) rhs?)])
+(provide atomic-datum-stx?
+         parse-rhs
+         parse-pattern+sides
+         parse-EH-variant
+         parse-directive-table
+         get-decls+defs
+         create-aux-def
+         parse-argu
+         parse-kw-formals
+         check-stxclass-header
+         check-stxclass-application
+         check-conventions-rules
+         check-datum-literals-list
+         check-attr-arity-list
+         stxclass-colon-notation?
+         fixup-rhs)
 
 (provide false-expr
          slpl-expr)
@@ -404,10 +368,13 @@
 
 ;; gensym* : -> UninternedSymbol
 ;; Like gensym, but with deterministic name from compilation-local counter.
-(define gensym*-counter 0)
+;; The counter is local to a module expansion when possible, since this
+;; module's instance is shared (cross-phase persistent):
+(define gensym*-counter-key (gensym 'gensym*-counter))
 (define (gensym*)
-  (set! gensym*-counter (add1 gensym*-counter))
-  (string->uninterned-symbol (format "group~a" gensym*-counter)))
+  (define n (add1 (syntax-local-state-ref gensym*-counter-key 0)))
+  (syntax-local-state-set! gensym*-counter-key n)
+  (string->uninterned-symbol (format "group~a" n)))
 
 
 ;; ============================================================

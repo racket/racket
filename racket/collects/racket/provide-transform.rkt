@@ -1,4 +1,5 @@
 (module provide-transform '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
   (#%require "private/stxcase-scheme.rkt"
              "private/stx.rkt"
              "private/define-struct.rkt"

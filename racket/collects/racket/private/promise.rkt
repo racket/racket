@@ -12,6 +12,7 @@
 ;; definitions. See "racket/private/for-compatibility-lib.rkt" for an example.
 
 (module promise '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
 (#%require "core-syntax.rkt"
            "more-scheme.rkt"
            (rename "define-struct.rkt" define-struct define-struct*)
@@ -219,6 +220,7 @@
 ;; (with simple keyword matching: keywords is an alist with default exprs)
 (begin-for-syntax
   (struct delayer (maker keywords)
+    #:omit-define-syntaxes
     #:property prop:procedure
     (lambda (self stx)
       (define keywords (delayer-keywords self))

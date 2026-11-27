@@ -3,6 +3,7 @@
 ;; #%misc : file utilities, etc. - remaining functions
 
 (module misc '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
   (#%require "core-syntax.rkt" "path.rkt" "old-path.rkt"
              "path-list.rkt" "executable-path.rkt"
              "reading-param.rkt" "../repl.rkt"

@@ -1,7 +1,13 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 
-(require syntax/boundmap
-         racket/contract racket/list
+(require syntax/private/boundmap ; not syntax/boundmap, to avoid contracts
+         (rename-in syntax/private/boundmap
+                    [make-module-identifier-mapping make-free-identifier-mapping]
+                    [module-identifier-mapping-get free-identifier-mapping-get]
+                    [module-identifier-mapping-put! free-identifier-mapping-put!]
+                    [module-identifier-mapping-for-each free-identifier-mapping-for-each])
+         racket/list
          "stxtime.rkt"
          (for-syntax racket/base))
 
@@ -212,9 +218,5 @@
 (define r4 (make-Row (list p-vec p-d) #'#f #f null))
 |#
 
-(provide/contract (struct Row ([pats (listof Pat?)]
-                               [rhs syntax?]
-                               [unmatch (or/c identifier? false/c)]
-                               [vars-seen (listof (cons/c identifier?
-                                                          (or/c #f identifier?)))])))
+(provide (struct-out Row))
 

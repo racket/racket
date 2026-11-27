@@ -53,7 +53,13 @@
          deserialize-representative-scope
          deserialize-representative-scope-fill!
          deserialize-multi-scope
+         deserialize-phaseless-multi-scope
          deserialize-shifted-multi-scope
+
+         make-shifted-multi-scope-phaseless!
+         shifted-multi-scope-phaseless?
+         phaseless-representatives
+         phaseless-normalize-scopes
 
          generalize-scope
 
@@ -183,12 +189,13 @@
                      name     ; for debugging
                      scopes   ; box of table: phase -> representative-scope
                      shifted  ; box of table: interned shifted-multi-scopes for non-label phases
-                     label-shifted) ; box of table: interned shifted-multi-scopes for label phases
+                     label-shifted ; box of table: interned shifted-multi-scopes for label phases
+                     [phaseless #:mutable]) ; #f or list of non-canonical representatives; see below
   #:authentic
   #:sealed
   #:property prop:serialize
   (lambda (ms ser-push! state)
-    (ser-push! 'tag '#:multi-scope)
+    (ser-push! 'tag (if (multi-scope-phaseless ms) '#:phaseless-multi-scope '#:multi-scope))
     (ser-push! (multi-scope-name ms))
     ;; Prune to reachable representative scopes
     (define multi-scope-tables (serialize-state-multi-scope-tables state))
@@ -223,7 +230,64 @@
         (reach sc bulk-shifts)))))
 
 (define (deserialize-multi-scope name scopes)
-  (multi-scope (new-deserialize-scope-id!) name (box scopes) (box (hasheqv)) (box (hash))))
+  (multi-scope (new-deserialize-scope-id!) name (box scopes) (box (hasheqv)) (box (hash)) #f))
+
+(define (deserialize-phaseless-multi-scope name scopes)
+  (define ms (deserialize-multi-scope name scopes))
+  (set-multi-scope-phaseless! ms (multi-scope-non-canonical-representatives ms))
+  ms)
+
+;; A "phaseless" multi-scope is used for the inside of a module that
+;; is declared `#:unsafe-cross-phase-persistent`. In such a module, no
+;; symbol is bound differently at different phases. After the module
+;; is expanded, its
+;; multi-scope is converted to phaseless mode, which means that all of
+;; its representatives (one for each phase, as created during
+;; expansion) are treated as the same scope, and that scope is part of
+;; an identifier's scope set at every phase and with every phase shift.
+;; The canonical representative is the one for phase 0; bindings that
+;; were recorded with another representative, such as phase-1
+;; bindings, are found by also consulting the binding tables of the
+;; other representatives and normalizing scope sets to use the
+;; canonical representative.
+(define (multi-scope-canonical-representative ms)
+  (multi-scope-to-scope-at-phase ms 0))
+
+(define (multi-scope-non-canonical-representatives ms)
+  (for/list ([(phase sc) (in-hash (unbox (multi-scope-scopes ms)))]
+             #:unless (eqv? phase 0))
+    sc))
+
+(define (make-shifted-multi-scope-phaseless! sms)
+  (define ms (shifted-multi-scope-multi-scope sms))
+  (multi-scope-canonical-representative ms) ; make sure it exists
+  (set-multi-scope-phaseless! ms (multi-scope-non-canonical-representatives ms))
+  ;; Cached resolutions may be wrong now:
+  (clear-resolve-cache!))
+
+(define (shifted-multi-scope-phaseless? sms)
+  (and (multi-scope-phaseless (shifted-multi-scope-multi-scope sms)) #t))
+
+;; Returns a list of non-canonical representatives for phaseless
+;; multi-scopes in `smss`; normally, the result is empty
+(define (phaseless-representatives smss)
+  (for/fold ([reps null]) ([sms (in-set smss)])
+    (define l (multi-scope-phaseless (shifted-multi-scope-multi-scope sms)))
+    (if (pair? l)
+        (append l reps)
+        reps)))
+
+;; Replace any representative in `pl-reps` within `scs` by the
+;; corresponding canonical representative
+(define (phaseless-normalize-scopes scs pl-reps)
+  (cond
+    [(or (not scs) (null? pl-reps)) scs]
+    [else
+     (for/fold ([scs scs]) ([rep (in-list pl-reps)])
+       (if (scope-set-member? scs rep)
+           (scope-set-add (scope-set-remove scs rep)
+                          (multi-scope-canonical-representative (representative-scope-owner rep)))
+           scs))]))
 
 (struct representative-scope scope (owner   ; a multi-scope for which this one is a phase-specific identity
                                     phase)  ; phase of this scope
@@ -407,7 +471,7 @@
     (interned-scope? sc)))
 
 (define (new-multi-scope [name #f])
-  (intern-shifted-multi-scope 0 (multi-scope (new-scope-id!) name (box (hasheqv)) (box (hasheqv)) (box (hash)))))
+  (intern-shifted-multi-scope 0 (multi-scope (new-scope-id!) name (box (hasheqv)) (box (hasheqv)) (box (hash)) #f)))
 
 (define (multi-scope-to-scope-at-phase ms phase)
   ;; Get the identity of `ms` at phase`
@@ -881,6 +945,9 @@
    [(zero-phase? delta)
     ;; No-op shift
     sms]
+   [(multi-scope-phaseless (shifted-multi-scope-multi-scope sms))
+    ;; Phase shifts do not affect a phaseless multi-scope
+    sms]
    [(label-phase? delta)
     (cond
      [(shifted-to-label-phase? (shifted-multi-scope-phase sms))
@@ -1050,6 +1117,8 @@
       ;; phase-specific representatives of its multi-scopes, `reps`. We
       ;; check candidate bindings against that union without building it.
       (define reps (representatives-at-phase (fallback-first smss) phase))
+      ;; Normally empty; non-empty only for an identifier with a phaseless multi-scope
+      (define pl-reps (phaseless-representatives (fallback-first smss)))
       ;; As we look through all scopes, if we find two where neither
       ;; is a subset of the other, accumulate them into a list; maybe
       ;; we find a superset of both, later; if we end with a list,
@@ -1058,7 +1127,10 @@
       (define-syntax-rule (candidates sc-seq init-scopes init-binding)
         (for*/fold ([best-scopes init-scopes] [best-binding init-binding])
                    ([sc sc-seq]
-                    [(b-scopes binding) (in-binding-table sym (scope-binding-table sc) s extra-shifts)]
+                    [(raw-b-scopes binding) (in-binding-table sym (scope-binding-table sc) s extra-shifts)]
+                    [b-scopes (in-value (if (null? pl-reps)
+                                            raw-b-scopes
+                                            (phaseless-normalize-scopes raw-b-scopes pl-reps)))]
                     #:when (and b-scopes binding (scope-set-subset-of-union? b-scopes scs reps)))
           (cond
            [(pair? best-scopes)
@@ -1082,8 +1154,12 @@
             (values (list best-scopes b-scopes) #f)])))
       (define-values (best-scopes0 best-binding0)
         (candidates (in-scope-set scs) #f #f))
-      (define-values (best-scopes best-binding)
+      (define-values (best-scopes1 best-binding1)
         (candidates (in-list reps) best-scopes0 best-binding0))
+      (define-values (best-scopes best-binding)
+        (if (null? pl-reps)
+            (values best-scopes1 best-binding1)
+            (candidates (in-list pl-reps) best-scopes1 best-binding1)))
       (cond
        [(pair? best-scopes) ; => ambiguous
         (if (fallback? smss)
@@ -1111,11 +1187,14 @@
   (for/fold ([reps null]) ([sms (in-set smss)]
                            #:when (or (label-phase? phase)
                                       (not (shifted-to-label-phase? (shifted-multi-scope-phase sms)))))
-    (define rep (multi-scope-to-scope-at-phase (shifted-multi-scope-multi-scope sms)
-                                               (let ([ph (shifted-multi-scope-phase sms)])
-                                                 (if (shifted-to-label-phase? ph)
-                                                     (shifted-to-label-phase-from ph)
-                                                     (phase- ph phase)))))
+    (define ms (shifted-multi-scope-multi-scope sms))
+    (define rep (if (multi-scope-phaseless ms)
+                    (multi-scope-canonical-representative ms)
+                    (multi-scope-to-scope-at-phase ms
+                                                   (let ([ph (shifted-multi-scope-phase sms)])
+                                                     (if (shifted-to-label-phase? ph)
+                                                         (shifted-to-label-phase-from ph)
+                                                         (phase- ph phase))))))
     (if (memq rep reps)
         reps
         (cons rep reps))))

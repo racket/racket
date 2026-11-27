@@ -3,7 +3,7 @@
 
 @title[#:tag "wrap-modbeg"]{Wrapping Module-Body Expressions}
 
-@defmodule[syntax/wrap-modbeg]
+@defmodule[syntax/wrap-modbeg]{@cross-phase-persistent-lib[syntax/wrap-modbeg]}
 
 @history[#:added "6.0.0.1"]
 

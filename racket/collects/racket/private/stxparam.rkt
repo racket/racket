@@ -1,5 +1,6 @@
 
 (module stxparam '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
   (#%require "core-syntax.rkt"
              (for-syntax '#%kernel 
                          "stx.rkt" "stxcase-scheme.rkt" 

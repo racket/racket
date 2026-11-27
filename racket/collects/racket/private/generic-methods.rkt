@@ -1,4 +1,5 @@
 (module generic-methods '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
 
   (#%require (for-syntax '#%kernel "core-syntax.rkt"
                          "stx.rkt" "stxcase-scheme.rkt")

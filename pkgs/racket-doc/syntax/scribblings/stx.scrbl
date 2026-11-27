@@ -9,7 +9,7 @@
 
 @title[#:tag "stx"]{Deconstructing Syntax Objects}
 
-@defmodule[syntax/stx]
+@defmodule[syntax/stx]{@cross-phase-persistent-lib[syntax/stx]}
 
 @defproc[(stx-null? [v any/c]) boolean?]{
 

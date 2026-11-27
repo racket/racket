@@ -1,5 +1,6 @@
 #lang scribble/manual
-@(require (for-label racket/base
+@(require (only-in "common.rkt" cross-phase-persistent-lib)
+          (for-label racket/base
                      syntax/quote
                      syntax/for-body))
 
@@ -9,7 +10,9 @@
 provides a helper function for @racket[for]-like syntactic forms that
 wrap the body of the form while expanding to another @racket[for]-like
 form, and the wrapper should apply only after the last
-@racket[#:break] or @racket[#:final] clause in the body.}
+@racket[#:break] or @racket[#:final] clause in the body.
+
+@cross-phase-persistent-lib[syntax/for-body]}
 
 @defproc[(split-for-body [stx syntax?] [body-stxes syntax?]) syntax?]{
 

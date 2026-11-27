@@ -5,7 +5,7 @@
 
 @title[#:tag "kerncase"]{Matching Fully-Expanded Expressions}
 
-@defmodule[syntax/kerncase]
+@defmodule[syntax/kerncase]{@cross-phase-persistent-lib[syntax/kerncase]}
 
 @defform[(kernel-syntax-case stx-expr trans?-expr clause ...)]{
 

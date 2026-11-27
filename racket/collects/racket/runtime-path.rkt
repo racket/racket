@@ -1,4 +1,5 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 
 ;; Library for accessing paths relative to a source file at runtime
 
@@ -51,7 +52,16 @@
 ;; ----------------------------------------
 ;; the code below used to be in `mzlib/runtime-path`
   
-(define-for-syntax ext-file-table (make-hasheq))
+;; Registered run-time paths: resolved module path -> ephemeron table that
+;; maps the namespace of a registering module instance to a box of the
+;; instance's paths. Keying on the instance means that a registration is
+;; dropped along with the instance; this module's instance is
+;; cross-phase persistent and shared, so a table of strongly held
+;; registrations would accumulate (and retain) module instances from
+;; every expansion. A cross-phase persistent module registers once per
+;; module registry, so its registration is found through its shared
+;; instance; otherwise, each instance registers the same paths.
+(define-for-syntax ext-file-table (make-weak-hasheq))
 
 (define (lookup-in-table var-ref p)
   ;; This function is designed to cooperate with a table embedded
@@ -162,9 +172,20 @@
     base))
   
 (define-for-syntax (register-ext-files var-ref paths)
-  (let ([modname (variable-reference->resolved-module-path var-ref)])
-    (let ([files (hash-ref ext-file-table modname null)])
-      (hash-set! ext-file-table modname (append paths files)))))
+  (let* ([modname (variable-reference->resolved-module-path var-ref)]
+         [instances (or (hash-ref ext-file-table modname #f)
+                        (let ([ht (make-ephemeron-hasheq)])
+                          (hash-set! ext-file-table modname ht)
+                          ht))]
+         [b (hash-ref! instances (variable-reference->namespace var-ref) (lambda () (box null)))])
+    (set-box! b (append paths (unbox b)))))
+
+(define-for-syntax (registered-ext-files modname)
+  (let ([instances (hash-ref ext-file-table modname #f)])
+    (or (and instances
+             (for/first ([b (in-hash-values instances)])
+               (unbox b)))
+        null)))
 
 (define-syntax (-define-runtime-path stx)
   (syntax-case stx ()
@@ -226,17 +247,25 @@
     [(_ id expr) #`(-define-runtime-path #,stx (id) `(module ,expr ,(#%variable-reference)) list values #f runtime?)]
     [(_ id #:runtime?-id runtime?-id expr) #`(-define-runtime-path #,stx (id) `(module ,expr ,(#%variable-reference)) list values #f runtime?-id)]))
 
-(define-for-syntax required-module-paths (make-hash))
+;; The set of module paths already handled by `runtime-require` is local
+;; to a module expansion (or namespace), since this module's instance is
+;; shared by all expansions
+(define-for-syntax required-module-paths-key (gensym 'runtime-path-required))
+(define-for-syntax (required-module-paths)
+  (or (syntax-local-state-ref required-module-paths-key #f)
+      (let ([ht (make-hash)])
+        (syntax-local-state-set! required-module-paths-key ht)
+        ht)))
 (define-syntax (runtime-require stx)
   (syntax-case stx ()
     [(_ mod-path)
      (let ([mp (syntax->datum #'mod-path)])
        (unless (module-path? mp)
          (raise-syntax-error #f "not a module path" stx  #'mod-path))
-       (if (hash-ref required-module-paths mp #f)
+       (if (hash-ref (required-module-paths) mp #f)
            #'(begin)
            (begin
-             (hash-set! required-module-paths mp #t)
+             (hash-set! (required-module-paths) mp #t)
              #'(begin-for-syntax
                 (register-ext-files 
                  (#%variable-reference)
@@ -246,13 +275,11 @@
   (syntax-case stx ()
     [(_ mp)
      #`(quote
-        #,(hash-ref
-           ext-file-table
+        #,(registered-ext-files
            (module-path-index-resolve 
             (let ([p (syntax->datum #'mp)]
                   [base (syntax-source-module stx)])
               (if (and (pair? p) (eq? (car p) 'submod) (path? (cadr p)))
                   (module-path-index-join `(submod "." ,@(cddr p))
                                           (module-path-index-join (cadr p) base))
-                  (module-path-index-join p base))))
-           null))]))
+                  (module-path-index-join p base))))))]))

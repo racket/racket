@@ -1,4 +1,5 @@
 (module define-config racket/base
+  (#%declare #:unsafe-cross-phase-persistent)
   (require (for-syntax racket/base))
 
   (provide define-parameters)

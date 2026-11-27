@@ -1,4 +1,5 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 (provide datum->expression)
 
 ;; datum->expression : Datum -> Expr

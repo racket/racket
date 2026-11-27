@@ -1,7 +1,8 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 (require (for-syntax racket/base
                      syntax/stx
-                     syntax/keyword
+                     syntax/private/keyword
                      racket/syntax
                      "datum-to-expr.rkt"
                      "rep-attrs.rkt"

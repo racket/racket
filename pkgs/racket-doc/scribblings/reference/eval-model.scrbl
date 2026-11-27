@@ -798,7 +798,98 @@ declaration.
 
 A documented module should be assumed non--@tech{cross-phase persistent} unless it
 is specified as @tech{cross-phase persistent} (such as
-@racketmodname[racket/kernel]).
+@racketmodname[racket/base] and @racketmodname[racket/kernel]).
+
+@;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+@subsection[#:tag "unsafe-cross-phase-persistent-modules"]{Unsafe Cross-Phase Persistent Modules}
+
+A module that includes @racket[(#%declare #:unsafe-cross-phase-persistent)]
+is an @deftech{unsafe cross-phase persistent} module. Like any
+@tech{cross-phase persistent} module, it imports only other
+@tech{cross-phase persistent} modules, and one instance of the module
+is shared by all @tech{phases}. Unlike a module declared with
+@racket[#:cross-phase-persistent], the module body is not constrained
+to a restricted grammar: it can define arbitrary values, define and
+export macros, use syntax literals and @racket[#%variable-reference],
+and include definitions and imports at any @tech{phase level} other
+than the @tech{label phase level}. Sharing one instance can avoid the
+cost of creating a fresh instance of a library (and all of its
+dependencies) for each phase and each expansion, which is why
+modules like @racketmodname[racket/base] are implemented as
+@tech{unsafe cross-phase persistent} modules.
+
+The module is ``unsafe'' in the sense that its implementation must
+cooperate with sharing, because the shared instance is not checked to
+behave the same as separate instances:
+
+@itemlist[
+
+ @item{Any state in the module is shared across phases, across all
+       module expansions that use the instance, and with any other
+       @tech{module registry} to which the instance is attached (see
+       below). State that should be local to a module expansion
+       should be kept via @racket[syntax-local-state-ref] and
+       @racket[syntax-local-state-set!], instead of in a variable.}
+
+ @item{Values created by the module, such as structure types, are the
+       same at every phase. That's often the point of sharing, but
+       code that relies on getting a different structure type at a
+       different phase (for example, to keep values from crossing
+       phases) does not work in an @tech{unsafe cross-phase
+       persistent} module.}
+
+]
+
+Within an @tech{unsafe cross-phase persistent} module, bindings are the
+same at all @tech{phase levels}, so that a syntax literal in the
+module works the same at every phase shift. Consequently, the same
+name cannot be imported or defined differently at different phase
+levels in the module; for example, the module cannot define
+@racket[x] both at phase level 0 and via @racket[define-for-syntax]
+at phase level 1, and it cannot shadow an import from
+@racketmodname[racket/base] at phase level 0 while also importing
+@racketmodname[racket/base] for syntax. A syntax error is reported
+when bindings differ. A definition still creates a variable at only
+its own phase level, however, so a phase-0 variable cannot be
+referenced by phase-1 code within the module.
+
+An @tech{unsafe cross-phase persistent} module has a single instance
+per @tech{module registry}. When the module is @tech{instantiate}d,
+its phase-level-0 body is run immediately, while its bodies at other
+phase levels (such as macro definitions and @racket[begin-for-syntax]
+code) are run together on demand: when the module is used at a
+phase level other than 0, when it is @tech{available} and a
+namespace is used for expansion or evaluation, or when the module is
+attached to another namespace. Running a compiled program that uses
+the module therefore does not run the module's compile-time code.
+
+Attaching the module with @racket[namespace-attach-module] or
+@racket[namespace-attach-module-declaration] shares its instance with
+the destination namespace's @tech{module registry}, as for any
+@tech{cross-phase persistent} module. Before the instance is shared,
+all of its phase levels are run, and any module that the instance
+would load on demand is loaded and attached along with it. A module
+that is loaded on demand is registered with
+@racket[variable-reference-add-attach-dependency!]; that registration
+is performed automatically by @racket[lazy-require].
+
+A submodule of an @tech{unsafe cross-phase persistent} module is also
+@tech{unsafe cross-phase persistent} unless it imports a module that is
+not @tech{cross-phase persistent} or it includes its own
+@racket[#:cross-phase-persistent] or
+@racket[#:unsafe-cross-phase-persistent] declaration. For a
+@racket[module] submodule (as opposed to @racket[module*]), the
+enclosing module's @racket[#%declare] form must precede the
+submodule. A submodule that is not @tech{cross-phase persistent}, such
+as a @racketidfont{test} submodule that uses testing libraries or a
+@racketidfont{configure-runtime} submodule, is allowed.
+
+Since an @tech{unsafe cross-phase persistent} module's compile-time
+code is not isolated from other phases or other module expansions, a
+@racket[#:unsafe-cross-phase-persistent] declaration is allowed only
+when the current @tech{code inspector} is the initial one.
+
+@history[#:added "9.4.0.8"]
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @subsection[#:tag "module-redeclare"]{Module Redeclarations}

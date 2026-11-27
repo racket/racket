@@ -1,13 +1,26 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 (require racket/list
-         racket/format
          syntax/stx
-         racket/struct
          syntax/srcloc
          "minimatch.rkt"
          "residual.rkt"
          "../report-config.rkt"
          "kws.rkt")
+
+;; Avoid `racket/format` and `racket/struct`, which depend on the
+;; contract system, so that this module can be cross-phase persistent
+(define (~a . vs)
+  (apply string-append (for/list ([v (in-list vs)])
+                         (if (string? v) v (format "~a" v)))))
+(define opaque-dummy (box 'opaque))
+(define (struct->list s)
+  (define vec (struct->vector s opaque-dummy))
+  (for/list ([elem (in-vector vec 1)])
+    (when (eq? elem opaque-dummy)
+      (raise-type-error 'struct->list "non-opaque struct" s))
+    elem))
+
 (provide call-current-failure-handler
          current-failure-handler
          invert-failureset

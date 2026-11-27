@@ -23,13 +23,32 @@
                     #:attach-instances? #f))
 
 (define (do-attach-module who
-                          src-namespace mod-path dest-namespace
+                          given-src-namespace mod-path given-dest-namespace
                           #:attach-instances? [attach-instances? #f])
-  (check who namespace? src-namespace)
+  (check who namespace? given-src-namespace)
   (unless (or (module-path? mod-path)
               (resolved-module-path? mod-path))
     (raise-argument-error who "(or/c module-path? resolved-module-path?)" mod-path))
-  (check who namespace? dest-namespace)
+  (check who namespace? given-dest-namespace)
+
+  ;; A cross-phase persistent module (whose dependencies are all
+  ;; cross-phase persistent) has the same instance at every phase, so
+  ;; attaching it doesn't depend on the namespaces' phases; in that
+  ;; case, attach at phase 0
+  (define cross-phase-persistent?
+    (and (not (eqv? (namespace-phase given-src-namespace) (namespace-phase given-dest-namespace)))
+         (let* ([mod-name (if (resolved-module-path? mod-path)
+                              mod-path
+                              (parameterize ([current-namespace given-src-namespace])
+                                (module-path-index-resolve (module-path-index-join* mod-path #f))))]
+                [m (namespace->module given-src-namespace mod-name)])
+           (and m (module-cross-phase-persistent? m)))))
+  (define src-namespace (if cross-phase-persistent?
+                            (namespace->namespace-at-phase given-src-namespace 0)
+                            given-src-namespace))
+  (define dest-namespace (if cross-phase-persistent?
+                             (namespace->namespace-at-phase given-dest-namespace 0)
+                             given-dest-namespace))
 
   (define phase (namespace-phase src-namespace))
   (unless (eqv? phase (namespace-phase dest-namespace))
@@ -98,6 +117,17 @@
                                      "module not instantiated (in the source namespace)"
                                      "module name" mod-name
                                      "instance phase" phase))
+
+            (when (module-cross-phase-persistent? m)
+              ;; The instance will be shared for all phases in the destination,
+              ;; so make sure that all of its phase levels have been run;
+              ;; also load any modules that it would load lazily, so that
+              ;; they're also attached
+              (cross-phase-module-instance-run-all-levels! mi)
+              (define inst-ns (module-instance-namespace mi))
+              (for ([dep-mpi (in-list (reverse (module-instance-attach-dependencies mi)))])
+                (parameterize ([current-namespace inst-ns])
+                  (namespace-module-instantiate! inst-ns dep-mpi 0 #:run-phase 0))))
             
             (define already-m-ns (and already-m
                                       (namespace->module-namespace dest-namespace mod-name phase)))
@@ -171,7 +201,16 @@
 
           (when (module-supermodule-name m)
             ;; Associated supermodule is treated like an associated submodule
-            (loop (module-path-index-join* `(submod "..") mpi) #f #f #f attach-phase #t)))])))
+            (loop (module-path-index-join* `(submod "..") mpi) #f #f #f attach-phase #t)))
+
+        (when (and m-ns
+                   (not already?)
+                   (module-cross-phase-persistent? m))
+          ;; Modules that would be loaded lazily by the instance are
+          ;; attached as if they are required; that's needed even when not
+          ;; `recur?`, since a flattened set of requires doesn't include them
+          (for ([dep-mpi (in-list (reverse (module-instance-attach-dependencies mi)))])
+            (loop dep-mpi #f phase attach-instances? attach-phase #t)))])))
 
   ;; Perform decided transfers
   (for ([(mod-name phases) (in-hash todo)])

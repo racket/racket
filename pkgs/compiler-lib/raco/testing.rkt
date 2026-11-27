@@ -1,6 +1,7 @@
 ;; This code originally appeared in rackunit/log
 
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 
 (provide test-log-enabled?
          test-log!

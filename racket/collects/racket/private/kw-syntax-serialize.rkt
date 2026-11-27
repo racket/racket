@@ -1,4 +1,5 @@
 (module kw-syntax-binding "pre-base.rkt"
+  (#%declare #:unsafe-cross-phase-persistent)
   (require (prefix-in k: '#%kernel))
 
   (provide syntax-serialize

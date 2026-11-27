@@ -1,4 +1,5 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 (require racket/match/match-expander
          (for-syntax racket/base
                      racket/struct-info

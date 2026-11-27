@@ -1,4 +1,5 @@
 (module print-value-columns "pre-base.rkt"
+  (#%declare #:unsafe-cross-phase-persistent)
   (#%provide print-value-columns)
   
   (define print-value-columns

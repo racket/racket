@@ -940,7 +940,9 @@ function for installing a single @filepath{.plt} file.
 @defmodule[setup/dirs]{ The @racketmodname[setup/dirs] library
   provides several procedures for locating installation directories.
   Many of these paths can be configured through the
-  @tech{configuration directory} (see @secref["config-file"]).}
+  @tech{configuration directory} (see @secref["config-file"]).
+
+@cross-phase-persistent-lib[setup/dirs]}
 
 In cross-platform build mode (see @secref["cross-system"]), the
 functions provided by @racketmodname[setup/dirs] generally report
@@ -1597,7 +1599,7 @@ display such paths (e.g., in error messages).
 
 @subsection{Representing Collection-Based Paths}
 
-@defmodule[setup/collects]
+@defmodule[setup/collects]{@cross-phase-persistent-lib[setup/collects]}
 
 @defproc[(path->collects-relative [path path-string?]
                                   [#:cache cache (or/c #f (and/c hash? (not/c immutable?))) #f])
@@ -1634,7 +1636,7 @@ Like @racket[path->collects-relative], but the result is either
 
 @subsection{Representing Paths Relative to @filepath{collects}}
 
-@defmodule[setup/main-collects]
+@defmodule[setup/main-collects]{@cross-phase-persistent-lib[setup/main-collects]}
 
 @defproc[(path->main-collects-relative [path (or/c bytes? path-string?)])
          (or/c path? (cons/c 'collects (non-empty-listof bytes?)))]{
@@ -1688,7 +1690,7 @@ back to a path relative to @racket[(find-collects-dir)].}
 
 @subsection{Displaying Paths Relative to a Common Root}
 
-@defmodule[setup/path-to-relative]
+@defmodule[setup/path-to-relative]{@cross-phase-persistent-lib[setup/path-to-relative]}
 
 @defproc[(path->relative-string/library
           [path path-string?]
@@ -1753,7 +1755,7 @@ compatibility.}
 
 @section[#:tag "collection-names"]{API for Collection Names}
 
-@defmodule[setup/collection-name]
+@defmodule[setup/collection-name]{@cross-phase-persistent-lib[setup/collection-name]}
 
 @defproc[(collection-name? [v any/c]) boolean?]{
 
@@ -1878,7 +1880,9 @@ supports @exec{raco cross} and other tools.
 @defmodule[setup/cross-system]{The @racketmodname[setup/cross-system]
 library provides functions for querying the system properties of a
 destination platform, which can be different than the current platform
-in cross-installation modes.}
+in cross-installation modes.
+
+@cross-phase-persistent-lib[setup/cross-system]}
 
 A Racket installation includes a @filepath{system.rktd} file in the
 directory reported by @racket[(find-lib-dir)]. When the information in that file

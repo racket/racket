@@ -1,4 +1,5 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 (require setup/dirs)
 
 (provide so-spec? so-find)

@@ -1,4 +1,5 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 (require racket/match/match "match/runtime.rkt"
          (for-syntax racket/base))
 (provide (except-out (all-from-out racket/match/match)

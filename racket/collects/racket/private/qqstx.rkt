@@ -2,6 +2,7 @@
 ;; #%qqstx : quasisyntax
 
 (module qqstx '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
   (#%require "core-syntax.rkt" "stxcase-scheme.rkt" "stx.rkt" "template.rkt"
              (rename "core-syntax.rkt" -define define)
              (rename "core-syntax.rkt" -define-syntax define-syntax)

@@ -3,7 +3,7 @@
 
 @title[#:tag "strip-context"]{Replacing Lexical Context}
 
-@defmodule[syntax/strip-context]
+@defmodule[syntax/strip-context]{@cross-phase-persistent-lib[syntax/strip-context]}
 
 @defproc[(strip-context [form any/c]) any/c]{
 

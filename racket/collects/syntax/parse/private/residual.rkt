@@ -1,9 +1,11 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 
 ;; ============================================================
 ;; Compile-time
 
 (module ct racket/base
+  (#%declare #:unsafe-cross-phase-persistent)
   (provide (struct-out attr)
            (struct-out stxclass)
            (struct-out scopts)
@@ -104,6 +106,7 @@
 ;; Run-time
 
 (module progress racket/base
+  (#%declare #:unsafe-cross-phase-persistent)
   (require racket/list
            "minimatch.rkt")
   (provide ps-empty
@@ -363,6 +366,7 @@
 ;; ------------------------------------------------------------
 
 (module state racket/base
+  (#%declare #:unsafe-cross-phase-persistent)
   (provide unwind-to
            maybe-add-state-undo
            current-state
@@ -418,6 +422,7 @@
 ;; ------------------------------------------------------------
 
 (module 3d-stx racket/base
+  (#%declare #:unsafe-cross-phase-persistent)
   (require (only-in '#%flfxnum flvector? fxvector?)
            (only-in '#%extfl extflonum? extflvector?))
   (provide 2d-stx?)
@@ -602,6 +607,7 @@
 ;; ------------------------------------------------------------
 
 (module parse-stxparam racket/base
+  (#%declare #:unsafe-cross-phase-persistent)
   (require (for-syntax racket/base)
            racket/stxparam)
   (provide this-syntax
@@ -630,6 +636,7 @@
 ;; ------------------------------------------------------------
 
 (module attribute racket/base
+  (#%declare #:unsafe-cross-phase-persistent)
   (require (for-syntax racket/base
                        racket/private/sc
                        (only-in (submod ".." ct) make-attr))
@@ -701,6 +708,7 @@
 ;; ------------------------------------------------------------
 
 (module parse-util racket/base
+  (#%declare #:unsafe-cross-phase-persistent)
   (require (for-syntax racket/base)
            racket/list
            racket/lazy-require

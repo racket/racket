@@ -1,4 +1,5 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 (require (for-syntax racket/base)
          (for-syntax syntax/kerncase
                      racket/private/stx

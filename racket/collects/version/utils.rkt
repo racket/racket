@@ -1,4 +1,5 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 
 (define rx:version
   ;; (this restricts the last component to be below 999 too, which is

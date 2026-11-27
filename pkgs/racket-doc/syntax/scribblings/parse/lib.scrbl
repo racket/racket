@@ -229,7 +229,7 @@ Note that the literal-set uses the names @racket[#%plain-lambda] and
 }
 
 @section{Function Headers}
-@defmodule[syntax/parse/lib/function-header]
+@defmodule[syntax/parse/lib/function-header]{@cross-phase-persistent-lib[syntax/parse/lib/function-header]}
 
 @defstxclass[function-header]{
  Matches a name and formals found in function header.

@@ -10,6 +10,7 @@
 ;;      (current-print pretty-print-handler)
 
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 (require racket/private/port
          racket/flonum
          racket/fixnum

@@ -1,4 +1,5 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 (require (for-template racket/base))
 (provide txlift
          get-txlifts-as-definitions

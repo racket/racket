@@ -1,4 +1,5 @@
 (module norm-arity '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
   (#%require "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt" "sort.rkt")
   (#%provide normalize-arity)
 
