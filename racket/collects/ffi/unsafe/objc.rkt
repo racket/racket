@@ -1024,7 +1024,7 @@
                              [size _ulong])
   #:malloc-mode 'atomic-interior)
 
-(define-objc _NSConcreteGlobalBlock _pointer
+(define-objc _NSConcreteGlobalBlock _fpointer
   #:fail (lambda () #f))
 
 (define (objc-block type proc #:keep keep)
