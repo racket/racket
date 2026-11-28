@@ -160,6 +160,17 @@
                          #:headers [headers-bs empty]
                          #:content-decode [decodes '(gzip deflate)]
                          #:data [data #f])
+  ;; A CR or LF would end the request line or a header line early and
+  ;; let the rest be sent as further headers or another request
+  (define (check-line what v)
+    (when (regexp-match? #rx"[\r\n]" (if (symbol? v) (symbol->string v) v))
+      (raise-arguments-error 'http-conn-send!
+                             (format "~a contains a carriage return or linefeed" what)
+                             what v)))
+  (check-line "method" method-bss)
+  (check-line "uri" url-bs)
+  (for ([h (in-list headers-bs)])
+    (check-line "header" h))
   (http-conn-enliven! hc)
   (match-define (http-conn host port port-usual? to from _
                            auto-reconnect? auto-reconnect-host auto-reconnect-ssl?) hc)
