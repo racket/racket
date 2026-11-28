@@ -16,8 +16,10 @@
 (define (arity->mask a)
   (cond
    [(exact-nonnegative-integer? a)
+    (guard-arity-mask a)
     (bitwise-arithmetic-shift-left 1 a)]
    [(arity-at-least? a)
+    (guard-arity-mask (arity-at-least-value a))
     (bitwise-xor -1 (sub1 (bitwise-arithmetic-shift-left 1 (arity-at-least-value a))))]
    [(list? a)
     (let loop ([mask 0] [l a])
@@ -32,8 +34,17 @@
            [else #f]))]))]
    [else #f]))
 
+(define (guard-arity-mask n)
+  ;; a mask for arity `n` has `n` bits
+  (unless (and (fixnum? n) (fx< n 32768))
+    (guard-large-allocation 'procedure-reduce-arity "arity mask" (quotient n 8) 1)))
+
 (define (procedure-arity? a)
-  (and (arity->mask a) #t))
+  (let ([simple? (lambda (a) (or (exact-nonnegative-integer? a)
+                                 (arity-at-least? a)))])
+    (or (simple? a)
+        (and (list? a)
+             (andmap simple? a)))))
 
 (define-struct arity-at-least (value)
   :guard (lambda (value who)
