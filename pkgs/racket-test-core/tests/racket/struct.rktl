@@ -2163,6 +2163,33 @@
     (make-struct-type 'big #f 32769 0)))
 (err/rt-test/once (dynamic-require ''m-with-too-many-fields #f) exn:fail? #rx"too many fields")
 
+;; A huge field index in a prefab key or immutables list must not
+;; make a correspondingly huge bit mask
+(test #f prefab-key? (list 'v (vector (expt 2 128))))
+(test #f prefab-key? (list 'v (vector (expt 2 40))))
+(test #f prefab-key? (list 'v (vector 32768)))
+;; Duplicate mutable-field indices are not allowed
+(test #t prefab-key? '(v #(0 1)))
+(test #f prefab-key? '(v #(1 1)))
+(test #f prefab-key? '(v 2 #(0 0)))
+(err/rt-test (make-prefab-struct '(v 2 #(1 1)) 1 2) exn:fail:contract?)
+(err/rt-test (read (open-input-string "#s((v #(0 0)) 1)")) exn:fail:read?)
+(err/rt-test (read (open-input-string "#s((v #(340282366920938463463374607431768211456)) 1)"))
+             exn:fail:read?)
+(err/rt-test (make-struct-type 'a #f 1 0 #f null (current-inspector) #f (list (expt 2 40)))
+             exn:fail:contract?)
+(module m-with-huge-immutable-index racket/base
+  (define-values (struct:a make-a a? a-ref a-set!)
+    (make-struct-type 'a #f 1 0 #f null (current-inspector) #f '(1099511627776))))
+(err/rt-test/once (dynamic-require ''m-with-huge-immutable-index #f) exn:fail:contract?)
+
+;; An out-of-range procedure index must be rejected even without
+;; other properties
+(err/rt-test (make-struct-type 'a #f 1 0 #f null (current-inspector) 1)
+             exn:fail:contract? #rx"index for procedure")
+(err/rt-test (make-struct-type 'a #f 1 0 #f null (current-inspector) 100000000)
+             exn:fail:contract? #rx"index for procedure")
+
 ;; ----------------------------------------
 ;; Report malformed struct-copy correctly
 ;; https://github.com/racket/racket/issues/5194

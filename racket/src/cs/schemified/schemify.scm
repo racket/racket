@@ -22426,20 +22426,28 @@
                                                                                (if (null?
                                                                                     imms_0)
                                                                                  mask_1
-                                                                                 (let ((m_0
-                                                                                        (bitwise-not
-                                                                                         (arithmetic-shift
-                                                                                          1
-                                                                                          (car
-                                                                                           imms_0)))))
-                                                                                   (let ((app_6
-                                                                                          (cdr
-                                                                                           imms_0)))
-                                                                                     (loop_0
-                                                                                      app_6
-                                                                                      (bitwise-and
-                                                                                       mask_1
-                                                                                       m_0)))))))))
+                                                                                 (if (>=
+                                                                                      (car
+                                                                                       imms_0)
+                                                                                      n_0)
+                                                                                   (loop_0
+                                                                                    (cdr
+                                                                                     imms_0)
+                                                                                    mask_1)
+                                                                                   (let ((m_0
+                                                                                          (bitwise-not
+                                                                                           (arithmetic-shift
+                                                                                            1
+                                                                                            (car
+                                                                                             imms_0)))))
+                                                                                     (let ((app_6
+                                                                                            (cdr
+                                                                                             imms_0)))
+                                                                                       (loop_0
+                                                                                        app_6
+                                                                                        (bitwise-and
+                                                                                         mask_1
+                                                                                         m_0))))))))))
                                                                           (loop_0
                                                                            cond-val_0
                                                                            mask_0))

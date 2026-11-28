@@ -66,6 +66,7 @@
                                                       [else
                                                        (let ([pos (vector-ref vec i)])
                                                          (and (exact-nonnegative-integer? pos)
+                                                              (< pos max-struct-field-count)
                                                               (or (not field-count)
                                                                   (< pos (+ field-count auto-count)))
                                                               (not (bitwise-bit-set? set pos))

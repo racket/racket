@@ -178,6 +178,8 @@
                                               (let loop ([imms immutables] [mask mask])
                                                 (cond
                                                   [(null? imms) mask]
+                                                  ;; an out-of-range index is reported at run time
+                                                  [((car imms) . >= . n) (loop (cdr imms) mask)]
                                                   [else
                                                    (let ([m (bitwise-not (arithmetic-shift 1 (car imms)))])
                                                      (loop (cdr imms) (bitwise-and mask m)))])))]
