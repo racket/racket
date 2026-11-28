@@ -37,7 +37,11 @@
      (match (faslable-correlated-linklet-expr linkl)
        [`(linklet ,imports ,exports . ,body)
         (for/fold ([l '()]) ([form (in-list body)])
-          (match form
+          ;; a `define-values` form can have a correlated wrapper,
+          ;; especially when the linklet is from a demodularized module
+          (match (if (faslable-correlated? form)
+                     (faslable-correlated-e form)
+                     form)
             [`(define-values ,ids ,_)
              (append (map strip-correlated ids) l)]
             [else l]))])]
