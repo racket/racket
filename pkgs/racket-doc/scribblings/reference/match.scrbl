@@ -14,7 +14,7 @@ The @racket[match] form and related forms support general pattern
 matching on Racket values. See also @secref["regexp"] for information
 on regular-expression matching on strings, bytes, and streams.
 
-@note-lib[racket/match #:use-sources (racket/match)]
+@note-lib[racket/match #:cross-phase-persistent #:use-sources (racket/match)]
 
 @defform/subs[(match val-expr clause ...)
               ([clause [pat option=> option ... body ...+]]

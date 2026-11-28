@@ -1,4 +1,5 @@
 (module collect '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
   (#%require "core-syntax.rkt"
              "path.rkt"
              "kw.rkt"

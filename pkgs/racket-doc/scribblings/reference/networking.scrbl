@@ -8,7 +8,7 @@
 @;------------------------------------------------------------------------
 @section[#:tag "tcp"]{TCP}
 
-@note-lib[racket/tcp]
+@note-lib[racket/tcp #:cross-phase-persistent]
 
 For information about TCP in general, see @italic{TCP/IP Illustrated,
  Volume 1} by W. Richard Stevens.

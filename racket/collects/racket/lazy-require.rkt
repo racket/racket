@@ -1,4 +1,5 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 (require (for-syntax racket/base)
          compiler/cm-accomplice
          racket/runtime-path
@@ -13,11 +14,15 @@
 
 (begin-for-syntax
 
- (define counter 0)
+ ;; The counter is local to a module expansion, since this module's
+ ;; instance is shared (cross-phase persistent):
+ (define counter-key (gensym 'lazy-require-aux))
+ (define (get-counter) (syntax-local-state-ref counter-key 0))
+ (define (inc-counter!) (syntax-local-state-set! counter-key (add1 (get-counter))))
 
  (define (gen-aux-mod-name phase)
-   (begin0 (string->symbol (format "lazy-require-aux-~a-~a" phase counter))
-     (set! counter (add1 counter))))
+   (begin0 (string->symbol (format "lazy-require-aux-~a-~a" phase (get-counter)))
+     (inc-counter!)))
 
  ;; like (collapse-module-path modpath '(submod "..")), but avoids
  ;; the dependencies of syntax/modcollapse
@@ -65,7 +70,7 @@
      (with-syntax ([((exp-name bind-name) ...)
                     (process-imports #'orig-stx (syntax->list #'(import ...)))]
                    [mpi-var-defn
-                    (let ([phase (sub1 (variable-reference->phase (#%variable-reference)))])
+                    (let ([phase (syntax-local-phase-level)])
                       (if (zero? phase)
                           ;; `define-runtime-module-path-index' works right at phase-level 0:
                           #'(define-runtime-module-path-index mpi-var (quote modpath))
@@ -75,7 +80,7 @@
                                         ;; relative to a *submodule* of the original context.
                                         ;; ie, module-path interpretation is not hygienic!
                                         [modpath* (module-path-add-submod-up #'modpath)])
-                            (set! counter (add1 counter))
+                            (inc-counter!)
                             #'(begin
                                 (module lazy-require-path-n racket/base
                                   (require racket/runtime-path
@@ -86,6 +91,9 @@
        (with-syntax ([(aux-name ...) (generate-temporaries #'(bind-name ...))])
          #'(begin 
              mpi-var-defn
+             ;; In case this module is cross-phase persistent, make sure that
+             ;; attaching it also loads and attaches `modpath`:
+             (variable-reference-add-attach-dependency! (#%variable-reference) mpi-var)
              (define (get-sym sym)
                (parameterize ((current-namespace (variable-reference->namespace (#%variable-reference))))
                  (begin0

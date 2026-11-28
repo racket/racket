@@ -1,5 +1,6 @@
 (module namespace "pre-base.rkt"
-  (require (for-syntax '#%kernel "core-syntax.rkt"
+  (#%declare #:unsafe-cross-phase-persistent)
+  (require (for-syntax "pre-base.rkt"
                        "stx.rkt" "stxcase-scheme.rkt"
                        "stxloc.rkt"))
 
@@ -16,8 +17,12 @@
 
   (define (make-base-empty-namespace)
     (let* ([this-ns (variable-reference->empty-namespace orig-varref)]
-           [ns (parameterize ([current-namespace this-ns]) ; ensures correct phase
-                 (make-empty-namespace))])
+           ;; This module is cross-phase persistent, so `this-ns` is always
+           ;; at phase 0, and it doesn't reflect the phase of the caller;
+           ;; use the current namespace's phase, instead. Attaching
+           ;; 'racket/base works across phases, since it's cross-phase
+           ;; persistent.
+           [ns (make-empty-namespace)])
       (namespace-call-with-registry-lock
        this-ns
        (lambda ()

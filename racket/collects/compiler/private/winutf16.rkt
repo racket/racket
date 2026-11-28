@@ -1,4 +1,5 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 
 (provide bytes->utf-16-bytes
          utf-16-bytes->bytes)

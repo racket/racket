@@ -1,4 +1,5 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 
 (provide (protect-out
           prop:convertible convertible? convertible-ref

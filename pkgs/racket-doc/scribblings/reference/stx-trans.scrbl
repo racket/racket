@@ -929,6 +929,60 @@ for caching lift information to avoid redundant lifts.
 @transform-time[]}
 
 
+@deftogether[(
+@defproc[(syntax-local-state-ref [key symbol?]
+                                 [failure-result failure-result/c
+                                                 (lambda ()
+                                                   (raise (make-exn:fail:contract ....)))])
+         any]
+@defproc[(syntax-local-state-set! [key symbol?] [v any/c]) void?]
+)]{
+
+Gets or sets a value associated with @racket[key] in a table that is
+local to the current module expansion (where each @tech{submodule} has
+its own table) or, for top-level expansion, local to the current
+@tech{namespace}. The same table is used by code that runs when a
+module is @tech{visit}ed for the expansion, such as a
+@racket[begin-for-syntax] body in a required module, so that such
+code can register information for use by transformers in the
+expansion. When no value is associated with @racket[key],
+@racket[syntax-local-state-ref] returns the result of
+@racket[failure-result] if it is a procedure, returns
+@racket[failure-result] itself otherwise, or raises
+@racket[exn:fail:contract] if @racket[failure-result] is not
+provided.
+
+These functions are intended for compile-time state in an
+@tech{unsafe cross-phase persistent} module (see
+@secref["unsafe-cross-phase-persistent-modules"]), whose instance is
+shared among module expansions. A module that is not cross-phase
+persistent has a fresh compile-time instance for each module
+expansion, so it can keep such state in variables, instead. To avoid
+collisions with other libraries, use a @racket[key] that is created
+with @racket[gensym].
+
+When called outside of a transformer, the functions use the table
+associated with the current namespace, which is the same table as
+used for top-level expansion in the namespace.
+
+@examples[
+(module counter racket/base
+  (require (for-syntax racket/base))
+  (provide next)
+  (define-for-syntax key (gensym 'counter))
+  (define-syntax (next stx)
+    (define n (add1 (syntax-local-state-ref key 0)))
+    (syntax-local-state-set! key n)
+    (datum->syntax stx (list 'quote n))))
+(module use racket/base
+  (require 'counter)
+  (list (next) (next)))
+(require 'use)
+]
+
+@history[#:added "9.4.0.8"]}
+
+
 @defproc[(syntax-local-lift-module [stx syntax?])
          void?]{
 
@@ -1398,7 +1452,7 @@ The @racket[liberal-define-context?] predicate returns @racket[#t] if
 
 @section[#:tag "require-trans"]{@racket[require] Transformers}
 
-@note-lib-only[racket/require-transform]
+@note-lib-only[racket/require-transform #:cross-phase-persistent]
 
 A @tech{transformer} binding whose value is a structure with the
 @racket[prop:require-transformer] property implements a derived
@@ -1588,7 +1642,7 @@ first argument.}
 
 @section[#:tag "provide-trans"]{@racket[provide] Transformers}
 
-@note-lib-only[racket/provide-transform]
+@note-lib-only[racket/provide-transform #:cross-phase-persistent]
 
 A @tech{transformer} binding whose value is a structure with the
 @racket[prop:provide-transformer] property implements a derived

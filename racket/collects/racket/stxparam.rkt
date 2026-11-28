@@ -1,5 +1,6 @@
 
 (module stxparam '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
   (#%require "private/letstx-scheme.rkt"
              "private/core-syntax.rkt"
              "private/stxparam.rkt"

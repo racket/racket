@@ -176,6 +176,29 @@
        (for/list ([phase-merged (in-list simplified-phase-mergeds)])
          (gc-definitions used phase-merged))]))
 
+  ;; A demodularized module can be cross-phase persistent when every
+  ;; module whose body it contains is cross-phase persistent, which
+  ;; implies (by the rules for declaring cross-phase persistence) that
+  ;; all of those modules' dependencies are, too; check dependencies
+  ;; anyway, since some modules' bodies end up in other submodules
+  (define cross-phase-persistent*-memo (make-hash))
+  (define (cross-phase-persistent*? path/submod)
+    (cond
+      [(symbol? path/submod) #t] ; primitive module
+      [(hash-ref cross-phase-persistent*-memo path/submod #f)
+       => (lambda (v) (eq? v 'yes))]
+      [else
+       (define m (hash-ref one-mods path/submod #f))
+       (hash-set! cross-phase-persistent*-memo path/submod 'yes) ; assume for cycles
+       (define ok?
+         (and m
+              (one-mod-cross-phase-persistent? m)
+              (for*/and ([(phase-shift req-path/submods) (in-hash (one-mod-reqs m))]
+                         [req-path/submod (in-list req-path/submods)])
+                (cross-phase-persistent*? req-path/submod))))
+       (hash-set! cross-phase-persistent*-memo path/submod (if ok? 'yes 'no))
+       ok?]))
+
   (log-demodularizer-info "Bundling linklet")
   (when (and dump-output-file (file-exists? dump-output-file))
     (delete-file dump-output-file))
@@ -227,6 +250,10 @@
                                         (one-mod-pre-submodules m)))
                      #:post-submodules (only-kept-submodules
                                         (one-mod-post-submodules m))
+                     #:cross-phase-persistent? (and keep-syntax?
+                                                    (positive? (hash-count included-module-phases))
+                                                    (for/and ([path/submod (in-hash-keys included-module-phases)])
+                                                      (cross-phase-persistent*? path/submod)))
                      #:dump-output-file dump-output-file))
       (values submod bundle)))
 

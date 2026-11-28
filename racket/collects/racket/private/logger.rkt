@@ -1,5 +1,6 @@
 
 (module logger '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
   (#%require "core-syntax.rkt"
              (for-syntax '#%kernel "stx.rkt" "core-syntax.rkt"
                          "stxcase-scheme.rkt"))

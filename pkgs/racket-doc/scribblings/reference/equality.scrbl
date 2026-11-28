@@ -720,7 +720,7 @@ they shouldn't:
 
 @section{Combining Hash Codes}
 
-@note-lib-only[racket/hash-code]
+@note-lib-only[racket/hash-code #:cross-phase-persistent]
 
 @history[#:added "8.8.0.5"]
 

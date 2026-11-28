@@ -3,6 +3,7 @@
 ;; record for static info produced by `define-struct'
 
 (module struct-info '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
   (#%require "core-syntax.rkt" "core-syntax.rkt" "core-syntax.rkt")
 
   (#%provide make-struct-info

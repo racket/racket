@@ -1,5 +1,6 @@
 
 (module norm-define '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
   (#%require "core-syntax.rkt" "core-syntax.rkt" "stxcase-scheme.rkt"
              "stx.rkt" "qqstx.rkt")
 

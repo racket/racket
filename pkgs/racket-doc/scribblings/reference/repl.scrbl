@@ -3,7 +3,7 @@
 
 @title[#:tag "repl-module"]{The @racketmodname[racket/repl] Library}
 
-@defmodule[racket/repl]
+@defmodule[racket/repl]{The @racketmodname[racket/repl] library is a @tech{cross-phase persistent} module.}
 
 The @racketmodname[racket/repl] provides the same
 @racket[read-eval-print-loop] binding as @racketmodname[racket/base], but

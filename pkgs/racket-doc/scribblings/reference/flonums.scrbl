@@ -6,7 +6,7 @@
 
 @title[#:tag "flonums"]{Flonums}
 
-@defmodule[racket/flonum]
+@defmodule[racket/flonum]{The @racketmodname[racket/flonum] library is a @tech{cross-phase persistent} module.}
 
 The @racketmodname[racket/flonum] library provides operations like
 @racket[fl+] that consume and produce only

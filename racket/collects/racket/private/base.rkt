@@ -1,4 +1,5 @@
 (module base "pre-base.rkt"
+  (#%declare #:unsafe-cross-phase-persistent)
   (#%declare #:flatten-requires)
 
   (#%require "hash.rkt"

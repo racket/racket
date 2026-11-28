@@ -82,7 +82,9 @@ indicates the state of the current installation:
 
 @defmodule[version/utils]{
   The @racketmodname[version/utils] library provides a few of convenient
-  utilities for dealing with version strings.}
+  utilities for dealing with version strings.
+
+The @racketmodname[version/utils] library is a @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{cross-phase persistent} module.}
 
 @defproc[(valid-version? [v any/c]) boolean?]{
   Returns @racket[#t] if @racket[v] is a valid Racket version

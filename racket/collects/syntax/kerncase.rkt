@@ -1,5 +1,6 @@
 
 (module kerncase racket/base
+  (#%declare #:unsafe-cross-phase-persistent)
   (require (for-syntax racket/base)
            (for-template racket/base))
 

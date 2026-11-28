@@ -3,7 +3,7 @@
 
 @title{Delayed Evaluation}
 
-@note-lib[racket/promise]
+@note-lib[racket/promise #:cross-phase-persistent]
 
 A @deftech{promise} encapsulates an expression to be evaluated on
 demand via @racket[force]. After a promise has been @racket[force]d,

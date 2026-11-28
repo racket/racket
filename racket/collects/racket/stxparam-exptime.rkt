@@ -1,5 +1,6 @@
 
 (module stxparam-exptime '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
   (#%require "private/stxcase-scheme.rkt"
              "private/core-syntax.rkt"
              "private/stxparamkey.rkt")

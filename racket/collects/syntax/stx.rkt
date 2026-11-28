@@ -1,4 +1,5 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 
 ;; These utilities facilitate operations on syntax objects.
 ;; A syntax object that represents a parenthesized sequence

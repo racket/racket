@@ -1072,7 +1072,7 @@ imported structure type, in which case the user is expected to know
 the set of fields that are listed in the signature for the structure
 type.
 
-@note-lib-only[racket/struct-info]
+@note-lib-only[racket/struct-info #:cross-phase-persistent]
 
 @defproc[(struct-info? [v any/c]) boolean?]{
 

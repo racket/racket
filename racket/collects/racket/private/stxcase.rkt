@@ -2,6 +2,7 @@
 ;; syntax-case and syntax
 
 (module stxcase '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
   (#%require "stx.rkt" "core-syntax.rkt" '#%paramz '#%unsafe
              "ellipses.rkt"
              (rename "core-syntax.rkt" -define define)

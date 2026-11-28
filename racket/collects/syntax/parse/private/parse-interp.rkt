@@ -1,4 +1,5 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 (require (for-syntax racket/base
                      racket/list
                      racket/pretty
@@ -8,7 +9,7 @@
                      "rep-patterns.rkt"
                      (submod "rep-patterns.rkt" simple)
                      "rep.rkt"
-                     "opt-interp.rkt"
+                     (except-in "opt-interp.rkt" stx-e) ; also from "residual-interp.rkt"
                      "const-expr.rkt"
                      "kws.rkt")
          racket/stxparam

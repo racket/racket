@@ -9,7 +9,7 @@
 
 @title[#:tag "stxparam"]{Syntax Parameters}
 
-@note-lib-only[racket/stxparam]
+@note-lib-only[racket/stxparam #:cross-phase-persistent]
 
 @defform[(define-syntax-parameter id expr)]{
 
@@ -111,7 +111,7 @@ of @racket[syntax-parameterize].
 
 @section{Syntax Parameter Inspection}
 
-@defmodule*/no-declare[(racket/stxparam-exptime)]
+@defmodule*/no-declare[(racket/stxparam-exptime)]{The @racketmodname[racket/stxparam-exptime] library is a @tech{cross-phase persistent} module.}
 
 @declare-exporting[racket/stxparam-exptime racket/stxparam]
 

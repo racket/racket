@@ -3,7 +3,7 @@
 
 @title[#:tag "pretty-print"]{Pretty Printing}
 
-@note-lib[racket/pretty]
+@note-lib[racket/pretty #:cross-phase-persistent]
 
 @defproc[(pretty-print [v any/c] [port output-port? (current-output-port)]
                        [quote-depth (or/c 0 1) 0]

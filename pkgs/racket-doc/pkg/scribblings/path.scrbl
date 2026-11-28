@@ -13,7 +13,9 @@
 
 @defmodule[pkg/path]{The @racketmodname[pkg/path] library provides
 utilities for working with package paths and installed-package
-databases.}
+databases.
+
+The @racketmodname[pkg/path] library is a @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{cross-phase persistent} module.}
 
 @defstruct*[pkg-info ([orig-pkg (or/c (list/c 'catalog string?)
                                       (list/c 'catalog string? string?)

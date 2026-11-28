@@ -1,6 +1,6 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 (require (submod "residual.rkt" ct)
-         racket/contract/base
          syntax/private/id-table
          racket/syntax)
 
@@ -24,46 +24,18 @@
 (define (increase-depth x)
   (attr (attr-name x) (add1 (attr-depth x)) (attr-syntax? x)))
 
-(provide/contract
- [iattr? (any/c . -> . boolean?)]
- [sattr? (any/c . -> . boolean?)]
-
- [increase-depth
-  (-> attr? attr?)]
- [attr-make-uncertain
-  (-> attr? attr?)]
-
- ;; IAttr operations
- [append-iattrs
-  (-> (listof (listof (or/c iattr? #f)))
-      (listof (or/c iattr? #f)))]
- [union-iattrs
-  (-> (listof (listof iattr?))
-      (listof iattr?))]
- [reorder-iattrs
-  (-> (listof sattr?) (listof (or/c iattr? #f))
-      (listof iattr?))]
-
- ;; SAttr operations
- [iattr->sattr
-  (-> iattr?
-      sattr?)]
- [iattrs->sattrs
-  (-> (listof iattr?)
-      (listof sattr?))]
- [sort-sattrs
-  (-> (listof sattr?)
-      (listof sattr?))]
-
- [intersect-sattrss
-  (-> (listof (listof sattr?))
-      (listof sattr?))]
-
- [check-iattrs-subset
-  (-> (listof iattr?)
-      (listof iattr?)
-      (or/c syntax? false/c)
-      any)])
+(provide iattr?
+         sattr?
+         increase-depth
+         attr-make-uncertain
+         append-iattrs
+         union-iattrs
+         reorder-iattrs
+         iattr->sattr
+         iattrs->sattrs
+         sort-sattrs
+         intersect-sattrss
+         check-iattrs-subset)
 
 ;; IAttr operations
 

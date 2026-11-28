@@ -1,4 +1,5 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 (provide (all-defined-out))
 
 ;; T = (list* T ... T) | (vector T ...) | (make-prefab-struct Key T ...) | Any

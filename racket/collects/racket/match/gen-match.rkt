@@ -1,4 +1,5 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 
 (require "patterns.rkt" "compiler.rkt"
          (only-in "stxtime.rkt" current-form-name)

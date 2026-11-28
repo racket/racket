@@ -1,4 +1,5 @@
 (module hash "pre-base.rkt"
+  (#%declare #:unsafe-cross-phase-persistent)
   (require '#%unsafe
            (for-syntax "ellipses.rkt"))
 

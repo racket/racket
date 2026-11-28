@@ -734,7 +734,7 @@ information, for example).
 
 @section[#:tag "cm-accomplice"]{Compilation Manager Hook for Syntax Transformers}
 
-@defmodule[compiler/cm-accomplice]
+@defmodule[compiler/cm-accomplice]{@cross-phase-persistent-lib[compiler/cm-accomplice]}
 
 @defproc[(register-external-file [file (and path? complete-path?)]
                                  [#:indirect? indirect? any/c #f])

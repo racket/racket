@@ -873,7 +873,7 @@ Like @racket[assoc], but finds an element using the predicate
 @; ----------------------------------------
 @section{Additional List Functions and Synonyms}
 
-@note-lib[racket/list]
+@note-lib[racket/list #:cross-phase-persistent]
 
 
 @defthing[empty null?]{

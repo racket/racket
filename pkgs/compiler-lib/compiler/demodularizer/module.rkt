@@ -201,6 +201,7 @@
       (define h (linklet-bundle->hash one-compiled))
       (define min-phase (hash-ref h 'min-phase 0))
       (define max-phase (hash-ref h 'max-phase 0))
+      (define cross-phase-persistent? (hash-ref h 'cross-phase-persistent? #f))
       (define data-linklet (hash-ref h 'data #f))
       (define decl-linklet (hash-ref h 'decl #f))
       (define stx-data-linklet (and keep-syntax? 
@@ -290,7 +291,8 @@
                                                stx-vec stx-mpi
                                                portal-stxes
                                                pre-submodules
-                                               post-submodules)))
+                                               post-submodules
+                                               cross-phase-persistent?)))
 
     (let ([m (hash-ref one-mods path/submod #f)])
       (values (one-mod-min-phase m)

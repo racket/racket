@@ -36,6 +36,7 @@
          (only-in "syntax/cache.rkt" cache-place-init!)
          (only-in "syntax/syntax.rkt" syntax-place-init!)
          (only-in "syntax/scope.rkt" scope-place-init!)
+         (only-in "expand/syntax-local.rkt" syntax-local-state-place-init!)
          (only-in "syntax/error.rkt" install-error-syntax->string-handler!)
          "syntax/serialize.rkt"
          (only-in "eval/module-cache.rkt" module-cache-place-init!)
@@ -245,6 +246,7 @@
 (define (expander-place-init!)
   (syntax-place-init!)
   (scope-place-init!)
+  (syntax-local-state-place-init!)
   (cache-place-init!)
   (core-place-init!)
   (phase+space-place-init!)

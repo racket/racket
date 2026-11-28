@@ -4,7 +4,7 @@
 
 @title[#:tag "phase+space"]{Phase and Space Utilities}
 
-@note-lib-only[racket/phase+space]
+@note-lib-only[racket/phase+space #:cross-phase-persistent]
 
 The @racketmodname[racket/phase+space] library provides functions for
 manipulating combined representations of @tech{phase levels} and

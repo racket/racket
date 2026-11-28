@@ -1,4 +1,5 @@
 (module submodule '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
   (#%require (for-syntax '#%kernel
                          "stxcase-scheme.rkt"
                          "more-scheme.rkt"
@@ -38,13 +39,21 @@
                              stx)])))
 
   (begin-for-syntax
-   ;; The following table is newly instantiated for each module
-   ;; expansion that uses `module+', so it is effectively
-   ;; module-local:
-   (define-values (submodule->stxs-box) (make-weak-hash))
+   ;; The table mapping submodule names to accumulated bodies is
+   ;; local to the enclosing module's expansion, since this module's
+   ;; instance is shared (cross-phase persistent):
+   (define-values (submodule->stxs-box-key) (gensym 'module+))
+   (define-values (get-submodule->stxs-box)
+     (lambda ()
+       (let-values ([(ht) (syntax-local-state-ref submodule->stxs-box-key #f)])
+         (if ht
+             ht
+             (let-values ([(ht) (make-hasheq)])
+               (syntax-local-state-set! submodule->stxs-box-key ht)
+               ht)))))
    (define-values (get-stxs-box)
      (lambda (form-stx the-submodule-stx lift?)
-       (hash-ref! submodule->stxs-box (syntax-e the-submodule-stx)
+       (hash-ref! (get-submodule->stxs-box) (syntax-e the-submodule-stx)
                   (lambda ()
                     (when lift?
                       (syntax-local-lift-module-end-declaration

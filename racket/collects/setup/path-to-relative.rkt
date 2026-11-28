@@ -1,4 +1,5 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 
 ;; intended for use in racket/contract, so don't try to add contracts!
 ;; (and try to generally minimize dependencies)

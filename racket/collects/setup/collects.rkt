@@ -1,4 +1,5 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 (require racket/list
          racket/string
          setup/collection-name

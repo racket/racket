@@ -31,9 +31,16 @@
 (define AllUnix "Unix and Mac OS")
 (provide AllUnix)
 
+;; Text added by `#:cross-phase-persistent` in `note-lib` and similar
+(provide cross-phase-persistent-lib-note)
+(define (cross-phase-persistent-lib-note lib)
+  (list " The " lib " library is a " (tech "cross-phase persistent") " module."))
+
 (provide note-lib)
 (define-syntax note-lib
   (syntax-rules ()
+    [(_ lib #:cross-phase-persistent arg ...)
+     (note-lib lib arg ... (cross-phase-persistent-lib-note (racketmodname lib)))]
     [(_ lib #:more-libs (lib+ ...) #:use-sources (src ...) . more)
      (begin
        (declare-exporting lib lib+ ... racket #:use-sources (src ...))
@@ -65,6 +72,8 @@
 (provide note-init-lib)
 (define-syntax note-init-lib
   (syntax-rules ()
+    [(_ lib #:cross-phase-persistent arg ...)
+     (note-init-lib lib arg ... (cross-phase-persistent-lib-note (racketmodname lib)))]
     [(_ lib #:use-sources (src ...) . more)
      (begin
        (declare-exporting lib racket/init #:use-sources (src ...))
@@ -84,6 +93,8 @@
 (provide note-lib-only)
 (define-syntax note-lib-only
   (syntax-rules ()
+    [(_ lib #:cross-phase-persistent arg ...)
+     (note-lib-only lib arg ... (cross-phase-persistent-lib-note (racketmodname lib)))]
     [(_ lib #:use-sources (src ...) . more)
      (defmodule lib #:use-sources (src ...)
        (t "The bindings documented in this section are provided by the "

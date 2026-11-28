@@ -1,4 +1,5 @@
 (module base "pre-base.rkt"
+  (#%declare #:unsafe-cross-phase-persistent)
 
   ;; Backward compatibility
   (#%provide syntax-recertify

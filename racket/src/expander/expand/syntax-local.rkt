@@ -1,5 +1,6 @@
 #lang racket/base
-(require "../common/set.rkt"
+(require racket/private/place-local
+         "../common/set.rkt"
          "../common/scope-set.rkt"
          "../common/struct-star.rkt"
          "../syntax/syntax.rkt"
@@ -23,6 +24,7 @@
          "definition-context.rkt"
          "../common/module-path.rkt"
          "../namespace/namespace.rkt"
+         (only-in (submod "../namespace/namespace.rkt" for-module) namespace-module-instances)
          "../namespace/module.rkt"
          "../common/contract.rkt")
 
@@ -49,6 +51,10 @@
          syntax-local-lift-expression
          syntax-local-lift-values-expression
          syntax-local-lift-context
+
+         syntax-local-state-ref
+         syntax-local-state-set!
+         syntax-local-state-place-init!
          
          syntax-local-lift-module
          
@@ -274,6 +280,55 @@
 (define/who (syntax-local-lift-context)
   (define ctx (get-current-expand-context who))
   (root-expand-context-lift-key ctx))
+
+;; ----------------------------------------
+
+;; State that is local to the current module expansion (or top-level
+;; namespace), which is useful for compile-time state in a module
+;; that is cross-phase persistent, since such a module's compile-time
+;; instance is not created fresh for each module expansion.
+;;
+;; The state is keyed on a namespace's table of module instances. A
+;; module expansion gets a fresh table, and the namespaces of module
+;; instances created for the expansion share that table, so a
+;; transformer and code that runs when a module is visited for the
+;; expansion (such as a `begin-for-syntax` body) see the same state.
+;; For a top-level namespace, the state is associated with the
+;; namespace and the module instances created in it. An ephemeron
+;; table is needed, since a state value can refer back to its key
+;; (e.g., via a variable reference to a module instance).
+
+(define none (gensym 'none))
+
+(define-place-local local-states (make-ephemeron-hasheq))
+
+(define (syntax-local-state-place-init!)
+  (set! local-states (make-ephemeron-hasheq)))
+
+(define (current-local-state)
+  (define ctx (get-current-expand-context #:fail-ok? #t))
+  (define ns (if ctx
+                 (expand-context-namespace ctx)
+                 (current-namespace)))
+  (define key (namespace-module-instances ns))
+  (or (hash-ref local-states key #f)
+      (let ([ht (make-hasheq)])
+        (hash-set! local-states key ht)
+        ht)))
+
+(define/who (syntax-local-state-ref key [failure-result none])
+  (check who symbol? key)
+  (define v (hash-ref (current-local-state) key none))
+  (cond
+    [(not (eq? v none)) v]
+    [(eq? failure-result none)
+     (raise-arguments-error who "no value found for key" "key" key)]
+    [(procedure? failure-result) (failure-result)]
+    [else failure-result]))
+
+(define/who (syntax-local-state-set! key val)
+  (check who symbol? key)
+  (hash-set! (current-local-state) key val))
 
 ;; ----------------------------------------
 

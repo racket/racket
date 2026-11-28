@@ -1,4 +1,5 @@
 (module language '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
   (#%provide current-interaction-info)
   (define-values (current-interaction-info)
     (make-parameter #f

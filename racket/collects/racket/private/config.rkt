@@ -1,4 +1,5 @@
 (module config '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
   (#%require '#%paramz ; for cache-configuration
              "core-syntax.rkt"
              "executable-path.rkt")

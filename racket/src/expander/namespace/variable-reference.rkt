@@ -17,7 +17,8 @@
          variable-reference->module-source
          variable-reference->phase
          variable-reference->module-base-phase
-         variable-reference->module-declaration-inspector)
+         variable-reference->module-declaration-inspector
+         variable-reference-add-attach-dependency!)
 
 (define/who (variable-reference->empty-namespace vr)
   (check who variable-reference? vr)
@@ -91,3 +92,25 @@
   (or (namespace-declaration-inspector (variable-reference->namespace* who vr))
       (raise-arguments-error who
                              "given variable reference is not from a module")))
+
+;; Records that the module instance associated with `vr` may load the
+;; module referenced by `mpi` lazily (as `lazy-require` does). That
+;; matters only for a cross-phase persistent module: since the instance
+;; is shared with any namespace that it is attached to, but the lazily
+;; loaded module would be loaded in the instance's original namespace,
+;; `namespace-attach-module` first loads and instantiates the referenced
+;; module and then attaches it along with the instance
+(define/who (variable-reference-add-attach-dependency! vr mpi)
+  (check who variable-reference? vr)
+  (check who module-path-index? mpi)
+  (define ns (variable-reference->namespace* who vr))
+  (define mod-mpi (namespace-mpi ns))
+  (unless (top-level-module-path-index? mod-mpi)
+    (define mi (namespace->module-instance ns
+                                           (module-path-index-resolve mod-mpi)
+                                           (namespace-0-phase ns)))
+    (define m (and mi (module-instance-module mi)))
+    (when (and m (module-cross-phase-persistent? m))
+      (define deps (module-instance-attach-dependencies mi))
+      (unless (member mpi deps)
+        (set-module-instance-attach-dependencies! mi (cons mpi deps))))))

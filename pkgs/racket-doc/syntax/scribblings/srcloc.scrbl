@@ -1,5 +1,6 @@
 #lang scribble/manual
-@(require scribble/eval
+@(require (only-in "common.rkt" cross-phase-persistent-lib)
+          scribble/eval
           scribble/decode
           (for-label racket/base
                      racket/contract
@@ -31,7 +32,7 @@ location of a particular piece of source code.
 
 @section[#:tag "srcloc"]{Representations}
 
-@defmodule[syntax/srcloc]
+@defmodule[syntax/srcloc]{@cross-phase-persistent-lib[syntax/srcloc]}
 
 This module defines utilities for manipulating representations of source
 locations, including both @racket[srcloc] structures and all the values accepted

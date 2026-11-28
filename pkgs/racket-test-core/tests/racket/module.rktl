@@ -4532,5 +4532,365 @@ case of module-leve bindings; it doesn't cover local bindings.
                   exn:fail:contract:variable?)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; `#:unsafe-cross-phase-persistent`
+
+(let ()
+  (define (unsafe-cpp-syntax-error? rx)
+    (lambda (exn)
+      (and (exn:fail:syntax? exn)
+           (regexp-match? rx (exn-message exn)))))
+
+  (define (make-ns) (make-base-namespace))
+
+  ;; One instance is shared by all phases, so compile-time and
+  ;; run-time uses see the same state
+  (parameterize ([current-namespace (make-ns)])
+    (eval '(module ucpp-counter racket/base
+             (#%declare #:unsafe-cross-phase-persistent)
+             (provide bump!)
+             (define counter 0)
+             (define (bump!) (set! counter (add1 counter)) counter)))
+    (eval '(module ucpp-shared racket/base
+             (#%declare #:unsafe-cross-phase-persistent)
+             (require (for-syntax racket/base)
+                      'ucpp-counter
+                      (for-syntax 'ucpp-counter))
+             (provide bump! m)
+             (define-syntax (m stx) #`(quote #,(bump!)))))
+    (eval '(module ucpp-shared-use racket/base
+             (require 'ucpp-shared)
+             (provide x)
+             (define x (m))))
+    (test 1 dynamic-require ''ucpp-shared-use 'x)
+    (test 2 (dynamic-require ''ucpp-shared 'bump!)))
+
+  ;; A phase-0 definition is not available as a variable at phase 1
+  (parameterize ([current-namespace (make-ns)])
+    (err/rt-test (eval '(module ucpp-phase-0-var racket/base
+                          (#%declare #:unsafe-cross-phase-persistent)
+                          (require (for-syntax racket/base))
+                          (provide m)
+                          (define counter 0)
+                          (define-syntax (m stx) #`(quote #,counter))))
+                 (unsafe-cpp-syntax-error? #rx"counter")))
+
+  ;; Phase levels other than 0 are instantiated only on demand
+  (let ()
+    (define trace-decl
+      '(module ucpp-trace racket/base
+         (#%declare #:unsafe-cross-phase-persistent)
+         (provide trace)
+         (define trace (box null))))
+    ;; Compile in one namespace, so that running the phase-1 code
+    ;; during expansion doesn't affect the namespace used for checking
+    (define compiled-lazy
+      (parameterize ([current-namespace (make-ns)])
+        (eval trace-decl)
+        (compile '(module ucpp-lazy racket/base
+                    (#%declare #:unsafe-cross-phase-persistent)
+                    (require (for-syntax racket/base 'ucpp-trace))
+                    (begin-for-syntax
+                      (set-box! trace (cons 'phase-1 (unbox trace))))))))
+    (parameterize ([current-namespace (make-ns)])
+      (eval trace-decl)
+      (eval compiled-lazy)
+      (define trace (dynamic-require ''ucpp-trace 'trace))
+      (dynamic-require ''ucpp-lazy #f)
+      (test '() unbox trace)
+      ;; Expanding in a namespace where the module is available
+      ;; runs its phase-1 code
+      (namespace-require ''ucpp-lazy)
+      (expand '(void))
+      (test '(phase-1) unbox trace)))
+
+  ;; Attaching shares the instance, and so does attaching the declaration
+  ;; (as for any cross-phase persistent module)
+  (let ([ns1 (make-ns)])
+    (parameterize ([current-namespace ns1])
+      (eval '(module ucpp-attach racket/base
+               (#%declare #:unsafe-cross-phase-persistent)
+               (provide b)
+               (define b (box 0)))))
+    (define b1 (parameterize ([current-namespace ns1])
+                 (dynamic-require ''ucpp-attach 'b)))
+    (define ns2 (make-ns))
+    (namespace-attach-module ns1 ''ucpp-attach ns2)
+    (test #t eq? b1 (parameterize ([current-namespace ns2])
+                      (dynamic-require ''ucpp-attach 'b)))
+    (define ns3 (make-ns))
+    (namespace-attach-module-declaration ns1 ''ucpp-attach ns3)
+    (test #t eq? b1 (parameterize ([current-namespace ns3])
+                      (dynamic-require ''ucpp-attach 'b))))
+
+  ;; A module that is loaded on demand can be registered so that
+  ;; attaching also attaches it, both directly and via `lazy-require`
+  (let ([ns1 (make-ns)])
+    (parameterize ([current-namespace ns1])
+      (eval '(module ucpp-dep racket/base
+               (#%declare #:unsafe-cross-phase-persistent)
+               (provide b get-b)
+               (define b (box 'dep))
+               (define (get-b) b)))
+      (eval '(module ucpp-dep-user racket/base
+               (#%declare #:unsafe-cross-phase-persistent)
+               (provide get)
+               (define mpi (module-path-index-join ''ucpp-dep #f))
+               (variable-reference-add-attach-dependency! (#%variable-reference) mpi)
+               (define (get) (dynamic-require mpi 'b))))
+      (eval '(module ucpp-lazy-user racket/base
+               (#%declare #:unsafe-cross-phase-persistent)
+               (require racket/lazy-require)
+               (provide get-b)
+               (lazy-require ['ucpp-dep (get-b)]))))
+    (define (check user get-id)
+      (define get (parameterize ([current-namespace ns1])
+                    (dynamic-require user get-id)))
+      (define ns2 (make-ns))
+      (parameterize ([current-namespace ns2])
+        (test #f module-declared? ''ucpp-dep #f))
+      (namespace-attach-module ns1 user ns2)
+      (parameterize ([current-namespace ns2])
+        (test #t module-declared? ''ucpp-dep #f)
+        (test #t eq?
+              (parameterize ([current-namespace ns1]) (get))
+              (dynamic-require ''ucpp-dep 'b))))
+    (check ''ucpp-dep-user 'get)
+    (check ''ucpp-lazy-user 'get-b))
+
+  ;; `variable-reference-add-attach-dependency!` has no effect for a
+  ;; module that is not cross-phase persistent
+  (parameterize ([current-namespace (make-ns)])
+    (eval '(module ucpp-not racket/base
+             (variable-reference-add-attach-dependency!
+              (#%variable-reference)
+              (module-path-index-join 'racket/list #f))))
+    (test (void) dynamic-require ''ucpp-not #f))
+  (err/rt-test (variable-reference-add-attach-dependency! 'no (module-path-index-join 'racket/list #f)))
+  (err/rt-test (variable-reference-add-attach-dependency! (#%variable-reference) 'racket/list))
+
+  ;; Submodules inherit the declaration, unless they require a module
+  ;; that is not cross-phase persistent
+  (parameterize ([current-namespace (make-ns)])
+    (eval '(module ucpp-plain racket/base))
+    (define c (compile '(module ucpp-outer racket/base
+                          (#%declare #:unsafe-cross-phase-persistent)
+                          (module inner racket/base)
+                          (module* star #f)
+                          (module+ test (require 'ucpp-plain)))))
+    (test #t module-compiled-cross-phase-persistent? c)
+    ;; the `configure-runtime` submodule added by `racket/base` uses
+    ;; `racket/runtime-config`, which is not cross-phase persistent
+    (test '((configure-runtime . #f) (inner . #t) (star . #t) (test . #f))
+          'submodules
+          (sort
+           (for/list ([sub (in-list (append (module-compiled-submodules c #t)
+                                            (module-compiled-submodules c #f)))])
+             (cons (last (module-compiled-name sub))
+                   (module-compiled-cross-phase-persistent? sub)))
+           symbol<?
+           #:key car)))
+
+  ;; Errors
+  (parameterize ([current-namespace (make-ns)])
+    (eval '(module ucpp-plain racket/base))
+    (err/rt-test (eval '(module m racket/base
+                          (#%declare #:unsafe-cross-phase-persistent)
+                          (require 'ucpp-plain)))
+                 (unsafe-cpp-syntax-error? #rx"some required module isn't"))
+    (err/rt-test (eval '(module m racket/base
+                          (#%declare #:unsafe-cross-phase-persistent #:cross-phase-persistent)))
+                 (unsafe-cpp-syntax-error? #rx"cannot combine"))
+    (err/rt-test (eval '(module m racket/base
+                          (#%declare #:cross-phase-persistent #:unsafe-cross-phase-persistent)))
+                 (unsafe-cpp-syntax-error? #rx"cannot combine"))
+    (err/rt-test (eval '(module m racket/base
+                          (#%declare #:unsafe-cross-phase-persistent)
+                          (require (for-syntax racket/base))
+                          (define x 1)
+                          (begin-for-syntax (define x 2))))
+                 (unsafe-cpp-syntax-error? #rx"binding differs across phases"))
+    (err/rt-test (eval '(module m racket/base
+                          (#%declare #:unsafe-cross-phase-persistent)
+                          (require (for-label racket/base))))
+                 (unsafe-cpp-syntax-error? #rx"label phase not allowed"))
+    (err/rt-test (parameterize ([current-code-inspector (make-inspector)])
+                   (eval '(module m racket/base
+                            (#%declare #:unsafe-cross-phase-persistent))))
+                 (unsafe-cpp-syntax-error? #rx"disallowed by code inspector"))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; `syntax-local-state-ref` and `syntax-local-state-set!`
+
+(let ()
+  ;; State is local to each module expansion
+  (parameterize ([current-namespace (make-base-namespace)])
+    (eval '(module ucpp-state racket/base
+             (#%declare #:unsafe-cross-phase-persistent)
+             (require (for-syntax racket/base))
+             (provide next)
+             (define-for-syntax key (gensym 'counter))
+             (define-syntax (next stx)
+               (define n (add1 (syntax-local-state-ref key 0)))
+               (syntax-local-state-set! key n)
+               #`(quote #,n))))
+    (eval '(module ucpp-state-a racket/base
+             (require 'ucpp-state)
+             (provide v)
+             (define v (list (next) (next)))))
+    (eval '(module ucpp-state-b racket/base
+             (require 'ucpp-state)
+             (provide v)
+             (define v (list (next) (next) (next)))))
+    (test '(1 2) dynamic-require ''ucpp-state-a 'v)
+    (test '(1 2 3) dynamic-require ''ucpp-state-b 'v))
+
+  ;; Outside of expansion, state is associated with the current namespace
+  (define key (gensym))
+  (define ns1 (make-base-namespace))
+  (define ns2 (make-base-namespace))
+  (parameterize ([current-namespace ns1])
+    (err/rt-test (syntax-local-state-ref key) exn:fail:contract?)
+    (test 'none syntax-local-state-ref key 'none)
+    (test 'thunk syntax-local-state-ref key (lambda () 'thunk))
+    (test (void) syntax-local-state-set! key 5)
+    (test 5 syntax-local-state-ref key))
+  (parameterize ([current-namespace ns2])
+    (test #f syntax-local-state-ref key #f))
+  ;; ... and that's the same as for top-level expansion in the namespace
+  (parameterize ([current-namespace ns1])
+    (namespace-require '(for-syntax racket/base))
+    (eval `(define-syntax (get-state stx)
+             #`(quote #,(syntax-local-state-ref ',key))))
+    (test 5 eval '(get-state)))
+
+  (err/rt-test (syntax-local-state-ref "key"))
+  (err/rt-test (syntax-local-state-set! "key" 1)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; `syntax-local-state` is shared by transformers and visit-time code
+;; in a module expansion, and it doesn't persist across expansions
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval '(module ucpp-registry racket/base
+           (#%declare #:unsafe-cross-phase-persistent)
+           (require (for-syntax racket/base))
+           (provide (for-syntax register!)
+                    registered)
+           (define-for-syntax key (gensym 'registered))
+           (define-for-syntax (register! v)
+             (syntax-local-state-set! key (cons v (syntax-local-state-ref key null))))
+           (define-syntax (registered stx)
+             (datum->syntax stx (list 'quote (syntax-local-state-ref key null))))))
+  (eval '(module ucpp-registers racket/base
+           (require (for-syntax racket/base) 'ucpp-registry)
+           ;; runs when the module is visited for an expansion:
+           (begin-for-syntax (register! 'hello))))
+  (eval '(module ucpp-query-1 racket/base
+           (require 'ucpp-registry 'ucpp-registers)
+           (provide v)
+           (define v (registered))))
+  (eval '(module ucpp-query-2 racket/base
+           (require 'ucpp-registry 'ucpp-registers)
+           (provide v)
+           (define v (registered))))
+  (eval '(module ucpp-query-3 racket/base
+           (require 'ucpp-registry)
+           (provide v)
+           (define v (registered))))
+  (test '(hello) dynamic-require ''ucpp-query-1 'v)
+  (test '(hello) dynamic-require ''ucpp-query-2 'v)
+  (test '() dynamic-require ''ucpp-query-3 'v))
+
+;; `runtime-paths` (as used by `raco exe`) reports run-time paths
+;; registered when a module is visited, once per expansion
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval '(module has-runtime-paths racket/base
+           (require racket/runtime-path (for-syntax racket/base))
+           (define-runtime-path data "data.txt")
+           (define-runtime-path-list more (list "a.txt" "b.txt"))
+           (provide data more)))
+  (define (query)
+    (syntax-case (expand '(module m racket/kernel
+                            (#%require (only 'has-runtime-paths) racket/runtime-path)
+                            (runtime-paths 'has-runtime-paths)))
+        ()
+      [(_ m mz (mb req (q specs))) (syntax->datum #'specs)]))
+  (test '("a.txt" "b.txt" "data.txt") query)
+  (test '("a.txt" "b.txt" "data.txt") query))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; A cross-phase persistent module that is only imported `for-syntax`
+;; isn't run eagerly, but it's run when an importing module's phase
+;; levels are all run (e.g., for attaching)
+
+(let ()
+  (define trace-decl
+    '(module ucpp-ct-trace racket/base
+       (#%declare #:unsafe-cross-phase-persistent)
+       (provide trace)
+       (define trace (box null))))
+  (define ct-decl
+    '(module ucpp-ct-only racket/base
+       (#%declare #:unsafe-cross-phase-persistent)
+       (require 'ucpp-ct-trace)
+       (provide double)
+       (set-box! trace (cons 'ct-only (unbox trace)))
+       (define (double x) (* 2 x))))
+  (define user-decl
+    '(module ucpp-ct-user racket/base
+       (#%declare #:unsafe-cross-phase-persistent)
+       (require (for-syntax racket/base 'ucpp-ct-only))
+       (provide four)
+       (define-syntax (four stx) (datum->syntax stx (double 2)))))
+  ;; Declare from compiled forms, so that expansion of the declarations
+  ;; doesn't run anything in the namespace that is checked
+  (define compiled
+    (parameterize ([current-namespace (make-base-namespace)])
+      (map (lambda (d) (begin0 (compile d) (eval d)))
+           (list trace-decl ct-decl user-decl))))
+  (define ns1 (make-base-namespace))
+  (parameterize ([current-namespace ns1])
+    (for-each eval compiled)
+    (dynamic-require ''ucpp-ct-user #f)
+    ;; `ucpp-ct-only` is needed only for expansion, so it hasn't run
+    (test '() unbox (dynamic-require ''ucpp-ct-trace 'trace)))
+  ;; Attaching runs all phase levels of `ucpp-ct-user`, which needs `ucpp-ct-only`
+  (define ns2 (make-base-namespace))
+  (namespace-attach-module ns1 ''ucpp-ct-user ns2)
+  (parameterize ([current-namespace ns2])
+    (namespace-require ''ucpp-ct-user)
+    (test 4 eval '(four)))
+  (parameterize ([current-namespace ns1])
+    (test '(ct-only) unbox (dynamic-require ''ucpp-ct-trace 'trace))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; A `for-syntax` import of a cross-phase persistent module doesn't
+;; imply that its own imports are instantiated at run time, so a direct
+;; import of one of those modules must not be pruned when compiling
+
+(let ()
+  (define decls
+    '((module ucpp-y racket/base
+        (#%declare #:unsafe-cross-phase-persistent)
+        (provide y)
+        (define y 'y))
+      (module ucpp-x racket/base
+        (#%declare #:unsafe-cross-phase-persistent)
+        (require 'ucpp-y)
+        (provide x)
+        (define x y))
+      (module ucpp-z racket/base
+        (require 'ucpp-y (for-syntax 'ucpp-x))
+        (provide z)
+        (define z y))))
+  (define compiled
+    (parameterize ([current-namespace (make-base-namespace)])
+      (for/list ([d (in-list decls)])
+        (begin0 (compile d) (eval d)))))
+  (parameterize ([current-namespace (make-base-namespace)])
+    (for-each eval compiled)
+    (test 'y dynamic-require ''ucpp-z 'z)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

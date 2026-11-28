@@ -18,7 +18,7 @@
 
 @title[#:tag "unsafe"]{Unsafe Operations}
 
-@defmodule[racket/unsafe/ops]
+@defmodule[racket/unsafe/ops]{The @racketmodname[racket/unsafe/ops] library is a @tech{cross-phase persistent} module.}
 
 All functions and forms provided by @racketmodname[racket/base] and
 @racketmodname[racket] check their arguments to ensure that the
@@ -1035,7 +1035,7 @@ the same as @racket[(unsafe-car x)] makes both branches of the
 
 @section[#:tag "unsafe-struct-type-prop"]{Unsafe Structure Type Properties}
 
-@note-lib-only[racket/unsafe/struct-type-property]
+@note-lib-only[racket/unsafe/struct-type-property #:cross-phase-persistent]
 
 @defproc[(unsafe-make-struct-type-property/guard-calls-no-arguments
           [name symbol?]

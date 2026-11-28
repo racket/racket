@@ -1,4 +1,5 @@
 (module kw-thread "pre-base.rkt"
+  (#%declare #:unsafe-cross-phase-persistent)
   (require (prefix-in k: '#%kernel)
            '#%futures)
   

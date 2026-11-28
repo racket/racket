@@ -1,4 +1,5 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 (require (for-syntax racket/base
                      syntax/for-body)
          (only-in '#%kernel
@@ -6,7 +7,7 @@
                   vector*-copy vector*-append vector*-set/copy)
          '#%flfxnum
          racket/hash-code
-         "private/sort.rkt"
+         (only-in "private/sort.rkt" vector-sort!)
          (only-in "private/for.rkt" prop:stream)
          "private/serialize-structs.rkt")
 

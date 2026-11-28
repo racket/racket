@@ -1,4 +1,5 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 (require "private/define-config.rkt"
          setup/dirs)
 (define-parameters

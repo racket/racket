@@ -1,4 +1,5 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 (require (for-syntax racket/base
                      racket/lazy-require
                      "sc.rkt"
@@ -17,7 +18,7 @@
     create-aux-def)]))
 ;; FIXME: workaround for phase>0 bug in racket/runtime-path (and thus lazy-require)
 ;; Without this, dependencies don't get collected.
-(require racket/runtime-path racket/syntax (for-meta 2 '#%kernel))
+(require racket/runtime-path racket/syntax (for-meta 2 racket/base)) ; racket/base, not '#%kernel, for cross-phase persistence
 (define-runtime-module-path-index _unused_ 'syntax/parse/private/rep)
 
 (provide define-conventions

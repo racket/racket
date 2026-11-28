@@ -1,4 +1,5 @@
 (module string "pre-base.rkt"
+  (#%declare #:unsafe-cross-phase-persistent)
 
   (provide real->decimal-string
            regexp-quote

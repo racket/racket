@@ -1,4 +1,5 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 (require racket/stxparam
          "residual.rkt"
          (for-syntax racket/base

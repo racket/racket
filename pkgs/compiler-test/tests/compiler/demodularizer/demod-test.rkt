@@ -126,6 +126,23 @@
                               (path->string
                                (collection-file-path "pre-base.rkt" "racket/private")))))))
 
+;; When syntax is preserved, a demodularized module is cross-phase
+;; persistent when everything that it merges is cross-phase persistent
+(define (demod-cross-phase-persistent? name)
+  (define demod-filename (build-path (find-system-path 'temp-dir)
+                                     (format "~a_cpp_merged.zo" name)))
+  (parameterize ([current-input-port (open-input-string "")])
+    (system* (find-exe) "-l-" "raco" "demod" "-s" "-o" demod-filename
+             "--work" (build-path tests "compiled" "demod")
+             (build-path tests (format "~a.rkt" name))))
+  (define c (parameterize ([read-accept-compiled #t])
+              (call-with-input-file demod-filename read)))
+  (module-compiled-cross-phase-persistent? c))
+
+(test
+ (demod-cross-phase-persistent? "cpp-lib") => #t
+ (demod-cross-phase-persistent? "base-5-lib") => #f)
+
 (module+ test
   (module config info
     (define timeout 800)))

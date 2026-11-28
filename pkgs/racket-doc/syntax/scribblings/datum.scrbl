@@ -14,7 +14,9 @@
 @defmodule[syntax/datum]{The @racketmodname[syntax/datum] library
 provides forms that implement the pattern and template language of
 @racket[syntax-case], but for matching and constructing datum values
-instead of syntax.}
+instead of syntax.
+
+@cross-phase-persistent-lib[syntax/datum]}
 
 For most pattern-matching purposes, @racketmodname[racket/match] is a
 better choice than @racketmodname[syntax/datum]. The

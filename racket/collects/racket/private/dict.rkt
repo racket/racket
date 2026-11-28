@@ -1,4 +1,5 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 
 (require racket/private/generic ; to avoid circular dependencies
          racket/private/generic-methods

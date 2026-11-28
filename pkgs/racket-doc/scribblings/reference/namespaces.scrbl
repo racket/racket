@@ -561,3 +561,28 @@ which the compiler can optimize to a literal @racket[#t] or
 @tech{unsafe mode} or not).
 
 @history[#:added "6.12.0.4"]}
+
+
+@defproc[(variable-reference-add-attach-dependency! [varref variable-reference?]
+                                                    [mpi module-path-index?])
+         void?]{
+
+Registers @racket[mpi] as a module that the module of @racket[varref]
+may load on demand, where @racket[varref] is normally the result of
+@racket[(#%variable-reference)] within the module. The registration
+has an effect only if the module is @tech{cross-phase persistent}:
+when the module's instance is attached to another namespace via
+@racket[namespace-attach-module] or
+@racket[namespace-attach-module-declaration], the module referenced by
+@racket[mpi] is first instantiated (in the module instance's
+namespace) and then attached along with the module. That way, the
+attached instance and the destination namespace agree on the instance
+of the module referenced by @racket[mpi], even if it is loaded later.
+See also @secref["unsafe-cross-phase-persistent-modules"].
+
+The @racket[lazy-require] form uses
+@racket[variable-reference-add-attach-dependency!] for each module that
+it loads on demand, and the module referenced by @racket[mpi] is
+normally expected to be cross-phase persistent itself.
+
+@history[#:added "9.4.0.8"]}

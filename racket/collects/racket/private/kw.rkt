@@ -1,4 +1,5 @@
 (module kw '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
   (#%require "core-syntax.rkt"
              "more-scheme.rkt"
              (only '#%unsafe
@@ -16,11 +17,8 @@
                          "qqstx.rkt"
                          "sort.rkt"
                          "kw-prop-key.rkt"
-                         "immediate-default.rkt")
-             (for-meta 2 '#%kernel
-                       "core-syntax.rkt"
-                       "stxcase-scheme.rkt"
-                       "qqstx.rkt"))
+                         "immediate-default.rkt"
+                         "kw-stxloc.rkt"))
 
   (#%provide new-lambda
              (rename new-lambda new-λ)
@@ -436,20 +434,6 @@
                      'inferred-name
                      ;; void hides binding name
                      (void)))
-
-  ;; Similar to the above, when we copy source locations from an input
-  ;; expression, we need to ensure the source location is copied even if there
-  ;; is no source location on the input, but (quasi)syntax/loc doesn’t copy
-  ;; the source location if it is #f
-  (begin-for-syntax
-    (define-syntaxes (syntax/loc/always quasisyntax/loc/always)
-      (let ([mk (lambda (syntax-id)
-                  (lambda (stx)
-                    (syntax-case stx ()
-                      [(_ src-expr template)
-                       #`(let ([result (#,syntax-id template)])
-                           (datum->syntax result (syntax-e result) src-expr result))])))])
-        (values (mk #'syntax) (mk #'quasisyntax)))))
 
   ;; ----------------------------------------
 

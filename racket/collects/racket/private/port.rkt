@@ -1,4 +1,5 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 ;; A few simple port functions are needed in pretty.rkt, which is
 ;;  used by contract.rkt, which is used by port.rkt --- so we
 ;;  break the cycle with this module.

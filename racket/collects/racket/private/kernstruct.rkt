@@ -2,7 +2,8 @@
 ;;----------------------------------------------------------------------
 ;; record for static info produced by structs defined in c
 (module kernstruct '#%kernel
-  (#%require (for-syntax '#%kernel))
+  (#%declare #:unsafe-cross-phase-persistent)
+  (#%require (for-syntax (all-except '#%kernel exn:break exn:fail:syntax:unbound exn:fail:syntax date* exn:fail:network exn:fail:filesystem:version arity-at-least exn:fail:read:eof exn:fail:filesystem:errno exn:fail:contract:continuation exn:fail:read exn:fail:read:non-char exn:fail:contract:arity exn:break:hang-up exn:fail exn:fail:filesystem:missing-module exn:fail:syntax:missing-module exn:fail:contract exn:fail:filesystem:exists exn:fail:network:errno make-exn:fail:syntax exn:fail:contract:divide-by-zero make-exn:fail:syntax:missing-module exn:fail:contract:non-fixnum-result exn:fail:out-of-memory make-exn:fail:syntax:unbound make-exn:fail:filesystem:missing-module exn:fail:user exn:break:terminate exn:fail:unsupported srcloc date exn:fail:contract:variable exn exn:fail:filesystem)))
   (#%require "core-syntax.rkt")
   (#%require (for-syntax "struct-info.rkt"))
   (#%provide (all-defined))

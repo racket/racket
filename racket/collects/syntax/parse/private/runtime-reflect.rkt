@@ -1,4 +1,5 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 (require "residual.rkt"
          (only-in (submod "residual.rkt" ct) attr-name attr-depth)
          "kws.rkt")

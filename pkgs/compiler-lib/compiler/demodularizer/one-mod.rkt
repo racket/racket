@@ -15,4 +15,5 @@
                  provides ; phase-level -> sym -> provided
                  stx-vec stx-mpi portal-stxes
                  pre-submodules
-                 post-submodules))
+                 post-submodules
+                 cross-phase-persistent?))

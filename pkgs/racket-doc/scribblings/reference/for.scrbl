@@ -895,7 +895,7 @@ sequence of forms, and the forms are spliced in place of the
 @;------------------------------------------------------------------------
 @section{Iteration Expansion}
 
-@note-lib-only[racket/for-clause]
+@note-lib-only[racket/for-clause #:cross-phase-persistent]
 
 @defproc[(syntax-local-splicing-for-clause-introduce [stx syntax?]) syntax?]{
 

@@ -1,7 +1,13 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 
 (require (for-template racket/base)
-         syntax/boundmap
+         syntax/private/boundmap ; not syntax/boundmap, to avoid contracts
+         (rename-in syntax/private/boundmap
+                    [make-module-identifier-mapping make-free-identifier-mapping]
+                    [module-identifier-mapping-get free-identifier-mapping-get]
+                    [module-identifier-mapping-put! free-identifier-mapping-put!]
+                    [module-identifier-mapping-for-each free-identifier-mapping-for-each])
          racket/struct-info
          "patterns.rkt")
 

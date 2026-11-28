@@ -1,4 +1,5 @@
 (module struct-util '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
   (#%require "core-syntax.rkt")
 
   (#%provide predicate->struct-name)

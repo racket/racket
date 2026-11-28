@@ -1,10 +1,11 @@
 #lang scribble/doc
-@(require scribble/manual
+@(require (only-in "../common.rkt" cross-phase-persistent-lib)
+          scribble/manual
           "parse-common.rkt")
 
 @title{Minimal Library}
 
-@defmodule[syntax/parse/pre]
+@defmodule[syntax/parse/pre]{@cross-phase-persistent-lib[syntax/parse/pre]}
 
 The @racketmodname[syntax/parse/pre] library is useful for accessing
 most syntax-parsing functionality while minimizing library

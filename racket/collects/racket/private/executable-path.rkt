@@ -1,4 +1,5 @@
 (module path-list '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
   (#%require "core-syntax.rkt"
              "path.rkt"
              "path-list.rkt")

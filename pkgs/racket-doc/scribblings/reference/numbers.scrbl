@@ -1287,7 +1287,7 @@ is little-endian.}
 @; ------------------------------------------------------------------------
 @subsection{Extra Constants and Functions}
 
-@note-lib[racket/math]
+@note-lib[racket/math #:cross-phase-persistent]
 
 @defthing[pi flonum?]{
 

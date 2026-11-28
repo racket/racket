@@ -2,6 +2,7 @@
 ;;  given form:
 
 (module modbeg '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
   (#%require (for-syntax '#%kernel))
 
   (#%provide (for-syntax (protect make-wrapping-module-begin)))

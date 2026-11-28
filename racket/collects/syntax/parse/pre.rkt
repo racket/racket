@@ -1,4 +1,5 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 (require "private/sc.rkt"
          "private/litconv.rkt"
          "private/lib.rkt"

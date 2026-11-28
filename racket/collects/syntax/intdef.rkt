@@ -1,4 +1,5 @@
 (module intdef '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
   (#%provide internal-definition-context-track)
 
   (define-values (internal-definition-context-track)

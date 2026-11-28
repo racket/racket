@@ -3,7 +3,7 @@
 
 @title[#:tag "intdef"]{Internal-Definition Context Helpers}
 
-@defmodule[syntax/intdef]
+@defmodule[syntax/intdef]{@cross-phase-persistent-lib[syntax/intdef]}
 
 @history[#:added "6.3.0.4"]
 

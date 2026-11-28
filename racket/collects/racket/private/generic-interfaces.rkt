@@ -1,4 +1,5 @@
 (module generic-interfaces "pre-base.rkt"
+  (#%declare #:unsafe-cross-phase-persistent)
 
   ;; Defines (forgeries of) generic interfaces that correspond to struct
   ;; properties that come from racket/base.
@@ -6,7 +7,7 @@
   ;; `define-generics' to build these generic interfaces. Thus we must
   ;; forge them.
 
-  (#%require (for-syntax '#%kernel) '#%unsafe "generic-methods.rkt")
+  (#%require (for-syntax "pre-base.rkt") '#%unsafe "generic-methods.rkt")
 
   (#%provide gen:equal+hash gen:equal-mode+hash gen:custom-write)
 

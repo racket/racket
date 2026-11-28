@@ -6,7 +6,7 @@
 
 @title[#:tag "syntax/transformer"]{Creating Macro Transformers}
 
-@defmodule[syntax/transformer]
+@defmodule[syntax/transformer]{@cross-phase-persistent-lib[syntax/transformer]}
 
 @defproc[(make-variable-like-transformer
           [reference-stx (or/c syntax? (-> identifier? syntax?))]

@@ -3,6 +3,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 
 (require "unsafe/ops.rkt"
          "performance-hint.rkt"

@@ -199,12 +199,17 @@
 
   ; Used to generate identifiers in low-level macros which need a variable number
   ; of temporaries
+  ;; The counter is local to a module expansion when possible, since
+  ;; a counter is likely created in a module whose instance is shared
+  ;; (cross-phase persistent):
   (define-values (make-stx-id-counter)
     (lambda (prefix)
-      (let-values ([(counter) 0])
+      (let-values ([(key) (gensym prefix)])
         (lambda ()
-          (set! counter (add1 counter))
-          (string->uninterned-symbol (format "~a~a" prefix counter))))))
+          (let-values ([(n) (let-values ([(n) (add1 (syntax-local-state-ref key 0))])
+                              (syntax-local-state-set! key n)
+                              n)])
+            (string->uninterned-symbol (format "~a~a" prefix n)))))))
 
   ; (raise-syntax-error-if condition msg expr [sub-expr] [extra-sources])
   ;   condition     : any/c                     (used for true/false)

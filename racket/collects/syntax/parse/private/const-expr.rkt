@@ -1,4 +1,5 @@
 #lang racket/base
+(#%declare #:unsafe-cross-phase-persistent)
 (require (for-template racket/base))
 (provide datum-expr?
          datum-expr-value

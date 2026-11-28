@@ -3,6 +3,7 @@
 ;; syntax/loc
 
 (module stxloc '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
   (#%require "stxcase.rkt" "core-syntax.rkt"
              (rename "core-syntax.rkt" -define define)
              (rename "core-syntax.rkt" -define-syntax define-syntax)

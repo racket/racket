@@ -2,6 +2,7 @@
 ;;  `print-value'.
 
 (module modbeg '#%kernel
+  (#%declare #:unsafe-cross-phase-persistent)
   (#%require syntax/wrap-modbeg
              (for-syntax '#%kernel))
 
