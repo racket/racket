@@ -331,6 +331,29 @@
                                (make-bytes 1024 0)))
         => (list (cons "cover.txt" hidden))))
 
+(define (untar-set-id-tests)
+  ;; A set-user-id, set-group-id, or sticky bit in an entry's mode is
+  ;; not restored, which is how `tar` behaves
+  (define (header name mode type)
+    (define h (make-bytes 512 0))
+    (bytes-copy! h 0 name)
+    (bytes-copy! h 100 mode)
+    (bytes-copy! h 124 #"00000000000\0")
+    (bytes-copy! h 136 #"00000000000\0")
+    (bytes-set! h 156 (char->integer type))
+    (bytes-copy! h 257 #"ustar\00000")
+    h)
+  (unless (eq? (system-type) 'windows)
+    (define dir (make-temporary-directory))
+    (untar (open-input-bytes
+            (bytes-append (header #"set-id" #"0004755\0" #\0)
+                          (header #"sticky" #"0001777\0" #\5)
+                          (make-bytes 1024 0)))
+           #:dest dir)
+    (test (file-or-directory-permissions (build-path dir "set-id") 'bits) => #o755
+          (file-or-directory-permissions (build-path dir "sticky") 'bits) => #o777)
+    (delete-directory/files dir)))
+
 (module+ main (tests))
 ;; Use "main.rkt" with `raco test`, instead of this file
 
@@ -339,4 +362,5 @@
         do (unzip-tests)
         do (unzip-tests #t)
         do (untar-of-invalid-tests)
-        do (untar-entry-size-tests)))
+        do (untar-entry-size-tests)
+        do (untar-set-id-tests)))

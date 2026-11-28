@@ -467,12 +467,14 @@
                         (if dest-dir
                             (build-path dest-dir base-path)
                             base-path))])
-        (define (windows-adjust bits)
+        (define (adjust-permissions bits)
           (if (eq? (system-type) 'windows)
               (if (zero? (bitwise-and #o200 bits))
                   #o555  ; read only
                   #o777) ; read+write
-              bits))
+              ;; like `unzip`, do not restore set-user-id, set-group-id,
+              ;; or sticky bits from the archive
+              (bitwise-and bits #o777)))
         (define (no-post-action) (if (hash? timestamp-or-attrs) #f (void)))
         (cond
           [path
@@ -502,7 +504,7 @@
                                  (when timestamp
                                    (file-or-directory-modify-seconds path timestamp))
                                  (when permissions
-                                   (file-or-directory-permissions path (windows-adjust permissions)))))
+                                   (file-or-directory-permissions path (adjust-permissions permissions)))))
                           (no-post-action)))])])]
              [else
               (let ([parent (dirname path)])
@@ -525,7 +527,7 @@
                     (let ([permissions (and (hash? timestamp-or-attrs)
                                             (hash-ref timestamp-or-attrs 'permissions #f))])
                       (when permissions
-                        (file-or-directory-permissions path (windows-adjust permissions)))))))
+                        (file-or-directory-permissions path (adjust-permissions permissions)))))))
               (no-post-action)])]
           [else (no-post-action)])))))
 
