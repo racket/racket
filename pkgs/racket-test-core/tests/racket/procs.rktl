@@ -1007,5 +1007,24 @@
   (err/rt-test ((foo) 1) exn:fail:contract? #rx"not a procedure"))
 
 ;; ----------------------------------------
+;; A huge arity is an arity, but an arity mask for it is too large
+
+(test #t procedure-arity? (expt 2 64))
+(test #t procedure-arity? (list 1 (arity-at-least (expt 2 64))))
+(test #f procedure-arity? (list 1 'x))
+
+(when (and (eq? 'chez-scheme (system-type 'vm))
+           (custodian-memory-accounting-available?))
+  (define c (make-custodian))
+  (custodian-limit-memory c (* 64 1024 1024) c)
+  (define r #f)
+  (thread-wait (parameterize ([current-custodian c])
+                 (thread (lambda ()
+                           (set! r (with-handlers ([exn:fail:out-of-memory? (lambda (e) 'out-of-memory)])
+                                     (procedure-reduce-arity (lambda x x) (expt 2 64))))))))
+  (custodian-shutdown-all c)
+  (test 'out-of-memory values r))
+
+;; ----------------------------------------
 
 (report-errs)
